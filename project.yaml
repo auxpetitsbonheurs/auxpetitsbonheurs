@@ -13,9 +13,9 @@ framework:
   version: 0.1.0
 
 project:
-  name: null            # set by /start or /setup-stack
-  type: null            # saas | marketing | ecommerce | api | mixed
-  stage: null           # discovery | design | build | launch | grow
+  name: Aux petits bonheurs            # set by /start or /setup-stack
+  type: ecommerce            # saas | marketing | ecommerce | api | mixed
+  stage: discovery           # discovery | design | build | launch | grow
 
 stack:
   language: null        # typescript | javascript | python | go | php | ruby
@@ -64,3 +64,7 @@ i18n:
 
 privacy:
   regions: []            # e.g. [eu, us-ca] — drives consent + DPIA requirements
+
+modes:
+  rigor: standard
+  automation: ask
