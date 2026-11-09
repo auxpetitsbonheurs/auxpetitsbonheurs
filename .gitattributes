@@ -1,0 +1,3 @@
+# Keep scripts LF on Windows: bash hooks fail when checked out with CRLF.
+*.sh text eol=lf
+*.py text eol=lf

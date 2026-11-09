@@ -1,0 +1,66 @@
+# === Claude Code local ===
+.claude/settings.local.json
+CLAUDE.local.md
+project.local.yaml
+production/session-logs/
+production/session-state/
+.claude/agent-memory/
+.claude/worktrees/
+.scratch/
+
+# === Secrets ===
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets.json
+service-account*.json
+
+# === Dependencies ===
+node_modules/
+.pnpm-store/
+vendor/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# === Build output & framework caches ===
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+.svelte-kit/
+.astro/
+.angular/
+.vercel/
+.netlify/
+.wrangler/
+.turbo/
+.cache/
+coverage/
+storybook-static/
+
+# === Test output ===
+/test-results/
+/playwright-report/
+/blob-report/
+/reports/
+.lighthouseci/
+
+# === Infra state ===
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# === OS / editor ===
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/settings.json
+*.swp
+*.log

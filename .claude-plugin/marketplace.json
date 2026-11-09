@@ -1,0 +1,12 @@
+{
+  "name": "claude-code-web-studios",
+  "owner": { "name": "Claude Code Web Studios contributors" },
+  "metadata": { "description": "Web development studio for Claude Code", "version": "0.1.0" },
+  "plugins": [
+    {
+      "name": "web-studios",
+      "description": "55 agents, lifecycle skills, hooks and rules for website and web-app development.",
+      "source": "./"
+    }
+  ]
+}

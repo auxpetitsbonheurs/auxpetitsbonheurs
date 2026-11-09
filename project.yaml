@@ -1,0 +1,66 @@
+# Claude Code Web Studios — project configuration (single source of truth).
+# Skills read this file; /setup-stack, /start and /settings write it.
+# Per-developer overrides go in project.local.yaml (gitignored).
+#
+# `/start` adds `modes.rigor` and `modes.automation`. Do not hand-seed the
+# knobs rigor expands to (review_mode, tdd, docs_density, hook_strictness):
+# a written value pins that knob and the rigor setting stops changing it.
+
+schema_version: 1
+
+framework:
+  name: claude-code-web-studios
+  version: 0.1.0
+
+project:
+  name: null            # set by /start or /setup-stack
+  type: null            # saas | marketing | ecommerce | api | mixed
+  stage: null           # discovery | design | build | launch | grow
+
+stack:
+  language: null        # typescript | javascript | python | go | php | ruby
+  package_manager: null # pnpm | npm | yarn | bun | uv | poetry | go | composer | bundler
+  frontend: null        # nextjs | remix | nuxt | sveltekit | astro | angular | solidstart | qwik | none
+  backend: null         # native | express | fastify | nestjs | hono | fastapi | django | go | laravel | rails | supabase | firebase
+  database: null        # postgres | mysql | sqlite | mongodb | supabase | firebase | none
+  orm: null             # prisma | drizzle | sqlalchemy | django-orm | gorm | eloquent | activerecord | mongoose | none
+  styling: tailwind-shadcn
+  cache_queue: null     # redis | bullmq | celery | sidekiq | none
+  search: null          # meilisearch | algolia | typesense | pgvector | elasticsearch | none
+  auth: null            # clerk | authjs | lucia | better-auth | supabase-auth | firebase-auth | custom | none
+  payments: null        # stripe | paddle | lemonsqueezy | none
+  cms: null             # sanity | payload | strapi | contentful | none
+  ai: null              # anthropic | openai | multi | none
+  realtime: null        # websockets | sse | supabase-realtime | pusher | liveblocks | none
+  email: null           # resend | postmark | sendgrid | ses | none
+  analytics: null       # posthog | plausible | ga4 | none
+  observability: null   # sentry | otel | datadog | none
+  hosting: null         # vercel | netlify | cloudflare | fly | railway | render | aws | gcp | azure
+  test_unit: null       # vitest | jest | pytest | go-test | phpunit | rspec
+  test_e2e: playwright
+
+# Stack specialist agents in use (filled by /setup-stack from `stack`).
+specialists: []
+
+budgets:
+  lighthouse:
+    performance: 90
+    accessibility: 95
+    best_practices: 95
+    seo: 95
+  web_vitals:
+    lcp_ms: 2500
+    inp_ms: 200
+    cls: 0.1
+  js_initial_kb: 170      # gzipped JS on first load per route
+  image_max_kb: 250
+
+a11y:
+  standard: WCAG 2.2 AA
+
+i18n:
+  default_locale: en
+  locales: [en]
+
+privacy:
+  regions: []            # e.g. [eu, us-ca] — drives consent + DPIA requirements
