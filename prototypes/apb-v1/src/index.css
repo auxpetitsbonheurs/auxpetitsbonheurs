@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body { overflow-x: hidden; }
+body { @apply bg-cream text-ink font-sans antialiased; }
+h1, h2, h3, .font-serif { font-family: "Fraunces Variable", Georgia, serif; font-variation-settings: "SOFT" 100; }
+a, button, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid #B94762; outline-offset: 2px; }
+.snap-x-row { scroll-snap-type: x mandatory; overflow-x: auto; scrollbar-width: none; }
+.snap-x-row::-webkit-scrollbar { display: none; }
+.snap-x-row > * { scroll-snap-align: center; flex: none; }
+
+@media print {
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { position: absolute; left: 0; top: 0; width: 100%; background: white; }
+  .no-print { display: none !important; }
+}
