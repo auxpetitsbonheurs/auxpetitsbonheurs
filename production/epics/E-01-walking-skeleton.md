@@ -25,7 +25,28 @@ On staging: a guest sends an order (gets APB-0001 and a tracking token, double s
 ## Stories
 | ID | Title | Status | Estimate |
 |---|---|---|---|
-| (to be created by /create-stories E-01) | | draft | |
+| [S-001](../stories/E-01/S-001-ci-pipeline.md) | CI pipeline with lint, types, tests, build and JS budget | ready | 3 |
+| [S-002](../stories/E-01/S-002-deploy-pipeline.md) | Staging and production deploy pipeline | ready | 3 |
+| [S-003](../stories/E-01/S-003-typed-env-and-database-connection.md) | Typed environment and per-request database connection | ready | 3 |
+| [S-004](../stories/E-01/S-004-initial-migration-and-seed.md) | Initial migration 0000 with slug history, plus launch seed | ready | 5 |
+| [S-005](../stories/E-01/S-005-test-and-a11y-harness.md) | End-to-end and accessibility test harness | ready | 3 |
+| [S-006](../stories/E-01/S-006-text-system-time-and-rupees.md) | EN/FR text system, Mauritius time and Rs formatting | ready | 5 |
+| [S-007](../stories/E-01/S-007-accessible-page-shell.md) | Accessible page shell and design tokens | ready | 3 |
+| [S-008](../stories/E-01/S-008-language-switch.md) | Language switch and remembered language | ready | 3 |
+| [S-009](../stories/E-01/S-009-admin-sign-in.md) | Admin sign-in with email and password | ready | 5 |
+| [S-010](../stories/E-01/S-010-owner-seed.md) | Seed the first Owner account | ready | 2 |
+| [S-011](../stories/E-01/S-011-product-page-add-to-basket.md) | Open the sample cake and add it to the basket | ready | 5 |
+| [S-012](../stories/E-01/S-012-basket-delivery-pickup.md) | Review the basket and choose delivery or pickup | ready | 3 |
+| [S-013](../stories/E-01/S-013-place-order.md) | Place an order as a guest | ready | 5 |
+| [S-014](../stories/E-01/S-014-idempotent-submit-gap-free-numbers.md) | Double tap creates one order, numbers never skip | ready | 3 |
+| [S-015](../stories/E-01/S-015-order-confirmation.md) | Order confirmation page | ready | 2 |
+| [S-016](../stories/E-01/S-016-order-tracking.md) | Follow an order on the tracking page | ready | 3 |
+| [S-017](../stories/E-01/S-017-admin-orders-approve.md) | See new orders and approve one from the phone | ready | 5 |
+| [S-018](../stories/E-01/S-018-order-activity-log.md) | Order activity log and the end-to-end skeleton journey | ready | 3 |
+| [S-019](../stories/E-01/S-019-worker-cpu-measurement.md) | Measure Worker CPU time on staging (risk T3) | ready | 3 |
+| [S-020](../stories/E-01/S-020-backup-keepalive-health.md) | Weekly backup skeleton, keep-alive and health check | ready | 5 |
+
+Total: 72 points (S-001..S-020). Dependencies are listed in each story's Notes and all sit inside E-01 (sprint 1).
 
 ## Dependencies
 - Docs: ADR-0001, architecture.md, data-model.md, contracts.md v0.4.

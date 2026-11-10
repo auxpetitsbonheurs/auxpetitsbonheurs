@@ -17,7 +17,24 @@ Phase 1 exit: the Owner invites an Admin by email, the Admin signs in, and the A
 ## Stories
 | ID | Title | Status | Estimate |
 |---|---|---|---|
-| (to be created by /create-stories E-02) | | draft | |
+| [S-021](../stories/E-02/S-021-customer-session-refused-on-admin.md) | A customer account can never open admin pages | ready | 2 |
+| [S-022](../stories/E-02/S-022-owner-only-role-enforcement.md) | Owner-only screens refuse Admins on the server | ready | 3 |
+| [S-023](../stories/E-02/S-023-auth-rate-limits.md) | Rate limits on sign-in and password reset | ready | 3 |
+| [S-024](../stories/E-02/S-024-auth-email-hook-recovery.md) | Password reset emails through the auth email hook | ready | 5 |
+| [S-025](../stories/E-02/S-025-admin-forgot-password.md) | Ask for a password reset link | ready | 3 |
+| [S-026](../stories/E-02/S-026-admin-reset-password.md) | Set a new password from the reset link | ready | 3 |
+| [S-027](../stories/E-02/S-027-team-list.md) | Team screen listing admins and pending invitations | ready | 3 |
+| [S-028](../stories/E-02/S-028-invite-admin.md) | Invite a helper by email | ready | 5 |
+| [S-029](../stories/E-02/S-029-accept-invitation.md) | Accept an invitation and set a password | ready | 3 |
+| [S-030](../stories/E-02/S-030-resend-revoke-invite.md) | Resend or revoke an invitation | ready | 2 |
+| [S-031](../stories/E-02/S-031-change-role-last-owner.md) | Change an admin's role without losing the last Owner | ready | 5 |
+| [S-032](../stories/E-02/S-032-deactivate-reactivate.md) | Deactivate and reactivate an admin | ready | 5 |
+| [S-033](../stories/E-02/S-033-admin-shell-bottom-bar.md) | Admin app frame with one-handed bottom bar | ready | 3 |
+| [S-034](../stories/E-02/S-034-orders-to-review-dot.md) | Orders badge showing how many need review | draft (contract gap: layout loader needs a review count) | 2 |
+| [S-035](../stories/E-02/S-035-installable-app.md) | Install the admin app on the home screen | ready | 3 |
+| [S-036](../stories/E-02/S-036-my-profile.md) | My profile with name, language, password and alert switches | ready | 3 |
+
+Total: 53 points (S-021..S-036). Not covered here by design: push subscription, test push and alert rules (E-10). The minimal Resend sender and the recovery and invitation emails are built here (S-024, S-028) because Phase 1 exit needs them; E-10 extends them.
 
 ## Dependencies
 - E-01 (auth shell, schema).
