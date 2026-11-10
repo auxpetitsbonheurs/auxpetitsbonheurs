@@ -9,7 +9,7 @@ Owner: devops-lead, test-engineer
 As the bakery's developer, I want every pull request and every push to main checked automatically, so that broken or over-budget code never reaches staging.
 
 ## Acceptance Criteria
-- [ ] AC1 (NFR-012): Given a pull request or a push to main, when GitHub Actions runs, then lint, typecheck, unit tests and build run in that order, and a failure in any step marks the run failed.
+- [x] AC1 (NFR-012): Given a pull request or a push to main, when GitHub Actions runs, then lint, typecheck, unit tests and build run in that order, and a failure in any step marks the run failed.
 - [x] AC2 (NFR-001): Given a build where one route's initial JavaScript is over 170 kB gzipped, when the budget check runs, then CI fails and the output names the route and its size; given every route at or under 170 kB, then the check passes.
 - [x] AC3 (NFR-012): Given a clean checkout with no secrets and no network access to third parties, when `npm ci && npm test` runs, then the unit tests pass (the test job references no `secrets.*`).
 - [x] AC4 (NFR-012): Given the README, then it has the headings "What this is", "Services and accounts", "Run locally", "Deploy", "Secrets", "Backups" (content filled by S-002 and S-020), so ownership documentation exists from day one.
@@ -33,3 +33,4 @@ As the bakery's developer, I want every pull request and every push to main chec
 - Decision: the handover README is `src/README.md`; the repository root README is the GitHub profile page.
 - Decision: test files are typechecked by a separate `tsconfig.test.json` (Node + Vite types) and excluded from the Worker tsconfig, so Node globals never leak into Worker code.
 - Baseline at review: routes/home 115.2 kB gzipped (limit 170).
+- AC1 proved by GitHub Actions ci run #1 on main (run 42814650784, success, 2026-11-10).
