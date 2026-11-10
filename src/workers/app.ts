@@ -1,4 +1,5 @@
 import { RouterContextProvider, createRequestHandler } from "react-router";
+import { dispatch } from "~/jobs/dispatch";
 import { authContext } from "~/server/auth-gateway.server";
 import { clockContext, createClock } from "~/server/clock.server";
 import { handleWithDb, requestDbContext } from "~/server/db.server";
@@ -21,7 +22,7 @@ async function respond(request: Request, settings: ServerEnv, ctx: ExecutionCont
   return handleWithDb(settings.DATABASE_URL, ctx, (requestDb) => {
     const context = new RouterContextProvider();
     context.set(requestDbContext, requestDb);
-    context.set(publicConfigContext, { supabaseUrl: settings.SUPABASE_URL });
+    context.set(publicConfigContext, { supabaseUrl: settings.SUPABASE_URL, supabaseAnonKey: settings.SUPABASE_ANON_KEY });
     context.set(clockContext, createClock({ testClock: settings.TEST_CLOCK === "on" }, request));
     // Supabase Auth for this request (lazy: no client until a guard or sign-in needs it).
     context.set(authContext, createSupabaseAuth({ url: settings.SUPABASE_URL, anonKey: settings.SUPABASE_ANON_KEY }, request));
@@ -39,10 +40,9 @@ export default {
     console.log(JSON.stringify(requestLogLine(request, response.status, Date.now() - started)));
     return withEnvironmentHeaders(response, settings.APP_ENV);
   },
-  // Hourly cron (see wrangler.jsonc). Jobs are dispatched by Mauritius local time:
-  // quote expiry, 18:00 reminder, 24 h pending alert, email retries, promotions,
-  // and the Supabase keep-alive query. Implemented in later stories.
-  async scheduled(_controller, _env, _ctx) {
-    // Intentionally empty until the jobs module exists.
+  // Hourly cron (see wrangler.jsonc). app/jobs/dispatch runs the due jobs by Mauritius
+  // local time (keepAlive every tick; later epics add their jobs there). Never throws.
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(dispatch(new Date(controller.scheduledTime), env, ctx));
   },
 } satisfies ExportedHandler<Env>;

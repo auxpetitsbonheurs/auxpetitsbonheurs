@@ -36,7 +36,7 @@ export function routeArgs(database: TestDatabase, options: RouteArgsOptions) {
   const now = new Date(options.now ?? "2026-11-10T08:00:00Z");
   context.set(clockContext, { now: () => now });
   context.set(authContext, (options.auth ?? new FakeAuth()).gateway(request, () => now));
-  context.set(publicConfigContext, { supabaseUrl: TEST_SUPABASE_URL });
+  context.set(publicConfigContext, { supabaseUrl: TEST_SUPABASE_URL, supabaseAnonKey: "test-anon-key" });
   return { request, url, params: options.params ?? {}, context, pattern: "" };
 }
 

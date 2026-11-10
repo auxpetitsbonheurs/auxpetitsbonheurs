@@ -1,0 +1,87 @@
+name: backup
+
+# Weekly backup of the production database and Storage buckets to the bakery's Google Drive
+# (S-020, architecture "Backups & restore", NFR-005). Sunday 02:00 Mauritius (UTC+4, no DST)
+# = Saturday 22:00 UTC. Encrypted with age before it leaves the runner; the latest 8 kept.
+# Secrets by name only (README "Backups", docs/runbooks/deploy-keys.md). A missing secret
+# fails the run at once, and any failure emails the bakery address. Restore: E-12.
+on:
+  schedule:
+    - cron: "0 22 * * 6"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      SUPABASE_S3_ENDPOINT: ${{ secrets.SUPABASE_S3_ENDPOINT }}
+      SUPABASE_S3_REGION: ${{ secrets.SUPABASE_S3_REGION }}
+      SUPABASE_S3_ACCESS_KEY_ID: ${{ secrets.SUPABASE_S3_ACCESS_KEY_ID }}
+      SUPABASE_S3_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_S3_SECRET_ACCESS_KEY }}
+      AGE_RECIPIENT: ${{ secrets.AGE_RECIPIENT }}
+      GDRIVE_TOKEN: ${{ secrets.GDRIVE_TOKEN }}
+      GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+      # rclone remotes from the environment: "supabase" (Storage S3) and "gdrive" (backup folder).
+      RCLONE_CONFIG_SUPABASE_TYPE: s3
+      RCLONE_CONFIG_SUPABASE_PROVIDER: Other
+      RCLONE_CONFIG_SUPABASE_ENDPOINT: ${{ secrets.SUPABASE_S3_ENDPOINT }}
+      RCLONE_CONFIG_SUPABASE_REGION: ${{ secrets.SUPABASE_S3_REGION }}
+      RCLONE_CONFIG_SUPABASE_ACCESS_KEY_ID: ${{ secrets.SUPABASE_S3_ACCESS_KEY_ID }}
+      RCLONE_CONFIG_SUPABASE_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_S3_SECRET_ACCESS_KEY }}
+      RCLONE_CONFIG_GDRIVE_TYPE: drive
+      RCLONE_CONFIG_GDRIVE_SCOPE: drive
+      RCLONE_CONFIG_GDRIVE_TOKEN: ${{ secrets.GDRIVE_TOKEN }}
+      RCLONE_CONFIG_GDRIVE_ROOT_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check backup secrets
+        run: src/scripts/check-keys.sh --require SUPABASE_DB_URL SUPABASE_S3_ENDPOINT SUPABASE_S3_REGION SUPABASE_S3_ACCESS_KEY_ID SUPABASE_S3_SECRET_ACCESS_KEY AGE_RECIPIENT GDRIVE_TOKEN GDRIVE_FOLDER_ID
+      - name: Install rclone and age
+        run: sudo apt-get update -q && sudo apt-get install -y -q rclone age
+      - name: Dump the database
+        # pg_dump from the Postgres 17 image (must be >= the Supabase server version).
+        run: |
+          mkdir -p backup/storage
+          docker run --rm -e SUPABASE_DB_URL -v "$PWD/backup:/backup" postgres:17 \
+            sh -c 'pg_dump --format=custom --no-owner --no-privileges --file=/backup/database.dump "$SUPABASE_DB_URL"'
+      - name: Copy the Storage buckets
+        run: |
+          rclone copy supabase:public-images backup/storage/public-images
+          rclone copy supabase:request-photos backup/storage/request-photos
+      - name: Encrypt
+        run: |
+          ARCHIVE="apb-backup-$(date -u +%Y-%m-%d).tar.age"
+          tar -C backup -cf - . | age --encrypt --recipient "$AGE_RECIPIENT" --output "$ARCHIVE"
+          rm -rf backup
+          echo "ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
+      - name: Upload to Google Drive
+        run: rclone copy "$ARCHIVE" gdrive:
+      - name: Keep the latest 8
+        run: |
+          rclone lsf gdrive: --files-only --include "apb-backup-*.tar.age" | sort | head -n -8 | while read -r old; do
+            rclone deletefile "gdrive:$old"
+          done
+      - name: Email the bakery about the failure
+        if: failure()
+        env:
+          BACKUP_RESEND_API_KEY: ${{ secrets.BACKUP_RESEND_API_KEY }}
+          BACKUP_NOTIFY_EMAIL: ${{ secrets.BACKUP_NOTIFY_EMAIL }}
+          BACKUP_EMAIL_FROM: ${{ vars.BACKUP_EMAIL_FROM || 'Aux petits bonheurs <onboarding@resend.dev>' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$BACKUP_RESEND_API_KEY" ] || [ -z "$BACKUP_NOTIFY_EMAIL" ]; then
+            echo "::error::Backup failed and BACKUP_RESEND_API_KEY / BACKUP_NOTIFY_EMAIL are not set; only GitHub's own failure email goes out."
+            exit 1
+          fi
+          jq -n --arg from "$BACKUP_EMAIL_FROM" --arg to "$BACKUP_NOTIFY_EMAIL" --arg url "$RUN_URL" \
+            '{from: $from, to: [$to], subject: "Weekly backup FAILED", text: ("The weekly backup did not finish. Details: " + $url)}' \
+            | curl -fsS https://api.resend.com/emails -H "Authorization: Bearer $BACKUP_RESEND_API_KEY" -H "Content-Type: application/json" --data @-

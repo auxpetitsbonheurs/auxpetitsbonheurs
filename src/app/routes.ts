@@ -32,7 +32,11 @@ const adminPages = [
   ]),
 ];
 
+/** Resource routes (no page, no language). */
+const resourceRoutes = [route("healthz", "routes/hooks/healthz.ts")];
+
 export default [
+  ...resourceRoutes,
   ...adminPages,
   layout("routes/site/layout.tsx", { id: "site-en" }, customerPages("en")),
   route("fr", "routes/site/layout.tsx", { id: "site-fr" }, customerPages("fr")),

@@ -55,6 +55,11 @@ describe("deploy workflow steps (AC2)", () => {
     expect(steps).toContain("CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}");
   });
 
+  test("after deploying, each job checks /healthz when the site URL variable is set (S-020)", () => {
+    expect(job("staging")).toContain('curl -fsS "$STAGING_URL/healthz"');
+    expect(job("production")).toContain('curl -fsS "$PRODUCTION_URL/healthz"');
+  });
+
   test("each deploy job waits for its preflight and runs only when keys are configured", () => {
     for (const name of ["staging", "production"]) {
       expect(job(name)).toMatch(new RegExp(`needs:\\s*${name}-preflight`));
@@ -75,8 +80,8 @@ describe("deploy workflow steps (AC2)", () => {
   });
 });
 
-describe("scripts/check-deploy-keys.sh (skip cleanly until the keys exist)", () => {
-  const script = fileURLToPath(new URL("../../scripts/check-deploy-keys.sh", import.meta.url));
+describe("scripts/check-keys.sh (skip cleanly until the keys exist)", () => {
+  const script = fileURLToPath(new URL("../../scripts/check-keys.sh", import.meta.url));
   const run = (env: Record<string, string>) => {
     const output = join(mkdtempSync(join(tmpdir(), "deploy-keys-")), "github-output");
     writeFileSync(output, "");

@@ -156,3 +156,25 @@ describe("README links the Worker CPU runbook (S-019 AC6)", () => {
     expect(runbook).toContain("npm run cpu:report");
   });
 });
+
+describe("README backups (S-020 AC6, AC7)", () => {
+  const backups = section("Backups");
+
+  test.each(workflowSecrets(".github/workflows/backup.yml"))("lists the backup secret %s", (name) => {
+    expect(backups).toContain(name);
+  });
+
+  test("explains the schedule, the accounts, restore in E-12 and the accepted one-week loss", () => {
+    expect(backups).toMatch(/Sunday 02:00/);
+    for (const account of ["GitHub", "Supabase", "Google Drive", "Resend"]) expect(backups).toContain(account);
+    expect(backups).toContain("docs/runbooks/restore.md");
+    expect(backups).toMatch(/E-12/);
+    expect(backups).toMatch(/one week/i);
+    expect(backups).toMatch(/accepted for v1/i);
+  });
+
+  test("the deploy-keys runbook lists every backup secret too", () => {
+    const runbook = repoFile("docs/runbooks/deploy-keys.md");
+    for (const name of workflowSecrets(".github/workflows/backup.yml")) expect(runbook).toContain(`\`${name}\``);
+  });
+});

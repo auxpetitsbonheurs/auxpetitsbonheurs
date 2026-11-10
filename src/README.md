@@ -227,4 +227,48 @@ APP_ENV=staging DATABASE_URL='postgresql://…' npm run seed:sample
 
 ## Backups
 
-Weekly backups to the bakery's own storage; documented in S-020.
+Weekly, every Sunday 02:00 Mauritius time (Saturday 22:00 UTC), and on demand (GitHub →
+Actions → backup → Run workflow): `.github/workflows/backup.yml` dumps the **production**
+database (`pg_dump --format=custom`), copies both Storage buckets (`public-images`,
+`request-photos`) with `rclone`, encrypts everything with `age`, uploads one
+`apb-backup-<date>.tar.age` file to the bakery's Google Drive folder and keeps the latest 8.
+Nothing unencrypted leaves GitHub's runner.
+
+Accounts involved (all the bakery's): GitHub (runs it, holds the secrets), Supabase
+(production project: database and Storage), Google Drive (the backup folder), Resend
+(the failure email to the bakery address). The `age` private key that decrypts backups
+lives only in the bakery password manager: without it the backups are unreadable.
+
+If a secret is missing the run fails at once naming it, and any failure emails
+`BACKUP_NOTIFY_EMAIL` (GitHub also emails its own failure notice). Until the Owner sets the
+secrets, the Sunday run fails on purpose: a backup is never silently skipped.
+
+GitHub repository → Settings → Secrets and variables → Actions → Secrets (where to get each
+value: `docs/runbooks/deploy-keys.md` section 5):
+
+| Secret | What |
+|---|---|
+| `SUPABASE_DB_URL` | Production database, Session pooler connection string |
+| `SUPABASE_S3_ENDPOINT` | Production Storage S3 endpoint |
+| `SUPABASE_S3_REGION` | Production Storage S3 region |
+| `SUPABASE_S3_ACCESS_KEY_ID` | Storage S3 access key id |
+| `SUPABASE_S3_SECRET_ACCESS_KEY` | Storage S3 secret access key |
+| `AGE_RECIPIENT` | The `age1…` public key backups are encrypted to |
+| `GDRIVE_TOKEN` | rclone's Google Drive token (JSON) |
+| `GDRIVE_FOLDER_ID` | The Drive folder that holds the backups |
+| `BACKUP_RESEND_API_KEY` | Resend key used only for the failure email |
+| `BACKUP_NOTIFY_EMAIL` | The bakery address that gets the failure email |
+
+Optional variable: `BACKUP_EMAIL_FROM` (defaults to Resend's test sender, which only
+delivers to the Resend account's own address; set it once the bakery domain is verified).
+
+Restore (new Supabase project → `pg_restore` → buckets back → secrets → redeploy) is
+written and tested in E-12 as `docs/runbooks/restore.md`, once on staging before launch.
+
+Supabase's free plan has no point-in-time recovery: the worst case is losing up to one week
+of data (since the last Sunday backup). Orders also exist in the customer and admin emails.
+This is accepted for v1 (architecture "Backups & restore").
+
+The hourly `keepAlive` job (Cron Trigger) touches the database and Auth so the free projects
+never pause, and `GET /healthz` answers `{ ok, db, auth }` (503 naming the failing part) for
+an optional free uptime monitor.

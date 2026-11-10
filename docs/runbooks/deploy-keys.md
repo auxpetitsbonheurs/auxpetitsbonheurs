@@ -116,6 +116,25 @@ Staging first, then production.
     SQL Editor: `update settings set juice_number = '…', pickup_address = '…';`
 12. Weekly backups: section 5.
 
-## 5. Backups (GitHub Actions secrets)
+## 5. Backups: GitHub repository → Settings → Secrets and variables → Actions
 
-Filled in by S-020 (weekly backup workflow).
+Weekly backup of **production** (`.github/workflows/backup.yml`, README "Backups"). All are
+repository **Secrets** except `BACKUP_EMAIL_FROM` (a Variable). Production values only.
+Until all eight required secrets exist, the Sunday run fails and says which are missing.
+
+| Name | Kind | Where to get it |
+|---|---|---|
+| `SUPABASE_DB_URL` | Secret | Production project → **Connect** → Method **Session pooler** → URI with the database password (same value as `PRODUCTION_DATABASE_URL`; kept separate so backups can later use a read-only role) |
+| `SUPABASE_S3_ENDPOINT` | Secret | Production project → Project Settings → Storage → **S3 Connection**: enable "S3 protocol connection", copy **Endpoint** (`https://<ref>.storage.supabase.co/storage/v1/s3`) |
+| `SUPABASE_S3_REGION` | Secret | Same panel → **Region** (e.g. `ap-south-1`) |
+| `SUPABASE_S3_ACCESS_KEY_ID` | Secret | Same panel → S3 Access Keys → **New access key** (description "weekly backup") → Access key ID |
+| `SUPABASE_S3_SECRET_ACCESS_KEY` | Secret | Same new key → Secret access key (shown once) |
+| `AGE_RECIPIENT` | Secret | On your computer: install `age`, run `age-keygen -o apb-backup.key`. It prints `Public key: age1…`: that line's `age1…` value goes here. Put the whole `apb-backup.key` file in the bakery password manager, then delete it from the computer. It is the only way to read the backups |
+| `GDRIVE_TOKEN` | Secret | On your computer: install `rclone`, run `rclone authorize "drive"`, sign in with the bakery Google account in the browser, copy the JSON it prints (`{"access_token":…}`) |
+| `GDRIVE_FOLDER_ID` | Secret | Google Drive (bakery account) → New folder "APB backups" → open it → the id is the last part of the address (`drive.google.com/drive/folders/<id>`) |
+| `BACKUP_RESEND_API_KEY` | Secret | Resend → API Keys → Create API Key "backup alerts", Sending access |
+| `BACKUP_NOTIFY_EMAIL` | Secret | The bakery email address (with Resend's test sender it must be the Resend account's own address) |
+| `BACKUP_EMAIL_FROM` | Variable (optional) | After the bakery domain is verified in Resend: `Aux petits bonheurs <alerts@mail.<bakery domain>>` |
+
+Then GitHub → Actions → **backup** → Run workflow once, and check that an
+`apb-backup-<date>.tar.age` file appears in the Drive folder.

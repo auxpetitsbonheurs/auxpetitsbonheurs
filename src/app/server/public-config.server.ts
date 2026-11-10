@@ -4,6 +4,8 @@ import { createContext } from "react-router";
 export interface PublicConfig {
   /** Base of public Storage URLs (product, gallery and promotion photos). */
   supabaseUrl: string;
+  /** Supabase's public anon key (designed to be public; Auth gateway calls such as /healthz need it). */
+  supabaseAnonKey: string;
 }
 
-export const publicConfigContext = createContext<PublicConfig>({ supabaseUrl: "" });
+export const publicConfigContext = createContext<PublicConfig>({ supabaseUrl: "", supabaseAnonKey: "" });
