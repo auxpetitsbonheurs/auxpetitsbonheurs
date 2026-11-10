@@ -19,11 +19,15 @@ import { clockContext } from "~/server/clock.server";
 import { Uuid } from "~/server/contracts/shared";
 import { RemoveLineInput, UpdateLineInput } from "~/server/contracts/site";
 import { requestDbContext } from "~/server/db.server";
+import { noStore } from "~/server/response-headers.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { findProductsByIds } from "~/server/repos/catalogue.server";
 import { getCheckoutSettings } from "~/server/repos/settings.server";
 import { type PlaceOrderResult, placeOrder } from "~/server/services/place-order.server";
 import type { Route } from "./+types/basket";
+
+/** no-store on the page, data requests and action results: the form carries a per-render idempotency key (M2). */
+export const middleware: Route.MiddlewareFunction[] = [noStore];
 
 /** `site/basket` loader (contracts.md; minimal slice: no day statuses, prefill or reorder yet). */
 export async function loader({ request, url, context }: Route.LoaderArgs) {

@@ -112,6 +112,17 @@ async function hydrated(page: Page) {
 }
 
 test.describe("S-012 basket and delivery or pickup", () => {
+  test("M2: the basket page, its data request and a line update are all Cache-Control: no-store", async ({ page }) => {
+    const response = await page.goto("/basket");
+    expect(response!.headers()["cache-control"]).toBe("no-store");
+    await basketWithCake(page);
+    await hydrated(page);
+
+    const data = page.waitForResponse((r) => r.url().includes("/basket") && r.request().method() === "POST");
+    await page.getByRole("button", { name: `Increase quantity of ${SAMPLE_PRODUCT.nameEn}` }).click();
+    expect((await data).headers()["cache-control"]).toBe("no-store");
+  });
+
   test("AC1: an empty basket shows the empty state and no form", async ({ page }) => {
     await page.goto("/basket");
 

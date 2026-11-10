@@ -1,10 +1,10 @@
 // Shared rules for the token-bearing customer pages (/order/:token/confirmed, /t/:token):
 // format check before any database read, privacy headers on every response, and the
 // order's language as the default (checkout spec "Tracking actions", threat-model C1, C3, C7, G-07).
-import type { MiddlewareFunction } from "react-router";
 import { readCookie } from "~/lib/cookies";
 import { type Locale, localeFromPathname } from "~/lib/locale";
 import { LOCALE_COOKIE, twinPath } from "~/lib/locale-detect";
+import { responseHeaders } from "~/server/response-headers.server";
 
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
@@ -21,11 +21,7 @@ export const TOKEN_PAGE_HEADERS = {
 } as const;
 
 /** Route middleware: applies TOKEN_PAGE_HEADERS to pages, data requests, 404s and redirects alike. */
-export const tokenPageHeaders: MiddlewareFunction<Response> = async (_args, next) => {
-  const response = await next();
-  for (const [name, value] of Object.entries(TOKEN_PAGE_HEADERS)) response.headers.set(name, value);
-  return response;
-};
+export const tokenPageHeaders = responseHeaders(TOKEN_PAGE_HEADERS);
 
 /**
  * Where an unprefixed (English) token link should go for an order placed in French:

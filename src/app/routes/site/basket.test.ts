@@ -3,7 +3,7 @@ import { insertProduct } from "~/db/testing/catalogue";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { BASKET_COOKIE, basketCookie, readBasketCount } from "~/server/basket.server";
 import { cookieFrom, routeArgs } from "~/server/testing/route-context";
-import { action, loader } from "./basket";
+import { action, loader, middleware } from "./basket";
 
 let database: TestDatabase;
 
@@ -306,5 +306,19 @@ describe("a reused key from another submitter (threat-model G-21, tech-debt M1)"
     )) as unknown as KeyRefusal;
 
     expect(refused.data.error.fields).toEqual({ form: "Merci de vérifier vos informations et de passer à nouveau votre commande." });
+  });
+});
+
+describe("no caching (architecture Rendering, tech-debt M2)", () => {
+  test("every response of the route is Cache-Control: no-store (page, data, refusal, redirect)", async () => {
+    for (const response of [
+      new Response("<html>"),
+      new Response(null, { status: 400, headers: { "Cache-Control": "public, max-age=60" } }),
+      new Response(null, { status: 302, headers: { Location: "/order/x/confirmed" } }),
+    ]) {
+      let result: Response | undefined;
+      for (const run of middleware) result = (await run({} as never, async () => response)) as Response;
+      expect(result!.headers.get("Cache-Control")).toBe("no-store");
+    }
   });
 });
