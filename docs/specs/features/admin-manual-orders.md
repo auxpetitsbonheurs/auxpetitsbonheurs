@@ -70,7 +70,7 @@ No client analytics. Server log lines (no PII): `manual_order_created {items, fu
 - Double submit (double tap): `create` accepts an `idempotencyKey` so only one order exists (see Open contract changes).
 - Product hidden or out of season after the picker loaded: `PRODUCT_UNAVAILABLE` lists lines; admin can replace with a free-text item. Sold-out products are allowed with a warning (owner Q8); customers remain blocked.
 - Free-text price Rs 0 allowed (gift); total Rs 0 allowed.
-- Past dates (owner Q9): allowed so orders can be recorded after the fact; warning only, notice/closed/blocked checks skipped; the order still counts in sales. No customer email is queued for a past-dated order (assumption: a "confirmed" email for a past date is misleading). A date still must be a valid calendar date within the admin horizon forward (365 days).
+- Past dates (owner Q9): allowed so orders can be recorded after the fact; warning only, notice/closed/blocked checks skipped; the order still counts in sales. No customer email is queued for a past-dated order (owner decision 2026-11-10: no email, the order has already happened). A date still must be a valid calendar date within the admin horizon forward (365 days).
 - Date blocked and too soon at once: both warnings shown, save allowed; a blocked day does not stop creation, and existing orders on it are unaffected.
 - Delivery fee edited to 0 for delivery: allowed; pickup with a non-zero fee posted: server forces it to 0 (owner Q7).
 - Very long note/name: limits 1000 / 80 characters with inline counters.
