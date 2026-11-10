@@ -17,7 +17,26 @@ Phase 3 exit: a guest places a 2-item delivery order on a phone, cancels it from
 ## Stories
 | ID | Title | Status | Estimate |
 |---|---|---|---|
-| (to be created by /create-stories E-05) | | draft | |
+| S-081 | Pricing rules: server-calculated line and basket totals | ready | 5 |
+| S-082 | Promotions: live window, best price, no stacking | ready | 3 |
+| S-083 | Availability rules: notice, closed days, blocked days, horizon | ready | 5 |
+| S-084 | Seasonal products judged on the pickup/delivery date | ready | 3 |
+| S-085 | Basket lines: review, change quantity, remove | ready | 5 |
+| S-086 | Choose pickup or delivery, with the delivery fee | ready | 3 |
+| S-087 | Date picker that explains unavailable days | ready | 5 |
+| S-088 | Choose a time window for delivery or pickup | ready | 2 |
+| S-089 | Customer details with Mauritius phone formatting | ready | 3 |
+| S-090 | Order summary, payment information and policy acceptance | ready | 3 |
+| S-091 | Order submit re-checks dates, products and prices | ready | 5 |
+| S-092 | Prices and promotions are copied onto the order | ready | 2 |
+| S-093 | Order confirmation page | ready | 2 |
+| S-094 | Tracking page by private link | ready | 3 |
+| S-095 | Tracking progress bar, final-state alerts and quote block | ready | 3 |
+| S-096 | Customer cancels an order while it is pending | ready | 3 |
+| S-097 | Re-measure Worker CPU on pricing and checkout (risk T3) | ready | 2 |
+| S-098 | Checkout journeys end to end on a phone | ready | 3 |
+
+Total: 60 pts. Files: `production/stories/E-05/`.
 
 ## Dependencies
 - E-01, E-03 (settings, availability, promotions data), E-04 (product page add-to-basket).

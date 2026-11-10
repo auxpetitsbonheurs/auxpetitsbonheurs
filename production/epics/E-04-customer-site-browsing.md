@@ -17,7 +17,20 @@ Home and menu load under 3 s on a mid-range phone over 4G and meet the project.y
 ## Stories
 | ID | Title | Status | Estimate |
 |---|---|---|---|
-| (to be created by /create-stories E-04) | | draft | |
+| S-061 | Footer with contact details from Settings | ready | 2 |
+| S-062 | Promo banner: show, dismiss, end by time | ready | 3 |
+| S-063 | Home page | ready | 3 |
+| S-064 | Menu grid with combining filters | ready | 5 |
+| S-065 | Product page: photos, description, allergens, sold-out and unavailable states | ready | 3 |
+| S-066 | Choose options, see the live price and add to basket | ready | 5 |
+| S-067 | Message on cake with enforced character limit | ready | 2 |
+| S-068 | Old product links redirect (301) to the renamed product | ready | 2 |
+| S-069 | Gallery with occasion filter, lightbox and "Request something similar" | ready | 3 |
+| S-070 | About, Contact and FAQ pages from Settings | ready | 3 |
+| S-071 | Titles, descriptions, share previews and sitemap | ready | 2 |
+| S-072 | Browsing pages meet the performance and accessibility budgets | ready | 2 |
+
+Total: 35 pts. Files: `production/stories/E-04/`.
 
 ## Dependencies
 - E-01 (i18n, schema), E-03 (data and sample content). FR-009 depends on E-08 for the form.

@@ -17,7 +17,24 @@ J4: Owner goes from alert to Approve to Completed and paid, each step logged. Tw
 ## Stories
 | ID | Title | Status | Estimate |
 |---|---|---|---|
-| (to be created by /create-stories E-06) | | draft | |
+| S-111 | Orders list with tabs, counts and Load more | ready | 3 |
+| S-112 | Search and filter orders | ready | 3 |
+| S-113 | Order detail with Maps, Call and WhatsApp | ready | 3 |
+| S-114 | Private note autosave and reference photos on the order | ready | 2 |
+| S-115 | Status transitions enforced on the server per Appendix B | ready | 3 |
+| S-116 | Approve or decline an order | ready | 3 |
+| S-117 | Move an order forward or back one step | ready | 3 |
+| S-118 | Send a quote for a custom request (admin side) | ready | 3 |
+| S-119 | Mark paid or unpaid and cancel an order | ready | 3 |
+| S-120 | Today screen with counts and today/tomorrow orders | ready | 3 |
+| S-121 | One-tap next status on Today with Undo | ready | 3 |
+| S-122 | Edit an order with recalculated total or manual override | ready | 5 |
+| S-123 | Edit warnings and the "Your order was updated" email trigger | ready | 3 |
+| S-124 | Two admins on one order get "this order changed, reload" | ready | 3 |
+| S-125 | Activity log on the order | ready | 2 |
+| S-126 | One-handed admin layout and accessibility pass | ready | 2 |
+
+Total: 47 pts. Files: `production/stories/E-06/`.
 
 ## Dependencies
 - E-01, E-02, E-05 (orders to manage).
