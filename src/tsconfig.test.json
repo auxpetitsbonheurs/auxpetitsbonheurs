@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.cloudflare.json",
+  "include": [
+    ".react-router/types/**/*",
+    "app/**/*",
+    "app/**/.server/**/*",
+    "app/**/.client/**/*",
+    "workers/**/*",
+    "worker-configuration.d.ts",
+    "scripts/**/*"
+  ],
+  "exclude": [],
+  "compilerOptions": {
+    "types": [
+      "node",
+      "vite/client"
+    ],
+    "allowImportingTsExtensions": true
+  }
+}

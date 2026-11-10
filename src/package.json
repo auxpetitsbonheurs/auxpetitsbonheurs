@@ -15,7 +15,8 @@
     "test:watch": "vitest",
     "deploy:staging": "npm run build && wrangler deploy --env staging",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "check:js-budget": "node scripts/check-js-budget.ts"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
