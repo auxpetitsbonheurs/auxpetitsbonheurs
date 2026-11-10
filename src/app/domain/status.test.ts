@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { ACTIVE_STATUSES, CONFIRMED_STATUSES, ORDER_STATUSES, customerProgress, statusTone } from "./status";
+import { ACTIVE_STATUSES, CONFIRMED_STATUSES, ORDER_STATUSES, allowedActions, customerProgress, statusTone, transitionTarget } from "./status";
 
 describe("status groups (contracts.md Conventions)", () => {
   test("active is every status except declined, cancelled and closed", () => {
@@ -56,5 +56,19 @@ describe("status tone (design-system Status badge)", () => {
     ["cancelled", "stopped"],
   ] as const)("%s is %s", (status, tone) => {
     expect(statusTone(status)).toBe(tone);
+  });
+});
+
+describe("admin transitions (S-017 AC6; PRD Appendix B)", () => {
+  test("approve is allowed only from pending_approval, to approved", () => {
+    for (const status of ORDER_STATUSES) {
+      expect(transitionTarget("approve", status)).toBe(status === "pending_approval" ? "approved" : null);
+    }
+  });
+
+  test("allowed actions for the order screen follow the table", () => {
+    expect(allowedActions("pending_approval")).toEqual({ approve: true });
+    expect(allowedActions("approved")).toEqual({ approve: false });
+    expect(allowedActions("quote_needed")).toEqual({ approve: false });
   });
 });

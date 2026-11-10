@@ -236,6 +236,61 @@
       "title": "Bonjour, {{name}}",
       "body": "Les commandes qui attendent votre validation sont dans la liste Commandes.",
       "ordersToReview": "Commandes à valider"
+    },
+    "orders": {
+      "metaTitle": "Commandes à valider",
+      "title": "Commandes à valider",
+      "empty": "Aucune commande à valider.",
+      "older": "Commandes plus anciennes",
+      "orderLink": "Commande {{number}}",
+      "itemPreview": "{{quantity}} × {{name}}",
+      "moreItems": "+{{count}} autres",
+      "customer": "Client",
+      "date": "Date",
+      "time": "Heure",
+      "total": "Total",
+      "source": "Origine",
+      "items": "Articles",
+      "sourceName": {
+        "website": "Site web",
+        "custom_request": "Demande sur mesure",
+        "manual": "Saisie manuelle"
+      }
+    },
+    "order": {
+      "metaTitle": "Commande {{number}}",
+      "title": "Commande {{number}}",
+      "back": "Commandes à valider",
+      "status": "Statut",
+      "placedAt": "Passée le {{time}}",
+      "version": "Version {{version}}",
+      "customerTitle": "Client",
+      "call": "Appeler le {{phone}}",
+      "email": "E-mail",
+      "fulfilmentTitle": "Livraison ou retrait",
+      "delivery": "Livraison",
+      "pickup": "Retrait",
+      "date": "Date",
+      "time": "Heure",
+      "address": "Adresse",
+      "landmark": "Point de repère",
+      "openMaps": "Ouvrir dans Maps",
+      "itemsTitle": "Articles",
+      "unitPrice": "{{price}} l'unité",
+      "cakeMessage": "Message sur le gâteau : {{message}}",
+      "customerNote": "Note du client",
+      "language": {
+        "en": "anglais",
+        "fr": "français"
+      },
+      "approve": "Valider",
+      "approving": "Validation de la commande…",
+      "approved": "Commande {{number}} validée. Le client recevra un e-mail de confirmation.",
+      "reload": "Recharger la commande",
+      "noActions": "Rien à valider : cette commande n'attend plus de validation.",
+      "actionsLabel": "Actions sur la commande",
+      "phone": "Téléphone",
+      "languageTerm": "Langue du client"
     }
   }
 }

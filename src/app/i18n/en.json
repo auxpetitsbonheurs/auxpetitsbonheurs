@@ -236,6 +236,61 @@
       "title": "Hello, {{name}}",
       "body": "Orders waiting for your review are in the Orders list.",
       "ordersToReview": "Orders to review"
+    },
+    "orders": {
+      "metaTitle": "Orders to review",
+      "title": "Orders to review",
+      "empty": "No orders to review.",
+      "older": "Older orders",
+      "orderLink": "Order {{number}}",
+      "itemPreview": "{{quantity}} × {{name}}",
+      "moreItems": "+{{count}} more",
+      "customer": "Customer",
+      "date": "Date",
+      "time": "Time",
+      "total": "Total",
+      "source": "Source",
+      "items": "Items",
+      "sourceName": {
+        "website": "Website",
+        "custom_request": "Custom request",
+        "manual": "Manual"
+      }
+    },
+    "order": {
+      "metaTitle": "Order {{number}}",
+      "title": "Order {{number}}",
+      "back": "Orders to review",
+      "status": "Status",
+      "placedAt": "Placed {{time}}",
+      "version": "Version {{version}}",
+      "customerTitle": "Customer",
+      "call": "Call {{phone}}",
+      "email": "Email",
+      "fulfilmentTitle": "Delivery or pickup",
+      "delivery": "Delivery",
+      "pickup": "Pickup",
+      "date": "Date",
+      "time": "Time",
+      "address": "Address",
+      "landmark": "Landmark",
+      "openMaps": "Open in Maps",
+      "itemsTitle": "Items",
+      "unitPrice": "{{price}} each",
+      "cakeMessage": "Cake message: {{message}}",
+      "customerNote": "Customer note",
+      "language": {
+        "en": "English",
+        "fr": "French"
+      },
+      "approve": "Approve",
+      "approving": "Approving the order…",
+      "approved": "Order {{number}} approved. The customer will get a confirmation email.",
+      "reload": "Reload the order",
+      "noActions": "Nothing to approve: this order is no longer waiting for review.",
+      "actionsLabel": "Order actions",
+      "phone": "Phone",
+      "languageTerm": "Customer language"
     }
   }
 }

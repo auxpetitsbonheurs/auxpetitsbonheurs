@@ -1,10 +1,12 @@
 // Walking skeleton end to end (E-01): order as a guest, land on the confirmation, follow
-// the tracking link, and see the approval on reload (S-016 AC6).
+// the tracking link, the Owner approves it on the admin order screen, and the customer
+// sees the approval on reload (S-016 AC6, S-017).
+import { signIn } from "./support/admin";
 import { setClock } from "./support/clock";
-import { SAMPLE_PRODUCT } from "./support/database";
+import { E2E_ACCOUNTS, SAMPLE_PRODUCT } from "./support/database";
 import { expect, test } from "./support/fixtures";
 
-test("S-016 AC6: after the bakery approves, a reload shows Approved and the progress moves one step", async ({ page, context, baseURL, db }) => {
+test("S-016 AC6: after the bakery approves, a reload shows Approved and the progress moves one step", async ({ page, context, browser, baseURL, db }) => {
   await setClock(context, baseURL!, "2026-11-20T06:00:00Z");
   await page.goto(`/menu/${SAMPLE_PRODUCT.slug}`);
   await page.getByRole("button", { name: "Add to basket" }).click();
@@ -26,8 +28,14 @@ test("S-016 AC6: after the bakery approves, a reload shows Approved and the prog
   await expect(progress.getByText("Step 1 of 5: Pending approval")).toBeVisible();
   await expect(progress.locator('[aria-current="step"]')).toHaveText(/Pending approval/);
 
-  // The admin Approve screen arrives with S-017; until then the approval is the same write it will make.
-  await db`update orders set status = 'approved', version = version + 1 where tracking_token = ${token}`;
+  // The Owner approves on the admin order screen, on another phone (S-017 replaces the S-016 direct DB write).
+  const [order] = await db<{ id: string }[]>`select id from orders where tracking_token = ${token}`;
+  const owner = await browser.newPage();
+  await signIn(owner, E2E_ACCOUNTS.owner, `/admin/orders/${order!.id}`);
+  await expect(owner.locator("html")).toHaveAttribute("data-hydrated", "true");
+  await owner.getByRole("button", { name: "Approve" }).click();
+  await expect(owner.getByRole("status").filter({ hasText: "approved." })).toBeVisible();
+  await owner.close();
   await page.reload();
 
   await expect(page.getByText("Approved", { exact: true }).first()).toBeVisible();

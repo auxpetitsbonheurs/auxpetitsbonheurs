@@ -64,3 +64,24 @@ export function statusTone(status: OrderStatus): StatusTone {
   if (status === "declined" || status === "cancelled") return "stopped";
   return "progress";
 }
+
+/**
+ * Admin status actions (admin-orders "Transition table"; PRD Appendix B is authoritative).
+ * This slice has `approve` only; decline, quote, advance, revert and cancel arrive with E-06.
+ */
+const ADMIN_TRANSITIONS = {
+  approve: { from: ["pending_approval"], to: "approved" },
+} as const satisfies Record<string, { from: readonly OrderStatus[]; to: OrderStatus }>;
+
+export type AdminAction = keyof typeof ADMIN_TRANSITIONS;
+
+/** The status `action` moves an order in `from` to, or null when the table does not allow it. */
+export function transitionTarget(action: AdminAction, from: OrderStatus): OrderStatus | null {
+  const rule = ADMIN_TRANSITIONS[action];
+  return (rule.from as readonly OrderStatus[]).includes(from) ? rule.to : null;
+}
+
+/** `allowed` of the admin order screen: the UI offers only these, the server re-checks. */
+export function allowedActions(status: OrderStatus): Record<AdminAction, boolean> {
+  return { approve: transitionTarget("approve", status) !== null };
+}

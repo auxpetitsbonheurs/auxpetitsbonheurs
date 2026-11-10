@@ -26,6 +26,8 @@ const adminPages = [
   route("admin/sign-out", "routes/admin/sign-out.tsx"),
   route("admin", "routes/admin/layout.tsx", [
     index("routes/admin/home.tsx"),
+    route("orders", "routes/admin/orders.tsx"),
+    route("orders/:id", "routes/admin/order.tsx"),
     route("*", "routes/admin/not-found.tsx"),
   ]),
 ];
