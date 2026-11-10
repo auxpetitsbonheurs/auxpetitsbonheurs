@@ -53,11 +53,11 @@ function useFocusOnArrival() {
 function NumberCard({ number, onCopy, copied }: { number: string; onCopy?: () => void; copied: boolean }) {
   const { t } = useI18n();
   return (
-    <section aria-labelledby="number-label" className="mt-6 rounded-lg bg-muted p-4">
+    <section aria-labelledby="number-label" className="mt-6 rounded-lg bg-muted p-5">
       <h2 id="number-label" className="text-lg">
         {t("order.confirmed.numberLabel")}
       </h2>
-      <p className="mt-1 font-heading text-4xl font-semibold tabular-nums wrap-anywhere">{number}</p>
+      <p className="mt-1 font-heading text-4xl tabular-nums wrap-anywhere">{number}</p>
       {onCopy && (
         <div className="mt-3">
           <CopyButton label={t("order.confirmed.copyNumber")} copied={copied} onCopy={onCopy} />
@@ -85,11 +85,11 @@ export default function OrderConfirmed({ loaderData }: Route.ComponentProps) {
         <p>{t("order.confirmed.notConfirmedBody")}</p>
       </Alert>
       <section aria-labelledby="tracking-label" className="mt-8">
-        <h2 id="tracking-label" className="text-2xl">
+        <h2 id="tracking-label" className="text-h2">
           {t("order.confirmed.trackingTitle")}
         </h2>
         <p className="mt-2 max-w-measure">{t("order.confirmed.trackingHint")}</p>
-        <p className="mt-3 rounded-md border border-input bg-background p-3 font-mono text-sm wrap-anywhere">{trackingUrl}</p>
+        <p className="mt-3 rounded-md border border-input bg-card p-3 font-mono text-sm wrap-anywhere">{trackingUrl}</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <a href={trackingUrl} className={buttonVariants({ size: "lg", className: "max-w-full" })}>
             {t("order.confirmed.followOrder")}

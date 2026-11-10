@@ -80,44 +80,47 @@ export default function AdminLogin({ loaderData, actionData }: Route.ComponentPr
       <SkipLink />
       <AdminHeader />
       <main id="main" tabIndex={-1} className="mx-auto w-full max-w-md flex-1 px-4 py-8 outline-none">
-        <h1>{t("admin.login.title")}</h1>
-        <p className="mt-2">{t("admin.login.intro")}</p>
-        {refused && fields && (
-          <ErrorSummary ref={alertRef} message={refused.error.message} fields={fields} anchors={ANCHORS} title={t("admin.login.errorSummaryTitle")} />
-        )}
-        {refused && !fields && (
-          <Alert ref={alertRef} tone="danger" role="alert" tabIndex={-1} className="mt-6 outline-offset-2">
-            <p className="font-semibold">{refused.error.message}</p>
-          </Alert>
-        )}
-        <Form method="post" noValidate className="mt-6 grid gap-5">
-          <input type="hidden" name="next" value={loaderData.next} />
-          <TextField
-            id="email"
-            name="email"
-            type="email"
-            label={t("admin.login.email")}
-            autoComplete="username"
-            inputMode="email"
-            spellCheck={false}
-            autoCapitalize="none"
-            defaultValue={refused?.values?.email}
-            error={fields?.email}
-          />
-          <PasswordField
-            id="password"
-            name="password"
-            label={t("admin.login.password")}
-            autoComplete="current-password"
-            error={fields?.password}
-            labels={{ show: t("admin.login.showPassword"), hide: t("admin.login.hidePassword"), shown: t("admin.login.passwordShown"), hidden: t("admin.login.passwordHidden") }}
-          />
-          <div>
-            <SubmitButton pending={pending} pendingText={t("admin.login.signingIn")} size="lg" className="w-full">
-              {t("admin.login.submit")}
-            </SubmitButton>
-          </div>
-        </Form>
+        {/* Tighter padding below 20rem (200% zoom on a 320 px phone) keeps the password field at least 44 px wide. */}
+        <div className="rounded-card border border-border bg-card p-3 min-[20rem]:p-5 sm:p-6">
+          <h1>{t("admin.login.title")}</h1>
+          <p className="mt-2">{t("admin.login.intro")}</p>
+          {refused && fields && (
+            <ErrorSummary ref={alertRef} message={refused.error.message} fields={fields} anchors={ANCHORS} title={t("admin.login.errorSummaryTitle")} />
+          )}
+          {refused && !fields && (
+            <Alert ref={alertRef} tone="danger" role="alert" tabIndex={-1} className="mt-6 outline-offset-2">
+              <p className="font-semibold">{refused.error.message}</p>
+            </Alert>
+          )}
+          <Form method="post" noValidate className="mt-6 grid gap-5">
+            <input type="hidden" name="next" value={loaderData.next} />
+            <TextField
+              id="email"
+              name="email"
+              type="email"
+              label={t("admin.login.email")}
+              autoComplete="username"
+              inputMode="email"
+              spellCheck={false}
+              autoCapitalize="none"
+              defaultValue={refused?.values?.email}
+              error={fields?.email}
+            />
+            <PasswordField
+              id="password"
+              name="password"
+              label={t("admin.login.password")}
+              autoComplete="current-password"
+              error={fields?.password}
+              labels={{ show: t("admin.login.showPassword"), hide: t("admin.login.hidePassword"), shown: t("admin.login.passwordShown"), hidden: t("admin.login.passwordHidden") }}
+            />
+            <div>
+              <SubmitButton pending={pending} pendingText={t("admin.login.signingIn")} size="lg" className="w-full">
+                {t("admin.login.submit")}
+              </SubmitButton>
+            </div>
+          </Form>
+        </div>
       </main>
     </div>
   );

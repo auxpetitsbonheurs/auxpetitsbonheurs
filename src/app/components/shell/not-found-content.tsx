@@ -11,7 +11,7 @@ export function NotFoundContent() {
       <p className="mt-6">
         <a
           href={localePath(locale, "/")}
-          className="inline-flex min-h-11 items-center font-semibold text-primary-strong underline underline-offset-4"
+          className="inline-flex min-h-11 items-center font-semibold link"
         >
           {t("errors.backHome")}
         </a>

@@ -80,7 +80,7 @@ export function BasketLineItem({ line }: { line: BasketLineView }) {
   return (
     <li className="flex flex-wrap items-start gap-x-4 gap-y-3 border-b py-4 last:border-b-0">
       {line.imageUrl && (
-        <img src={line.imageUrl} alt="" width={56} height={56} className="size-14 shrink-0 rounded-md bg-muted object-cover" />
+        <img src={line.imageUrl} alt="" width={56} height={56} className="size-14 shrink-0 rounded-sm bg-decorative object-cover" />
       )}
       <div className="min-w-0 flex-1 basis-40">
         <p className="font-semibold">{line.name}</p>

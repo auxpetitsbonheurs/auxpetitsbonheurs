@@ -68,10 +68,10 @@ function OrderCard({ order }: { order: OrderRowView }) {
   const { t, locale } = useI18n();
   const windowText = t("checkout.windowLabel", { label: localized(order.window.label, locale), start: order.window.start, end: order.window.end });
   return (
-    <li className="rounded-lg border-2 border-input bg-card p-4">
+    <li className="rounded-card border border-border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-xl">
-          <a href={`/admin/orders/${order.id}`} className="inline-flex min-h-11 items-center font-semibold text-primary-strong underline underline-offset-4">
+          <a href={`/admin/orders/${order.id}`} className="inline-flex min-h-11 items-center font-semibold link">
             {t("admin.orders.orderLink", { number: order.number })}
           </a>
         </h2>
@@ -108,7 +108,7 @@ export default function AdminOrders({ loaderData }: Route.ComponentProps) {
       )}
       {nextCursor && (
         <p className="mt-6">
-          <a href={`${REVIEW_PATH}&cursor=${encodeURIComponent(nextCursor)}`} className="inline-flex min-h-11 items-center font-semibold text-primary-strong underline underline-offset-4">
+          <a href={`${REVIEW_PATH}&cursor=${encodeURIComponent(nextCursor)}`} className="inline-flex min-h-11 items-center font-semibold link">
             {t("admin.orders.more")}
           </a>
         </p>

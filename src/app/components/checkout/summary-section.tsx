@@ -51,7 +51,7 @@ function PolicyAcceptance({ policies, error, initial }: { policies: string; erro
           aria-describedby={error ? "acceptPolicies-error" : undefined}
           className="peer absolute inset-0 size-full cursor-pointer appearance-none rounded-lg"
         />
-        <span aria-hidden="true" className="flex size-6 shrink-0 items-center justify-center rounded-sm border-2 border-input bg-background text-background peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground">
+        <span aria-hidden="true" className="flex size-6 shrink-0 items-center justify-center rounded-xs border-2 border-input bg-card text-card peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground">
           <Check className="size-4" strokeWidth={3} />
         </span>
         <span className="font-semibold">{t("checkout.acceptPolicies")}</span>
@@ -62,7 +62,7 @@ function PolicyAcceptance({ policies, error, initial }: { policies: string; erro
         </p>
       )}
       <details className="mt-2">
-        <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary-strong underline underline-offset-4">
+        <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold link">
           {t("checkout.readPolicies")}
         </summary>
         <p className="mt-2 max-w-measure whitespace-pre-line">{policies}</p>
@@ -86,10 +86,10 @@ export function SummarySection({ items, itemsTotalRs, deliveryFeeRs, juiceNumber
   const { t } = useI18n();
   return (
     <section aria-labelledby="summary-heading" className="mt-10">
-      <h2 id="summary-heading" className="text-2xl">
+      <h2 id="summary-heading" className="text-h2">
         {t("checkout.sections.summary")}
       </h2>
-      <div className="mt-4 grid gap-2 rounded-lg bg-muted p-4">
+      <div className="mt-4 grid gap-2 rounded-lg bg-muted p-5">
         <ul className="grid gap-1">
           {items.map((item) => (
             <li key={item.lineId} className={row}>

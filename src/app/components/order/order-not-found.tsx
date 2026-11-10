@@ -4,7 +4,7 @@ import { useI18n } from "~/i18n/react";
 import { whatsappHref } from "~/lib/contact";
 import { localePath } from "~/lib/locale";
 
-const link = "inline-flex min-h-11 items-center gap-2 font-semibold text-primary-strong underline underline-offset-4";
+const link = "inline-flex min-h-11 items-center gap-2 font-semibold link";
 
 /** The bakery WhatsApp number from the site layout's loader, when Settings has one. */
 function useBakeryWhatsapp(): string | null {

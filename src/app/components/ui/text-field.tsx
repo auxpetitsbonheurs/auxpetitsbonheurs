@@ -2,7 +2,7 @@ import type { ComponentProps } from "react";
 import { cn } from "~/lib/utils";
 
 const controlClass =
-  "mt-2 block w-full rounded-md border-2 border-input bg-background px-3 py-2 text-base text-foreground aria-invalid:border-destructive";
+  "mt-2 block min-h-12 w-full rounded-md border-2 border-input bg-card px-3 py-2 text-base text-foreground aria-invalid:border-destructive";
 
 type InputAttributes = Omit<ComponentProps<"input">, "id" | "className">;
 

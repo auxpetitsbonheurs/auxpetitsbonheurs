@@ -52,7 +52,7 @@ export const ErrorSummary = forwardRef<HTMLDivElement, ErrorSummaryProps>(functi
           {entries.map(([field, text]) =>
             anchors[field] ? (
               <li key={field}>
-                <a href={`#${anchors[field]}`} onClick={focusField} className="inline-flex min-h-11 items-center font-semibold text-primary-strong underline underline-offset-4 wrap-anywhere">
+                <a href={`#${anchors[field]}`} onClick={focusField} className="inline-flex min-h-11 items-center font-semibold link wrap-anywhere">
                   {text}
                 </a>
               </li>

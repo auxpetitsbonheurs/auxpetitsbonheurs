@@ -17,7 +17,7 @@ export function BasketLink({ href, count }: { href: string; count: number }) {
       <a
         href={href}
         aria-label={t("shell.basketLink", { count })}
-        className="relative inline-flex size-11 items-center justify-center rounded-full text-foreground transition-colors duration-(--motion-fast) hover:bg-muted"
+        className="relative inline-flex size-11 items-center justify-center rounded-md text-foreground transition-colors duration-(--motion-fast) hover:bg-muted"
       >
         <ShoppingBasket aria-hidden="true" className="size-6" strokeWidth={1.75} />
         {count > 0 && (
@@ -26,7 +26,7 @@ export function BasketLink({ href, count }: { href: string; count: number }) {
             data-basket-badge
             aria-hidden="true"
             className={cn(
-              "absolute -end-1 -top-1 min-w-6 rounded-full bg-primary px-1.5 text-center text-sm leading-6 font-bold text-primary-foreground tabular-nums",
+              "absolute -end-1 -top-1 min-w-6 rounded-full bg-primary px-1.5 text-center text-sm leading-6 font-semibold text-primary-foreground tabular-nums",
               changed && "animate-basket-bump",
             )}
           >

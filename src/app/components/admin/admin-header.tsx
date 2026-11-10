@@ -14,9 +14,9 @@ export function AdminHeader({ me }: AdminHeaderProps) {
     <header className="border-b bg-card">
       <div className="mx-auto flex w-full max-w-content flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 md:px-6">
         <p className="min-w-0">
-          <a href={me ? "/admin" : "/admin/login"} className="inline-flex min-h-11 flex-col justify-center font-display text-lg font-semibold">
+          <a href={me ? "/admin" : "/admin/login"} className="inline-flex min-h-11 flex-col justify-center font-display text-xl">
             <span>{t("admin.shell.brand")}</span>
-            <span className="text-sm font-normal text-muted-foreground">{t("admin.shell.area")}</span>
+            <span className="font-sans text-sm text-muted-foreground">{t("admin.shell.area")}</span>
           </a>
         </p>
         {me && (

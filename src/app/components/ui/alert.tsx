@@ -18,7 +18,7 @@ export const Alert = forwardRef<HTMLDivElement, ComponentProps<"div"> & { tone?:
   function Alert({ tone = "info", title, className, children, ...props }, ref) {
     const Icon = tone === "danger" ? CircleAlert : Info;
     return (
-      <div ref={ref} className={cn("flex gap-3 rounded-lg border-2 bg-background p-4", toneClass[tone], className)} {...props}>
+      <div ref={ref} className={cn("flex gap-3 rounded-card border-2 bg-card p-4", toneClass[tone], className)} {...props}>
         <Icon aria-hidden="true" className={cn("mt-0.5 size-5 shrink-0", tone === "danger" ? "text-destructive" : "text-info")} />
         <div className="min-w-0">
           {title && <p className="font-semibold">{title}</p>}

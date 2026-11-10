@@ -18,9 +18,11 @@ export function meta({ loaderData }: Route.MetaArgs) {
 export default function Home() {
   const { t } = useI18n();
   return (
-    <>
-      <h1>{t("home.title")}</h1>
-      <p className="mt-4 max-w-measure text-lg">{t("home.intro")}</p>
-    </>
+    // Centred hero (brand D4): Caslon display headline, muted intro. Below 20rem
+    // (200% zoom on a 320 px phone) the headline keeps the smaller h1 size.
+    <section className="mx-auto flex max-w-2xl flex-col gap-4 pt-4 text-center">
+      <h1 className="min-[20rem]:text-display md:text-display-lg">{t("home.title")}</h1>
+      <p className="mx-auto max-w-measure text-lg text-muted-foreground">{t("home.intro")}</p>
+    </section>
   );
 }

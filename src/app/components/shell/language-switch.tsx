@@ -14,7 +14,7 @@ export function LanguageSwitch({ href }: { href: string }) {
       href={href}
       lang={other}
       hrefLang={other}
-      className="inline-flex min-h-11 items-center rounded-full px-3 py-2 font-semibold text-primary-strong underline underline-offset-4"
+      className="inline-flex min-h-11 min-w-11 items-center rounded-md px-1.5 py-2 text-sm text-foreground underline underline-offset-4 hover:text-link-hover"
     >
       {t("language.other")}
     </a>

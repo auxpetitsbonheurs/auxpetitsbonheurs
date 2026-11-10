@@ -38,14 +38,14 @@ export function PasswordField({ id, name, label, autoComplete, error, labels }: 
           autoComplete={autoComplete}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${id}-error` : undefined}
-          className="block min-h-11 w-full min-w-0 rounded-md border-2 border-input bg-background px-3 py-2 text-base text-foreground aria-invalid:border-destructive"
+          className="block min-h-12 w-full min-w-0 rounded-md border-2 border-input bg-card px-3 py-2 text-base text-foreground aria-invalid:border-destructive"
         />
         {interactive && (
           <button
             type="button"
             onClick={toggle}
             aria-controls={id}
-            className={cn("inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-md border-2 border-input bg-background px-3 font-semibold hover:bg-muted")}
+            className={cn("inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center gap-2 rounded-md border-2 border-input bg-card px-3 font-semibold hover:bg-accent")}
           >
             {visible ? <EyeOff aria-hidden="true" className="size-5" /> : <Eye aria-hidden="true" className="size-5" />}
             <span className="sr-only">{visible ? labels.hide : labels.show}</span>

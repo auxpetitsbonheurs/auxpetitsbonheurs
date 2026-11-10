@@ -14,7 +14,7 @@ export function StatusProgress({ steps, current }: { steps: OrderStatus[]; curre
   const label = useStatusLabel();
   return (
     <section aria-labelledby="progress-heading" className="mt-8">
-      <h2 id="progress-heading" className="text-2xl">
+      <h2 id="progress-heading" className="text-h2">
         {t("order.tracking.progressTitle")}
       </h2>
       <p className="mt-2 font-semibold">{t("order.tracking.stepOf", { current: current + 1, total: steps.length, label: label(steps[current]!) })}</p>
@@ -26,7 +26,7 @@ export function StatusProgress({ steps, current }: { steps: OrderStatus[]; curre
             <li
               key={step}
               aria-current={state === "current" ? "step" : undefined}
-              className={cn("flex items-start gap-2 md:flex-col md:items-center md:text-center", state === "current" && "font-bold")}
+              className={cn("flex items-start gap-2 md:flex-col md:items-center md:text-center", state === "current" && "font-semibold")}
             >
               <Icon aria-hidden="true" className={cn("size-6 shrink-0", state === "next" ? "text-muted-foreground" : "text-success")} />
               <span>

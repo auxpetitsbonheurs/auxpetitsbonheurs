@@ -81,7 +81,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
 
 type LoaderData = Route.ComponentProps["loaderData"];
 
-const linkClass = "inline-flex min-h-11 items-center font-semibold text-primary-strong underline underline-offset-4 wrap-anywhere";
+const linkClass = "inline-flex min-h-11 items-center font-semibold link wrap-anywhere";
 const row = "flex flex-wrap justify-between gap-x-4";
 const money = (amount: number) => <span className="whitespace-nowrap tabular-nums">{formatRupees(amount)}</span>;
 
@@ -97,7 +97,7 @@ function Fact({ term, children }: { term: string; children: React.ReactNode }) {
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
     <section aria-labelledby={id} className="mt-8">
-      <h2 id={id} className="text-2xl">
+      <h2 id={id} className="text-h2">
         {title}
       </h2>
       {children}
@@ -152,7 +152,7 @@ function ItemsSection({ data: { order } }: { data: LoaderData }) {
   const { t, locale } = useI18n();
   return (
     <Section id="items-heading" title={t("admin.order.itemsTitle")}>
-      <div className="mt-3 grid gap-2 rounded-lg bg-muted p-4">
+      <div className="mt-3 grid gap-2 rounded-lg bg-muted p-5">
         <ul className="grid gap-2">
           {order.items.map((item, index) => (
             <li key={index}>

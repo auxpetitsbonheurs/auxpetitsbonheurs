@@ -77,7 +77,7 @@ function OrderFacts({ order }: { order: TrackedView }) {
 function ItemsAndTotal({ order }: { order: TrackedView }) {
   const { t, locale } = useI18n();
   return (
-    <div className="mt-6 grid gap-2 rounded-lg bg-muted p-4">
+    <div className="mt-6 grid gap-2 rounded-lg bg-muted p-5">
       <ul className="grid gap-2">
         {order.items.map((item, index) => (
           <li key={index}>
@@ -126,14 +126,14 @@ export default function Tracking({ loaderData }: Route.ComponentProps) {
       )}
       {progress ? <StatusProgress steps={progress.steps} current={progress.current} /> : <p className="mt-6 max-w-measure">{t("order.tracking.otherStatusHint")}</p>}
       <section aria-labelledby="details-heading" className="mt-8">
-        <h2 id="details-heading" className="text-2xl">
+        <h2 id="details-heading" className="text-h2">
           {t("order.tracking.detailsTitle")}
         </h2>
         <OrderFacts order={order} />
         <ItemsAndTotal order={order} />
       </section>
       <section aria-labelledby="payment-heading" className="mt-8">
-        <h2 id="payment-heading" className="text-2xl">
+        <h2 id="payment-heading" className="text-h2">
           {t("order.tracking.paymentTitle")}
         </h2>
         <p className="mt-2 max-w-measure">{payment.juiceNumber ? t("checkout.paymentJuice", { number: payment.juiceNumber }) : t("checkout.paymentCash")}</p>

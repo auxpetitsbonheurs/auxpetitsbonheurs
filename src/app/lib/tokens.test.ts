@@ -78,13 +78,25 @@ describe.each(["light", "dark"] as const)("%s contrast pairs meet WCAG AA (AC2, 
   );
 });
 
+/** Every ratio written in the table (single pairs and "a / b / c" rows) is the recomputed one, to 0.1. */
+describe.each(["light", "dark"] as const)("%s contrast table ratios are the recomputed values", (mode) => {
+  const rows = tokens.$extensions.contrast[mode].flatMap((pair) => {
+    const fgs = pair.fg.split(" / ");
+    const ratios = String(pair.ratio).split(" / ").map(Number);
+    return fgs.map((fg, i) => ({ fg: resolve(fg, mode), bg: resolve(pair.bg, mode), ratio: ratios[i]! }));
+  });
+  test.each(rows.map((r) => [`${r.fg.role} on ${r.bg.role}: ${r.ratio}`, r] as const))("%s", (_name, { fg, bg, ratio }) => {
+    expect(Math.abs(contrastRatio(fg.hex, bg.hex) - ratio)).toBeLessThan(0.1);
+  });
+});
+
 describe("contrastRatio", () => {
   test("black on white is 21:1 and a colour on itself is 1:1", () => {
     expect(contrastRatio("#000000", "#FFFFFF")).toBeCloseTo(21, 5);
-    expect(contrastRatio("#B94762", "#B94762")).toBeCloseTo(1, 5);
+    expect(contrastRatio("#8C5A1E", "#8C5A1E")).toBeCloseTo(1, 5);
   });
 
-  test("matches the brand guide's fg on bg value (12.2)", () => {
-    expect(contrastRatio("#3B2F2F", "#FFF8F0")).toBeCloseTo(12.2, 1);
+  test("matches the brand guide's fg on bg value (12.6)", () => {
+    expect(contrastRatio("#3A2A1C", "#FAF5EC")).toBeCloseTo(12.66, 1);
   });
 });

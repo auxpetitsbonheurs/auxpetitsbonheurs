@@ -21,7 +21,7 @@ export default function AdminHome({ loaderData }: Route.ComponentProps) {
       <h1>{t("admin.home.title", { name: loaderData.name })}</h1>
       <p className="mt-2 max-w-measure">{t("admin.home.body")}</p>
       <p className="mt-4">
-        <a href="/admin/orders?tab=review" className="inline-flex min-h-11 items-center font-semibold text-primary-strong underline underline-offset-4">
+        <a href="/admin/orders?tab=review" className="inline-flex min-h-11 items-center font-semibold link">
           {t("admin.home.ordersToReview")}
         </a>
       </p>

@@ -26,7 +26,7 @@ export function FulfilmentSection({ deliveryFee, pickupAddress, pickupMapUrl, in
   const choose = (value: string) => onChoose?.(value as FulfilmentChoice);
   return (
     <section aria-labelledby="fulfilment-heading" className="mt-10">
-      <h2 id="fulfilment-heading" className="text-2xl">
+      <h2 id="fulfilment-heading" className="text-h2">
         {t("checkout.sections.fulfilment")}
       </h2>
       <fieldset id="fulfilment" tabIndex={-1} aria-describedby={errors.fulfilment ? "fulfilment-error" : undefined} className="mt-4 min-w-0">
@@ -49,7 +49,7 @@ export function FulfilmentSection({ deliveryFee, pickupAddress, pickupMapUrl, in
       <div data-when="pickup" className="mt-6">
         {pickupAddress && <p>{t("checkout.pickupAddress", { address: pickupAddress })}</p>}
         {pickupMapUrl && (
-          <a href={pickupMapUrl} className="inline-flex min-h-11 items-center font-semibold text-primary-strong underline underline-offset-4">
+          <a href={pickupMapUrl} className="inline-flex min-h-11 items-center font-semibold link">
             {t("checkout.mapLink")}
           </a>
         )}

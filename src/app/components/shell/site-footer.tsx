@@ -24,7 +24,7 @@ function ContactLink({ href, icon, label, value, keepTogether = false }: Contact
     <li>
       <a
         href={href}
-        className="inline-flex min-h-11 max-w-full items-center gap-2 rounded-full py-2 pe-3 text-primary-strong underline underline-offset-4 wrap-anywhere"
+        className="inline-flex min-h-11 max-w-full items-center gap-2 rounded-md px-2 py-2 link wrap-anywhere"
       >
         {icon}
         <span>
@@ -37,18 +37,19 @@ function ContactLink({ href, icon, label, value, keepTogether = false }: Contact
 
 const iconProps = { "aria-hidden": true, className: "size-5", strokeWidth: 1.75 } as const;
 
-/** Footer band (muted); items with an empty Settings value are omitted (catalogue spec). */
+/** Centred footer (brand D4): wordmark, contacts, pickup; items with an empty Settings value are omitted (catalogue spec). */
 export function SiteFooter({ contacts, year }: { contacts: FooterContacts; year: string }) {
   const { t } = useI18n();
   const { whatsapp, phone, email, pickupAddress } = contacts;
   const hasContacts = Boolean(whatsapp || phone || email);
   return (
-    <footer className="bg-muted">
-      <div className="mx-auto max-w-content px-4 py-8 md:px-6">
+    <footer className="border-t border-border">
+      <div className="mx-auto flex max-w-content flex-col items-center px-4 py-8 text-center md:px-6">
+        <p className="font-display text-xl text-foreground">{t("shell.bakeryName")}</p>
         {hasContacts && (
           <>
-            <h2 className="text-xl font-semibold">{t("shell.footer.heading")}</h2>
-            <ul className="mt-3 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:gap-x-6">
+            <h2 className="mt-4 text-xl">{t("shell.footer.heading")}</h2>
+            <ul className="mt-2 flex flex-col items-center gap-1 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-6">
               {whatsapp && (
                 <ContactLink href={whatsappHref(whatsapp)} icon={<MessageCircle {...iconProps} />} label={t("shell.footer.whatsapp")} value={whatsapp} keepTogether />
               )}
@@ -57,7 +58,7 @@ export function SiteFooter({ contacts, year }: { contacts: FooterContacts; year:
             </ul>
           </>
         )}
-        {pickupAddress && <p className="mt-4">{t("shell.footer.pickup", { address: pickupAddress })}</p>}
+        {pickupAddress && <p className="mt-4 text-muted-foreground">{t("shell.footer.pickup", { address: pickupAddress })}</p>}
         <p className="mt-6 text-sm text-muted-foreground">{t("shell.footer.copyright", { year })}</p>
       </div>
     </footer>

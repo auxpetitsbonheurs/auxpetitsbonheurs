@@ -169,7 +169,7 @@ function EmptyBasket() {
       <p className="mt-6 text-lg">{t("basket.empty")}</p>
       <p className="mt-4">
         {/* "See the menu" goes home until the menu page exists (E-04). */}
-        <a href={localePath(locale, "/")} className="inline-flex min-h-11 items-center font-semibold text-primary-strong underline underline-offset-4">
+        <a href={localePath(locale, "/")} className="inline-flex min-h-11 items-center font-semibold link">
           {t("basket.seeMenu")}
         </a>
       </p>
@@ -181,7 +181,7 @@ function BasketSection({ lines, itemsTotalRs, lineError }: { lines: BasketLineVi
   const { t } = useI18n();
   return (
     <section aria-labelledby="basket-heading" className="mt-8">
-      <h2 id="basket-heading" tabIndex={-1} className="text-2xl outline-none">
+      <h2 id="basket-heading" tabIndex={-1} className="text-h2 outline-none">
         {t("checkout.sections.basket")}
       </h2>
       {lineError && (

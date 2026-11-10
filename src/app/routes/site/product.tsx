@@ -86,7 +86,7 @@ export default function Product({ loaderData, actionData }: Route.ComponentProps
           alt={photo.alt}
           width={photo.width}
           height={photo.height}
-          className="h-auto w-full rounded-lg bg-muted"
+          className="h-auto w-full rounded-lg bg-decorative"
         />
       )}
       <div className="min-w-0">
