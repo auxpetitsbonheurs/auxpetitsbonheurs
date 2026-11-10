@@ -26,7 +26,7 @@ Hard constraints (from the briefs):
 
 ## 2. Users
 
-Personas (no files yet in docs/product/personas/; defined inline, to be extracted later):
+Personas (full files in docs/product/personas/p1-customer.md, p2-owner.md, p3-admin.md):
 - **P1 Customer (guest or account)**: orders cakes and treats from a phone, often arriving from Instagram, in English or French. Wants to see what is available, the earliest date, an honest price, and to know the order status.
 - **P2 Owner (Sabera)**: runs the bakery from her phone. Approves orders, sets prices, availability, settings and team.
 - **P3 Admin (helper)**: invited by the Owner. Runs orders, calendar, menu, gallery, promotions and sees sales. Cannot open Settings, Availability or Team.
@@ -37,7 +37,7 @@ Primary job to be done: "When I want a cake or treat for a specific date, I want
 
 ## 3. Goals & success metrics
 
-The briefs set no metrics. Targets below are proposed assumptions `[TO CONFIRM]` with the owner and product-director.
+The briefs set no metrics. Targets below are accepted as working targets (2026-11-10). The baseline is measured in the first 4 weeks after launch, and the targets are reviewed then.
 
 | Goal | Metric | Target | Timeframe |
 |---|---|---|---|
@@ -132,7 +132,7 @@ Priority: Must / Should / Could. Persona: P1 customer, P2 Owner, P3 Admin (P2/P3
 
 | ID | Requirement | Pri | Persona | Acceptance |
 |---|---|---|---|---|
-| FR-028 | Custom cake form: occasion, date (same availability rules), servings, flavours, theme/colours, text on cake, up to 5 reference photos, optional budget, delivery or pickup, contact details and details. | Must | P1 | Given the form submitted, then the request appears in admin within seconds with its photos and the customer receives "Request received". |
+| FR-028 | Custom cake form: occasion, date (same availability rules), servings, flavours, theme/colours, text on cake, up to 5 reference photos, optional budget, delivery or pickup, contact details and details. | Must | P1 | Given the form submitted, then the request appears in admin within 10 s (p95) with its photos and the customer receives "Request received". |
 | FR-029 | Photo uploads accept JPEG, PNG, WebP and HEIC (converted), max 10 MB each, up to 5, shrunk before upload; other files are rejected. | Must | P1,P3 | Given a PDF, then rejected; given an 8 MB HEIC, then stored as a compressed image. |
 | FR-030 | A new custom request has status Quote needed. Admin can send a quote (full order total including delivery if chosen, optional note, expiry default today + quote validity days (default 5)) or decline with optional reason. | Must | P2,P3 | Given Send quote, then status Quote sent and customer gets "Your quote". |
 | FR-031 | Customer accepts or declines the quote from the email link or tracking page. Accept makes the order Approved. An expired quote cannot be accepted. | Must | P1 | Given an expired quote, then Accept is refused. Given accept, then order is Approved and appears on the calendar. |
@@ -161,7 +161,7 @@ Priority: Must / Should / Could. Persona: P1 customer, P2 Owner, P3 Admin (P2/P3
 | FR-044 | The last active Owner cannot be deactivated or changed to Admin. | Must | P2 | Given one active Owner, when attempting either, then refused. |
 | FR-045 | Every order change is saved as an order event (who: admin/customer/system, what, when, details) and shown as an activity log on the order (e.g. "Approved by Sarah, 12 Nov 14:05"). | Must | P2,P3 | Given any action, then an event is stored and visible. |
 | FR-046 | My profile: name, password, language, and per-admin switches for push and email alerts. | Must | P2,P3 | Given alerts off, then that admin receives none. |
-| FR-047 | The admin app is installable to the home screen with icon and push notifications, built for one-handed phone use with bottom bar Today, Orders, Calendar, Menu, More. | Must | P2,P3 | Given install on iPhone and Android, then a test push arrives. |
+| FR-047 | The admin app is installable to the home screen with icon and push notifications, built for one-handed phone use with bottom bar Today, Orders, Calendar, Menu, More. | Must | P2,P3 | Given install on iPhone and Android, then a test push arrives; and every primary action on Today, Orders and order detail sits in the bottom half of a 375x667 viewport with touch targets >= 44 px. |
 
 ### 5.7 Admin: orders
 
@@ -200,7 +200,7 @@ Priority: Must / Should / Could. Persona: P1 customer, P2 Owner, P3 Admin (P2/P3
 | ID | Requirement | Pri | Persona | Acceptance |
 |---|---|---|---|---|
 | FR-070 | Automatic customer emails, in the order's language (EN and FR), sent on the events in Appendix B / the build brief email table: order received, request received, your quote, order confirmed, order/request declined, cancellation confirmed, quote closed, order updated (admin changed date and/or total), ready/on the way, thank you, sign-in link, password reset. | Must | P1 | Given each event in each language, then the right email arrives with required content. |
-| FR-071 | Email content: Order received (number, items, date, window, total, "not confirmed yet", tracking link); Your quote (amount, note, expiry, Accept/Decline buttons); Order confirmed (full summary, payment reminder with Juice number or cash, pickup address or delivery details, tracking link); Thank you (link to order again and Instagram). Emails are readable on a phone and carry bakery name and colours. | Must | P1 | Per email checklist in the launch test. |
+| FR-071 | Email content: Order received (number, items, date, window, total, "not confirmed yet", tracking link); Your quote (amount, note, expiry, Accept/Decline buttons); Order confirmed (full summary, payment reminder with Juice number or cash, pickup address or delivery details, tracking link); Thank you (link to order again and Instagram). Emails are readable on a phone (single column <= 600 px, body text >= 14 px, no horizontal scroll at 320 px) and carry bakery name and colours. | Must | P1 | Per email checklist in the launch test. |
 | FR-072 | Admin push + email alerts for: new website order, new custom request, quote accepted/declined, customer cancelled. Push only: 18:00 evening-before reminder with tomorrow's count and prep-list link; quote expiry. Respect per-admin preferences. Tapping a push opens the relevant order or day. | Must | P2,P3 | Given alerts on, then an admin receives push and email for a new order. |
 | FR-073 | WhatsApp button opens a chat with the customer's number and a pre-filled editable message from a template in the order's language. Templates: Order approved, Ready for pickup, On the way, Payment reminder (Juice number and total), Blank; placeholders {name}, {order_number}, {date}, {window}, {total}, {juice_number}, {pickup_address}, {tracking_link}; edited in Settings. | Must | P2,P3 | Given each template in EN and FR, then placeholders resolve. |
 | FR-074 | If an email fails, the order is still saved, admins are still alerted, and failed emails are retried. | Must | P1,P2 | Given email provider outage, then order exists and retry succeeds later. |
@@ -295,7 +295,7 @@ Seven build phases, each ending with "done when" checks that must all pass befor
 | 6 Real content and polish | Real products, photos, texts, translations; visual identity; share previews; privacy note; speed and accessibility | Quality requirements (section 6) met on a real mid-range phone. |
 | 7 Testing, launch, handover | Full test pass on the owner's phone (Appendix A), domain, backup, launch, walkthrough, handover list | Owner placed a real test order as a customer and approved it as admin on her own phone, and every Handover item is ticked. |
 
-Milestones: MVP = end of phase 5 on sample data (usable internally); beta = phase 6 with owner and a few trusted customers; launch = phase 7 done. Dates `[TO CONFIRM]`.
+Milestones: MVP = end of phase 5 on sample data (usable internally); beta = phase 6 with owner and a few trusted customers; launch = phase 7 done. Dates are not fixed. Capacity: one developer with AI agents, built phase by phase. If capacity is tight, cut the Should items in this order: CSV export, Customers list, Reorder, Save my details, customer accounts. The MVP stays usable without them.
 
 Handover checklist (must all be ticked at launch): all service accounts on the bakery's own email; two-step sign-in handed over to the bakery (phone or shared password manager); domain registered to Aux petits bonheurs with auto-renew and the bakery's card; secrets in the bakery's accounts; README (what each service does, run locally, deploy, restore backup, every setting); one-page handover sheet (service, purpose, login location, yearly cost); weekly backups to bakery storage with a tested restore; code, design and content stated to belong to Aux petits bonheurs; builder remains a team member for 3 months aftercare then removable by the Owner.
 
@@ -319,7 +319,7 @@ Gaps found by product-manager (proposed answers in assumptions):
 13. Admins at launch. **RESOLVED 2026-11-10**: Owner only; helpers invited later.
 14. Brand identity (placeholder: cream, one pastel accent, rounded serif headings, sans-serif text). — owner Sabera / design-director
 15. Payment. **RESOLVED 2026-11-10**: no online payment; information only; admins mark paid/unpaid manually (A4).
-16. project.yaml updates needed before design: `i18n.locales: [en, fr]`, `privacy.regions`. — product-director / user
+16. RESOLVED: project.yaml has `i18n.locales: [en, fr]` and `privacy.regions: [mu]`.
 
 ## Appendix A: Launch test checklist (traceability)
 
