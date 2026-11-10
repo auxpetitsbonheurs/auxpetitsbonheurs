@@ -195,3 +195,63 @@ describe("placeOrder from the basket page (S-013 AC11, AC2 envelope)", () => {
     expect(refused.init.headers).toBeUndefined();
   });
 });
+
+describe("idempotency key in the form (S-014 AC4)", () => {
+  const KEY = "0d9f8a2e-4c1b-4f6a-9e1d-7b2c3a4d5e6f";
+  const form = (overrides: Record<string, string> = {}) => ({
+    intent: "placeOrder",
+    idempotencyKey: KEY,
+    displayedTotalRs: "850",
+    fulfilment: "pickup",
+    date: "2026-11-12",
+    "windowId.pickup": "morning",
+    "contact.name": "Aisha",
+    "contact.phone": "5712 3456",
+    "contact.email": "aisha@example.com",
+    acceptPolicies: "on",
+    ...overrides,
+  });
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+  test("each render of the form gets a fresh random UUID", async () => {
+    const [a, b] = [await load(), await load()];
+
+    expect(a.idempotencyKey).toMatch(uuid);
+    expect(b.idempotencyKey).toMatch(uuid);
+    expect(a.idempotencyKey).not.toBe(b.idempotencyKey);
+  });
+
+  test.each([
+    ["a validation error", { "contact.phone": "12345" }],
+    ["a price error", { displayedTotalRs: "1" }],
+  ])("after %s the form re-renders with the same key and nothing is stored", async (_label, overrides) => {
+    const id = await insertProduct(database.db);
+    const cookie = cookieWith([{ lineId: "a", productId: id, quantity: 1 }]);
+
+    const refused = (await post(form(overrides), cookie)) as unknown as { data: { values: Record<string, string> } };
+    expect(refused.data.values.idempotencyKey).toBe(KEY);
+    const { rows } = await database.client.query("select id from orders");
+    expect(rows).toEqual([]);
+    // The corrected submit with that key then succeeds.
+    expect(((await post(form(), cookie)) as Response).status).toBe(302);
+  });
+
+  test("a key that is not a UUID is not echoed back into the form", async () => {
+    const refused = (await post(form({ idempotencyKey: "<script>" }))) as unknown as { data: { values: Record<string, string>; error: { fields: Record<string, string> } } };
+
+    expect(refused.data.values.idempotencyKey).toBeUndefined();
+  });
+
+  test("a replay after success (emptied basket, other page language) redirects to the original confirmation and changes nothing", async () => {
+    const id = await insertProduct(database.db);
+    const cookie = cookieWith([{ lineId: "a", productId: id, quantity: 1 }]);
+    const first = (await action(routeArgs(database, { path: "/fr/basket", cookie, form: form() }) as never)) as Response;
+    const before = await database.client.query("select * from orders");
+
+    const replay = (await post(form({ "contact.name": "Changed", displayedTotalRs: "1" }))) as Response;
+    expect(replay.status).toBe(302);
+    expect(replay.headers.get("Location")).toBe(first.headers.get("Location"));
+    expect(replay.headers.get("Location")).toMatch(/^\/fr\/order\//);
+    expect((await database.client.query("select * from orders")).rows).toEqual(before.rows);
+  });
+});

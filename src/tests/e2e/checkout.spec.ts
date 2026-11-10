@@ -475,3 +475,128 @@ test.describe("S-013 without JavaScript", () => {
     expect(order).toEqual({ total_rs: 1050, delivery_fee_rs: 200 });
   });
 });
+
+/** A valid pickup placeOrder form for direct HTTP posts (as a no-JavaScript browser sends it). */
+function pickupOrderForm(idempotencyKey: string, email: string) {
+  return {
+    intent: "placeOrder",
+    idempotencyKey,
+    "displayedTotalRs.delivery": "1050",
+    "displayedTotalRs.pickup": "850",
+    fulfilment: "pickup",
+    date: "2026-11-21",
+    "windowId.pickup": "morning",
+    "contact.name": "E2E Guest",
+    "contact.phone": "5712 3456",
+    "contact.email": email,
+    acceptPolicies: "on",
+  };
+}
+
+/** The browser context's cookies (basket, test clock) as one Cookie header. */
+async function cookieHeader(page: Page) {
+  return (await page.context().cookies()).map((c) => `${c.name}=${c.value}`).join("; ");
+}
+
+const uniqueEmail = (tag: string) => `${tag}-${test.info().testId}-${test.info().project.name}-${Date.now()}@e2e.test`;
+
+test.describe("S-014 double tap creates one order", () => {
+  test.beforeEach(async ({ context, baseURL }) => {
+    await setClock(context, baseURL!, "2026-11-20T06:00:00Z");
+  });
+
+  test("AC7: double-click Send: the button is busy and disabled, keeps its name, and one order is made", async ({ page, db }) => {
+    await basketWithCake(page);
+    await hydrated(page);
+    await fillOrder(page, "pickup");
+    const email = await page.getByLabel("Email", { exact: true }).inputValue();
+    // Hold the submit so the loading state can be observed.
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    await page.route(/\/basket(\.data)?(\?.*)?$/, async (route) => {
+      if (route.request().method() === "POST") await held;
+      await route.continue();
+    });
+
+    const button = page.getByRole("button", { name: "Place order" });
+    await button.dblclick();
+    await expect(button).toBeDisabled();
+    await expect(button).toHaveAttribute("aria-busy", "true");
+    await expect(button).toHaveAccessibleName("Place order");
+    await expect(page.getByTestId("sending-spinner")).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "Sending your order…" })).toBeAttached();
+    release();
+
+    await expect(page).toHaveURL(TOKEN_URL);
+    const rows = await db`select number from orders where contact_email = ${email}`;
+    expect(rows).toHaveLength(1);
+  });
+
+  test("AC1, AC3: two simultaneous posts with the same key against Postgres make one order and the same redirect", async ({ page, db, playwright, baseURL }) => {
+    await basketWithCake(page);
+    const api = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { cookie: await cookieHeader(page), origin: baseURL! } });
+    const email = uniqueEmail("same-key");
+    const form = pickupOrderForm(crypto.randomUUID(), email);
+
+    const responses = await Promise.all([1, 2].map(() => api.post("/basket", { form, maxRedirects: 0 })));
+    await api.dispose();
+
+    expect(responses.map((r) => r.status())).toEqual([302, 302]);
+    const [a, b] = responses.map((r) => r.headers().location);
+    expect(a).toMatch(/^\/order\/[A-Za-z0-9_-]{43}\/confirmed$/);
+    expect(b).toBe(a);
+    const orders = await db<{ id: string }[]>`select id from orders where contact_email = ${email}`;
+    expect(orders).toHaveLength(1);
+    const outbox = await db`select id from email_outbox where order_id = ${orders[0]!.id} and template = 'order_received'`;
+    expect(outbox).toHaveLength(1);
+  });
+
+  test("AC6: 20 concurrent placements against Postgres get unique numbers with no gaps", async ({ page, db, playwright, baseURL }) => {
+    await basketWithCake(page);
+    const api = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { cookie: await cookieHeader(page), origin: baseURL! } });
+    const email = uniqueEmail("burst");
+
+    const responses = await Promise.all(Array.from({ length: 20 }, () => api.post("/basket", { form: pickupOrderForm(crypto.randomUUID(), email), maxRedirects: 0 })));
+    await api.dispose();
+
+    expect(responses.map((r) => r.status())).toEqual(Array(20).fill(302));
+    const ours = (await db<{ number: number }[]>`select number from orders where contact_email = ${email}`).map((r) => r.number);
+    expect(new Set(ours).size).toBe(20);
+    // The counter row lock is held to commit, so every number up to our highest is a committed order.
+    const max = Math.max(...ours);
+    const [{ n }] = await db<{ n: number }[]>`select count(distinct number)::int as n from orders where number <= ${max}`;
+    expect(n).toBe(max);
+  });
+});
+
+test.describe("S-014 without JavaScript", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("AC7: a double-clicked plain form post makes one order, and re-sending that post returns the same one", async ({ page, context, baseURL, db, playwright }) => {
+    await setClock(context, baseURL!, "2026-11-20T06:00:00Z");
+    await basketWithCake(page);
+    await fillOrder(page, "pickup");
+    const email = await page.getByLabel("Email", { exact: true }).inputValue();
+    let sent: string | null = null;
+    await page.route(/\/basket$/, async (route) => {
+      if (route.request().method() === "POST") sent ??= route.request().postData();
+      await route.continue();
+    });
+    const cookie = await cookieHeader(page);
+
+    await page.getByRole("button", { name: "Place order" }).dblclick();
+    await expect(page).toHaveURL(TOKEN_URL);
+    const confirmation = new URL(page.url()).pathname;
+
+    // The same post reaching the server again (double submit, refresh, Back + resend), twice at once.
+    const api = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { cookie, origin: baseURL!, "content-type": "application/x-www-form-urlencoded" } });
+    const replays = await Promise.all([1, 2].map(() => api.post("/basket", { data: sent!, maxRedirects: 0 })));
+    await api.dispose();
+    expect(replays.map((r) => [r.status(), r.headers().location])).toEqual([
+      [302, confirmation],
+      [302, confirmation],
+    ]);
+    const rows = await db`select number from orders where contact_email = ${email}`;
+    expect(rows).toHaveLength(1);
+  });
+});

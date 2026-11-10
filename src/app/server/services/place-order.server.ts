@@ -1,7 +1,8 @@
 // `placeOrder` pipeline (checkout spec, order is normative). Built in S-013: steps 1
 // (parse), 4 (product problems), 5 (date today or later + window in the list), 6
 // (server prices vs displayed total), 7 (one transaction) and 9 (caller redirects).
-// Later: step 2 idempotency (S-014), step 3 rate limit + Turnstile and the full
+// S-014 adds step 2 (idempotency: a known key returns the original order, also when a
+// race is lost on the unique index). Later: step 3 rate limit + Turnstile and the full
 // assertOrderable rules (E-05), step 8 sending after commit (E-10).
 import { eq, sql } from "drizzle-orm";
 import { counter, emailOutbox, orderEvent, orderItem, orders } from "~/db/schema";
@@ -12,9 +13,11 @@ import { type CheckoutTotals, type PricedLine, checkoutTotals, priceLines } from
 import { todayMU } from "~/domain/time";
 import type { Locale } from "~/lib/locale";
 import { type PlaceOrderInput, parsePlaceOrder } from "~/server/contracts/site";
+import { Uuid } from "~/server/contracts/shared";
 import type { Database, Transaction } from "~/server/db.server";
 import { type ProductRecord, findProductsByIds } from "~/server/repos/catalogue.server";
 import { resolveGuestCustomer } from "~/server/repos/customers.server";
+import { type PlacedOrderRef, findOrderByIdempotencyKey } from "~/server/repos/orders.server";
 import { type CheckoutSettings, getCheckoutSettings } from "~/server/repos/settings.server";
 
 export interface PlaceOrderContext {
@@ -25,8 +28,11 @@ export interface PlaceOrderContext {
   basket: BasketLine[];
 }
 
+/** A placed order; `replayed` when the key already belonged to it (nothing new was written). */
+export type PlacedOrder = PlacedOrderRef & { ok: true; orderNumber: string; replayed: boolean };
+
 export type PlaceOrderResult =
-  | { ok: true; orderId: string; number: number; orderNumber: string; trackingToken: string }
+  | PlacedOrder
   | { ok: false; code: "VALIDATION_FAILED"; fields: string[] }
   | { ok: false; code: "PRODUCT_UNAVAILABLE"; lineIds: string[] }
   | { ok: false; code: "DATE_UNAVAILABLE"; reason: "too_soon" }
@@ -55,6 +61,18 @@ function validate(form: Record<string, unknown>, basket: BasketLine[], settings:
 
 export async function placeOrder(form: Record<string, unknown>, ctx: PlaceOrderContext): Promise<PlaceOrderResult> {
   const settings = await getCheckoutSettings(ctx.db);
+  const placed = (ref: PlacedOrderRef, replayed: boolean): PlacedOrder => ({
+    ok: true,
+    ...ref,
+    orderNumber: formatOrderNumber(settings.orderNumberPrefix, ref.number),
+    replayed,
+  });
+  // Step 2 runs on the key alone, before the rest is validated: a replay after success
+  // posts with an emptied basket (cookie cleared) or a changed payload, and the key wins.
+  const key = Uuid.safeParse(form.idempotencyKey);
+  const existing = key.success ? await findOrderByIdempotencyKey(ctx.db, key.data) : undefined;
+  if (existing) return placed(existing, true);
+
   const valid = validate(form, ctx.basket, settings);
   if (!valid.ok) return { ok: false, code: "VALIDATION_FAILED", fields: valid.fields };
   const { input, window } = valid;
@@ -69,8 +87,26 @@ export async function placeOrder(form: Record<string, unknown>, ctx: PlaceOrderC
   const totals = checkoutTotals(lines, input.fulfilment, settings.deliveryFeeRs);
   if (input.displayedTotalRs !== totals.totalRs) return { ok: false, code: "PRICE_CHANGED", lines, ...totals };
 
-  const placed = await insertOrder(ctx, { input, window, lines, totals, products });
-  return { ok: true, ...placed, orderNumber: formatOrderNumber(settings.orderNumberPrefix, placed.number) };
+  try {
+    return placed(await insertOrder(ctx, { input, window, lines, totals, products }), false);
+  } catch (error) {
+    // Lost race: both requests passed the lookup; ours rolled back (no number consumed).
+    if (!isUniqueViolation(error, "orders_idempotency_key_unique")) throw error;
+    const winner = await findOrderByIdempotencyKey(ctx.db, input.idempotencyKey);
+    if (!winner) throw error;
+    return placed(winner, true);
+  }
+}
+
+/** True when `error` (or a cause it wraps, e.g. DrizzleQueryError) is a 23505 on `constraint`. */
+export function isUniqueViolation(error: unknown, constraint: string): boolean {
+  for (let current = error, depth = 0; current && depth < 5; depth += 1) {
+    const pg = current as { code?: unknown; constraint?: unknown; constraint_name?: unknown; cause?: unknown };
+    // PGlite names the field `constraint`, postgres.js `constraint_name`.
+    if (pg.code === "23505" && (pg.constraint === constraint || pg.constraint_name === constraint)) return true;
+    current = pg.cause;
+  }
+  return false;
 }
 
 /** Step 7: customer, number, order, items, event and outbox row commit or roll back together. */
@@ -95,7 +131,7 @@ async function insertOrder(ctx: PlaceOrderContext, placement: Placement) {
       orderId,
       dedupeKey: `order:${orderId}:received`,
     });
-    return { orderId, number, trackingToken };
+    return { orderId, number, trackingToken, locale: ctx.locale };
   });
 }
 

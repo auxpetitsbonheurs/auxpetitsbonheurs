@@ -297,3 +297,123 @@ describe("availability (S-013 AC9)", () => {
     await expectNoOrder();
   });
 });
+
+/** Runs `run` with a database whose transactions start only once `parties` callers have asked for one. */
+function withTransactionBarrier(parties: number) {
+  let waiting = 0;
+  let release!: () => void;
+  const allArrived = new Promise<void>((resolve) => (release = resolve));
+  const db = new Proxy(database.db, {
+    get(target, key, receiver) {
+      if (key !== "transaction") return Reflect.get(target, key, receiver);
+      return async (...args: Parameters<typeof target.transaction>) => {
+        waiting += 1;
+        if (waiting === parties) release();
+        await allArrived;
+        return target.transaction(...args);
+      };
+    },
+  });
+  return db;
+}
+
+describe("idempotent submit (S-014)", () => {
+  test("AC1: two submits with the same key at the same time make one order, one outbox row and the same redirect", async () => {
+    const form = deliveryForm();
+
+    const [a, b] = await Promise.all([place(form), place(form)]);
+    expectRefusedNever(a);
+    expectRefusedNever(b);
+
+    expect(a.trackingToken).toBe(b.trackingToken);
+    expect(a.orderId).toBe(b.orderId);
+    expect(a.locale).toBe(b.locale);
+    expect(await count("orders")).toBe(1);
+    expect(await count("email_outbox where template = 'order_received'")).toBe(1);
+    expect(await count("order_event")).toBe(1);
+  });
+
+  test("AC2: a later replay with a different payload or an emptied basket returns the original order and writes nothing", async () => {
+    const form = deliveryForm();
+    const first = await place(form, { locale: "fr" });
+    expectRefusedNever(first);
+
+    const replays = [
+      await place({ ...form, "contact.name": "Someone else", displayedTotalRs: "1" }),
+      // After success the basket cookie is cleared: a Back-button resubmit has no lines.
+      await place(form, { basket: [] }),
+      await place(pickupForm({ idempotencyKey: form.idempotencyKey })),
+    ];
+    for (const replay of replays) {
+      expectRefusedNever(replay);
+      expect(replay).toMatchObject({ orderId: first.orderId, trackingToken: first.trackingToken, orderNumber: "APB-0001", replayed: true, locale: "fr" });
+    }
+    expect(first.replayed).toBe(false);
+    expect(await count("orders")).toBe(1);
+    expect(await count("customer")).toBe(1);
+    expect(await count("order_event")).toBe(1);
+    expect(await count("email_outbox")).toBe(1);
+    expect(await counterValue()).toBe(1);
+  });
+
+  test("AC3: when both requests pass the first lookup, the unique key rolls one back and it returns the winner (no consumed number)", async () => {
+    const form = deliveryForm();
+    const db = withTransactionBarrier(2);
+    const raced = (contactName: string) =>
+      placeOrder({ ...form, "contact.name": contactName, "contact.email": `${contactName}@example.com` }, { db, now: NOW, locale: "en", basket: [line("a", cakeId)] });
+
+    const results = await Promise.all([raced("first"), raced("second")]);
+    for (const result of results) expectRefusedNever(result);
+    const [a, b] = results as Extract<PlaceOrderResult, { ok: true }>[];
+
+    expect(a!.trackingToken).toBe(b!.trackingToken);
+    expect([a!.replayed, b!.replayed].sort()).toEqual([false, true]);
+    expect(await count("orders")).toBe(1);
+    // The loser's customer row and number were rolled back with its transaction.
+    expect(await count("customer")).toBe(1);
+    expect(await counterValue()).toBe(1);
+    const next = await place(deliveryForm());
+    expectRefusedNever(next);
+    expect(next.orderNumber).toBe("APB-0002");
+  });
+
+  test("AC5: two orders in sequence are consecutive; a rolled-back attempt consumes no number", async () => {
+    await database.client.query("update counter set value = 6 where name = 'order_number'");
+    const seventh = await place(deliveryForm());
+    await database.client.exec(`
+      create function fail_once() returns trigger language plpgsql as $$ begin raise exception 'boom'; end $$;
+      create trigger fail_once before insert on order_item for each row execute function fail_once();`);
+    await expect(place(deliveryForm())).rejects.toThrow();
+    await database.client.exec(`drop trigger fail_once on order_item`);
+    const eighth = await place(deliveryForm());
+    expectRefusedNever(seventh);
+    expectRefusedNever(eighth);
+
+    expect([seventh.orderNumber, eighth.orderNumber]).toEqual(["APB-0007", "APB-0008"]);
+  });
+
+  test("AC6: 20 concurrent placements get 20 unique numbers with no gaps", async () => {
+    const results = await Promise.all(Array.from({ length: 20 }, () => place(deliveryForm())));
+
+    const numbers = results.map((r) => {
+      expectRefusedNever(r);
+      return r.number;
+    });
+    expect([...numbers].sort((x, y) => x - y)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
+    expect(await counterValue()).toBe(20);
+  });
+
+  test.each([
+    ["missing", undefined],
+    ["not a UUID", "123"],
+    ["an empty string", ""],
+  ])("AC8: an idempotency key that is %s is VALIDATION_FAILED and makes no order", async (_label, key) => {
+    const form: Record<string, string> = deliveryForm();
+    if (key === undefined) delete form.idempotencyKey;
+    else form.idempotencyKey = key;
+
+    const refused = expectRefused(await place(form), "VALIDATION_FAILED");
+    expect(refused.fields).toContain("idempotencyKey");
+    await expectNoOrder();
+  });
+});

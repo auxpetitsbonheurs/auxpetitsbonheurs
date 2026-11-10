@@ -51,3 +51,24 @@ describe("guest customer matching (S-013 AC10, contracts 'Customer matching')", 
     expect(all.find((r) => r.id === id)).toMatchObject({ email: "second@example.com" });
   });
 });
+
+describe("concurrent first orders with one new email (S-014, found against Postgres)", () => {
+  test("when another request inserts the same email after our lookup, we attach to its row instead of failing", async () => {
+    // The trigger plays the other request: it commits the same email just before our insert.
+    await database.client.exec(`
+      create function race_customer() returns trigger language plpgsql as $$
+      begin
+        if new.name = 'Late' then
+          insert into customer (name, phone, email, locale) values ('Winner', '+23057000000', new.email, 'en');
+        end if;
+        return new;
+      end $$;
+      create trigger race_customer before insert on customer for each row execute function race_customer();`);
+
+    const id = await resolveGuestCustomer(database.db, { name: "Late", phone: "+23057123456", email: "race@example.com" }, "en");
+
+    const all = await rows();
+    expect(all).toHaveLength(1);
+    expect(all[0]).toMatchObject({ id, name: "Winner", email: "race@example.com" });
+  });
+});

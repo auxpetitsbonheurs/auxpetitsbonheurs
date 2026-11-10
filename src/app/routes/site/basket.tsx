@@ -16,6 +16,7 @@ import { type Locale, formatRupees, localeFromPathname, localePath } from "~/lib
 import { type ActionErrorBody, actionError } from "~/server/action-result.server";
 import { basketCookie, clearBasketCookie, readBasket } from "~/server/basket.server";
 import { clockContext } from "~/server/clock.server";
+import { Uuid } from "~/server/contracts/shared";
 import { RemoveLineInput, UpdateLineInput } from "~/server/contracts/site";
 import { requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
@@ -48,7 +49,7 @@ export async function loader({ request, url, context }: Route.LoaderArgs) {
     policies: settings.policies,
     earliestDate: today,
     earliestDateLabel: formatDayLabel(today, locale),
-    // Rendered into the form so S-014 can make a repeated submit return the same order.
+    // Fresh per render; a repeated submit with it returns the same order (FR-023, S-014).
     idempotencyKey: crypto.randomUUID(),
   };
 }
@@ -76,7 +77,10 @@ function removeBasketLine(form: Record<string, unknown>, request: Request, local
 const ECHOED = ["fulfilment", "address", "landmark", "date", "windowId.delivery", "windowId.pickup", "contact.name", "contact.phone", "contact.email", "contact.note", "acceptPolicies", "displayedTotalRs", "displayedTotalRs.delivery", "displayedTotalRs.pickup"];
 
 function echo(form: Record<string, unknown>): Record<string, string> {
-  return Object.fromEntries(ECHOED.flatMap((key) => (typeof form[key] === "string" ? [[key, form[key] as string]] : [])));
+  const values = Object.fromEntries(ECHOED.flatMap((key) => (typeof form[key] === "string" ? [[key, form[key] as string]] : [])));
+  // The same key goes back into the re-rendered form, so a corrected resubmit stays one order (S-014 AC4).
+  const key = Uuid.safeParse(form.idempotencyKey);
+  return key.success ? { ...values, idempotencyKey: key.data } : values;
 }
 
 /** Form field name -> its message key (dots are key separators in the catalogue). */
@@ -111,7 +115,8 @@ async function submitOrder(form: Record<string, unknown>, args: Route.ActionArgs
     basket: readBasket(request),
   });
   if (!result.ok) return refusal(result, echo(form), locale);
-  return redirect(localePath(locale, `/order/${result.trackingToken}/confirmed`), { headers: { "Set-Cookie": clearBasketCookie() } });
+  // The order's own locale: a replay from either language returns the original redirect (S-014 AC2).
+  return redirect(localePath(result.locale, `/order/${result.trackingToken}/confirmed`), { headers: { "Set-Cookie": clearBasketCookie() } });
 }
 
 export async function action(args: Route.ActionArgs) {
@@ -229,7 +234,8 @@ function CheckoutForm({ data, refused }: { data: LoaderData; refused: OrderRefus
   return (
     <Form method="post" noValidate className="checkout-form">
       {refused && <ErrorSummary ref={summaryRef} message={refused.error.message} detail={priceChangeDetail(refused, t)} fields={refused.error.fields} />}
-      <input type="hidden" name="idempotencyKey" value={data.idempotencyKey} />
+      {/* A refusal keeps the posted key; a new render after an order was created gets a fresh one (S-014 AC4). */}
+      <input type="hidden" name="idempotencyKey" value={values.idempotencyKey ?? data.idempotencyKey} />
       {/* One total per choice so the first submit matches even without JavaScript (the server reads the chosen one). */}
       <input type="hidden" name="displayedTotalRs.delivery" value={data.itemsTotalRs + deliveryFeeFor("delivery", data.deliveryFeeRs)} />
       <input type="hidden" name="displayedTotalRs.pickup" value={data.itemsTotalRs} />

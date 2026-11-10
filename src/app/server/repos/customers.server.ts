@@ -23,13 +23,21 @@ async function findByEmail(db: Executor, email: string): Promise<string | undefi
   return row?.id;
 }
 
-/** The customer a guest order attaches to (id); creates one for a new email. */
+/**
+ * The customer a guest order attaches to (id); creates one for a new email. Two first
+ * orders with the same new email can race past the lookup: the insert then does nothing
+ * on the unique email index (it waits for the other transaction) and the row is re-read.
+ */
 export async function resolveGuestCustomer(db: Executor, contact: GuestContact, locale: Locale): Promise<string> {
   const existing = await findByEmail(db, contact.email);
   if (existing) return existing;
   const [created] = await db
     .insert(customer)
     .values({ name: contact.name, phone: contact.phone, email: contact.email.toLowerCase(), locale })
+    .onConflictDoNothing()
     .returning({ id: customer.id });
-  return created!.id;
+  if (created) return created.id;
+  const winner = await findByEmail(db, contact.email);
+  if (!winner) throw new Error("customer insert conflicted but no row matches the email");
+  return winner;
 }

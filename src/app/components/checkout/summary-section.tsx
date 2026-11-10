@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, LoaderCircle } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { useI18n } from "~/i18n/react";
 import { formatRupees } from "~/lib/locale";
@@ -111,7 +111,11 @@ export function SummarySection({ items, itemsTotalRs, deliveryFeeRs, juiceNumber
   );
 }
 
-/** Sticky bar (design-system pattern): total + "Place order"; unsticks while typing (app.css). */
+/**
+ * Sticky bar (design-system pattern): total + "Place order"; unsticks while typing (app.css).
+ * While sending (S-014 AC7) the button is disabled and busy with a spinner but keeps its
+ * accessible name; "Sending your order…" is announced in a status region instead.
+ */
 export function PlaceOrderBar({ itemsTotalRs, deliveryFeeRs, label, submitting }: { itemsTotalRs: number; deliveryFeeRs: number; label: string; submitting: boolean }) {
   const { t } = useI18n();
   return (
@@ -121,8 +125,12 @@ export function PlaceOrderBar({ itemsTotalRs, deliveryFeeRs, label, submitting }
           <TotalByChoice itemsTotalRs={itemsTotalRs} deliveryFeeRs={deliveryFeeRs} />
         </div>
         <Button type="submit" name="intent" value="placeOrder" size="lg" disabled={submitting} aria-busy={submitting || undefined} className="min-w-1/2 grow">
-          {submitting ? t("checkout.sending") : label}
+          {submitting && <LoaderCircle aria-hidden="true" data-testid="sending-spinner" className="motion-safe:animate-spin" />}
+          {label}
         </Button>
+        <p role="status" className="sr-only">
+          {submitting ? t("checkout.sending") : ""}
+        </p>
       </div>
     </div>
   );
