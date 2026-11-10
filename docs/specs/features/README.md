@@ -1,6 +1,6 @@
 # Feature specs — index
 
-Updated: 2026-11-10 · Contract of record: `docs/architecture/api/contracts.md` v0.2 · Data: `docs/architecture/data-model.md`.
+Updated: 2026-11-10 · Contract of record: `docs/architecture/api/contracts.md` v0.4 · Data: `docs/architecture/data-model.md`.
 All open contract changes in these specs were applied or answered on 2026-11-10 (each item is marked in its spec).
 
 | Spec | PRD areas | Primary FRs | Status |

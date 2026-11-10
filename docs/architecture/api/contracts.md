@@ -1,6 +1,6 @@
 # API Contract — loaders, actions, hooks and jobs
 
-Form: **framework-native typed contracts** (React Router v8 route modules on Cloudflare Workers; no public REST API, no OpenAPI). Owner: `lead-backend`; `lead-frontend` must agree to changes (coordination rule 5). Updated: 2026-11-10 · v0.2 (feature-spec consolidation).
+Form: **framework-native typed contracts** (React Router v8 route modules on Cloudflare Workers; no public REST API, no OpenAPI). Owner: `lead-backend`; `lead-frontend` must agree to changes (coordination rule 5). Updated: 2026-11-10 · v0.4 (owner decisions; v0.3 was not issued).
 Sources: `docs/product/prd.md`, `data-model.md`, `architecture.md`. Feature specs (`docs/specs/features/*.md`) link to the sections here instead of repeating them.
 
 ## Conventions
