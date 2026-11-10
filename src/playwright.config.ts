@@ -5,6 +5,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 4173;
 const baseURL = `http://localhost:${PORT}`;
+/** Served from build/client by the Worker's assets binding: no database involved. */
+export const READY_URL = `${baseURL}/favicon.ico`;
 /** Optional: a pre-installed Chromium whose revision differs from this Playwright's. */
 const executablePath = process.env.PW_CHROMIUM_EXECUTABLE || undefined;
 
@@ -41,8 +43,11 @@ export default defineConfig({
     },
     {
       // The `e2e` environment in wrangler.jsonc holds the (placeholder) bindings.
+      // Readiness is probed on a static asset, never a page: Playwright starts web servers
+      // BEFORE global setup, so on a fresh Postgres (CI) the database `apb_e2e` does not exist
+      // yet and every page answers 500 until global setup creates it.
       command: `npm run build && npx vite preview --port ${PORT} --strictPort`,
-      url: baseURL,
+      url: READY_URL,
       reuseExistingServer: !process.env.CI,
       timeout: 180_000,
       env: {

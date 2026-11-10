@@ -45,11 +45,13 @@ jobs:
         image: postgres:16
         env:
           # Throwaway CI database; must match DATABASE_URL in wrangler.jsonc env "e2e".
+          # The e2e global setup creates (drops and recreates) the database apb_e2e itself;
+          # Playwright starts the web server first, so its readiness probe must not need it.
           POSTGRES_PASSWORD: postgres
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10

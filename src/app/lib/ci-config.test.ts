@@ -50,10 +50,31 @@ describe("CI e2e job (S-005 AC5)", () => {
     expect(e2e).toContain("POSTGRES_PASSWORD: postgres");
   });
 
+  test("the Postgres health check connects as the service's user (not the container's root)", () => {
+    expect(e2e).toMatch(/--health-cmd "pg_isready -U postgres"/);
+  });
+
   test("installs only Chromium and keeps traces of failed runs", () => {
     expect(e2e).toContain("npx playwright install --with-deps chromium");
     expect(e2e).toMatch(/if:\s*failure\(\)/);
     expect(e2e).toContain("test-results");
+  });
+});
+
+describe("Playwright web server readiness (CI run 42870481246)", () => {
+  // Playwright starts web servers before global setup, and global setup is what creates the
+  // e2e database. A readiness probe that renders a page (which reads the database) answers
+  // 500 on a fresh Postgres until the 180 s timeout, so it must probe a static asset.
+  const config = readFileSync(fileURLToPath(new URL("../../playwright.config.ts", import.meta.url)), "utf8");
+
+  test("the app server is ready when a static asset answers, before the database exists", () => {
+    expect(config).toMatch(/READY_URL = `\$\{baseURL\}\/favicon\.ico`/);
+    expect(config).toMatch(/url: READY_URL,/);
+    expect(config).not.toMatch(/url: baseURL,/);
+  });
+
+  test("the probed asset ships with the build", () => {
+    expect(() => readFileSync(fileURLToPath(new URL("../../public/favicon.ico", import.meta.url)))).not.toThrow();
   });
 });
 
