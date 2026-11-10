@@ -1,0 +1,40 @@
+/**
+ * Cloudflare Workers config (ADR-0001). Free plan.
+ * Secrets are NOT stored here: set them with `wrangler secret put <NAME> --env <env>`
+ * (see .dev.vars.example for the list). Locally they go in .dev.vars (gitignored).
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "auxpetitsbonheurs",
+	"compatibility_date": "2026-11-09",
+	"compatibility_flags": ["nodejs_compat"],
+	"main": "./workers/app.ts",
+	"vars": {
+		"APP_ENV": "development",
+		"APP_TIME_ZONE": "Indian/Mauritius"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true,
+	"env": {
+		"staging": {
+			"name": "auxpetitsbonheurs-staging",
+			"vars": {
+				"APP_ENV": "staging",
+				"APP_TIME_ZONE": "Indian/Mauritius"
+			},
+			// One hourly trigger per environment (free plan allows few cron triggers per account).
+			// The scheduled handler dispatches jobs by Mauritius local time.
+			"triggers": { "crons": ["0 * * * *"] }
+		},
+		"production": {
+			"name": "auxpetitsbonheurs",
+			"vars": {
+				"APP_ENV": "production",
+				"APP_TIME_ZONE": "Indian/Mauritius"
+			},
+			"triggers": { "crons": ["0 * * * *"] }
+		}
+	}
+}

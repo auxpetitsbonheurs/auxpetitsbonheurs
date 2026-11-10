@@ -18,29 +18,29 @@ project:
   stage: discovery           # discovery | design | build | launch | grow
 
 stack:
-  language: null        # typescript | javascript | python | go | php | ruby
-  package_manager: null # pnpm | npm | yarn | bun | uv | poetry | go | composer | bundler
-  frontend: null        # nextjs | remix | nuxt | sveltekit | astro | angular | solidstart | qwik | none
-  backend: null         # native | express | fastify | nestjs | hono | fastapi | django | go | laravel | rails | supabase | firebase
-  database: null        # postgres | mysql | sqlite | mongodb | supabase | firebase | none
-  orm: null             # prisma | drizzle | sqlalchemy | django-orm | gorm | eloquent | activerecord | mongoose | none
+  language: typescript        # typescript | javascript | python | go | php | ruby
+  package_manager: npm # pnpm | npm | yarn | bun | uv | poetry | go | composer | bundler
+  frontend: remix        # nextjs | remix | nuxt | sveltekit | astro | angular | solidstart | qwik | none
+  backend: native         # native | express | fastify | nestjs | hono | fastapi | django | go | laravel | rails | supabase | firebase
+  database: postgres        # postgres | mysql | sqlite | mongodb | supabase | firebase | none
+  orm: drizzle             # prisma | drizzle | sqlalchemy | django-orm | gorm | eloquent | activerecord | mongoose | none
   styling: tailwind-shadcn
-  cache_queue: null     # redis | bullmq | celery | sidekiq | none
-  search: null          # meilisearch | algolia | typesense | pgvector | elasticsearch | none
-  auth: null            # clerk | authjs | lucia | better-auth | supabase-auth | firebase-auth | custom | none
-  payments: null        # stripe | paddle | lemonsqueezy | none
-  cms: null             # sanity | payload | strapi | contentful | none
-  ai: null              # anthropic | openai | multi | none
-  realtime: null        # websockets | sse | supabase-realtime | pusher | liveblocks | none
-  email: null           # resend | postmark | sendgrid | ses | none
-  analytics: null       # posthog | plausible | ga4 | none
-  observability: null   # sentry | otel | datadog | none
-  hosting: null         # vercel | netlify | cloudflare | fly | railway | render | aws | gcp | azure
-  test_unit: null       # vitest | jest | pytest | go-test | phpunit | rspec
+  cache_queue: none     # redis | bullmq | celery | sidekiq | none
+  search: none          # meilisearch | algolia | typesense | pgvector | elasticsearch | none
+  auth: supabase-auth            # clerk | authjs | lucia | better-auth | supabase-auth | firebase-auth | custom | none
+  payments: none        # stripe | paddle | lemonsqueezy | none
+  cms: none             # sanity | payload | strapi | contentful | none
+  ai: none              # anthropic | openai | multi | none
+  realtime: none        # websockets | sse | supabase-realtime | pusher | liveblocks | none
+  email: resend           # resend | postmark | sendgrid | ses | none
+  analytics: none       # posthog | plausible | ga4 | none
+  observability: sentry   # sentry | otel | datadog | none
+  hosting: cloudflare         # vercel | netlify | cloudflare | fly | railway | render | aws | gcp | azure
+  test_unit: vitest       # vitest | jest | pytest | go-test | phpunit | rspec
   test_e2e: playwright
 
 # Stack specialist agents in use (filled by /setup-stack from `stack`).
-specialists: []
+specialists: [remix-specialist, tailwind-shadcn-specialist, postgres-specialist, baas-specialist, auth-specialist, email-specialist, hosting-platform-specialist, observability-engineer, test-engineer]
 
 budgets:
   lighthouse:
@@ -60,11 +60,14 @@ a11y:
 
 i18n:
   default_locale: en
-  locales: [en]
+  locales: [en, fr]
 
 privacy:
-  regions: []            # e.g. [eu, us-ca] — drives consent + DPIA requirements
+  regions: [mu]            # Mauritius Data Protection Act 2017 (ADR-0001; regime to confirm, PRD Q12)
 
 modes:
   rigor: standard
   automation: auto
+
+paths:
+  code_root: src
