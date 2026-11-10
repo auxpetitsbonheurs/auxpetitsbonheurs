@@ -1,15 +1,15 @@
 <!-- Template: design-system | Filled by: /design-system (design-director, ui-designer, tailwind-shadcn-specialist) | Output: docs/design/design-system.md -->
 # Design System — Aux petits bonheurs
 
-Version: 0.1 · Updated: 2026-11-10 · Rigor: standard · Status: drafted in automation mode (no owner questions)
+Version: 0.2 · Updated: 2026-11-10 · Rigor: standard · Status: drafted in automation mode; identity D4 Honey & cream chosen by the Owner 2026-11-10
 
-Tokens: `docs/design/tokens.json` · Brand: `docs/design/brand-guide.md` (v0.1 PLACEHOLDER identity) · Implementation: `src/app/components/ui/` (shadcn/ui, style `radix-nova`, alias `~/components/ui`, icons `lucide`) and `src/app/components/<domain>/` for product components.
+Tokens: `docs/design/tokens.json` · Brand: `docs/design/brand-guide.md` (v0.2, D4 Honey & cream; mockup `docs/design/explorations/2026-11-10-D4-honey-cream.html`) · Implementation: `src/app/components/ui/` (shadcn/ui, style `radix-nova`, alias `~/components/ui`, icons `lucide`) and `src/app/components/<domain>/` for product components.
 
 > Scope evidence: PRD §5 (FR-001…FR-075), build brief "Customer site", "Admin app", "Quality requirements", and the components the prototype `prototypes/apb-v1/src` actually needed (`ui/ui.tsx`, `ui/OptionPicker.tsx`, `customer/*`, `admin/*`). There are no `docs/design/ux/` flows or feature specs yet; when they land, run `/design-system update`. Decisions taken without the owner are marked *(decided)*.
 
 ## Principles
 
-1. **The cake is the hero.** Photos and prices carry the page; chrome is cream, quiet and rounded. One accent (rose), never decoration on top of food photography.
+1. **The cake is the hero.** Photos and prices carry the page; chrome is cream, quiet and elegant. One accent (honey), never decoration on top of food photography.
 2. **Dates and prices are never a surprise.** Every price shown equals the server price (FR-007, FR-015); every date control explains why a day is unavailable (FR-014). Sale prices always show the struck original next to them (FR-016).
 3. **One thumb, one primary action.** Phone first at 375 px (works at 320 px). Each view has exactly one primary button, placed where the thumb is: sticky at the bottom on product, checkout and admin detail screens.
 4. **Two languages, written for themselves.** Every component accepts EN and FR strings that differ in length by 15–30%; nothing truncates a price, a date or an action label.
@@ -19,17 +19,17 @@ Tokens: `docs/design/tokens.json` · Brand: `docs/design/brand-guide.md` (v0.1 P
 
 All values come from `tokens.json`; components reference token names only. Tailwind utilities map 1:1 to the shadcn CSS variables in `$extensions.shadcn` (e.g. `bg-primary` = `color.primary` = `--primary`).
 
-- **Colour roles:** `color.bg`, `color.fg`, `color.surface` (card), `color.popover`, `color.muted` / `color.muted-fg`, `color.primary` / `color.primary-fg`, `color.primary-strong`, `color.accent` / `color.accent-fg`, `color.decorative` (never text), `color.border` (decor only, never meaning), `color.border-input` (UI 3:1), `color.ring`, `color.success`, `color.warning`, `color.danger` / `color.danger-fg`, `color.info`.
-  - Text or links on `color.accent` or `color.muted` use `color.primary-strong`, never `color.primary` (4.2 / 4.3:1 fails).
+- **Colour roles:** `color.bg`, `color.fg`, `color.surface` (card), `color.popover`, `color.muted` / `color.muted-fg`, `color.primary` / `color.primary-fg`, `color.primary-strong` (links, tagline, prices), `color.link-hover`, `color.accent` / `color.accent-fg`, `color.decorative` (image placeholder, never text), `color.border` (decor only, never meaning), `color.border-input` (UI 3:1), `color.ring`, `color.success`, `color.warning`, `color.danger` / `color.danger-fg`, `color.info`.
+  - Links and accent text use `color.primary-strong` on every surface (≥ 5.5:1 light, ≥ 8.1:1 dark); `color.primary` is for filled buttons, the focus ring and the count badge.
   - Status colours are used as **text, icon and 1 px border on `color.surface`**, not as filled backgrounds *(decided: avoids adding soft-tint tokens now; if tints are wanted later, add `*-soft` tokens via `/design-tokens` and re-check contrast)*.
-- **Typography:** `type.scale.display` (home hero only), `h1` (one per page), `h2` (sections, sheet titles), `h3` (card and product names), `body-lg` (descriptions), `body` (default and every input), `small` (helper, captions, allergens, badges), `price` (all money, `tabular-nums`). Families: `font.heading` Fraunces (SOFT 100), `font.body` Nunito Sans. No size below 14 px; no input below 16 px; sentence case; no all-caps.
+- **Typography:** `type.scale.display` (home hero only), `tagline` (italic Caslon Text in `primary-strong`, hero only), `wordmark`, `h1` (one per page), `h2` (sections, sheet titles), `h3` (card and product names), `body-lg` (descriptions), `body` (default and every input), `small` (helper, captions, allergens, badges), `price` (all money, `tabular-nums`). Families: `font.heading` Libre Caslon Display 400 (h1, h2, wordmark; Tailwind `font-heading` / `font-display`), `font.subheading` Libre Caslon Text 400 + italic (h3, card names, tagline; `font-subheading`), `font.body` Source Sans 3 400/600 (`font-sans`). Self-hosted via @fontsource, `font-display: swap`. No bold above 600; Caslon is never faux-bolded. No size below 14 px; no input below 16 px; sentence case; no all-caps.
 - **Spacing:** `primitive.space.*`, 4 px base. Page gutter `space.4` (16 px) on phones, `space.6` from `md`. Stack gaps: `space.2` within a field, `space.4` between fields, `space.8` between sections, `space.12` between home bands. No arbitrary values.
-- **Radius / shadow / elevation:** `radius.md` inputs, `radius.lg` cards and photos, `radius.xl` sheet top corners, `radius.full` buttons, chips, badges, steppers. Elevation: flat (page) → `shadow.sm` (cards) → `shadow.md` (sticky bars, popovers) → `shadow.lg` (sheets, dialogs). Dark theme uses `shadow.sm` only and relies on surface lightness.
-- **Sizes:** `size.tap-target` 44 px minimum for every interactive element, including icon buttons, chips, radios-with-label rows and calendar days. `component.button.height` and `component.input.height` = 44 px. `size.container-max` 72 rem; text blocks capped at `size.measure`.
+- **Radius / shadow / elevation:** `radius.md` 12 px buttons, chips, inputs, steppers (`rounded-md`); `radius.card` 14 px cards and radio cards (`rounded-card`); `radius.sm` 10 px photos inside cards and thumbnails; `radius.lg` 16 px soft bands and large photos; `radius.xs` checkbox box; `radius.xl` sheet top corners; `radius.full` badges and the radio dot only. Flat by default: cards are `surface` + 1 px `border`, no shadow; no gradients. `shadow.md` (a faint lift) only on sticky bars and popovers, `shadow.lg` on sheets and dialogs. Dark theme relies on surface lightness.
+- **Sizes:** `size.tap-target` 44 px minimum for every interactive element, including icon buttons, chips, radios-with-label rows and calendar days. `component.button.height` and `component.input.height` = 48 px (`size.button-height`); small buttons and icon buttons stay ≥ 44 px. `size.container-max` 72 rem; text blocks capped at `size.measure`.
 - **Breakpoints:** design at `breakpoint.base` 375 px, verify at 320 px; `sm` 640, `md` 768 (type scale switches), `lg` 1024, `xl` 1280. `min-width` queries only.
 - **Icons:** Lucide outline, stroke 1.75; 20 px inline, 24 px in bars and buttons. Icon colour inherits text. Every status, fulfilment type and availability state pairs an icon with a word.
 - **Motion:** `motion.fast` (press, chip, toggle), `motion.base` (sheet, accordion, drawer), `motion.slow` (page/hero fade); easing `primitive.motion.easing.enter` / `.exit`. Signature: `motion.signature.basket-bump`, `motion.signature.order-confirmed`. **Reduced motion:** opacity only ≤ 150 ms or none; no bump, no slide; carousels never auto-advance in any mode.
-- **Themes:** light (default) and dark (cocoa) from `$extensions.mode`; follows `prefers-color-scheme`, no manual toggle in MVP *(decided)*. Photos are never tinted in dark mode.
+- **Themes:** light (default) and dark (espresso: warm dark brown, honey/cream accents) from `$extensions.mode`; follows `prefers-color-scheme`, no manual toggle in MVP *(decided)*. Photos are never tinted in dark mode.
 
 ## Components
 
@@ -39,7 +39,7 @@ Source legend: **shadcn** = `npx shadcn add <name>` then restyle via tokens; **c
 
 | Component | Source | Variants | States | Notes |
 |---|---|---|---|---|
-| Button | shadcn `button` (exists) | `primary`, `secondary` (surface + `border-input` + fg text), `ghost`, `destructive` (outline in `danger`; filled only inside a confirm dialog), `link`; sizes `default` 44 px, `lg` 52 px (sticky CTA), `icon` 44×44 | default, hover (`primary-strong`), focus-visible (`ring` 2 px, offset 2 px), active (scale .98, none if reduced), disabled (`aria-disabled`, keeps label readable, 50% opacity is **not** used on primary: use `muted` bg + `muted-fg` text), loading (spinner + label kept, `aria-busy`, width locked) | One `primary` per view. Verb-first labels ("Add to basket", "Commander"). Labels wrap to two lines rather than truncate; min width = content. Icon-only needs `aria-label` in the current locale. |
+| Button | shadcn `button` (exists) | `primary`, `secondary` (surface + `border-input` + fg text), `ghost`, `destructive` (outline in `danger`; filled only inside a confirm dialog), `link`; sizes `default` 48 px, `lg` 48 px wider (sticky CTA), `sm`/`xs` 44 px, `icon` 44×44; radius 12 px, flat honey fill | default, hover (`primary-strong`), focus-visible (`ring` 2 px, offset 2 px), active (scale .98, none if reduced), disabled (`aria-disabled`, keeps label readable, 50% opacity is **not** used on primary: use `muted` bg + `muted-fg` text), loading (spinner + label kept, `aria-busy`, width locked) | One `primary` per view. Verb-first labels ("Add to basket", "Commander"). Labels wrap to two lines rather than truncate; min width = content. Icon-only needs `aria-label` in the current locale. |
 | Input | shadcn `input` | text, email (`inputmode=email`), tel (`inputmode=tel`, `autocomplete=tel`), number (`inputmode=numeric`), search | default (`border-input`), focus-visible (`ring`), error (`danger` border 2 px + message), disabled (`muted` bg), read-only | 16 px text always. Placeholder is an example, never the label. |
 | Textarea | shadcn `textarea` | default, with counter | as Input + counter near limit (`warning`) and at limit (`danger`) | Auto-grows to 6 lines then scrolls. |
 | Label | shadcn `label` | default, with "(optional)" suffix | — | Always visible above the control. Mark **optional** fields, not required ones *(decided: most fields are required)*. |
@@ -47,7 +47,7 @@ Source legend: **shadcn** = `npx shadcn add <name>` then restyle via tokens; **c
 | Radio group | shadcn `radio-group` | list rows, card rows (fulfilment: Delivery / Pickup with icon and fee) | as Checkbox, plus selected row gets `accent` bg and `primary` 2 px border | Native arrow-key behaviour from Radix. |
 | Switch | shadcn `switch` | default | off, on, focus-visible, disabled | Admin only: product hidden, promotion active, alert preferences (FR-046). Label states the "on" meaning. Never used for an action with side effects that need confirmation. |
 | Select | shadcn `select` | default | default, open, focus, error, disabled | Only when > 6 options (e.g. occasion, servings). ≤ 6 options use Radio group or Chips. On phones prefer native `<select>` rendering *(decided: shadcn `native-select` if available in the style, else Radix Select)*. |
-| Chip (filter / choice) | custom on shadcn `toggle-group` | `filter` (multi, menu type + allergen), `choice` (single, gallery occasion, admin tabs alt) | default (surface + `border-input`), selected (`accent` bg, `primary-strong` 2 px border, check icon, `accent-fg` text), focus-visible, disabled | Height `component.chip.minHeight` 44 px. Horizontal scroll row on phones with visible edge fade; wraps on `md`+. Selection is not colour-only (check icon). Replaces prototype's filled-rose active chip. |
+| Chip (filter / choice) | custom on shadcn `toggle-group` | `filter` (multi, menu type + allergen), `choice` (single, gallery occasion, admin tabs alt) | default (surface + `border-input`), selected (`accent` bg, `primary-strong` 2 px border, check icon, `accent-fg` text), focus-visible, disabled | Height `component.chip.minHeight` 44 px. Horizontal scroll row on phones with visible edge fade; wraps on `md`+. Selection is not colour-only (check icon). Replaces the prototype's filled active chip. |
 | Stepper (quantity) | custom (button + input) | default, compact (basket line) | default, at-min / at-max (that button `aria-disabled`), focus, error | 44×44 buttons, `inputmode=numeric`. Group `role="group"` with `aria-label` "Quantity"/"Quantité"; buttons labelled "Decrease"/"Diminuer", "Increase"/"Augmenter" (prototype used "-"/"+": fix). Announce new value via `aria-live=polite`. |
 
 ### Feedback
@@ -60,7 +60,7 @@ Source legend: **shadcn** = `npx shadcn add <name>` then restyle via tokens; **c
 | Sheet (bottom) | shadcn `drawer` (vaul) | default, full-height | open, dragging, closing | Phone-first replacement for side panels: filters, option picker in manual order, send quote, WhatsApp template picker, calendar day. Close button 44×44 top-right with label; Esc and swipe-down close. Title is `h2`. |
 | Skeleton | shadcn `skeleton` | card, line, photo (square / 4:5), row | — | Same box sizes as the loaded content (CLS ≤ 0.1). `muted` fill, shimmer disabled under reduced motion. Shown after 300 ms only. |
 | Spinner | custom (Lucide `loader-circle`) | inline 20 px | — | Only inside buttons and small refreshes. Never full page. |
-| Empty state | domain | page, section, list | — | Short sentence in brand voice + one next action. E.g. empty basket: "Your basket is empty." / "Votre panier est vide." + "See the menu". No illustration beyond an optional thin rose line motif. |
+| Empty state | domain | page, section, list | — | Short sentence in brand voice + one next action. E.g. empty basket: "Your basket is empty." / "Votre panier est vide." + "See the menu". No illustration beyond an optional thin honey hairline. |
 | Error state | domain | page (404 / not found, 500), section (load failed) | — | Says what happened and what to do; offers Retry or a route home and the WhatsApp button. Tracking wrong token: "We can't find this order" + WhatsApp (FR-026). |
 | Tooltip | shadcn `tooltip` | — | — | Desktop admin only, never holds essential info (touch has no hover). Phones use inline helper text instead. |
 
@@ -68,12 +68,12 @@ Source legend: **shadcn** = `npx shadcn add <name>` then restyle via tokens; **c
 
 | Component | Source | Variants | States | Notes |
 |---|---|---|---|---|
-| Top bar (customer) | domain (header) | default, condensed on scroll | — | Wordmark (links home), EN/FR switch, basket icon with count badge, menu button. All 44 px targets. Sticky, `color.bg` 95% + blur, `shadow.sm` once scrolled. |
+| Top bar (customer) | domain (header) | default, condensed on scroll | — | D4 layout: EN/FR switch (small, ink, underlined) at the start, centred Caslon wordmark (links home), basket icon with count badge at the end; DOM order = visual order; wraps in that order when narrower than 18rem (200% zoom). All 44 px targets. `color.bg`, no border or shadow. |
 | Language switch | custom link | inline (top bar), list (menu sheet, profile) | other language shown | Customer site: one `<a>` showing the other language's own name ("Français" / "English") with matching `lang` and `hreflang`, so its text is its accessible name (S-008 AC6: a spelled-out name is clearer than "EN / FR" and needs no extra label). Keeps the current route (FR-001). |
 | Basket button + count | custom | — | empty (no badge), count 1–99, 99+ | Badge `primary` bg, `primary-fg` text, `small` bold. On add: `basket-bump` + `aria-live` "2 items in basket". Accessible name includes the count. |
 | Site menu | shadcn `drawer` (side or bottom) | — | open/closed | Links: Menu, Custom cake, Gallery, About, FAQ, Contact, My account. Plain list rows 48 px. |
 | Promo banner | domain | link, dismissible | live, dismissed (session) | Top of every page while live (FR-002). `accent` bg, `accent-fg` text, link in `primary-strong`, dismiss icon button 44×44 "Hide offer". No marquee or auto-rotate; one banner at a time (latest starting first) *(decided)*. |
-| Footer | domain | — | — | `muted` band; links in `primary-strong`. WhatsApp, phone, email, Instagram (monochrome official glyphs), address with map link, FAQ, policies (FR-003). |
+| Footer | domain | — | — | Centred on `color.bg` above a 1 px `border` hairline: Caslon wordmark, contacts (links in `primary-strong`), pickup line in `muted-fg`. WhatsApp, phone, email, Instagram (monochrome official glyphs), address with map link, FAQ, policies (FR-003). |
 | Tabs | shadcn `tabs` | underline (admin Orders, Calendar month/week/day), segmented (Sales period) | default, selected (`primary-strong` text + 2 px underline), focus | Scrollable row on phones; count shown in label: "To review (3)". |
 | Admin bottom bar | custom (nav) | — | default, active, with count dot | See *Admin one-handed patterns*. |
 | Back link / page header | domain | customer, admin | — | Admin screens below the tabs get a 44 px back button + `h1` title; no breadcrumbs (flat IA) *(decided)*. |
@@ -83,11 +83,11 @@ Source legend: **shadcn** = `npx shadcn add <name>` then restyle via tokens; **c
 
 | Component | Source | Variants | States | Notes |
 |---|---|---|---|---|
-| Card | shadcn `card` | default, interactive (whole card is one link) | default, hover (lift 2 px; none if reduced), focus-visible (ring on card) | `component.card.radius`, `component.card.padding`, `shadow.sm`. Interactive cards contain a single link; no nested buttons. |
+| Card | shadcn `card` | default, interactive (whole card is one link) | default, hover (lift 2 px; none if reduced), focus-visible (ring on card) | `component.card.radius` (14 px), `component.card.padding`, `surface` + 1 px `border`, no shadow. Interactive cards contain a single link; no nested buttons. |
 | Badge | shadcn `badge` | `status` (see Status badge), `sale` ("-20%"), `promo`, `soldout`, `allergen`, `count`, `neutral` | — | `small` 600 weight, `radius.full`, min height 24 px (not interactive). Sale: `primary` bg + `primary-fg`. Sold out: `fg` bg + `bg` text. Allergen: surface + `border-input` + icon. |
 | Status badge (orders) | domain on Badge | one per status (Appendix B) | — | Outline style on `surface`: icon + word, coloured by group: **action needed** `warning` (Pending approval, Quote needed); **waiting on customer** `info` (Quote sent); **in progress** `success` (Approved, Preparing, Ready, Out for delivery); **done** `muted-fg` (Completed, Closed); **stopped** `danger` (Declined, Cancelled). Customer side uses the customer wording of the same status. |
 | Price | domain | `default`, `from` ("from Rs 1,250" / "à partir de Rs 1 250"), `sale` (struck original in `muted-fg` + sale in `primary-strong`, both `price` style), `delta` (option "+Rs 150"), `total` (`h3` size) | loading (skeleton width of "Rs 0,000"), changed (Alert + highlight once) | Locale formatting from brand guide (FR narrow no-break space). Struck price carries visually hidden "was" / "au lieu de". Never wraps between "Rs" and the number (`white-space: nowrap`). |
-| Product card | domain on Card | default, sale, sold out, seasonal | loading (skeleton), sold out | Square photo (`radius.lg`), name (`h3`, max 2 lines then wrap, never ellipsis on phones), Price `from`/`sale`, badges top-left (sale/promo), "Sold out" badge bottom-centre; sold-out photo at 60% opacity (no grayscale on food) and card still opens the product page. 2 columns at 375 px, 3 at `md`, 4 at `lg`. |
+| Product card | domain on Card | default, sale, sold out, seasonal | loading (skeleton), sold out | Square photo (`radius.sm`, 10 px, inset 8 px in the card), name (`h3`, Caslon Text, max 2 lines then wrap, never ellipsis on phones), Price `from`/`sale`, badges top-left (sale/promo), "Sold out" badge bottom-centre; sold-out photo at 60% opacity (no grayscale on food) and card still opens the product page. 2 columns at 375 px, 3 at `md`, 4 at `lg`. |
 | Photo / gallery carousel | custom on shadcn `carousel` (Embla) | product (4:5, 1–5 photos), lightbox (full screen) | loading (blur-up from `muted`), error (named placeholder block) | Swipe + visible prev/next buttons (44 px) + dots with "Photo 2 of 4". No autoplay. Explicit width/height, lazy below fold. Alt = product name by default (EN/FR). |
 | Allergen list | domain | tags, with kitchen note | — | Icon + word per tag, plus the fixed "Our kitchen handles all allergens" note in `small` `muted-fg` (FR-007). |
 | Status progress (tracking) | custom | delivery path, pickup path, quote path | current, done, upcoming, stopped (declined/cancelled replaces the bar with an Alert) | Ordered list `<ol>` with `aria-current="step"`; vertical on phones, horizontal on `md`+. Words always visible. |
@@ -116,7 +116,7 @@ Source legend: **shadcn** = `npx shadcn add <name>` then restyle via tokens; **c
 
 | Component | Source | States / rules |
 |---|---|---|
-| Hero | domain | Photo 3:2 (or 4:5 on phones) with cream scrim under text, `display` tagline, two buttons: "Order now" (`primary`), "Custom cake" (`secondary`). The only screen with two prominent actions; secondary is visually lighter. |
+| Hero | domain | Centred (D4 mockup): italic `tagline`, `display` headline, `muted-fg` paragraph, then photo 3:2 (radius 16 px) below; buttons: "Order now" (`primary`), "Custom cake" (`secondary`). The only screen with two prominent actions; secondary is visually lighter. |
 | Promotion card | domain on Card | Image, title, one line, link. Live only; hidden outside window (FR-004, FR-016). |
 | How it works | domain | 3 numbered steps, `<ol>`, icon + `h3` + one line. |
 | Product page layout | domain | Carousel → name (`h1`) → Price (live) → description → Allergen list → Option picker → Message-on-cake → Quantity → "Earliest date" → **sticky Add to basket bar** (price + button). States: sold out (bar shows "Sold out this week" + WhatsApp button instead of Add; options hidden), hidden/out of season (404-style "No longer available" + link to menu), required missing (button enabled; on tap scrolls and focuses the first missing group with error, rather than a silent disabled button) *(decided: discoverable error beats disabled)*. |
@@ -207,11 +207,12 @@ Source legend: **shadcn** = `npx shadcn add <name>` then restyle via tokens; **c
 
 ## Open items (for owner or later passes)
 
-- Brand identity is a placeholder; changing it changes `tokens.json` only, not this document.
+- Identity D4 Honey & cream is chosen; logo files are still pending (text wordmark meanwhile).
 - Status soft-tint backgrounds deferred (see Foundations).
 - 24 h time windows in EN deviates from the brand guide's "2:30 pm" rule; `content-lead` to confirm.
 - UX flows and feature specs do not exist yet; re-run `/design-system update` when `docs/design/ux/` and `docs/specs/features/` land.
 
 ## Changelog
 
+- 2026-11-10 v0.2: rebrand to D4 Honey & cream (Owner feedback: v0.1 too pink). Honey/cream/ink colour roles plus `link-hover`; Libre Caslon Display/Text + Source Sans 3; buttons 12 px radius, 48 px tall; cards 14 px with 1 px border; bands 16 px; flat elevation; header = language link, centred wordmark, basket; centred footer.
 - 2026-11-10 v0.1: initial inventory and specification from PRD, build brief, tokens and prototype `apb-v1` (automation mode; decisions marked *(decided)*).
