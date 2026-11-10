@@ -9,15 +9,15 @@ const HOUR = 3600 * 1000
 
 function seedSettings(): Settings {
   return {
-    defaultNotice: 2,
-    closedDays: [],
+    defaultNotice: 3,
+    closedDays: [0],
     windows: [
       { id: 'morning', name: { en: 'Morning', fr: 'Matin' }, from: '09:00', to: '12:00' },
       { id: 'afternoon', name: { en: 'Afternoon', fr: 'Après-midi' }, from: '12:00', to: '17:00' },
       { id: 'evening', name: { en: 'Evening', fr: 'Soirée' }, from: '17:00', to: '20:00' },
     ],
     deliveryFee: 200,
-    quoteValidity: 3,
+    quoteValidity: 5,
     prefix: 'APB-',
     juice: '5700 0000 (placeholder)',
     pickupAddress: '12 Rue des Fleurs, Curepipe, Mauritius (placeholder)',
@@ -53,12 +53,12 @@ function seedSettings(): Settings {
       fr: 'Aux petits bonheurs est une pâtisserie artisanale à l\'île Maurice. Chaque gâteau est préparé sur commande dans une petite cuisine familiale, avec du vrai beurre et beaucoup d\'amour.',
     },
     faq: {
-      en: 'How far ahead should I order? At least 2 days (some cakes need more).\nHow do I pay? Juice or cash on delivery or pickup.\nHow do I store my cake? Keep it in a cool place; refrigerate cream cakes and take them out 30 minutes before serving.',
-      fr: 'Combien de temps à l\'avance commander ? Au moins 2 jours (certains gâteaux demandent plus).\nComment payer ? Juice ou espèces à la livraison ou au retrait.\nComment conserver mon gâteau ? Au frais ; réfrigérez les gâteaux à la crème et sortez-les 30 minutes avant de servir.',
+      en: 'How far ahead should I order? At least 3 days (some cakes need more). We are closed on Sundays.\nHow do I pay? Juice or cash on delivery or pickup.\nHow do I store my cake? Keep it refrigerated, take it out about 30 minutes before serving, and enjoy it within 2-3 days.\nCan I cancel after approval? Yes, free of charge via WhatsApp until 48 hours before your order date. After that, no refund is possible.',
+      fr: 'Combien de temps à l\'avance commander ? Au moins 3 jours (certains gâteaux demandent plus). Nous sommes fermés le dimanche.\nComment payer ? Juice ou espèces à la livraison ou au retrait.\nComment conserver mon gâteau ? Gardez-le au réfrigérateur, sortez-le environ 30 minutes avant de servir et dégustez-le dans les 2 à 3 jours.\nPuis-je annuler après l\'approbation ? Oui, gratuitement via WhatsApp jusqu\'à 48 heures avant la date de votre commande. Passé ce délai, aucun remboursement n\'est possible.',
     },
     policies: {
-      en: 'Your order is not confirmed until the bakery approves it. Cancellations are free while the order is pending; after approval please contact us on WhatsApp. Our kitchen handles gluten, eggs, milk, nuts and soy.',
-      fr: 'Votre commande n\'est confirmée qu\'après approbation de la pâtisserie. L\'annulation est gratuite tant que la commande est en attente ; après approbation, contactez-nous sur WhatsApp. Notre cuisine manipule gluten, œufs, lait, fruits à coque et soja.',
+      en: 'Your order is not confirmed until the bakery approves it. Cancellations are free while the order is pending; after approval you can cancel free of charge via WhatsApp until 48 hours before your order date; after that there is no refund. Our kitchen handles gluten, eggs, milk, nuts and soy.',
+      fr: 'Votre commande n\'est confirmée qu\'après approbation de la pâtisserie. L\'annulation est gratuite tant que la commande est en attente ; après approbation, vous pouvez annuler gratuitement via WhatsApp jusqu\'à 48 heures avant la date de commande ; passé ce délai, aucun remboursement. Notre cuisine manipule gluten, œufs, lait, fruits à coque et soja.',
     },
   }
 }

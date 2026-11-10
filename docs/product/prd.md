@@ -99,7 +99,7 @@ Priority: Must / Should / Could. Persona: P1 customer, P2 Owner, P3 Admin (P2/P3
 | FR-007 | Product page shows swipeable photos (1-5), description, allergen tags with the note that the kitchen handles all allergens, option pickers by kind (pick one, pick several, text, quantity), message-on-cake field with live character count, quantity, live price, "Earliest date: [date]", and Add to basket. | Must | P1 | Given required option unselected, then Add to basket is blocked. Given choices, then displayed price equals the server-computed price. |
 | FR-008 | Message-on-cake limit is enforced (default 40 characters, editable per option group). | Must | P1 | Given limit 40, when 41st character typed, then it is rejected client-side and server-side. |
 | FR-009 | Gallery shows photos in a grid filtered by occasion, opens full screen with swipe, and each photo has "Request something similar". | Should | P1 | Given the button, then the custom form opens with that photo attached. |
-| FR-010 | About, Contact and FAQ pages show content from Settings in the visitor's language (contact buttons, pickup address with map link, FAQ, policies). | Must | P1 | Given FR locale and a missing FR text, then EN text is shown (fallback). |
+| FR-010 | About, Contact and FAQ pages show content from Settings in the visitor's language (contact buttons, pickup address with map link, FAQ, policies). FAQ/policies must include: (a) cancellation policy, free via WhatsApp until 48 hours before the order date, no refund after that; (b) cake storage advice: keep refrigerated, take out about 30 minutes before serving, best eaten within 2-3 days. | Must | P1 | Given FR locale and a missing FR text, then EN text is shown (fallback). Given the FAQ, then both the cancellation policy and storage advice are present in EN and FR. |
 
 ### 5.2 Pricing, availability and promotions (rules)
 
@@ -107,7 +107,7 @@ Priority: Must / Should / Could. Persona: P1 customer, P2 Owner, P3 Admin (P2/P3
 |---|---|---|---|---|
 | FR-011 | Item price = (base price + sum of chosen option price changes) x quantity. Order total = sum of items + delivery fee if delivery. No taxes. The server always recalculates; a browser-sent price is never trusted. | Must | P1 | Given a tampered client price, then the stored total equals the server calculation. |
 | FR-012 | Prices are copied onto the order when placed; later product price changes never alter existing orders. | Must | P1,P2 | Given an existing order, when product price changes, then the order's totals are unchanged. |
-| FR-013 | A date is selectable only if it is not blocked, not a weekly closed day, and at least N calendar days (Mauritius time) after today; N is the largest notice-days among basket items, else the default (2). With 2 days notice, an order on Monday may be for Wednesday or later. | Must | P1 | Given default 2, today Monday, then Tuesday is disabled and Wednesday enabled. Given a basket item with notice 5, then earliest date moves to today+5. |
+| FR-013 | A date is selectable only if it is not blocked, not a weekly closed day, and at least N calendar days (Mauritius time) after today; N is the largest notice-days among basket items, else the default (3, editable by the Owner). With 3 days notice, an order on Monday may be for Thursday or later. The default weekly closed day is Sunday (editable by the Owner). | Must | P1 | Given default 3, today Monday, then Tuesday and Wednesday are disabled and Thursday enabled; a Sunday is disabled while it is a closed day. Given a basket item with notice 5, then earliest date moves to today+5. |
 | FR-014 | There is no daily maximum; no "Fully booked" is shown. The date picker greys out unavailable days and explains why when tapped (blocked, closed day, too soon). | Must | P1 | Given a blocked day, when tapped, then the reason category is shown without the private block reason. |
 | FR-015 | At submit the server re-checks date availability, product status (sold out/hidden/seasonal window) and prices. If a date became blocked or a price changed, the order is refused and the customer sees the problem (new price shown). | Must | P1 | Given a date blocked after checkout opened, when sent, then refused with message. Given price change, then new price shown and order not placed until accepted. |
 | FR-016 | A promotion is live only between start and end (Mauritius time) and while active; outside that it is invisible and gives no discount. Discount (percentage or fixed sale price per product) applies to base price only, not options or delivery. Original price is struck through next to the sale price. | Must | P1,P3 | Given promo ending 18:00, then at 17:59 sale price is charged and at 18:00 it is not. |
@@ -134,7 +134,7 @@ Priority: Must / Should / Could. Persona: P1 customer, P2 Owner, P3 Admin (P2/P3
 |---|---|---|---|---|
 | FR-028 | Custom cake form: occasion, date (same availability rules), servings, flavours, theme/colours, text on cake, up to 5 reference photos, optional budget, delivery or pickup, contact details and details. | Must | P1 | Given the form submitted, then the request appears in admin within seconds with its photos and the customer receives "Request received". |
 | FR-029 | Photo uploads accept JPEG, PNG, WebP and HEIC (converted), max 10 MB each, up to 5, shrunk before upload; other files are rejected. | Must | P1,P3 | Given a PDF, then rejected; given an 8 MB HEIC, then stored as a compressed image. |
-| FR-030 | A new custom request has status Quote needed. Admin can send a quote (full order total including delivery if chosen, optional note, expiry default today + quote validity days (3)) or decline with optional reason. | Must | P2,P3 | Given Send quote, then status Quote sent and customer gets "Your quote". |
+| FR-030 | A new custom request has status Quote needed. Admin can send a quote (full order total including delivery if chosen, optional note, expiry default today + quote validity days (default 5)) or decline with optional reason. | Must | P2,P3 | Given Send quote, then status Quote sent and customer gets "Your quote". |
 | FR-031 | Customer accepts or declines the quote from the email link or tracking page. Accept makes the order Approved. An expired quote cannot be accepted. | Must | P1 | Given an expired quote, then Accept is refused. Given accept, then order is Approved and appears on the calendar. |
 | FR-032 | Quotes past expiry move to Closed automatically, at least once a day, with a "Quote closed" email and a push to admins. | Must | P2,P3 | Given quote expiry passed, then within 24 h status is Closed. |
 | FR-033 | While Quote sent, admin can re-send a new quote that replaces the old one. | Should | P2,P3 | Given a new quote, then the old link/amount can no longer be accepted. |
@@ -155,7 +155,7 @@ Priority: Must / Should / Could. Persona: P1 customer, P2 Owner, P3 Admin (P2/P3
 | ID | Requirement | Pri | Persona | Acceptance |
 |---|---|---|---|---|
 | FR-040 | Admin sign-in with email + password, forgot-password, sessions staying signed in 30 days on a phone. | Must | P2,P3 | Given sign-in, then still signed in after 29 days. |
-| FR-041 | Roles are enforced on the server for every action and data read; Owner-only screens (Availability, Settings, Team) are hidden from Admins and blocked even by typed address. | Must | P2,P3 | Given Admin session, when calling an Owner endpoint or URL, then refused. |
+| FR-041 | Roles are enforced on the server for every action and data read; Owner-only screens (Availability, Settings, Team) are hidden from Admins and blocked even by typed address. Admins can edit the menu, create/edit promotions and see the Sales summary. At launch the Owner is the only admin; helpers are invited later. | Must | P2,P3 | Given Admin session, when calling an Owner endpoint or URL, then refused. |
 | FR-042 | Owner can invite an admin (name, email, role); invitation email in EN or FR with a set-password link valid 7 days, resendable. | Must | P2 | Given an invite, then link works within 7 days and fails after; resend issues a new link. |
 | FR-043 | Owner can change role (Admin/Owner), deactivate (blocks sign-in at once, keeps name on past actions) and reactivate. | Must | P2 | Given deactivation, then the admin's session is ended immediately and the log still shows their name. |
 | FR-044 | The last active Owner cannot be deactivated or changed to Admin. | Must | P2 | Given one active Owner, when attempting either, then refused. |
@@ -204,6 +204,7 @@ Priority: Must / Should / Could. Persona: P1 customer, P2 Owner, P3 Admin (P2/P3
 | FR-072 | Admin push + email alerts for: new website order, new custom request, quote accepted/declined, customer cancelled. Push only: 18:00 evening-before reminder with tomorrow's count and prep-list link; quote expiry. Respect per-admin preferences. Tapping a push opens the relevant order or day. | Must | P2,P3 | Given alerts on, then an admin receives push and email for a new order. |
 | FR-073 | WhatsApp button opens a chat with the customer's number and a pre-filled editable message from a template in the order's language. Templates: Order approved, Ready for pickup, On the way, Payment reminder (Juice number and total), Blank; placeholders {name}, {order_number}, {date}, {window}, {total}, {juice_number}, {pickup_address}, {tracking_link}; edited in Settings. | Must | P2,P3 | Given each template in EN and FR, then placeholders resolve. |
 | FR-074 | If an email fails, the order is still saved, admins are still alerted, and failed emails are retried. | Must | P1,P2 | Given email provider outage, then order exists and retry succeeds later. |
+| FR-075 | Admin push alert when a website order has been in Pending approval for more than 24 hours, sent once per order to admins with push on (respecting FR-046 preferences). Tapping it opens the order. No auto-expiry or status change. | Should | P2,P3 | Given a website order Pending approval for 24 h 1 min, then each opted-in admin receives exactly one push. Given it is approved or cancelled before 24 h, then no push. Given the check runs again later, then no second push for the same order. |
 
 ## 6. Non-functional requirements
 
@@ -270,13 +271,13 @@ Providers are not chosen here (decided in /setup-stack and ADRs); constraints on
 | R8 | Content (photos, translations, policies) arrives late and blocks phase 6/7 | Med | Med | Sample data first; owner content checklist with dates `[TO CONFIRM]` |
 | R9 | Briefs disagree on image size (300 kB vs 250 kB budget) and speed (3 s vs LCP 2.5 s) | Low | Low | Stricter project.yaml values apply unless the owner decides otherwise |
 | R10 | Personal-data obligations (Mauritius DPA 2017) not yet reviewed | Med | Med | Privacy note, minimal data in emails, confirm regime and retention `[TO CONFIRM]` |
-| R11 | Customer cannot reach owner when a quote or order is stuck (no daily cap, no auto-expiry of Pending approval) | Med | Med | Today "To review" count; consider auto-reminder `[TO CONFIRM]` |
+| R11 | Customer cannot reach owner when a quote or order is stuck (no daily cap, no auto-expiry of Pending approval) | Med | Med | Today "To review" count; 24 h pending reminder push (FR-075) |
 
 Assumptions:
-- A1 Defaults table values (2-day notice, no closed days, three windows, Rs 200 fee, 3-day quote validity, 40-character message limit, 18:00 reminder, APB- prefix, placeholder brand look) hold until the owner confirms.
-- A2 Admins can see Sales summary and create/edit promotions (the briefs' role table says yes; confirmation still open).
-- A3 Pending approval orders do not auto-expire (not specified).
-- A4 Payment method is shown as information in the summary and emails; it is not a stored order field (the Order record has only paid yes/no).
+- A1 Defaults table values (3-day notice, Sunday closed, three windows, Rs 200 fee, 5-day quote validity, 40-character message limit, 18:00 reminder, APB- prefix, placeholder brand look) hold until the owner confirms.
+- A2 Admins can see Sales summary, create/edit promotions and edit the menu (confirmed by owner 2026-11-10). Settings, Availability and Team remain Owner-only.
+- A3 Pending approval orders do not auto-expire; admins get a one-time push reminder after 24 h (FR-075, owner 2026-11-10).
+- A4 No online payment. Payment method is shown as information in the summary and emails; it is not a stored order field (the Order record has only paid yes/no); admins mark paid/unpaid manually (owner 2026-11-10).
 - A5 A customer cannot cancel in Quote sent; they can Decline, which moves it to Closed.
 - A6 Builder stays on as a team member for a 3-month aftercare.
 
@@ -301,23 +302,23 @@ Handover checklist (must all be ticked at launch): all service accounts on the b
 ## 12. Open questions
 
 For the owner (carried from the briefs):
-1. Delivery fee amount, pickup address, Juice number. Default Rs 200 is a placeholder. — owner Sabera
-2. Notice period, closed days, time windows: are the defaults right (2 days, none, 9-12/12-17/17-20)? — owner Sabera
-3. Cancellation policy after approval, and cake storage advice (for FAQ/policies). — owner Sabera
-4. Confirm Admins can see the Sales summary. — owner Sabera
-5. Confirm Admins can create and edit promotions. — owner Sabera
-6. Domain name. — owner Sabera
-7. Should the Juice number appear in the approval email and the WhatsApp payment reminder? (build brief says yes; feature plan asks.) — owner Sabera
-8. Quote validity 3 days correct? — owner Sabera
+1. Delivery fee amount, pickup address, Juice number. Default Rs 200 is a placeholder. — owner Sabera. **OPEN (owner 2026-11-10: not decided yet)**
+2. Notice period, closed days, time windows. **RESOLVED 2026-11-10**: notice 3 days, Sunday closed, windows Morning 9-12 / Afternoon 12-17 / Evening 17-20 (delivery and pickup); notice and closed days editable by the Owner in Availability.
+3. Cancellation policy after approval, and cake storage advice. **RESOLVED 2026-11-10**: free cancellation via WhatsApp until 48 hours before the order date, no refund after; storage: refrigerate, take out about 30 minutes before serving, best within 2-3 days. Tracking page still has no self-cancel after approval.
+4. Admins can see the Sales summary. **RESOLVED 2026-11-10**: yes.
+5. Admins can create and edit promotions. **RESOLVED 2026-11-10**: yes (and edit the menu).
+6. Domain name. — owner Sabera. **OPEN (owner 2026-11-10: not decided yet; decide before launch)**
+7. Juice number in approval email and WhatsApp payment reminder. **RESOLVED 2026-11-10**: both.
+8. Quote validity. **RESOLVED 2026-11-10**: 5 days.
 
 Gaps found by product-manager (proposed answers in assumptions):
 9. Success-metric targets and baseline order volume (section 3). — owner Sabera / product-director
 10. Launch date and phase dates. — owner Sabera / producer
-11. Should Pending approval orders ever auto-expire or trigger a reminder to admins? (A3, R11) — owner Sabera
+11. Pending approval reminder. **RESOLVED 2026-11-10**: no auto-expiry; push alert to admins after 24 h, once per order (FR-075).
 12. Applicable privacy regime (Mauritius DPA 2017?), data retention, who is the data controller. — owner Sabera
-13. Which admin(s) beyond the Owner exist at launch, and their languages. — owner Sabera
+13. Admins at launch. **RESOLVED 2026-11-10**: Owner only; helpers invited later.
 14. Brand identity (placeholder: cream, one pastel accent, rounded serif headings, sans-serif text). — owner Sabera / design-director
-15. Is payment method (Juice vs cash) a captured field or information only? (A4) — owner Sabera
+15. Payment. **RESOLVED 2026-11-10**: no online payment; information only; admins mark paid/unpaid manually (A4).
 16. project.yaml updates needed before design: `i18n.locales: [en, fr]`, `privacy.regions`. — product-director / user
 
 ## Appendix A: Launch test checklist (traceability)
@@ -330,6 +331,7 @@ Gaps found by product-manager (proposed answers in assumptions):
 | Promotion price shows and is charged, then disappears after end time | FR-016, 017, 063 |
 | Custom request, quote, accept, and expired quote cannot be accepted | FR-028..032 |
 | Customer cancels while pending; cancel button gone after approval | FR-027 |
+| Pending approval over 24 h sends one admin push | FR-075 |
 | Manual order shows in calendar and prep list | FR-055, 058, 060 |
 | Owner-only screens hidden and blocked for an Admin | FR-041, 066, 067 |
 | Deactivated admin is signed out | FR-043 |
@@ -361,3 +363,4 @@ Rules: Back one step by an admin sends no email. Paid/unpaid is a separate flag 
 
 ## Changelog
 - 2026-11-09 v0.1 draft by product-manager from build-brief.md and feature-plan.md.
+- 2026-11-10 v0.2 owner answers applied: notice 3 days, Sunday closed, quote validity 5 days, cancellation policy and storage advice in FAQ, Admin rights confirmed, new FR-075 (24 h pending reminder); fee, address, Juice number, domain still open.
