@@ -69,7 +69,7 @@ Source legend: **shadcn** = `npx shadcn add <name>` then restyle via tokens; **c
 | Component | Source | Variants | States | Notes |
 |---|---|---|---|---|
 | Top bar (customer) | domain (header) | default, condensed on scroll | — | Wordmark (links home), EN/FR switch, basket icon with count badge, menu button. All 44 px targets. Sticky, `color.bg` 95% + blur, `shadow.sm` once scrolled. |
-| Language switch | custom on `toggle-group` | inline (top bar), list (menu sheet, profile) | EN selected / FR selected | Shows "EN" / "FR" with `lang` attributes and accessible name "Language / Langue". Keeps the current route (FR-001). It is navigation, so each option is an `<a>` with `hreflang`. |
+| Language switch | custom link | inline (top bar), list (menu sheet, profile) | other language shown | Customer site: one `<a>` showing the other language's own name ("Français" / "English") with matching `lang` and `hreflang`, so its text is its accessible name (S-008 AC6: a spelled-out name is clearer than "EN / FR" and needs no extra label). Keeps the current route (FR-001). |
 | Basket button + count | custom | — | empty (no badge), count 1–99, 99+ | Badge `primary` bg, `primary-fg` text, `small` bold. On add: `basket-bump` + `aria-live` "2 items in basket". Accessible name includes the count. |
 | Site menu | shadcn `drawer` (side or bottom) | — | open/closed | Links: Menu, Custom cake, Gallery, About, FAQ, Contact, My account. Plain list rows 48 px. |
 | Promo banner | domain | link, dismissible | live, dismissed (session) | Top of every page while live (FR-002). `accent` bg, `accent-fg` text, link in `primary-strong`, dismiss icon button 44×44 "Hide offer". No marquee or auto-rotate; one banner at a time (latest starting first) *(decided)*. |
