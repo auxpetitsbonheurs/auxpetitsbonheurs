@@ -15,7 +15,7 @@ framework:
 project:
   name: Aux petits bonheurs            # set by /start or /setup-stack
   type: ecommerce            # saas | marketing | ecommerce | api | mixed
-  stage: discovery           # discovery | design | build | launch | grow
+  stage: build           # discovery | design | build | launch | grow
 
 stack:
   language: typescript        # typescript | javascript | python | go | php | ruby
