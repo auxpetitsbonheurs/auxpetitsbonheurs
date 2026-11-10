@@ -11,6 +11,29 @@ Question: can the client (and Sabera/Sarah) click through ordering, quotes and d
     npm test                        # domain rule tests (Vitest)
     npm run build                   # typecheck + production build
 
+## Share link (Cloudflare Pages)
+
+Hosted on the bakery's own Cloudflare account (free plan), never a developer's.
+Every push to `main` redeploys it.
+
+1. Sign in to dash.cloudflare.com with the bakery's email.
+2. Workers & Pages → Create → Pages → Connect to Git → GitHub. Authorise the
+   Cloudflare Pages app for the `auxpetitsbonheurs` GitHub account and allow
+   the `auxpetitsbonheurs` repository.
+3. Build settings:
+   - Project name: `apb-prototype` (gives `https://apb-prototype.pages.dev`)
+   - Production branch: `main`
+   - Framework preset: None
+   - Root directory: `prototypes/apb-v1`
+   - Build command: `npm run build`
+   - Build output directory: `dist`
+   - Node version comes from `.nvmrc` (22)
+4. Save and Deploy. Deep links (e.g. `/admin`, `/order/<token>`) work because
+   Pages serves `index.html` for unknown paths when there is no `404.html`.
+
+Each visitor's data lives only in their own browser (localStorage), so
+testers never see each other's orders. Use the toolbar's Reset data to start over.
+
 ## Journeys
 
 1. Customer order: Home, Menu (type + allergen filters), Product, Basket & checkout, Confirmation, Tracking (`/order/<token>`).
