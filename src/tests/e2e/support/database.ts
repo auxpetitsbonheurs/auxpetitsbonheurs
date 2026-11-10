@@ -64,6 +64,10 @@ async function seedBaseline(sql: postgres.Sql) {
   await sql`
     insert into admin (id, name, email, role, active, locale)
     values (${user!.id}, ${E2E_OWNER.name}, ${E2E_OWNER.email}, 'owner', true, 'en')`;
+  // Placeholder contact values so the footer shows its links (never real numbers).
+  await sql`
+    update settings set contact_whatsapp = '+230 5000 0000', contact_phone = '+230 5000 0001',
+      contact_email = 'hello@example.com' where id = 1`;
   const p = SAMPLE_PRODUCT;
   await sql`
     insert into product (slug, type, name_en, name_fr, description_en, description_fr, base_price_rs)

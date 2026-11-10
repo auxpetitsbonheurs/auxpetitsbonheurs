@@ -7,6 +7,7 @@ import {
   ScrollRestoration,
   useRouteLoaderData,
 } from "react-router";
+import { useEffect } from "react";
 
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -43,6 +44,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  useEffect(() => {
+    // Hydration marker: e2e specs wait for it before testing client-side behaviour.
+    document.documentElement.dataset.hydrated = "true";
+  }, []);
   return <Outlet />;
 }
 

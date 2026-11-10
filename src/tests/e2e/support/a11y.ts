@@ -29,6 +29,21 @@ async function scan(page: Page) {
   expect(failing, `axe found serious/critical violations:\n${report}`).toEqual([]);
 }
 
+/** Runs `check` at `zoom` (e.g. 2 = 200%) by shrinking the CSS viewport, then restores it. */
+export async function withZoom<T>(page: Page, zoom: number, check: () => Promise<T>): Promise<T> {
+  const original = page.viewportSize();
+  if (zoom === 1 || !original) return check();
+  await page.setViewportSize({
+    width: Math.floor(original.width / zoom),
+    height: Math.floor(original.height / zoom),
+  });
+  try {
+    return await check();
+  } finally {
+    await page.setViewportSize(original);
+  }
+}
+
 /**
  * Runs axe (serious and critical fail, printing rule and element). With `{ zoom: 2 }`
  * it first sets 200% zoom and also asserts there is no horizontal scroll; the
@@ -36,17 +51,92 @@ async function scan(page: Page) {
  */
 export async function expectNoA11yViolations(page: Page, options: A11yOptions = {}) {
   const zoom = options.zoom ?? 1;
-  const original = page.viewportSize();
-  if (zoom !== 1 && original) {
-    await page.setViewportSize({
-      width: Math.floor(original.width / zoom),
-      height: Math.floor(original.height / zoom),
-    });
-  }
-  try {
+  await withZoom(page, zoom, async () => {
     await scan(page);
     if (zoom !== 1) await expectNoHorizontalScroll(page);
-  } finally {
-    if (zoom !== 1 && original) await page.setViewportSize(original);
+  });
+}
+
+const INTERACTIVE =
+  'a[href], button:not([disabled]), input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+
+/** Every rendered interactive element is at least `min` x `min` CSS px (visually hidden ones excepted). */
+export async function expectTapTargets(page: Page, min = 44) {
+  const small = await page.evaluate(
+    ({ selector, min }) =>
+      [...document.querySelectorAll<HTMLElement>(selector)].flatMap((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.width <= 1 || r.height <= 1) return []; // visually hidden until focused (skip link)
+        if (r.width >= min - 0.5 && r.height >= min - 0.5) return [];
+        const name = (el.getAttribute("aria-label") ?? el.textContent ?? "").trim().slice(0, 40);
+        return [`<${el.tagName.toLowerCase()}> "${name}" is ${Math.round(r.width)}x${Math.round(r.height)}`];
+      }),
+    { selector: INTERACTIVE, min },
+  );
+  expect(small, `tap targets under ${min}px:\n${small.join("\n")}`).toEqual([]);
+}
+
+/** No element cuts its content off (overflow hidden/clip or ellipsis) and no control sticks out sideways. */
+export async function expectNothingClipped(page: Page) {
+  const clipped = await page.evaluate((selector) => {
+    const width = document.documentElement.clientWidth;
+    const out: string[] = [];
+    for (const el of document.body.querySelectorAll<HTMLElement>("*")) {
+      const s = getComputedStyle(el);
+      if (el.clientWidth <= 1) continue; // visually hidden by design
+      const hides = ["hidden", "clip"].includes(s.overflowX) || s.textOverflow === "ellipsis";
+      if (hides && el.scrollWidth > el.clientWidth + 1) out.push(`<${el.tagName.toLowerCase()}> clips its content`);
+    }
+    for (const el of document.querySelectorAll<HTMLElement>(selector)) {
+      const r = el.getBoundingClientRect();
+      if (r.width > 1 && (r.left < -0.5 || r.right > width + 0.5)) {
+        out.push(`<${el.tagName.toLowerCase()}> "${(el.textContent ?? "").trim().slice(0, 30)}" is outside the viewport`);
+      }
+    }
+    return out;
+  }, INTERACTIVE);
+  expect(clipped, clipped.join("\n")).toEqual([]);
+}
+
+export interface FocusStop {
+  index: number;
+  name: string;
+  visibleFocus: boolean;
+}
+
+/**
+ * Presses Tab from the top of the page until focus leaves the document or wraps,
+ * returning each stop's position among the page's focusable elements (DOM order)
+ * and whether it shows a focus indicator (outline or box-shadow).
+ */
+export async function tabThrough(page: Page, limit = 60): Promise<{ stops: FocusStop[]; total: number }> {
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.locator("body").focus();
+  const stops: FocusStop[] = [];
+  let total = 0;
+  for (let i = 0; i < limit; i += 1) {
+    await page.keyboard.press("Tab");
+    const stop = await page.evaluate((selector) => {
+      const all = [...document.querySelectorAll<HTMLElement>(selector)].filter((el) => el.getClientRects().length > 0);
+      const el = document.activeElement as HTMLElement | null;
+      if (!el || el === document.body) return { total: all.length, stop: null };
+      const s = getComputedStyle(el);
+      const outline = s.outlineStyle !== "none" && Number.parseFloat(s.outlineWidth) >= 2;
+      const shadow = s.boxShadow !== "none";
+      const name = (el.getAttribute("aria-label") ?? el.textContent ?? "").trim().slice(0, 40);
+      return { total: all.length, stop: { index: all.indexOf(el), name, visibleFocus: outline || shadow } };
+    }, INTERACTIVE);
+    total = stop.total;
+    if (!stop.stop || (stops.length > 0 && stop.stop.index === stops[0]!.index)) break;
+    stops.push(stop.stop);
   }
+  return { stops, total };
+}
+
+/** Keyboard reaches every control once, in DOM order, each with a visible focus indicator. */
+export async function expectKeyboardOperable(page: Page) {
+  const { stops, total } = await tabThrough(page);
+  expect(stops.map((s) => s.index), "focus order follows the page order").toEqual([...Array(total).keys()]);
+  const invisible = stops.filter((s) => !s.visibleFocus).map((s) => s.name);
+  expect(invisible, "controls without a visible focus indicator").toEqual([]);
 }

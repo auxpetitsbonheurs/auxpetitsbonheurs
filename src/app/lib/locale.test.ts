@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SUPPORTED_LOCALES, localeFromPathname } from "./locale";
+import { SUPPORTED_LOCALES, localeFromPathname, localePath } from "./locale";
 import { formatRupees } from "./locale";
 
 describe("formatRupees", () => {
@@ -34,5 +34,16 @@ describe("localeFromPathname (S-006: URL is authoritative)", () => {
     ["/FR/menu", "en"],
   ])("%s -> %s", (path, locale) => {
     expect(localeFromPathname(path)).toBe(locale);
+  });
+});
+
+describe("localePath (S-007/S-008: links stay in the page language)", () => {
+  it.each([
+    ["en", "/", "/"],
+    ["en", "/basket", "/basket"],
+    ["fr", "/", "/fr/"],
+    ["fr", "/basket", "/fr/basket"],
+  ] as const)("%s %s -> %s", (locale, path, expected) => {
+    expect(localePath(locale, path)).toBe(expected);
   });
 });

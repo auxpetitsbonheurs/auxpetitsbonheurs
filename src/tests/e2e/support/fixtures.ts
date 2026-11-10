@@ -17,4 +17,4 @@ export const test = base.extend<object, { db: postgres.Sql }>({
   ],
 });
 
-export { expect } from "@playwright/test";
+export { type Page, expect } from "@playwright/test";

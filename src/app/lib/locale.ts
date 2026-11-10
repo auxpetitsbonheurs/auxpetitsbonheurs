@@ -20,3 +20,8 @@ export function formatRupees(amount: number, _locale?: Locale): string {
 export function localeFromPathname(pathname: string): Locale {
   return pathname === "/fr" || pathname.startsWith("/fr/") ? "fr" : "en";
 }
+
+/** The `path` (starting with "/") in `locale`: English unprefixed, French under /fr. */
+export function localePath(locale: Locale, path: string): string {
+  return locale === "fr" ? `/fr${path}` : path;
+}

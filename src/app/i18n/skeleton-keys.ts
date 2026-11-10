@@ -14,6 +14,7 @@ export const SKELETON_KEYS = [
   "shell.footer.phone",
   "shell.footer.email",
   "shell.footer.copyright",
+  "shell.footer.pickup",
   "language.other",
   "home.title",
   "home.intro",

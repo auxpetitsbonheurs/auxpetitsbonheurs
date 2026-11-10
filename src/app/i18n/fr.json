@@ -12,7 +12,8 @@
       "whatsapp": "WhatsApp",
       "phone": "Téléphone",
       "email": "E-mail",
-      "copyright": "© {{year}} Aux petits bonheurs"
+      "copyright": "© {{year}} Aux petits bonheurs",
+      "pickup": "Retrait à {{address}}"
     }
   },
   "language": {
