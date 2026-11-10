@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>D4 · Honey and cream</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&amp;family=Libre+Caslon+Text:ital@0;1&amp;family=Source+Sans+3:wght@400;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#7D4F17}a:hover{color:#5C390F}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 1180px; box-sizing: border-box; background: #FAF5EC; color: #3A2A1C; font-family: 'Source Sans 3', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px">
+    <a href="#" lang="fr" hreflang="fr" style="font-size: 14px; padding: 12px 6px; color: #3A2A1C">Français</a>
+    <a href="#" style="font-family: 'Libre Caslon Display', serif; font-size: 22px; color: #3A2A1C; text-decoration: none">Aux petits bonheurs</a>
+    <a href="#" aria-label="Basket, 2 items" style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; color: #3A2A1C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 8h14l-1.5 12h-11z"></path><path d="M9 8a3 3 0 0 1 6 0"></path></svg></a>
+  </header>
+  <section style="padding: 20px 16px 8px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center">
+    <p style="margin: 0; font-family: 'Libre Caslon Text', serif; font-style: italic; font-size: 16px; color: #7D4F17">fait maison à Beau Bassin</p>
+    <h1 style="margin: 0; font-family: 'Libre Caslon Display', serif; font-weight: 400; font-size: 42px; line-height: 1.08">Little joys, baked to order</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #5E4C3A">Pick a cake, choose your day, and we bake it fresh for you.</p>
+    <a href="#" style="display: flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 28px; border-radius: 12px; background: #8C5A1E; color: #FFFDF8; text-decoration: none; font-size: 16px; font-weight: 600">Order a cake</a>
+  </section>
+  <div role="img" aria-label="Photo placeholder" style="margin: 20px 16px 0; height: 250px; border-radius: 16px; background: #EFDDBD; display: flex; align-items: flex-end; padding: 12px; box-sizing: border-box; font-size: 12px; color: #5E4C3A">Photo · cakes on a linen table</div>
+  <section style="padding: 28px 16px 8px; display: flex; flex-direction: column; gap: 14px">
+    <h2 style="margin: 0; font-family: 'Libre Caslon Display', serif; font-weight: 400; font-size: 28px; text-align: center">Our favourites</h2>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+      <article style="background: #FFFDF8; border: 1px solid #F1E3C8; border-radius: 14px; padding: 8px 8px 14px; display: flex; flex-direction: column; gap: 8px"><div role="img" aria-label="Photo placeholder" style="aspect-ratio: 1 / 1; border-radius: 10px; background: #EFDDBD"></div><h3 style="margin: 0 4px; font-family: 'Libre Caslon Text', serif; font-size: 17px; font-weight: 400">Chocolate fondant</h3><p style="margin: 0 4px; font-size: 14px; font-weight: 600">Rs [price]</p></article>
+      <article style="background: #FFFDF8; border: 1px solid #F1E3C8; border-radius: 14px; padding: 8px 8px 14px; display: flex; flex-direction: column; gap: 8px"><div role="img" aria-label="Photo placeholder" style="aspect-ratio: 1 / 1; border-radius: 10px; background: #EFDDBD"></div><h3 style="margin: 0 4px; font-family: 'Libre Caslon Text', serif; font-size: 17px; font-weight: 400">Lemon tart</h3><p style="margin: 0 4px; font-size: 14px; font-weight: 600">Rs [price]</p></article>
+    </div>
+  </section>
+  <section style="margin: 20px 16px 28px; padding: 20px; border-radius: 16px; background: #F1E3C8; display: flex; flex-direction: column; gap: 8px">
+    <h2 style="margin: 0; font-family: 'Libre Caslon Text', serif; font-weight: 400; font-size: 20px">Dreaming of a special cake?</h2>
+    <p style="margin: 0; font-size: 15px; line-height: 1.55; color: #5E4C3A">Send a photo or an idea and get a quote.</p>
+    <a href="#" style="align-self: flex-start; display: flex; align-items: center; min-height: 44px; font-size: 15px; font-weight: 600">Ask for a custom cake →</a>
+  </section>
+  <footer style="margin-top: auto; padding: 22px 16px; text-align: center; font-size: 14px; color: #5E4C3A; display: flex; flex-direction: column; gap: 4px">
+    <span style="font-family: 'Libre Caslon Display', serif; font-size: 20px; color: #3A2A1C">Aux petits bonheurs</span>
+    <span>Pickup in Beau Bassin · Delivery Rs 200</span>
+    <span>WhatsApp [number]</span>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
