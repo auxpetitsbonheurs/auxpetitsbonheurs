@@ -25,7 +25,9 @@ const isLocale = (value: string | undefined): value is Locale =>
 
 /** The same page in `locale`, query kept: /fr/basket?x=1 <-> /basket?x=1. */
 export function twinPath(pathname: string, search: string, locale: Locale): string {
-  const unprefixed = localeFromPathname(pathname) === "fr" ? pathname.slice(3) || "/" : pathname;
+  const stripped = localeFromPathname(pathname) === "fr" ? pathname.slice(3) || "/" : pathname;
+  // "/fr//evil.com" must not become the protocol-relative "//evil.com" (open redirect via the switch).
+  const unprefixed = stripped.replace(/^[/\\]+/, "/");
   return `${localePath(locale, unprefixed)}${search}`;
 }
 

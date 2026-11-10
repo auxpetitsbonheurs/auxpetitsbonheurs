@@ -74,3 +74,12 @@ describe("localeCookie (AC2: one year)", () => {
     expect(localeCookie("en")).toBe(`${LOCALE_COOKIE}=en; Max-Age=31536000; Path=/; SameSite=Lax; Secure; HttpOnly`);
   });
 });
+
+describe("twinPath: never produces a protocol-relative URL", () => {
+  test.each(["/fr//evil.com", "/fr///evil.com/x", "/fr/\\evil.com"])("%s stays on this site", (pathname) => {
+    const href = twinPath(pathname, "", "en");
+    expect(href.startsWith("/")).toBe(true);
+    expect(href.startsWith("//")).toBe(false);
+    expect(href.startsWith("/\\")).toBe(false);
+  });
+});
