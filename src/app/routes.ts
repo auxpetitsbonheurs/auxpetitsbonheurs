@@ -10,6 +10,7 @@ function customerPages(locale: "en" | "fr") {
   return [
     index("routes/home.tsx", { id: `home-${locale}` }),
     route("menu/:slug", "routes/site/product.tsx", { id: `product-${locale}` }),
+    route("basket", "routes/site/basket.tsx", { id: `basket-${locale}` }),
     route("*", "routes/site/not-found.tsx", { id: `not-found-${locale}` }),
   ];
 }

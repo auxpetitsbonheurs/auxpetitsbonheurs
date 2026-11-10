@@ -110,27 +110,55 @@ export interface FocusStop {
  * and whether it shows a focus indicator (outline or box-shadow).
  */
 export async function tabThrough(page: Page, limit = 60): Promise<{ stops: FocusStop[]; total: number }> {
-  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
-  await page.locator("body").focus();
+  // Start from the top of the page: Chromium otherwise starts sequential navigation
+  // from the last click, so a focused, unlisted (tabindex=-1) marker is put first.
+  await page.evaluate(() => {
+    const marker = document.createElement("span");
+    marker.tabIndex = -1;
+    marker.dataset.tabStart = "";
+    document.body.insertBefore(marker, document.body.firstChild);
+    marker.focus();
+  });
   const stops: FocusStop[] = [];
   let total = 0;
-  for (let i = 0; i < limit; i += 1) {
-    await page.keyboard.press("Tab");
-    const stop = await page.evaluate((selector) => {
-      const all = [...document.querySelectorAll<HTMLElement>(selector)].filter((el) => el.getClientRects().length > 0);
-      const el = document.activeElement as HTMLElement | null;
-      if (!el || el === document.body) return { total: all.length, stop: null };
-      const s = getComputedStyle(el);
-      const outline = s.outlineStyle !== "none" && Number.parseFloat(s.outlineWidth) >= 2;
-      const shadow = s.boxShadow !== "none";
-      const name = (el.getAttribute("aria-label") ?? el.textContent ?? "").trim().slice(0, 40);
-      return { total: all.length, stop: { index: all.indexOf(el), name, visibleFocus: outline || shadow } };
-    }, INTERACTIVE);
-    total = stop.total;
-    if (!stop.stop || (stops.length > 0 && stop.stop.index === stops[0]!.index)) break;
-    stops.push(stop.stop);
+  try {
+    for (let i = 0; i < limit; i += 1) {
+      await page.keyboard.press("Tab");
+      const stop = await tabStop(page);
+      total = stop.total;
+      if (!stop.stop || (stops.length > 0 && stop.stop.index === stops[0]!.index)) break;
+      stops.push(stop.stop);
+    }
+  } finally {
+    await page.evaluate(() => document.querySelector("[data-tab-start]")?.remove());
   }
   return { stops, total };
+}
+
+/**
+ * The focused element's position among the page's Tab stops. A radio group is one
+ * stop (its checked radio, or its first radio when none is checked); arrow keys move
+ * inside it, as in every browser.
+ */
+async function tabStop(page: Page) {
+  return page.evaluate((selector) => {
+    const isTabStop = (el: HTMLElement) => {
+      if (!(el instanceof HTMLInputElement) || el.type !== "radio" || !el.name) return true;
+      const group = [...(el.form ?? document).querySelectorAll<HTMLInputElement>(`input[type="radio"][name="${CSS.escape(el.name)}"]`)];
+      const checked = group.find((radio) => radio.checked);
+      return checked ? checked === el : group[0] === el;
+    };
+    const all = [...document.querySelectorAll<HTMLElement>(selector)].filter(
+      (el) => el.getClientRects().length > 0 && isTabStop(el),
+    );
+    const el = document.activeElement as HTMLElement | null;
+    if (!el || el === document.body) return { total: all.length, stop: null };
+    const s = getComputedStyle(el);
+    const outline = s.outlineStyle !== "none" && Number.parseFloat(s.outlineWidth) >= 2;
+    const shadow = s.boxShadow !== "none";
+    const name = (el.getAttribute("aria-label") ?? el.textContent ?? "").trim().slice(0, 40);
+    return { total: all.length, stop: { index: all.indexOf(el), name, visibleFocus: outline || shadow } };
+  }, INTERACTIVE);
 }
 
 /** Keyboard reaches every control once, in DOM order, each with a visible focus indicator. */

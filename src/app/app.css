@@ -176,3 +176,13 @@
     outline-offset: 2px;
   }
 }
+
+/*
+ * Checkout (S-012): details that depend on the delivery/pickup choice. Pure CSS so
+ * the page works without JavaScript; display:none also hides them from assistive tech.
+ */
+.checkout-form:not(:has(#fulfilment-delivery:checked)) [data-when="delivery"],
+.checkout-form:not(:has(#fulfilment-pickup:checked)) [data-when="pickup"],
+.checkout-form:has([name="fulfilment"]:checked) [data-when="none"] {
+  display: none;
+}

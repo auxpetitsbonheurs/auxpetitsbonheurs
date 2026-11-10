@@ -25,7 +25,28 @@
     "metaDescription": "Gâteaux, cupcakes et desserts faits maison, préparés sur commande à Maurice."
   },
   "checkout": {
-    "title": "Finaliser la commande"
+    "title": "Finaliser la commande",
+    "sections": {
+      "basket": "1. Panier",
+      "fulfilment": "2. Livraison ou retrait"
+    },
+    "fulfilmentLegend": "Comment souhaitez-vous recevoir votre commande ?",
+    "delivery": "Livraison",
+    "deliveryHint": "Nous l'apportons à votre adresse",
+    "pickup": "Retrait",
+    "pickupHint": "Vous la récupérez à la pâtisserie",
+    "address": "Adresse de livraison",
+    "addressHint": "Rue, ville et tout ce qui nous aide à vous trouver",
+    "landmark": "Point de repère",
+    "optional": "(facultatif)",
+    "landmarkHint": "Par exemple : en face de l'église",
+    "deliveryFee": "Frais de livraison {{fee}}",
+    "pickupAddress": "Adresse de retrait : {{address}}",
+    "pickupFree": "Retrait : gratuit",
+    "mapLink": "Ouvrir la carte",
+    "chooseFulfilmentFirst": "Choisissez la livraison ou le retrait pour voir votre total.",
+    "total": "Total",
+    "totalItemsOnly": "Total avant livraison"
   },
   "errors": {
     "notFoundTitle": "Page introuvable",
@@ -47,5 +68,30 @@
     "addToBasket": "Ajouter au panier",
     "soldOut": "Épuisé",
     "soldOutHint": "Ce gâteau est épuisé pour le moment. Écrivez-nous sur WhatsApp pour savoir quand il revient."
+  },
+  "basket": {
+    "metaTitle": "Votre panier",
+    "empty": "Votre panier est vide.",
+    "seeMenu": "Voir la carte",
+    "quantity": "Quantité",
+    "quantityOf": "Quantité de {{name}}",
+    "decrease": "Diminuer la quantité de {{name}}",
+    "increase": "Augmenter la quantité de {{name}}",
+    "remove": "Retirer {{name}} du panier",
+    "removeLabel": "Retirer",
+    "atMinimum": "1 est la plus petite quantité. Pour retirer cet article, appuyez sur Retirer.",
+    "atMaximum": "50 est la plus grande quantité pour une ligne.",
+    "eachPrice": "{{price}} l'unité",
+    "lineTotal": "Total de la ligne",
+    "subtotal": "Sous-total",
+    "unavailableItem": "Article plus disponible",
+    "problems": {
+      "sold_out": "Épuisé : retirez-le pour passer votre commande.",
+      "hidden": "Plus disponible : retirez-le pour passer votre commande.",
+      "out_of_season": "Hors saison : retirez-le pour passer votre commande."
+    },
+    "errors": {
+      "quantity": "Choisissez une quantité entre 1 et 50."
+    }
   }
 }

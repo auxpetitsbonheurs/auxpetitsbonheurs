@@ -25,7 +25,28 @@
     "metaDescription": "Homemade cakes, cupcakes and desserts baked to order in Mauritius."
   },
   "checkout": {
-    "title": "Checkout"
+    "title": "Checkout",
+    "sections": {
+      "basket": "1. Basket",
+      "fulfilment": "2. Delivery or pickup"
+    },
+    "fulfilmentLegend": "How would you like to get your order?",
+    "delivery": "Delivery",
+    "deliveryHint": "We bring it to your address",
+    "pickup": "Pickup",
+    "pickupHint": "Collect it from the bakery",
+    "address": "Delivery address",
+    "addressHint": "Street, town and anything that helps us find you",
+    "landmark": "Landmark",
+    "optional": "(optional)",
+    "landmarkHint": "For example: opposite the church",
+    "deliveryFee": "Delivery fee {{fee}}",
+    "pickupAddress": "Pickup address: {{address}}",
+    "pickupFree": "Pickup: free",
+    "mapLink": "Open the map",
+    "chooseFulfilmentFirst": "Choose delivery or pickup to see your total.",
+    "total": "Total",
+    "totalItemsOnly": "Total before delivery"
   },
   "errors": {
     "notFoundTitle": "Page not found",
@@ -47,5 +68,30 @@
     "addToBasket": "Add to basket",
     "soldOut": "Sold out",
     "soldOutHint": "This cake is sold out for now. Message us on WhatsApp to ask when it is back."
+  },
+  "basket": {
+    "metaTitle": "Your basket",
+    "empty": "Your basket is empty.",
+    "seeMenu": "See the menu",
+    "quantity": "Quantity",
+    "quantityOf": "Quantity of {{name}}",
+    "decrease": "Decrease quantity of {{name}}",
+    "increase": "Increase quantity of {{name}}",
+    "remove": "Remove {{name}} from basket",
+    "removeLabel": "Remove",
+    "atMinimum": "1 is the smallest quantity. To take this out, press Remove.",
+    "atMaximum": "50 is the largest quantity for one line.",
+    "eachPrice": "{{price}} each",
+    "lineTotal": "Line total",
+    "subtotal": "Subtotal",
+    "unavailableItem": "Item no longer available",
+    "problems": {
+      "sold_out": "Sold out: please remove it to place your order.",
+      "hidden": "No longer available: please remove it to place your order.",
+      "out_of_season": "Out of season: please remove it to place your order."
+    },
+    "errors": {
+      "quantity": "Choose a quantity from 1 to 50."
+    }
   }
 }
