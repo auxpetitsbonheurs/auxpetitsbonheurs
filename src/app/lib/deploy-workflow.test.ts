@@ -60,6 +60,17 @@ describe("deploy workflow steps (AC2)", () => {
     expect(job("production")).toContain('curl -fsS "$PRODUCTION_URL/healthz"');
   });
 
+  test.each(["staging", "production"])("%s: after deploying, reports launch readiness by secret name (warns, never fails)", (name) => {
+    const steps = job(name);
+    const deploy = steps.indexOf(`run: npm run deploy:${name}`);
+    const readiness = steps.indexOf(`run: npm run check:launch -- ${name}`);
+    expect(deploy).toBeGreaterThan(0);
+    expect(readiness).toBeGreaterThan(deploy);
+    expect(steps).not.toContain("--strict");
+    const step = steps.slice(steps.lastIndexOf("- name:", readiness));
+    expect(step).toContain("CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}");
+  });
+
   test("each deploy job waits for its preflight and runs only when keys are configured", () => {
     for (const name of ["staging", "production"]) {
       expect(job(name)).toMatch(new RegExp(`needs:\\s*${name}-preflight`));

@@ -60,6 +60,16 @@ for staging, `auxpetitsbonheurs` for production. For each name: **+ Add** → Ty
 "Text" variable added in the dashboard is removed by the next deploy, a Secret is kept.
 (Same thing from a terminal: `npx wrangler secret put <NAME> --env staging|production`.)
 
+**Start with the first four rows only** (`SUPABASE_URL`, `SUPABASE_ANON_KEY`,
+`SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`): the site starts with just these. Every other row
+is an optional integration you can add later, one at a time; until it is set its feature is
+off and says so (an hourly `integration_missing` line in Workers Logs; queued emails wait in
+the outbox and go out once email is configured, from E-10). After each deploy the GitHub run
+summary shows **Launch readiness**: the names still missing (never values).
+**Before production is announced publicly**, email (`RESEND_API_KEY`, `EMAIL_FROM`) and
+`TURNSTILE_SECRET_KEY` must be set: the production summary says "NOT ready for public
+launch" until they are.
+
 | Name | Sensitive | Value for staging / production | Where to get it |
 |---|---|---|---|
 | `SUPABASE_URL` | no | each project's own | Supabase project → Project Settings → Data API → **Project URL** (`https://<ref>.supabase.co`; must be https) |
@@ -106,7 +116,8 @@ Staging first, then production.
 4. Staging: merge to `main` (or Actions → **deploy** → Run workflow on `main`). The workflow
    applies the migrations to the staging database, then creates the `auxpetitsbonheurs-staging`
    Worker. It shows an error page until step 5.
-5. Section 2 for `auxpetitsbonheurs-staging` (all twelve names, staging values).
+5. Section 2 for `auxpetitsbonheurs-staging`: the four core secrets, staging values (the
+   integrations can wait).
 6. Open `https://auxpetitsbonheurs-staging.<subdomain>.workers.dev/healthz`: expect `"ok":true`.
 7. Seed the first Owner on staging from your computer (README "Seeding the first Owner"):
    `npm run seed:owner` with `APP_ENV=staging`, the staging `SUPABASE_URL`,
@@ -114,7 +125,8 @@ Staging first, then production.
 8. Production: fast-forward the `production` branch to a commit staging runs
    (`git push origin <commit>:production`). The workflow checks staging, migrates the
    production database and creates the `auxpetitsbonheurs` Worker.
-9. Section 2 for `auxpetitsbonheurs` (production values).
+9. Section 2 for `auxpetitsbonheurs`: the four core secrets, production values. Add email and
+   Turnstile before the public launch (the deploy summary lists what is missing).
 10. Seed the production Owner: same as step 7 with production values and
     `npm run seed:owner -- --confirm-production`.
 11. **Deploy day**: Supabase production project → Table Editor → `settings` (one row):

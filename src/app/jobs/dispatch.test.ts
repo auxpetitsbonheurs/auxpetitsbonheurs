@@ -50,7 +50,7 @@ describe("dispatch (AC4)", () => {
     expect(String((results[0] as { error: string }).error)).toMatch(/SUPABASE_URL/);
   });
 
-  test("keepAlive runs on every hourly tick", () => {
-    expect(JOBS.map((job) => job.name)).toEqual(["keepAlive"]);
+  test("keepAlive and the missing-integrations check run on every hourly tick", () => {
+    expect(JOBS.map((job) => job.name)).toEqual(["keepAlive", "integrations"]);
   });
 });

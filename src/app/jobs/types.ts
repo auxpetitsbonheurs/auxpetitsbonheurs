@@ -8,6 +8,8 @@ export interface JobContext {
   db: Database;
   supabase: SupabaseEndpoint;
   fetch?: typeof fetch;
+  /** The validated bindings, for jobs that check which optional integrations are configured. */
+  env?: Readonly<Record<string, unknown>>;
 }
 
 export type JobResult = { job: string; ran: true; processed: number } | { job: string; ran: false; error: string };

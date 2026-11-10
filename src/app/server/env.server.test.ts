@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
+import { CORE_SECRETS, INTEGRATION_KEYS } from "~/lib/integrations";
 import { ENV_KEYS, EnvError, parseEnv } from "./env.server";
 
 const SECRET = "s3cr3t-value-never-printed";
@@ -70,10 +71,27 @@ describe("parseEnv (AC1: fail loudly, never leak values)", () => {
     expect(error.message).not.toContain(SECRET);
   });
 
-  test("integration secrets are required outside development", () => {
-    const error = errorOf(() => parseEnv(bindings({ RESEND_API_KEY: undefined })));
+  test.each(["staging", "production"])("%s starts with only the four core secrets (ADR-0002 amendment)", (APP_ENV) => {
+    const optional = Object.fromEntries(INTEGRATION_KEYS.map((key) => [key, undefined]));
 
-    expect(error.variables).toEqual(["RESEND_API_KEY"]);
+    const env = parseEnv(bindings({ APP_ENV, ...optional }));
+
+    expect(env.APP_ENV).toBe(APP_ENV);
+    expect(env.RESEND_API_KEY).toBeUndefined();
+    expect(env.TURNSTILE_SECRET_KEY).toBeUndefined();
+  });
+
+  test.each(CORE_SECRETS)("a deployed Worker still refuses to start without core secret %s", (key) => {
+    const error = errorOf(() => parseEnv(bindings({ APP_ENV: "production", [key]: undefined })));
+
+    expect(error.variables).toEqual([key]);
+  });
+
+  test("an integration secret that is set but malformed is still refused, by name", () => {
+    const error = errorOf(() => parseEnv(bindings({ SENTRY_DSN: `not-a-dsn-${SECRET}` })));
+
+    expect(error.variables).toEqual(["SENTRY_DSN"]);
+    expect(error.message).not.toContain(SECRET);
   });
 
   test("integration secrets may be absent in development", () => {

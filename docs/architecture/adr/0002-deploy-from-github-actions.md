@@ -39,3 +39,25 @@ staging deployment. Workers Builds is not connected.
 ## Revisit when
 The bakery's repository moves off GitHub, or Cloudflare's builder gains a pre-deploy step
 with secret access that makes Option B equivalent.
+
+## Amendment 1 (2026-11-10): first deploy needs only the core runtime secrets
+Deciders: orchestrator (automation mode `auto`, for owner review). Reason: the Owner is not
+technical; twelve Worker secrets (several needing a computer, e.g. VAPID keys) before the
+first page loads made the first deploy too hard.
+
+- **Required at startup** (staging and production, `src/app/server/env.server.ts`):
+  `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`.
+- **Optional at startup** (`src/app/lib/integrations.ts`): `RESEND_API_KEY` + `EMAIL_FROM`,
+  `VAPID_*`, `SUPABASE_AUTH_HOOK_SECRET`, `TURNSTILE_SECRET_KEY`, `SENTRY_DSN`. A value that
+  is set is still validated (malformed = refuse to start, by name). A feature whose keys are
+  missing must check `integrationConfigured(env, name)` and degrade safely and visibly:
+  email stays queued in `email_outbox` (counted in the hourly `integration_missing` log
+  line); Sentry is a no-op; push and the auth email hook stay off; Turnstile, when E-05 adds
+  it, must not silently pass in production (see tech debt).
+- **Launch safety kept**: `scripts/launch-readiness.ts` (`npm run check:launch -- <env>`)
+  reads the Worker's secret **names** with `wrangler secret list` and reports missing core
+  secrets and integrations; `deploy.yml` runs it after every deploy and writes the result to
+  the run summary (warnings; production says "NOT ready for public launch" while email or
+  Turnstile is missing). `--strict` fails instead, for the launch checklist.
+- Consequence: a production Worker can run without bot protection or email. Accepted only
+  until the public launch; the launch checklist must see a "ready" readiness report.

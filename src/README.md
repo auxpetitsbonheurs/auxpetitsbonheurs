@@ -188,11 +188,17 @@ environment, in this order:
    the staging Worker is created. It shows an error page until step 5.
 5. Owner, Cloudflare dashboard → Workers & Pages → `auxpetitsbonheurs-staging` → Settings →
    Variables and Secrets, each added as type Secret (or
-   `npx wrangler secret put <NAME> --env staging|production`): `SUPABASE_URL`,
-   `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `RESEND_API_KEY`,
-   `EMAIL_FROM`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`,
-   `SUPABASE_AUTH_HOOK_SECRET`, `TURNSTILE_SECRET_KEY`, `SENTRY_DSN`. The names and
-   placeholders are in `.dev.vars.example`; CI needs none of them.
+   `npx wrangler secret put <NAME> --env staging|production`). **To start, only the four
+   core secrets**: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
+   `DATABASE_URL`. The site runs with just these (ADR-0002 amendment).
+   Later, one integration at a time: `RESEND_API_KEY` + `EMAIL_FROM` (email),
+   `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` + `VAPID_SUBJECT` (phone notifications),
+   `SUPABASE_AUTH_HOOK_SECRET`, `TURNSTILE_SECRET_KEY`, `SENTRY_DSN`. While one is missing its
+   feature is off and says so (hourly `integration_missing` line in Workers Logs; queued
+   emails wait in the outbox). Each deploy run's summary lists what is still missing
+   ("Launch readiness", names only). **Production must not be announced publicly before
+   email and Turnstile are set.** The names and placeholders are in `.dev.vars.example`;
+   CI needs none of them.
 6. Owner: seed the first Owner on staging (below).
 7. Owner: repeat 4 to 6 for production (fast-forward `production`, Worker `auxpetitsbonheurs`,
    `--confirm-production`), then the launch checklist above.

@@ -1,6 +1,9 @@
 // Validated Worker bindings and secrets (NFR-012, NFR-008). Parse once per isolate
 // with `getEnv(env)`; a bad deploy fails on the first request with the variable's
 // name, never its value. Every key is listed in .dev.vars.example.
+// Only the four core secrets are required everywhere; integration keys are optional at
+// startup (ADR-0002 amendment): the feature that needs one checks `integrationConfigured`
+// (~/lib/integrations) and degrades with a log line naming the missing keys.
 import { z } from "zod";
 
 const required = z.string().min(1);
@@ -17,7 +20,10 @@ const coreSchema = z.object({
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
 });
 
-/** Needed by later features; optional in development, required in staging and production. */
+/**
+ * Optional in every environment; validated only when set. Launch readiness (production
+ * deploy summary, scripts/launch-readiness.ts) names the missing ones.
+ */
 const integrationSchema = z.object({
   RESEND_API_KEY: required,
   EMAIL_FROM: required,
@@ -40,7 +46,7 @@ const developmentSchema = coreSchema
   .extend(developmentOnlySchema.shape);
 /** Deployed Workers never talk to a local Supabase (http): that is an e2e/dev build shipped by mistake. */
 const deployedSchema = coreSchema
-  .extend(integrationSchema.shape)
+  .extend(integrationSchema.partial().shape)
   .extend({ SUPABASE_URL: z.url({ protocol: /^https$/ }), TEST_CLOCK: z.never().optional() });
 
 export type ServerEnv = z.infer<typeof developmentSchema>;

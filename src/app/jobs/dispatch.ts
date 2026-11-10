@@ -3,6 +3,7 @@
 // never throws. Later epics add their jobs (with their own "due" rules) to JOBS.
 import { createRequestDb } from "~/server/db.server";
 import { getEnv } from "~/server/env.server";
+import { integrationsCheck } from "./integrations";
 import { keepAlive } from "./keep-alive";
 import type { JobContext, JobResult } from "./types";
 
@@ -13,7 +14,10 @@ export interface Job {
   run: (context: JobContext) => Promise<JobResult>;
 }
 
-export const JOBS: readonly Job[] = [{ name: "keepAlive", run: keepAlive }];
+export const JOBS: readonly Job[] = [
+  { name: "keepAlive", run: keepAlive },
+  { name: "integrations", run: integrationsCheck },
+];
 
 /** Error name and message with any URL (it could carry credentials) replaced. */
 function safeError(error: unknown): string {
@@ -44,7 +48,7 @@ export async function dispatch(now: Date, env: object, ctx: Pick<ExecutionContex
   }
   const requestDb = createRequestDb(settings.DATABASE_URL);
   try {
-    const context: JobContext = { now, db: requestDb.db, supabase: { url: settings.SUPABASE_URL, anonKey: settings.SUPABASE_ANON_KEY } };
+    const context: JobContext = { now, db: requestDb.db, supabase: { url: settings.SUPABASE_URL, anonKey: settings.SUPABASE_ANON_KEY }, env: settings };
     const results: JobResult[] = [];
     for (const job of jobs) {
       const result = await runJob(job, context);

@@ -2,8 +2,10 @@
 # In staging/production set each with: wrangler secret put <NAME> --env <staging|production>
 # PLACEHOLDERS ONLY. Never commit real values.
 # Validated at startup by app/server/env.server.ts; a bad value fails with the variable's name.
-# Integration keys (Resend, VAPID, auth hook, Turnstile, Sentry) may be left out in
-# development only; staging and production refuse to start without them.
+# Only the four Supabase/database keys are required. Integration keys (Resend, VAPID, auth
+# hook, Turnstile, Sentry) are optional everywhere: their feature is off until set, and
+# `npm run check:launch -- <env>` / the deploy summary list the missing ones. Production's
+# public launch needs email (RESEND_API_KEY, EMAIL_FROM) and TURNSTILE_SECRET_KEY.
 
 # Non-secret; set per environment in wrangler.jsonc "vars" (listed here for completeness)
 APP_ENV=development

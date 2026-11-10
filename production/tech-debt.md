@@ -42,3 +42,9 @@
 - Medium (deploy.yml, all workflows): `actions/*@v5` are major-version pins (allowed by rules/infra.md); pin to commit SHAs once Dependabot for Actions is on. Also backup.yml:24-39 exposes every secret at job level to all steps including `apt-get`; scope each to its step.
 - Low (deploy.yml:104): production preflight does not verify the `production` branch commit descends from `main`; branch protection on `production` (restrict pushes to the Owner) is the control, document it in the runbook.
 - Low: Cloudflare token template is "All zones" (deploy-keys.md section 1); narrow to the bakery zone once a domain exists.
+
+## From ADR-0002 amendment 1: core-only first deploy (2026-11-10)
+- TD (launch blocker): `TURNSTILE_SECRET_KEY` is optional at startup. When E-05 adds Turnstile verification it must check `integrationConfigured(env, "turnstile")`: in production a missing key must refuse public form submissions (or the launch must be blocked), never skip verification silently; in staging it may skip with a logged warning. Public launch requires the key; `npm run check:launch -- production --strict` must pass on the launch checklist. Medium.
+- TD (launch blocker): email (`RESEND_API_KEY`, `EMAIL_FROM`) is optional at startup; E-10's sender must leave outbox rows `pending` (no attempts consumed) while unconfigured, so they go out once the keys are set. Production public launch requires it. Medium.
+- Low: Sentry (when added) must be a no-op without `SENTRY_DSN`; push and the auth email hook stay off without their keys (`integrationConfigured`).
+- Low: `scripts/check-deploy.ts` checks the build, not the Worker's secrets; launch readiness runs after the deploy (needs the Worker to exist). A first production deploy therefore always warns until the secrets are entered.
