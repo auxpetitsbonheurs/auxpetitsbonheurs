@@ -44,4 +44,18 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Workers run in UTC: local-time getters silently give the wrong Mauritius day.
+    // Convert with app/domain/time.ts (todayMU, muDateTimeToInstant) instead (NFR-008).
+    files: ["app/domain/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        ...["getDate", "getHours", "getDay"].map((name) => ({
+          selector: `CallExpression[callee.property.name='${name}']`,
+          message: `${name}() uses the server's time zone; use app/domain/time.ts helpers.`,
+        })),
+      ],
+    },
+  },
 );

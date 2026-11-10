@@ -8,7 +8,15 @@ const RUPEE_FORMAT = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 0,
 });
 
-/** Formats a whole-rupee amount as "Rs 1,250". */
-export function formatRupees(amount: number): string {
+/**
+ * Formats a whole-rupee amount as "Rs 1,250". One format for both languages
+ * (NFR-008, S-006): the locale is accepted so call sites stay uniform.
+ */
+export function formatRupees(amount: number, _locale?: Locale): string {
   return `Rs ${RUPEE_FORMAT.format(Math.round(amount))}`;
+}
+
+/** Customer URLs: English unprefixed, French under /fr (architecture: i18n & locale). */
+export function localeFromPathname(pathname: string): Locale {
+  return pathname === "/fr" || pathname.startsWith("/fr/") ? "fr" : "en";
 }

@@ -1,0 +1,36 @@
+{
+  "shell": {
+    "bakeryName": "Aux petits bonheurs",
+    "skipToContent": "Aller au contenu principal",
+    "primaryNav": "Principal",
+    "basketLink_one": "Panier, {{count}} article",
+    "basketLink_other": "Panier, {{count}} articles",
+    "basketStatus_one": "{{count}} article dans le panier",
+    "basketStatus_other": "{{count}} articles dans le panier",
+    "footer": {
+      "heading": "Contacter la pâtisserie",
+      "whatsapp": "WhatsApp",
+      "phone": "Téléphone",
+      "email": "E-mail",
+      "copyright": "© {{year}} Aux petits bonheurs"
+    }
+  },
+  "language": {
+    "other": "English"
+  },
+  "home": {
+    "title": "Gâteaux faits maison à Maurice",
+    "intro": "Gâteaux, cupcakes et desserts préparés sur commande pour vos fêtes.",
+    "metaDescription": "Gâteaux, cupcakes et desserts faits maison, préparés sur commande à Maurice."
+  },
+  "checkout": {
+    "title": "Finaliser la commande"
+  },
+  "errors": {
+    "notFoundTitle": "Page introuvable",
+    "notFoundBody": "Nous ne trouvons pas cette page. Elle a peut-être changé d'adresse.",
+    "genericTitle": "Un problème est survenu",
+    "genericBody": "Veuillez réessayer dans un instant.",
+    "backHome": "Retour à l'accueil"
+  }
+}

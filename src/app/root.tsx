@@ -5,27 +5,26 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useRouteLoaderData,
 } from "react-router";
 
 import type { Route } from "./+types/root";
 import "./app.css";
+import { messagesFor } from "~/i18n/catalog.server";
+import { I18nProvider, useI18n } from "~/i18n/react";
+import { localeFromPathname } from "~/lib/locale";
 
-export const links: Route.LinksFunction = () => [
-  { rel: "preconnect", href: "https://fonts.googleapis.com" },
-  {
-    rel: "preconnect",
-    href: "https://fonts.gstatic.com",
-    crossOrigin: "anonymous",
-  },
-  {
-    rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
-  },
-];
+export function loader({ request }: Route.LoaderArgs) {
+  const locale = localeFromPathname(new URL(request.url).pathname);
+  // Only the active locale's messages reach the browser (S-006 AC5).
+  return { locale, messages: messagesFor(locale) };
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const data = useRouteLoaderData<typeof loader>("root");
+  const locale = data?.locale ?? "en";
   return (
-    <html lang="en">
+    <html lang={locale}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -33,7 +32,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        {children}
+        <I18nProvider locale={locale} messages={data?.messages ?? {}}>
+          {children}
+        </I18nProvider>
         <ScrollRestoration />
         <Scripts />
       </body>
@@ -46,27 +47,16 @@ export default function App() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  let message = "Oops!";
-  let details = "An unexpected error occurred.";
-  let stack: string | undefined;
-
-  if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : "Error";
-    details =
-      error.status === 404
-        ? "The requested page could not be found."
-        : error.statusText || details;
-  } else if (import.meta.env.DEV && error && error instanceof Error) {
-    details = error.message;
-    stack = error.stack;
-  }
+  const { t } = useI18n();
+  const notFound = isRouteErrorResponse(error) && error.status === 404;
+  const stack = import.meta.env.DEV && error instanceof Error ? error.stack : undefined;
 
   return (
-    <main className="pt-16 p-4 container mx-auto">
-      <h1>{message}</h1>
-      <p>{details}</p>
+    <main className="p-4">
+      <h1>{t(notFound ? "errors.notFoundTitle" : "errors.genericTitle")}</h1>
+      <p>{t(notFound ? "errors.notFoundBody" : "errors.genericBody")}</p>
       {stack && (
-        <pre className="w-full p-4 overflow-x-auto">
+        <pre className="w-full overflow-x-auto p-4">
           <code>{stack}</code>
         </pre>
       )}

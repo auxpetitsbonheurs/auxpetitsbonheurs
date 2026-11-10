@@ -38,3 +38,20 @@ describe("server-only module boundary (NFR-003)", () => {
     expect(await restrictedImports(serverImport, "app/server/fixture.server.ts")).toEqual([]);
   });
 }, 30_000);
+
+describe("Mauritius time boundary (S-006: only domain/time.ts converts instants)", () => {
+  async function syntaxErrors(code: string, filePath: string) {
+    const [result] = await eslint.lintText(code, { filePath });
+    return (result?.messages ?? []).filter((m) => m.ruleId === "no-restricted-syntax");
+  }
+
+  test.each(["getDate", "getHours", "getDay"])("domain code calling %s() fails lint", async (method) => {
+    const code = `export const read = (d: Date) => d.${method}();\n`;
+
+    expect(await syntaxErrors(code, "app/domain/fixture.ts")).toHaveLength(1);
+  });
+
+  test("UTC getters stay allowed in domain code", async () => {
+    expect(await syntaxErrors(`export const read = (d: Date) => d.getUTCDate();\n`, "app/domain/fixture.ts")).toEqual([]);
+  });
+}, 30_000);

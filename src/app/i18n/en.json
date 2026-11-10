@@ -1,0 +1,36 @@
+{
+  "shell": {
+    "bakeryName": "Aux petits bonheurs",
+    "skipToContent": "Skip to content",
+    "primaryNav": "Main",
+    "basketLink_one": "Basket, {{count}} item",
+    "basketLink_other": "Basket, {{count}} items",
+    "basketStatus_one": "{{count}} item in basket",
+    "basketStatus_other": "{{count}} items in basket",
+    "footer": {
+      "heading": "Contact the bakery",
+      "whatsapp": "WhatsApp",
+      "phone": "Phone",
+      "email": "Email",
+      "copyright": "© {{year}} Aux petits bonheurs"
+    }
+  },
+  "language": {
+    "other": "Français"
+  },
+  "home": {
+    "title": "Homemade cakes in Mauritius",
+    "intro": "Cakes, cupcakes and desserts baked to order for your celebrations.",
+    "metaDescription": "Homemade cakes, cupcakes and desserts baked to order in Mauritius."
+  },
+  "checkout": {
+    "title": "Checkout"
+  },
+  "errors": {
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "We could not find this page. It may have moved.",
+    "genericTitle": "Something went wrong",
+    "genericBody": "Please try again in a moment.",
+    "backHome": "Back to the home page"
+  }
+}
