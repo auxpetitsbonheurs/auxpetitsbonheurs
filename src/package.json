@@ -38,6 +38,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.68.0",
+    "@electric-sql/pglite": "0.5.12",
     "@eslint/js": "^10.0.1",
     "@react-router/dev": "^8.5.1",
     "@tailwindcss/vite": "^4.2.2",
