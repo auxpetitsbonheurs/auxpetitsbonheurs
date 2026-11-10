@@ -81,6 +81,7 @@ No new tables or columns. Uses `custom_request`, `custom_request_photo`, `orders
 | Cancel (quote_needed only) / accept / decline quote | ✗ | ✓ | ✓ (same token) | ✗ | ✗ |
 | View request photos | ✗ | ✗ (not shown on tracking) | ✗ | ✓ (signed URL) | ✓ |
 | Send / re-send quote, decline request | ✗ | ✗ | ✗ | ✓ | ✓ |
+| Cancel an order while its quote awaits the customer (owner Q6) | ✗ | ✗ | ✗ | ✓ | ✓ |
 A customer account gives no extra rights over an order beyond its token (FR-039). Quote amount changes are server-side only.
 
 ## Analytics Events
@@ -102,6 +103,7 @@ Privacy-friendly, no PII, no tracking cookies (NFR-011). Counted server-side fro
 - Zero photos: allowed.
 - Date becomes blocked/too soon between page load and submit: `DATE_UNAVAILABLE` with reason; form kept.
 - Customer cancels while admin is sending a quote: whoever commits first wins; the other gets `ORDER_CHANGED` (customer) or `INVALID_TRANSITION` (admin) with reload.
+- Admin cancels while the quote is sent (owner Q6): the quote is withdrawn; Accept/Decline return `INVALID_TRANSITION` (page shows Cancelled); the standard Cancellation confirmed email is sent.
 - Re-quote while the customer has the old page open: old Accept returns `ORDER_CHANGED` ("This quote was updated, reload"); the old email's buttons open the tracking page, which always shows the current quote (FR-033).
 - Customer opens the quote on its expiry day: still valid until 23:59 MU. On the day after, Accept returns `QUOTE_EXPIRED` even if the hourly job has not yet run; the page shows the expired message and the job closes it on its next tick (at the 00:00 MU tick or later).
 - Admin sets an expiry later than the event date: allowed with a warning in the sheet.
@@ -150,7 +152,7 @@ Flag: none · Rollout: part of launch (Phase 4) · Rollback: standard redeploy; 
 ## Open Questions
 - Should the gallery photo copied in via "Request something similar" be copied into `request-photos` or referenced from `public-images`? Spec assumes referenced (`source_gallery_photo_id`) and counted toward the 5 — owner lead-backend.
 - Should a customer be able to cancel a Quote sent request (FR-027 says no; they can Decline, which closes it)? Assumed no — owner product-director.
-- Late accept on a date that has since been blocked is allowed (assumed). Confirm with owner Sabera.
+- Late accept on a date that has since been blocked is allowed (owner-approved 2026-11-10, Q10).
 
 ## Open contract changes (applied 2026-11-10)
 1. `admin/order` loader: add `quoteDefaults: { expiresOn: MuDate }` (today + `quote_validity_days`) so the sheet does not recompute on the client. — **Resolved in contracts.md (2026-11-10).**

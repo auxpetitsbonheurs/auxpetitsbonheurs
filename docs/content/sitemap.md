@@ -79,7 +79,7 @@ Non-admin or customer hitting any of these (except login/invite/forgot/reset) is
 - Filtered/query URLs, tokens, account, admin, basket: noindex or canonical to base. Tokens never appear in sitemap or referrers.
 - Missing FR text falls back to EN content on the `/fr` URL (acceptable; flag in content QA so indexable FR pages have real FR copy before launch).
 - Images: explicit dimensions, lazy below fold, descriptive alt (product name default). Performance budgets from `project.yaml` apply (Lighthouse SEO >= 95).
-- Renamed product slug: old link shows "not available" (no redirect, Q19).
+- Renamed product slug: old link redirects (301) to the new slug via slug history (owner Q19).
 
 ## Redirects
 | From | To | Code | Reason |

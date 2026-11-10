@@ -16,6 +16,7 @@ Sources: build-brief "Data the app keeps" + Promotion, PRD FR-001..075 and NFR-0
 ```mermaid
 erDiagram
   PRODUCT ||--o{ PRODUCT_PHOTO : has
+  PRODUCT ||--o{ PRODUCT_SLUG_HISTORY : "old slugs"
   PRODUCT ||--o{ OPTION_GROUP : has
   OPTION_GROUP ||--o{ OPTION_CHOICE : has
   PROMOTION ||--o{ PROMOTION_PRODUCT : discounts
@@ -44,7 +45,7 @@ Standalone: `gallery_photo`, `settings` (1 row), `counter`, `rate_limit_bucket`,
 | Field | Type | Null | Default | Constraints / notes |
 |---|---|---|---|---|
 | id | uuid | no | gen | PK |
-| slug | text | no | | UNIQUE; URL `/menu/:slug` |
+| slug | text | no | | UNIQUE; URL `/menu/:slug`; previous values kept in `product_slug_history` (301) |
 | type | enum `product_type` (cake, cupcake_box, dessert, seasonal) | no | | menu filter |
 | category | text | yes | | free label (e.g. "Birthday"); promotion link target |
 | name_en / name_fr | text | no / yes | | |
@@ -57,6 +58,16 @@ Standalone: `gallery_photo`, `settings` (1 row), `counter`, `rate_limit_bucket`,
 | sort_order | integer | no | 0 | drag reorder |
 | seasonal_starts_on / seasonal_ends_on | date (MU) | yes | | CHECK both NULL or both set and end ≥ start; inclusive |
 Indexes: (status, type, sort_order) — menu grid. Hard delete allowed (order items keep a snapshot, FK SET NULL); the UI prefers Hide.
+The seasonal window is checked against the order's pickup/delivery date (`orders.fulfil_on`) at checkout, not the placement date (owner Q2, 2026-11-10); no schema change.
+
+### product_slug_history
+Added 2026-11-10 (owner Q19): a renamed product's old URL redirects (301) to the new one. Needs a Drizzle table in `src/app/db/tables/catalogue.ts` and a migration (expand-only).
+| Column | Type | Null | Default | Notes |
+|---|---|---|---|---|
+| slug | text | no | | PK; an old slug of the product; also unique against `product.slug` (checked in the `save` transaction) |
+| product_id | uuid FK → product | no | | ON DELETE CASCADE |
+| created_at | timestamptz | no | now() | when the slug was replaced |
+Written in the same transaction as a slug change in `admin/product` `save`. The public `/menu/:slug` loader looks up `product.slug` first, then this table. Returning to a previous slug removes that row from history.
 
 ### product_photo
 id uuid PK · product_id FK → product ON DELETE CASCADE · storage_path text (bucket `public-images`) · width, height int · sort_order smallint CHECK 0..4 · UNIQUE (product_id, sort_order) — **caps 1–5 photos in the DB**; "at least 1" is enforced by the app when status ≠ hidden. Alt text = product name (NFR-002).

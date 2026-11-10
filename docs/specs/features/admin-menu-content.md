@@ -75,7 +75,7 @@ i18n keys `admin.menu.*`, `admin.gallery.*`, `admin.promo.*`, `admin.availabilit
 Reuses `docs/architecture/api/contracts.md` "Admin app": `admin/menu`, `admin/product`, `admin/promotions`, `admin/promotion`, `admin/gallery`, `admin/availability` (owner), `admin/settings` (owner), `requestUploadUrls`, `ProductInput`, error codes `VALIDATION_FAILED`, `FORBIDDEN`, `NOT_FOUND`, `UPLOAD_REJECTED`, `SETTINGS_CHANGED`. Validation rules on top of those schemas:
 | Operation | Rule | Errors |
 |---|---|---|
-| `save` product | slug unique, `[a-z0-9-]`, auto from EN name; 1-5 photos unless hidden; seasonal pair valid; group/choice limits; text group max <= 200; price delta int within +/-100000; at least one choice for single/multiple | `VALIDATION_FAILED` + fields; `409` slug taken as `fields.slug` |
+| `save` product | slug unique, `[a-z0-9-]`, auto from EN name; 1-5 photos unless hidden; seasonal pair valid; group/choice limits; text group max <= 200; price delta int within +/-100000; at least one choice for single/multiple | `VALIDATION_FAILED` + fields; `409` slug taken (by a product or in slug history) as `fields.slug`; a changed slug stores the old one in `product_slug_history` |
 | `reorder` | ids are exactly the products of that type | `VALIDATION_FAILED` |
 | `setStatus` | available needs >= 1 photo | `VALIDATION_FAILED` |
 | `delete` product | allowed; order items keep snapshot | `NOT_FOUND` |
@@ -95,7 +95,7 @@ Owner routes called by an Admin: `FORBIDDEN` (loader and action).
 7. Upload constraint text: contracts say max 1 MB; NFR-001/NFR-009 say <= 250-300 kB. This spec: client target 300 kB, server hard cap 1 MB. Confirm. — **Resolved in contracts.md (2026-11-10).** Client target 300 kB, server cap 1 MB; PRD NFR-001 and project.yaml aligned to 300 kB.
 
 ## Data Model Changes
-None required. Uses `product`, `product_photo` (sort_order 0..4, unique), `option_group`, `option_choice`, `promotion`, `promotion_product`, `gallery_photo`, `blocked_date`, `settings` (versioned). Suggested additions only if the owner wants them: none now. Product `sort_order` is per type. Slug history is not kept (assumption; old URL 404s).
+None required. Uses `product`, `product_photo` (sort_order 0..4, unique), `option_group`, `option_choice`, `promotion`, `promotion_product`, `gallery_photo`, `blocked_date`, `settings` (versioned). Suggested additions only if the owner wants them: none now. Product `sort_order` is per type. Slug history is kept in `product_slug_history` (owner Q19, 2026-11-10); the old URL redirects (301) to the new one.
 
 ## Permissions matrix
 | Action | Anonymous | Customer | Admin | Owner |
@@ -142,6 +142,7 @@ No third-party analytics. Structured logs, no PII: `product_saved` (id, isNew), 
 - AC11 (FR-029): Given a PDF or a source file over 10 MB, when added, then it is rejected before upload with a message; a forged upload > 1 MB is refused by the server (`UPLOAD_REJECTED`).
 - AC12 (FR-062): Given 5 photos, when adding a sixth, then the control is disabled; given reorder, then the first photo becomes the card image.
 - AC13 (FR-062, FR-006): Given seasonal dates 1-24 Dec, when viewed 24 Dec and 25 Dec MU, then orderable on the 24th and not the 25th.
+- AC14b (Q19): Given a published product whose slug changes from `a` to `b`, when `/menu/a` is requested, then it answers 301 to `/menu/b`; a slug in history cannot be reused by another product (`409`).
 - AC14 (FR-062): Given seasonal start after end, when saving, then `VALIDATION_FAILED` on the dates.
 - AC15 (FR-062, FR-008): Given a text group with max 25, when a customer enters 26 characters, then rejected client and server side; blank max uses the Settings value.
 - AC16 (FR-062): Given a choice with price change Rs 0, when saved, then accepted; the customer price equals base.
@@ -181,7 +182,7 @@ No third-party analytics. Structured logs, no PII: `product_saved` (id, isNew), 
 - Flag: none · Rollout: with admin launch; Settings seeded by migration with PRD defaults · Rollback: redeploy; content edits are data, not reversible except by re-edit (Settings version history not kept).
 
 ## Open Questions
-1. Slug change after publish breaks old links: accept 404 or add redirect? Assumption: no redirect — owner product-director.
+1. Slug change after publish: **Resolved (owner, 2026-11-10, Q19):** old slug redirects 301 via slug history.
 2. Resolved 2026-11-10: 300 kB target, 1 MB server cap; PRD NFR-001 and project.yaml now say 300 kB.
 3. Gallery occasion list fixed vs free: assumption free with suggestions.
 4. Max option groups/choices (10/30) acceptable? — Sabera.

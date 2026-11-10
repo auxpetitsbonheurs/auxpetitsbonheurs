@@ -49,8 +49,8 @@ flowchart TD
 | Accept an old quote after re-quote | Page shows only the newest quote; old link says "replaced" | Use latest |
 | Double tap Accept / two tabs | Second gets `ORDER_CHANGED`; page refreshes to Approved | None |
 | Admin declines | Customer email + tracking shows reason | Start a new request / WhatsApp |
-| Admin cancels while quote_sent | Not allowed (assumption Q6) | Wait for reply/expiry |
-| Date blocked after quote sent | Customer may still accept (assumption Q10); admin sees warning | Admin follows up |
+| Admin cancels while quote_sent | Allowed (owner Q6): quote withdrawn, tracking shows Cancelled, cancellation email sent | None |
+| Date blocked after quote sent | Customer may still accept (owner-approved Q10); admin sees warning | Admin follows up |
 | Admin sees expired quote | Auto-closed within 24 h, push + email to admins | Re-request |
 
 ## States per screen
@@ -70,4 +70,4 @@ Form labels, quote email, tracking text bilingual; admin's own note to customer 
 custom_form_started, custom_request_sent, quote_accepted, quote_declined, quote_expired (counts).
 
 ## Open questions
-- Late acceptance after day blocked (Q10), cancelling a sent quote (Q6): assumptions stand.
+- Late acceptance after day blocked (Q10): allowed. Cancelling a sent quote (Q6): allowed for admins (owner decisions 2026-11-10).

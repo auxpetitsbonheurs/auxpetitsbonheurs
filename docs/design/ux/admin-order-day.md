@@ -38,8 +38,8 @@ flowchart TD
 | 5 | same | Advance: In preparation, Ready (pickup) or Out for delivery, Completed | Customer emailed for ready/on the way/thank you |
 | 6 | same | Mark paid | Toggle; who/when recorded; any status |
 | 7 | same | WhatsApp | Choose template (approved, ready, on the way, payment reminder, blank), editable, opens wa.me in order language |
-| 8 | `/admin/orders/new` | Manual order | Customer matched by phone/email; saved Approved; warnings for blocked/too-soon dates |
-| 9 | `/admin/orders/:id/edit` | Edit lines, date, window, fee, override total | Recalculated, logged, no customer email |
+| 8 | `/admin/orders/new` | Manual order | Customer matched by phone/email; saved Approved; warnings for blocked/too-soon/past dates and sold-out items; pickup forces fee Rs 0 |
+| 9 | `/admin/orders/:id/edit` | Edit lines, date, window, fee, override total | Recalculated, logged; customer emailed "Your order was updated" if date and/or total changed |
 | 10 | `/admin/calendar` | Month/week/day; tap a day; Block day (reason) | Counts exclude cancelled/declined/closed; blocked greyed; customers see it disabled at once |
 | 11 | `/admin/calendar/:date/prep` | Read grouped quantities and cake messages; Share / Print | Confirmed orders only; no customer PII |
 
@@ -54,13 +54,13 @@ flowchart TD
 | Invalid transition (e.g. cancel Completed) | `INVALID_TRANSITION` message; button not shown normally | None |
 | Block a day with existing orders | Warning lists them; block still applies (orders unaffected) | Contact customers |
 | Admin tries to remove a range block | `FORBIDDEN` "Only the Owner can remove date ranges" | Owner via Availability |
-| Manual order, blocked/too-soon date | Warning banner, Save still possible | Save or change |
-| Sold-out product on manual order | `PRODUCT_UNAVAILABLE` | Use free-text item or other product |
+| Manual order, blocked/too-soon/past date | Warning banner (past date skips other date checks), Save still possible | Save or change |
+| Sold-out product on manual order | Warning "Sold out", Save still possible (hidden product: `PRODUCT_UNAVAILABLE`) | Save, or use free-text item |
 | Email failure | Order saved, retried; log shows "email queued/failed" | Automatic retry |
 | Offline / slow network | Banner "You are offline"; actions disabled; list shows last loaded | Reconnect |
 | Empty states | Today: "Nothing to do today"; Orders tab: "No orders here"; Prep: "No confirmed orders for this day" | Calendar link |
 | Back one step | Confirm dialog "No email is sent" | Confirm/cancel |
-| Cancel (Approved onward) | Confirm dialog with optional reason; customer emailed | Cancel dialog |
+| Cancel (any non-final status, incl. quote sent) | Confirm dialog with optional reason; customer emailed | Cancel dialog |
 
 ## States per screen
 Loading: skeleton rows; optimistic status button with spinner then success tick. Permission: role-gated nav. Error toast has Retry; destructive actions always confirm.
@@ -75,4 +75,4 @@ Bottom bar is `nav` with `aria-current`; targets >= 48 px; status changes announ
 Not tracked for admin (no cookies); audit is the order activity log (FR-045).
 
 ## Open questions
-- Evening reminder skipped when 0 orders, unpaid includes approved (assumptions Q14, Q16).
+- Evening reminder skipped when 0 orders, unpaid includes approved (owner-approved Q14, Q16).

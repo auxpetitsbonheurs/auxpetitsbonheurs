@@ -12,7 +12,7 @@ Sabera or a helper enters an order that arrived by phone, WhatsApp or in person.
 | PRD ID | Requirement | Covered by section |
 |---|---|---|
 | FR-055 | Products/options or free-text item; name, phone, optional email, date, window, fulfilment, editable fee, paid; saves Approved, source manual | UX, API `create`, AC1-AC8 |
-| FR-056 | Ignores availability rules but warns if blocked or too soon | UX warnings, API `days`, AC9-AC11 |
+| FR-056 | Ignores availability rules but warns if blocked or too soon; past dates allowed (owner Q9); sold-out products allowed with a warning (Q8); pickup forces fee Rs 0 (Q7) | UX warnings, API `days`, AC9-AC11, AC23-AC26 |
 | FR-057 | Finds existing customer by phone or email; email only if entered | UX lookup, Data model, AC12-AC16 |
 | FR-045 | Creation logged in the activity log | Data model, AC17 |
 | FR-051 | "(new manual order) -> Approved" per Appendix B | AC1, AC18 |
@@ -22,7 +22,7 @@ Sabera or a helper enters an order that arrived by phone, WhatsApp or in person.
 ### Screens & states
 | Screen | Route | Loading | Empty | Error | Success |
 |---|---|---|---|---|---|
-| Add order | `/admin/orders/new` (from Orders header "+ Add order" and Today) | SSR; picker data in loader | Empty basket: "Add a product or a custom item to start." Total Rs 0, Save disabled | Field summary Alert at top, focus moved; `DATE_UNAVAILABLE` never raised (warnings only); `PRODUCT_UNAVAILABLE` for sold-out/hidden product | Redirect to order detail, toast "Order APB-0043 saved" |
+| Add order | `/admin/orders/new` (from Orders header "+ Add order" and Today) | SSR; picker data in loader | Empty basket: "Add a product or a custom item to start." Total Rs 0, Save disabled | Field summary Alert at top, focus moved; `DATE_UNAVAILABLE` never raised (warnings only); `PRODUCT_UNAVAILABLE` for hidden product (sold-out products are allowed with a warning) | Redirect to order detail, toast "Order APB-0043 saved" |
 | Product picker sheet | sheet | Search is client-side over loader catalogue | "No products match." | n/a | Line added |
 | Option picker sheet | sheet | n/a | n/a | Required group missing / text too long inline | Line added with price |
 | Free-text item sheet | sheet | n/a | n/a | name 1-120, price Rs 0..1,000,000, quantity 1..50 | Line added |
@@ -31,10 +31,10 @@ Sabera or a helper enters an order that arrived by phone, WhatsApp or in person.
 ### Flow
 1. Items: search product -> option sheet (same required/limits rules as the website) or "Custom item" (name, price, quantity). Lines show quantity stepper, price, remove. Max 20 lines.
 2. Customer: enter phone (tel keyboard, +230 hint) and/or email; on blur the lookup runs. If a customer matches, a card offers "Use this customer" (fills name; phone/email stay as typed). Name required, phone required, email optional.
-3. When: date (admin date picker: all days from today selectable, blocked/closed/too-soon days marked with a hint), window (delivery or pickup windows from settings), delivery or pickup. Delivery requires address (+ optional landmark); pickup hides address.
-4. Fee: defaults to settings delivery fee for delivery, 0 for pickup; editable Rs field (0..1,000,000).
+3. When: date (admin date picker: any day selectable including past days; blocked/closed/too-soon days marked with a hint), window (delivery or pickup windows from settings), delivery or pickup. Delivery requires address (+ optional landmark); pickup hides address.
+4. Fee: defaults to settings delivery fee for delivery; editable Rs field (0..1,000,000) for delivery only. Choosing pickup forces the fee to Rs 0 and disables the field (owner Q7); switching back to delivery restores the settings fee.
 5. Paid switch (default off); customer note optional; private admin note optional; confirmation language selector (defaults to the matched customer's language, else the admin's).
-6. Warning Alert (non-blocking) above the sticky bar when the chosen date is blocked ("This day is blocked") or earlier than the notice days for any item ("Needs 3 days' notice, earliest is Fri 13 Dec"); closed weekday also warned as "blocked". Save stays enabled.
+6. Warning Alert (non-blocking) above the sticky bar when the chosen date is blocked ("This day is blocked") or earlier than the notice days for any item ("Needs 3 days' notice, earliest is Fri 13 Dec"); closed weekday also warned as "blocked". A past date shows "This date is in the past; the order will be recorded as a past sale" and skips the notice, closed-day and blocked-day checks. A sold-out product line shows "Sold out: customers cannot order this, you are adding it anyway". Save stays enabled.
 7. Sticky bar: total (items + fee) left, "Save order" right. On success the order is Approved, appears in Calendar and Prep list, and Order confirmed email is queued only when an email is present.
 
 ### Copy
@@ -47,7 +47,7 @@ Reference `contracts.md` -> `admin/order-new` (loader, `findCustomer`, `create`)
 | Loader | `admin/order-new` | - | picker data (catalogue with options, windows, `days: DayStatus[]`, settings delivery fee) | 401/403 |
 | Find customer | `findCustomer` | `{ phone?, email? }` at least one | `{ ok, customer: { id, name, phone, email, locale, orderCount } \| null }` | `VALIDATION_FAILED` |
 | Create | `create` | `{ lines: (BasketLine \| { freeText: { name <= 120, priceRs, quantity } })[1..20], contact { name, phone, email? }, date, windowId, fulfilment detail, deliveryFeeRs, paid, customerNote?, adminNote? }` | redirect to `/admin/orders/:id` | `VALIDATION_FAILED`, `PRODUCT_UNAVAILABLE` |
-Server behaviour: pricing from `domain/pricing.ts` (client totals never trusted; live promotions applied as on the website); free-text lines priced as entered; `total = items + deliveryFeeRs` (fee forced to 0 for pickup is NOT applied; admin value kept, see Questions); status approved, source manual; order number from counter in the same transaction; `policies_accepted_at` null; tracking token generated (customers with email get the tracking link in the confirmation).
+Server behaviour: pricing from `domain/pricing.ts` (client totals never trusted; live promotions applied as on the website); free-text lines priced as entered; `total = items + deliveryFeeRs` (for pickup the server forces `deliveryFeeRs = 0` whatever is posted); past dates accepted (warning `past_date`, no notice/closed/blocked checks); sold-out products accepted (warning `sold_out`); status approved, source manual; order number from counter in the same transaction; `policies_accepted_at` null; tracking token generated (customers with email get the tracking link in the confirmation).
 
 ## Data Model Changes
 No schema change (`orders.idempotency_key` is reused for the form key). Rows written in one transaction: `orders` (source manual, status approved, snapshot contact, `time_window` snapshot, `paid`, `paid_at`/`paid_by` when paid on creation, `locale`), `order_item` (product lines with `product_id`; free-text lines with `product_id` NULL, `name_en = name_fr = entered name`, promotion fields null, options `[]`), `customer` (new or reused), `order_event` type `created` with actor admin and details `{source: manual}` (plus `marked_paid` when paid), `email_outbox` row only when email present.
@@ -57,7 +57,7 @@ Customer matching (FR-057): normalise phone to E.164 (+230 default) and lowercas
 | Action | Anonymous | Customer | Admin | Owner |
 |---|---|---|---|---|
 | Open Add order, lookup customer, create manual order | no | no | yes | yes |
-| Order past blocked/too-soon dates (warning only) | no | no | yes | yes |
+| Order past blocked/too-soon/past dates, add sold-out products (warning only) | no | no | yes | yes |
 
 ## Analytics Events
 No client analytics. Server log lines (no PII): `manual_order_created {items, fulfilment, paid, customerMatched, emailEntered, warnings[]}`, `customer_lookup {matched}`.
@@ -68,11 +68,11 @@ No client analytics. Server log lines (no PII): `manual_order_created {items, fu
 - Same phone as an existing customer who has an account: reused; no email unless entered.
 - No email: no confirmation email, no push to the customer; admin can send WhatsApp; the order has a tracking link shown on the detail.
 - Double submit (double tap): `create` accepts an `idempotencyKey` so only one order exists (see Open contract changes).
-- Product sold out, hidden or out of season after the picker loaded: `PRODUCT_UNAVAILABLE` lists lines; admin can replace with a free-text item. Admin may add sold-out products deliberately? No (open question).
+- Product hidden or out of season after the picker loaded: `PRODUCT_UNAVAILABLE` lists lines; admin can replace with a free-text item. Sold-out products are allowed with a warning (owner Q8); customers remain blocked.
 - Free-text price Rs 0 allowed (gift); total Rs 0 allowed.
-- Past dates: date must be today or later; yesterday is refused (`VALIDATION_FAILED` on date).
+- Past dates (owner Q9): allowed so orders can be recorded after the fact; warning only, notice/closed/blocked checks skipped; the order still counts in sales. No customer email is queued for a past-dated order (assumption: a "confirmed" email for a past date is misleading). A date still must be a valid calendar date within the admin horizon forward (365 days).
 - Date blocked and too soon at once: both warnings shown, save allowed; a blocked day does not stop creation, and existing orders on it are unaffected.
-- Delivery fee edited to 0 for delivery: allowed; pickup with a non-zero fee: allowed but warned (open question).
+- Delivery fee edited to 0 for delivery: allowed; pickup with a non-zero fee posted: server forces it to 0 (owner Q7).
 - Very long note/name: limits 1000 / 80 characters with inline counters.
 - Offline or failed request: values retained in the form; error Alert with Retry; no duplicate on retry (idempotency).
 - Concurrency: two admins creating at once get consecutive numbers (counter lock), no gaps on rollback.
@@ -89,7 +89,7 @@ No client analytics. Server log lines (no PII): `manual_order_created {items, fu
 - AC8: Given a manual order, then it appears in that day's Prep list grouped with identical items from other orders.
 - AC9: Given a blocked date, when selected, then the warning shows and Save still succeeds.
 - AC10: Given a date earlier than the product's notice days, then the "too soon" warning shows and Save succeeds.
-- AC11: Given yesterday's date, when Save, then `VALIDATION_FAILED` on date.
+- AC11: Given yesterday's date (owner Q9), when Save, then the order is saved, a "past date" warning shows, notice/closed/blocked warnings are not raised, and the order counts in sales.
 - AC12: Given an existing customer's phone typed as "+230 5712 3456" when stored as 57123456, then lookup finds them and no new customer row is created on save.
 - AC13: Given an existing customer's email in different case, then the same customer is reused.
 - AC14: Given no match, when saved, then one new customer row is created with the entered details.
@@ -98,9 +98,13 @@ No client analytics. Server log lines (no PII): `manual_order_created {items, fu
 - AC17: Given creation, then one order_event "created" with the admin as actor exists, written in the same transaction as the order.
 - AC18: Given any manual order, then the first status is approved and no pending_approval event occurs.
 - AC19: Given a double-tapped Save with the same idempotency key, then exactly one order exists and both requests redirect to it.
-- AC20: Given a sold-out product in the payload, then `PRODUCT_UNAVAILABLE` lists the line and nothing is saved.
+- AC20: Given a hidden product in the payload, then `PRODUCT_UNAVAILABLE` lists the line and nothing is saved.
 - AC21: Given an Admin (non-Owner) session, then Add order works; given a customer session, then access is refused.
 - AC22: Given 375 px, then fields use correct keyboards (tel, email, numeric), the sticky bar total updates live and hides while the keyboard is open.
+- AC23 (Q7): Given pickup with a posted fee of Rs 150, when saved, then delivery_fee_rs = 0 and total = items.
+- AC24 (Q8): Given a sold-out product in the payload, when saved by an admin, then the order is saved with a sold-out warning; given a customer basket with the same product, then `PRODUCT_UNAVAILABLE`.
+- AC25 (Q9): Given a past date, when saved, then no `DATE_UNAVAILABLE`, a past-date warning is returned, and sales for that date include the order.
+- AC26 (Q9): Given a past-dated order with an email, then no customer email is queued.
 
 ## Non-functional
 - Performance: route within project.yaml budgets (JS <= 170 kB gz); the catalogue is in the loader (no client waterfall); `create` p95 <= 700 ms; customer lookup p95 <= 300 ms.
@@ -114,12 +118,10 @@ No client analytics. Server log lines (no PII): `manual_order_created {items, fu
 ## Open contract changes (applied 2026-11-10)
 1. `create` needs `idempotencyKey` (uuid rendered into the form) per contract convention for retry-prone mutations. — **Resolved in contracts.md (2026-11-10).**
 2. `create` needs `locale` (en|fr), `customerNote?`, `adminNote?`. — **Resolved in contracts.md (2026-11-10).**
-3. `create` should return a flash `warnings: ("blocked"|"too_soon")[]` and the loader `days` must cover all dates from today (not only 90) with reasons for admin variant. — **Resolved in contracts.md (2026-11-10).** Modified: admin `days` covers a 365-day horizon (not unbounded); past dates rejected.
+3. `create` should return a flash `warnings: ("blocked"|"too_soon")[]` and the loader `days` must cover all dates from today (not only 90) with reasons for admin variant. — **Resolved in contracts.md (2026-11-10).** Modified: admin `days` covers a 365-day horizon (not unbounded); past dates are accepted with a `past_date` warning (owner Q9, 2026-11-10).
 4. `findCustomer` output should include `locale` and `orderCount`; define the "email vs phone conflict" result `{ customer, conflict: true }`. — **Resolved in contracts.md (2026-11-10).**
 5. Free-text lines in `create` match the edit contract shape; `Contact.email` is optional for admin only (separate `AdminContact` schema). — **Resolved in contracts.md (2026-11-10).**
 
 ## Open Questions
-- Should pickup force a Rs 0 fee? Spec keeps the admin's value with a warning — owner Sabera.
-- Can admins add sold-out products to a manual order? Spec: no — owner Sabera.
-- Should past dates be allowed to record sales after the fact? Spec: no — owner Sabera.
+- Pickup fee, sold-out products and past dates: **Resolved (owner, 2026-11-10, Q7-Q9):** fee forced to Rs 0 for pickup; sold-out allowed with warning; past dates allowed with warning.
 - Should a manual order also let the admin set the total by hand? Spec: no (use a free-text line or edit afterwards) — owner product-director.

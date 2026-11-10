@@ -51,8 +51,9 @@ Sabera and her helpers run the bakery day from a phone: Today shows what needs a
 | sendQuote | quote_needed (re-quote allowed in quote_sent) | quote_sent | Your quote |
 | advance | approved -> in_preparation; in_preparation -> ready_for_pickup (pickup) or out_for_delivery (delivery); ready/out -> completed | next | none / Ready or On the way / Thank you |
 | revert | in_preparation -> approved; ready/out -> in_preparation; completed -> ready/out (by fulfilment) | previous | none |
-| cancel | pending_approval, quote_needed, approved, in_preparation, ready, out (not completed) | cancelled | Cancellation confirmed |
+| cancel | pending_approval, quote_needed, quote_sent, approved, in_preparation, ready, out (not completed) | cancelled | Cancellation confirmed (quote_sent: the quote is withdrawn; tracking page shows cancelled; owner Q6) |
 | setPaid | any status | flag only | none |
+| edit (date and/or total changed) | not completed or terminal | same status | Your order was updated (new date and/or total; owner Q11) |
 Customer-driven transitions (quote accept/decline/expire, customer cancel) are in the tracking spec. `allowed` in the loader is computed from this table; the UI shows only allowed actions, and the server re-checks.
 
 ### Copy
@@ -70,7 +71,7 @@ Reference `contracts.md` -> `admin/today`, `admin/orders`, `admin/order`, `admin
 | Paid | `setPaid {paid}` | + `version` | as above (sets `paid_at`, `paid_by`) | `ORDER_CHANGED` |
 | Note | `saveNote {adminNote <= 2000}` | - | `{ ok }` | `VALIDATION_FAILED` |
 | WhatsApp | `whatsappLink {template}` | - | `{ ok, url }`, no state change | `NOT_FOUND` |
-| Edit | `admin/order-edit` `save` | per contract | `{ ok, warnings }` | `ORDER_CHANGED`, `INVALID_TRANSITION` (completed), `VALIDATION_FAILED` |
+| Edit | `admin/order-edit` `save` | per contract | `{ ok, warnings }`; queues "Your order was updated" email when date and/or total changed | `ORDER_CHANGED`, `INVALID_TRANSITION` (completed), `VALIDATION_FAILED` |
 Rules: handler order is parse -> authenticate -> authorise -> work. Status change, item rewrite, outbox email and order_event share one transaction.
 
 ## Data Model Changes
@@ -92,6 +93,8 @@ No client analytics. Server log lines (no PII): `order_action {action, from, to,
 - Double tap on a forward button: second request carries old version and is rejected; UI disables button while pending.
 - Undo after another admin advanced the order: `ORDER_CHANGED`, toast "Could not undo, the order changed."
 - Edit when a Completed order: refused (`INVALID_TRANSITION`); Back one step first, then edit.
+- Cancel of a quote_sent order (owner Q6): allowed; the quote is withdrawn, a late customer accept/decline gets `INVALID_TRANSITION`, and the same Cancellation confirmed email is sent.
+- Edit email (owner Q11): sent only if the date, the total, or both changed (including set/clear of a total override); other edits (notes, items with same total, window) send nothing. No email if the order has no email address. Sent in the order's `locale`.
 - Cancel of a paid order: allowed; paid flag stays, log notes it; refund is off-system (no online payment).
 - Quote expiry date today or earlier than today: refused. Re-quote overwrites and logs old values (FR-033).
 - Email failure: action still succeeds, `email_failed` event shown in log, outbox retries (FR-074).
@@ -131,6 +134,8 @@ No client analytics. Server log lines (no PII): `order_action {action, from, to,
 - AC25: Given the log, then it renders "Approved by Sarah, 12 Nov 14:05" and still shows the name after Sarah is deactivated.
 - AC26: Given any status, when Mark paid, then paid=true, paid_at and paid_by set, event marked_paid, no status change; Mark unpaid reverses with event.
 - AC27: Given an approved order, when Cancel with reason, then cancelled and Cancellation confirmed email queued.
+- AC27b (Q6): Given a quote_sent order, when an admin cancels, then status is cancelled, the quote is withdrawn (the customer's accept link is refused), the tracking page shows it as cancelled, and Cancellation confirmed is queued as for other admin cancels.
+- AC39 (Q11): Given an edit that changes the date from 14 Dec to 15 Dec, when saved, then a "Your order was updated" email showing the new date is queued in the order's language; given a total change, it shows the new total; given an edit changing neither, then no email is queued.
 - AC28: Given an edit of item quantity 1 -> 2, then items_total and total recalculate on the server and the event stores before/after.
 - AC29: Given "Set total by hand" Rs 5,000, then total_rs = 5,000, total_overridden = true and the detail shows the tag; later item edits keep the override until switched off.
 - AC30: Given an edit changing fulfilment delivery -> pickup, then fee becomes 0 and address is cleared; pickup -> delivery requires an address.
@@ -155,14 +160,12 @@ No client analytics. Server log lines (no PII): `order_action {action, from, to,
 ## Open contract changes (applied 2026-11-10)
 1. `saveNote` should neither require nor bump `version` (otherwise autosave would conflict with real actions). — **Resolved in contracts.md (2026-11-10).**
 2. `advance`: remove optional `to` or document it ignored; target is derived from status and fulfilment. — **Resolved in contracts.md (2026-11-10).**
-3. `allowed.cancel` must follow this spec (pending_approval, quote_needed, approved..out; not quote_sent, not terminal); `allowed` should also expose `markPaid` and `note` flags. — **Resolved in contracts.md (2026-11-10).**
+3. `allowed.cancel` must follow this spec (pending_approval, quote_needed, quote_sent, approved..out; not terminal; quote_sent added by owner decision Q6, 2026-11-10); `allowed` should also expose `markPaid` and `note` flags. — **Resolved in contracts.md (2026-11-10).**
 4. Add `nextStatusLabelKey` (or derive from `allowed.advance`) to Today rows; `OrderSummary` needs `version`. — **Resolved in contracts.md (2026-11-10).** `OrderSummary.version` added; Today rows carry `nextStatus` (label derived in the view, no label key).
 5. `admin/orders` should return per-tab counts for the To review dot and tab badges. — **Resolved in contracts.md (2026-11-10).**
 6. `admin/order-edit` `save` needs `overrideTotalRs: Rs | null` (null clears override) and a `warnings` echo on redirect; free-text lines also permitted (already listed). — **Resolved in contracts.md (2026-11-10).** Warnings return as a redirect flash.
 
 ## Open Questions
-- Where does a quote_sent order appear in the tabs? Spec puts it in Upcoming with a "Waiting for customer" badge — owner Sabera.
-- Can an admin cancel a quote_sent order? Appendix B omits it; spec says no (customer decline or expiry closes it) — owner product-director.
-- Should an edit email the customer (date/total changes)? Spec: no automatic email, admin uses WhatsApp — owner Sabera.
+- Quote_sent placement, admin cancel of a quote_sent order, edit email: **Resolved (owner, 2026-11-10, Q13, Q6, Q11):** Upcoming with "Waiting for customer" badge; admin may cancel; edit of date/total emails the customer.
 - Back one step from Approved (to Pending approval/Quote sent) is not offered; confirm — owner Sabera.
 - Should search reach across tabs? — owner ux-lead.

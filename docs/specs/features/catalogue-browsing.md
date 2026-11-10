@@ -115,7 +115,7 @@ Optional, cookieless (NFR-011); a `track()` seam that is a no-op until a provide
 - Allergen filter with zero matches in a type: empty state names active filters.
 - Two live banner promotions: one shown (rule above). Dismissed banner stays dismissed across pages but returns next visit.
 - Locale: FR names/descriptions null -> EN text; FR dates longer ("sam. 14 déc."), reserve width.
-- Direct URL to unknown slug: 404 with route home + WhatsApp. Trailing-slash and uppercase slugs redirect 301 to canonical.
+- Old slug of a renamed product: 301 to the current slug (slug history, owner Q19). Direct URL to unknown slug: 404 with route home + WhatsApp. Trailing-slash and uppercase slugs redirect 301 to canonical.
 - JavaScript disabled: filters (links), Add to basket (form post), banner dismiss, language switch all work.
 - Very long product name or 5 option groups: wraps, never truncated with ellipsis on phones.
 

@@ -38,7 +38,7 @@ Out of scope: custom request form and quote creation/expiry (FR-028..033; this s
 ### Flow (one page, numbered `h2` sections, design-system "Checkout")
 1. **Basket**: each line shows photo 56 px, name, chosen options, message on cake, compact Stepper (1-50), line Price (struck original when promoted), Remove (44 px). Subtotal. Max 10 lines.
 2. **Delivery or pickup**: required radio cards, no default (avoids a surprise fee). Pickup shows the public address and map link (Settings). Delivery shows address (textarea, min 5 chars), landmark (optional) and "Delivery fee Rs {fee}"; saved addresses as radios for signed-in customers.
-3. **Date**: date picker with `days: DayStatus[90]`, "Earliest date" header, reasons on tap (copy in pricing spec). Selection survives an invalid state; changing fulfilment does not reset the date.
+3. **Date**: date picker with `days: DayStatus[90]`, "Earliest date" header, reasons on tap (copy in pricing spec). When the basket has seasonal items, only dates inside every seasonal item's window are offered; others show "Not available: {item} is only available {start} to {end}" (owner Q2). Selection survives an invalid state; changing fulfilment does not reset the date.
 4. **Time window**: radio rows from `windows.delivery` or `windows.pickup` by fulfilment (Settings, FR-020); shown after step 2.
 5. **Your details**: name, phone (`tel`), email, optional note. Prefilled when signed in.
 6. **Summary**: items, delivery fee line or "Pickup: free", total, payment info (Juice number from Settings, or cash on delivery/pickup), policy checkbox (label opens policies in a sheet, includes the 48 h cancellation text from `/faq#cancellation`).
@@ -46,7 +46,7 @@ Sticky bar: total + "Place order". Hides with the keyboard. While submitting the
 
 ### Tracking page content
 - Header: number, status badge (customer wording), paid status. Summary: items with options, date, window, delivery/pickup (address, landmark), delivery fee, total, payment info.
-- **Progress** (`<ol>`, `aria-current="step"`): delivery path Pending approval -> Approved -> In preparation -> Out for delivery -> Completed; pickup path replaces Out for delivery with Ready for pickup; quote path Quote needed -> Quote sent -> Approved -> ... `declined`, `cancelled`, `closed` replace the bar with an Alert (with decline reason when set). `progress` comes from the loader.
+- **Progress** (`<ol>`, `aria-current="step"`): delivery path Pending approval -> Approved -> In preparation -> Out for delivery -> Completed; pickup path replaces Out for delivery with Ready for pickup; quote path Quote needed -> Quote sent -> Approved -> ... `declined`, `cancelled`, `closed` replace the bar with an Alert (with decline reason when set). An order an admin cancelled while a quote was awaiting the customer shows as cancelled with no Accept/Decline (owner Q6). `progress` comes from the loader.
 - Bakery messages: decline reason, quote note. Quote block: amount, note, expiry date, Accept (primary) / Decline (secondary); expired: Alert, buttons removed (`quote.canRespond`). Accept/decline behaviour is specified with FR-030..033 (custom requests spec).
 - **Cancel** (destructive outline) only when `canCancel`; otherwise text: "To change or cancel, message us on WhatsApp. Free cancellation until 48 hours before your order date." plus the WhatsApp button (`whatsappUrl` prefilled with the order number). Customers cannot edit orders.
 - Language switch present; `noindex`; `Referrer-Policy: no-referrer`.
@@ -64,8 +64,8 @@ HttpOnly cookie `apb_basket` (architecture.md): lines hold ids, choices, quantit
 1. zod parse -> `VALIDATION_FAILED` (`fields` keyed by form field; phone normalised by `domain/phone`).
 2. Idempotency: if an order with `idempotencyKey` exists, return its redirect (no new order, no email).
 3. Rate limit `RL-order` (5 / 10 min / IP) -> `RATE_LIMITED`; Turnstile -> `BOT_CHECK_FAILED` (Turnstile outage: allow, stricter limit, logged).
-4. Load products/promotions/settings; `productProblem` per line -> `PRODUCT_UNAVAILABLE` (lists `lineId`s).
-5. `assertOrderable(date, ctx, noticeDaysFor(lines))`; windowId must exist in the list for the chosen fulfilment -> `DATE_UNAVAILABLE` (`fields.date` + reason) or `VALIDATION_FAILED` (`fields.windowId`).
+4. Load products/promotions/settings; `productProblem` per line (hidden, sold out, or outside the window by today's date) -> `PRODUCT_UNAVAILABLE` (lists `lineId`s).
+5. `assertOrderable(date, ctx, noticeDaysFor(lines), seasonal windows of the lines)` (date must also lie inside every seasonal item's window, else reason `out_of_season`, owner Q2); windowId must exist in the list for the chosen fulfilment -> `DATE_UNAVAILABLE` (`fields.date` + reason) or `VALIDATION_FAILED` (`fields.windowId`).
 6. `priceBasket` + `reconcileTotal(displayedTotalRs)` -> `PRICE_CHANGED` with repriced `lines`, `totalRs`. The fee is part of the compared total.
 7. One `db.transaction`: resolve customer (signed-in customer → own row; else exact lower-cased email match; else insert a new row; **never match by phone alone and never update `email` or `auth_user_id` on an existing row**, contracts "Customer matching", threat-model G-02; contact fields snapshot on the order), allocate number from `counter`, insert `orders` (`pending_approval`, `source website`, `locale` = page locale, `policies_accepted_at`, `tracking_token` 32 random bytes base64url, `idempotency_key`), `order_item` rows (prices copied, `promotion_id` recorded), `order_event` `created` (actor customer), `email_outbox` `order_received` (dedupe `order:<id>:received`) and admin alert rows. A unique violation on `idempotency_key` (race) rolls back and returns the winner's redirect.
 8. After commit (`ctx.waitUntil`): send email, admin push and email. Failure never fails the order (FR-074, outbox retry).
@@ -151,6 +151,7 @@ Cookieless, no PII (NFR-011), `track()` seam as in the catalogue spec.
 - AC26: Given a stale `version` on a still-pending order, when Cancel is posted, then `ORDER_CHANGED` and the page reloads.
 - AC27: Given a cancelled order, when Cancel is posted again, then `CANCEL_NOT_ALLOWED`.
 - AC28: Given a tampered `displayedTotalRs` or forged price field, then the stored total equals the server calculation or the request is refused with `PRICE_CHANGED`.
+- AC28b (Q2): Given a basket with an item seasonal until 25 Dec, then the picker offers no date after 25 Dec, and a posted date of 27 Dec returns `DATE_UNAVAILABLE` (`out_of_season`) with no order; placing the order on 24 Dec for 24 Dec succeeds.
 - AC29: Given a date blocked after the form opened, when sent, then `DATE_UNAVAILABLE` with the reason category (no private reason) and no order.
 - AC30: Given a promotion ended after the form opened, when sent, then `PRICE_CHANGED` with the new total and the button reads "Place order at Rs {new}".
 - AC31: Given a sold-out line, then `PRODUCT_UNAVAILABLE` lists its `lineId` and no order is created.

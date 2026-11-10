@@ -51,13 +51,14 @@ Language = `orders.locale` for order emails; `customer.locale` / `user_metadata.
 | `order_declined` / `request_declined` | Declined | Customer | Reason if given, link to menu |
 | `cancellation_confirmed` | Cancelled by customer or admin | Customer | Order number |
 | `quote_closed` | Customer declines or quote expires | Customer | Which, link to send a new request |
+| `order_updated` | Admin edit changes the date and/or total (owner Q11) | Customer | Subject EN "Your order was updated" / FR "Votre commande a été modifiée"; order number; new date and window and/or new total (only what changed is highlighted); tracking link. Sent in `orders.locale`; skipped when the order has no email |
 | `ready_for_pickup` | Status Ready | Customer | Pickup address, date, window |
 | `on_the_way` | Status Out for delivery | Customer | Delivery window, address |
 | `thank_you` | Completed | Customer | Link to order again, Instagram |
 | `admin_invitation` | Owner invites or resends | Invitee | Set-password link valid 7 days |
 | `sign_in_link`, `password_reset`, `signup_confirm` | Requested | Customer | One-time link (sent directly via the Supabase hook, not the outbox) |
 | `admin_alert_*` | See admin alerts | Admin | Number, first name, one line, deep link |
-No customer email for: Back one step, Next status Approved to In preparation, Mark paid, edits. Manual order without an email sends nothing.
+No customer email for: Back one step, Next status Approved to In preparation, Mark paid, edits that change neither date nor total (edits that do send `order_updated`). Manual order without an email sends nothing.
 
 ### Content rules
 - Layout: single column, max width 600 px, 16 px body text, buttons 44 px high, system font fallback; bakery name in header, palette from the brand guide (`docs/design/tokens.json`), all colour pairs meet 4.5:1; plain-text alternative included.
@@ -136,7 +137,7 @@ Server-side counters, no PII, no cookies.
 
 ## Edge Cases
 - Resend outage or 429: order saved, admins alerted, retries at 1 h, 2 h, 4 h, 8 h, 24 h; after 6 tries `dead`, Sentry alert, `email_failed` event, order detail shows it so the admin can WhatsApp the tracking link.
-- Daily cap: at 90 sends in a day, non-critical emails (Thank you, `admin_alert_*` duplicates of push) defer to the next day; critical customer emails (`order_received`, `request_received`, `quote`, `order_confirmed`, declines, cancellations, auth, invitations) still go until 100.
+- Daily cap: at 90 sends in a day, non-critical emails (Thank you, `admin_alert_*` duplicates of push) defer to the next day; critical customer emails (`order_received`, `request_received`, `quote`, `order_confirmed`, `order_updated`, declines, cancellations, auth, invitations) still go until 100.
 - Duplicate triggers (double tap, retry of the same action): `dedupe_key` prevents duplicate emails.
 - Back one step then Next again: no email on revert; forward again emits a new status email only if the status key differs (`dedupe_key` includes version so legitimate repeats do send).
 - Customer with a bounced/invalid address: send fails with 4xx from Resend; marked `dead` immediately (no 6 retries) when the error is permanent.
@@ -155,7 +156,8 @@ Server-side counters, no PII, no cookies.
 - AC3: Given a manual order without email, then no email and no outbox row.
 - AC4: Given Back one step, then no email.
 - AC5: Given Approved to In preparation, then no email.
-- AC6: Given a cancellation by an admin on an Approved order, then `cancellation_confirmed` is sent.
+- AC6: Given a cancellation by an admin on an Approved order, or on a quote_sent order (owner Q6), then `cancellation_confirmed` is sent.
+- AC6b (Q11): Given an admin edit changing the date and/or total of an FR order with an email, then one `order_updated` email in French shows the new date and/or total; given an edit changing neither, then none; given no email on the order, then none. Admin-created manual orders do not send it.
 - AC7: Given `order_confirmed`, then it shows summary, payment reminder with the Juice number and total (or cash wording), pickup address or delivery details, tracking link and the 48-hour policy sentence.
 - AC8: Given `quote`, then amount, note, expiry and Accept and Decline buttons are present, both linking to the tracking page.
 - AC9: Given `order_received`, then it states the order is not confirmed yet.
@@ -198,7 +200,7 @@ Flag: none · Rollout: staging with test inboxes first (all templates EN/FR chec
 
 ## Open Questions
 - Should the 24-hour pending alert also exist as email? Assumed push only per FR-075 — owner product-director.
-- Evening reminder when tomorrow has 0 orders: assumed skipped to avoid noise — owner Sabera.
+- Evening reminder when tomorrow has 0 orders: skipped (owner-approved 2026-11-10, Q14).
 - Admin alert emails and the 90/day cap: assumed admin alert emails are non-critical because push covers them — owner lead-backend.
 - iOS web push viability (architecture T1) is unresolved until the spike; the email fallback applies to the four push+email alerts only.
 

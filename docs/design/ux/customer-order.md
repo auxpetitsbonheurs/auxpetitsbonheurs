@@ -84,4 +84,4 @@ Home, Menu, Product, Basket/Checkout, Confirmation, Tracking, FAQ/policies (link
 product_viewed, basket_added, checkout_started, order_sent, order_cancelled (aggregate counts only).
 
 ## Open questions
-- Seasonal window judged on order-placed date (assumed; owner Q2).
+- Seasonal window judged on the pickup/delivery date (owner-approved Q2, 2026-11-10): the date picker offers only in-window dates for seasonal items; basket and checkout re-validate the chosen date.

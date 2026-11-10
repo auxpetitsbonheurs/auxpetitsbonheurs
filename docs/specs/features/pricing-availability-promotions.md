@@ -29,7 +29,7 @@ Out of scope: status transitions, quotes, prep list, WhatsApp (other domain modu
 2. **Notice counting:** earliest orderable date = `todayMU + N` calendar days; today and earlier are never orderable (`N = 0` allows today unless closed/blocked).
 3. **Reason priority** when several apply: `blocked` > `closed` > `too_soon` (`too_far` last). The picker shows only the category; the private block reason never leaves the server.
 4. **Horizon:** the picker and server accept dates up to `todayMU + 89` (90 days, as the contract's `DayStatus[90]`). Later dates: `too_far`.
-5. **Seasonal window** is judged on the order-placement date `todayMU(now)`, not on the fulfilment date (FR-006 acceptance).
+5. **Seasonal window** (owner-approved 2026-11-10, Q2) is judged on the **pickup/delivery date**, not the placement date. The checkout date picker offers only dates inside every seasonal item's window (other dates get reason `out_of_season`); basket and checkout validation re-check the chosen date against each seasonal item's window (`DATE_UNAVAILABLE`, reason `out_of_season`). Browsing still hides a product outside its window by `todayMU(now)` (it cannot be added), so `productProblem` is unchanged for display.
 6. **Promotion live** = `active && startsAt <= now < endsAt` (end exclusive; prototype treated the end instant as live). A row with `endsAt <= startsAt` is never live.
 7. **Percent discount rounding:** `floor((base * (100 - pct) + 50) / 100)` (half up, whole rupees). A promotion price `>= base` is not a discount and is ignored.
 8. **Tie-break** for equal lowest price: earliest `startsAt`, then lowest `id` (deterministic).
@@ -53,7 +53,7 @@ muDateTimeToInstant(d: MuDate, hhmm: string): Date;  instantToMuDate(i: Date): M
 type AvailabilityCtx = { today: MuDate; defaultNoticeDays: number; closedWeekdays: number[];            // ISO 1-7
                          blocked: { startsOn: MuDate; endsOn: MuDate }[]; horizonDays?: number /*90*/ };
 noticeDaysFor(items: { noticeDays: number | null }[], defaultDays: number): number;
-dayStatus(date: MuDate, ctx: AvailabilityCtx, noticeDays: number): DayStatus;      // { date, available, reason }
+dayStatus(date: MuDate, ctx: AvailabilityCtx, noticeDays: number, windows?: { startsOn: MuDate; endsOn: MuDate }[]): DayStatus;      // { date, available, reason }; windows = seasonal windows of basket items, date must be inside all (else out_of_season)
 dayStatuses(ctx, noticeDays, count = 90): DayStatus[];                              // starts at ctx.today
 earliestDate(ctx, noticeDays): MuDate | null;                                       // null if none in horizon
 assertOrderable(date: MuDate, ctx, noticeDays): void;                               // throws DomainError DATE_UNAVAILABLE {reason}
@@ -125,7 +125,8 @@ None (rules emit no events; refusals are logged server-side by the services with
 - AC5: Given two live promotions on a product, then the lowest price applies and the order item references that promotion.
 - AC6: Given a discount, then option deltas and delivery fee are unchanged.
 - AC7: Given a tampered displayed total, then `reconcileTotal` fails with the server's total.
-- AC8: Given a seasonal product ending on D, then it is orderable on D and `out_of_season` on D+1.
+- AC8: Given a seasonal product ending on D, then it is orderable on D and `out_of_season` on D+1 (for display, by today's date).
+- AC8b (Q2): Given a basket with a seasonal item whose window ends 25 Dec, when the customer picks a pickup/delivery date of 27 Dec, then the picker shows it unavailable (`out_of_season`) and `placeOrder` refuses it with `DATE_UNAVAILABLE`; a date of 24 Dec is accepted.
 - AC9: Given a 41-grapheme message with limit 40, then `validateSelection` returns `cakeMessage too_long`.
 - AC10: Given any test in the table, it passes with a fixed injected clock and no network.
 
@@ -258,5 +259,5 @@ Flag: none · Rollback: redeploy; rules are deterministic and versioned with the
 
 ## Open Questions
 - Product minimum quantity (Dessert Cups, min 6 in the prototype): add `product.min_quantity`? Recommended yes. Owner: product-manager with Sabera.
-- Is the seasonal window also a limit on the fulfilment date (e.g. Christmas special ordered on 24 Dec for 27 Dec)? Decided: no, placement date only. Confirm with Sabera.
+- Seasonal window and fulfilment date: **Resolved (owner, 2026-11-10):** judged on the pickup/delivery date.
 - Does a quantity option group ever need more than one priced choice? Decided: one.
