@@ -25,6 +25,10 @@ function connect(input: SeedOwnerInput) {
         if (error || !data.user) throw new Error(`Supabase Auth refused the user: ${error?.message ?? "no user returned"}`);
         return { id: data.user.id };
       },
+      async resetUser(id: string, { password }: { password: string; emailConfirm: true }) {
+        const { error } = await supabase.auth.admin.updateUserById(id, { password, email_confirm: true });
+        if (error) throw new Error(`Supabase Auth refused the reset: ${error.message}`);
+      },
     },
   };
 }

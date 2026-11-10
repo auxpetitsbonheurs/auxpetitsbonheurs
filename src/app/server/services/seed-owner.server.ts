@@ -14,6 +14,8 @@ export interface OwnerAuthAdmin {
     emailConfirm: true;
     name: string;
   }): Promise<{ id: string }>;
+  /** Sets the password and confirms the email of an existing auth user (Admin API). */
+  resetUser(id: string, changes: { password: string; emailConfirm: true }): Promise<void>;
 }
 
 export interface SeedOwnerConnection {
@@ -65,6 +67,17 @@ async function findExisting(db: Database, email: string) {
   return { owner, authUser, isCustomer: Boolean(customerRow) };
 }
 
+/**
+ * An auth user without an admin row (an interrupted run, or one created by
+ * someone else) is only safe to promote once its password is the one the
+ * operator just supplied and its email is confirmed; otherwise a prior holder
+ * of that password could sign in as Owner.
+ */
+async function reuseAuthUser(auth: OwnerAuthAdmin, id: string, password: string) {
+  await auth.resetUser(id, { password, emailConfirm: true });
+  return { id };
+}
+
 export type SeedOwnerResult = "created" | "exists";
 
 /** Idempotent: an existing Owner is left untouched (no password change). */
@@ -80,10 +93,9 @@ export async function seedOwner(input: SeedOwnerInput, { auth, db }: SeedOwnerCo
       "This email belongs to a customer account. An auth user is either an admin or a customer, never both; use another email.",
     );
   }
-  // An auth user without an admin row is left from an interrupted run: reuse it as is.
-  const user =
-    existing.authUser ??
-    (await auth.createUser({ email, password: input.OWNER_PASSWORD, emailConfirm: true, name: input.OWNER_NAME }));
+  const user = existing.authUser
+    ? await reuseAuthUser(auth, existing.authUser.id, input.OWNER_PASSWORD)
+    : await auth.createUser({ email, password: input.OWNER_PASSWORD, emailConfirm: true, name: input.OWNER_NAME });
   await db.insert(admin).values({ id: user.id, name: input.OWNER_NAME, email, role: "owner", active: true, locale: "en" });
   return "created";
 }

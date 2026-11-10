@@ -22,6 +22,7 @@ function env(overrides: Record<string, string | undefined> = {}): Record<string,
 let database: TestDatabase;
 let logs: string[];
 let createUser: ReturnType<typeof vi.fn<OwnerAuthAdmin["createUser"]>>;
+let resetUser: ReturnType<typeof vi.fn<OwnerAuthAdmin["resetUser"]>>;
 let connect: ReturnType<typeof vi.fn<() => SeedOwnerConnection>>;
 
 /** Fake Supabase Auth Admin API: writes the user into the stubbed auth.users table. */
@@ -33,7 +34,13 @@ function fakeAuthAdmin(): OwnerAuthAdmin {
     );
     return { id: rows[0]!.id };
   });
-  return { createUser };
+  resetUser = vi.fn(async (id, { emailConfirm }) => {
+    await database.client.query(
+      `update auth.users set email_confirmed_at = coalesce(email_confirmed_at, case when $2 then now() end) where id = $1`,
+      [id, emailConfirm],
+    );
+  });
+  return { createUser, resetUser };
 }
 
 function run(vars = env(), argv: string[] = []) {
@@ -84,20 +91,35 @@ describe("seed:owner", () => {
 
     expect(code).toBe(0);
     expect(createUser).toHaveBeenCalledTimes(1);
+    expect(resetUser).not.toHaveBeenCalled();
     expect(await adminRows()).toHaveLength(1);
     expect(logs.join("\n")).toContain("Owner already exists");
   });
 
-  test("AC2: an auth user left by an interrupted run is reused, password untouched", async () => {
-    await database.client.query(
-      `insert into auth.users (email, email_confirmed_at) values ('owner@example.com', now())`,
+  test("AC2: an auth user left by an interrupted run is reused only after its password is reset and email confirmed", async () => {
+    const { rows } = await database.client.query<{ id: string }>(
+      `insert into auth.users (email, email_confirmed_at) values ('owner@example.com', null) returning id`,
     );
 
     const code = await run();
 
     expect(code).toBe(0);
     expect(createUser).not.toHaveBeenCalled();
+    expect(resetUser).toHaveBeenCalledWith(rows[0]!.id, { password: PASSWORD, emailConfirm: true });
+    const confirmed = await database.client.query("select email_confirmed_at from auth.users");
+    expect((confirmed.rows[0] as { email_confirmed_at: unknown }).email_confirmed_at).not.toBeNull();
     expect(await adminRows()).toHaveLength(1);
+  });
+
+  test("AC2: if the reset of a reused auth user fails, no owner row is created", async () => {
+    await database.client.query(`insert into auth.users (email) values ('owner@example.com')`);
+    resetUser.mockRejectedValueOnce(new Error(`reset refused for ${PASSWORD}`));
+
+    const code = await run();
+
+    expect(code).not.toBe(0);
+    expect(await adminRows()).toEqual([]);
+    expect(logs.join("\n")).toMatch(/reset refused for \[redacted\]/);
   });
 
   test("AC3: refuses an email that belongs to a customer account", async () => {

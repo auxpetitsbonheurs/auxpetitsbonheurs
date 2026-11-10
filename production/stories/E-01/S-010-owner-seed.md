@@ -30,7 +30,7 @@ As the bakery's developer, I want a safe one-off command that creates the Owner,
 - The Owner's real email and password are supplied by the user at run time; never committed.
 - Decision: tests use in-process PGlite with migrations applied (stub `auth.users`) and a fake Auth Admin API that writes into it; no Supabase or network call. `runSeedOwner` takes a `connect` factory called only after validation, which proves "before any network call".
 - Decision: the auth user is looked up by email in `auth.users` through the DB (the Admin API has no get-by-email); `authUsers` declares `email` for this (not managed by drizzle-kit; `generate` reports no changes).
-- Decision: an auth user with no admin row and no customer link (an interrupted run) is reused as is, password untouched, so re-runs recover; an email that is already an Admin (not Owner) is refused with "promote in Team".
+- Decision (revised 2026-11-10, review follow-up): an auth user with no admin row and no customer link (an interrupted run) is reused only after the Auth Admin API resets its password to OWNER_PASSWORD and confirms its email (`updateUserById`), so a prior holder of the old password cannot become Owner; if the reset fails, no admin row is written; an email that is already an Admin (not Owner) is refused with "promote in Team".
 - Decision: a guest `customer` row with the same email also counts as a customer account (refused).
 - Decision: every log line is redacted of OWNER_PASSWORD, the service-role key and DATABASE_URL, even if an upstream error echoes them.
 - Decision: the CLI runs with `tsx` (now an explicit pinned devDependency; was already in the lockfile via drizzle-kit) because the schema uses extensionless imports Node's type stripping cannot resolve.
