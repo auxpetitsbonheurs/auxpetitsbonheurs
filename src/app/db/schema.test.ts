@@ -56,6 +56,23 @@ describe("schema invariants (docs/architecture/data-model.md)", () => {
     );
   });
 
+  test("product minimum quantity is optional and range-checked", () => {
+    const product = config("product");
+    const minQuantity = product.columns.find((c) => c.name === "min_quantity");
+
+    expect(minQuantity?.notNull).toBe(false);
+    expect(minQuantity?.default).toBeUndefined();
+    expect(product.checks.map((c) => c.name)).toContain("product_min_quantity_ck");
+  });
+
+  test("a customer has at most one default address", () => {
+    const indexes = config("customer_address").indexes.map((i) => i.config);
+    const defaultIndex = indexes.find((i) => i.name === "customer_address_default_uq");
+
+    expect(defaultIndex?.unique).toBe(true);
+    expect(defaultIndex?.where).toBeDefined();
+  });
+
   test("settings is a singleton guarded by a check constraint", () => {
     const checks = config("settings").checks.map((c) => c.name);
 

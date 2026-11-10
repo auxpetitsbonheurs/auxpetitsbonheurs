@@ -39,6 +39,8 @@ export const product = pgTable(
     basePriceRs: integer("base_price_rs").notNull(),
     allergens: text("allergens").array().notNull().default(sql`'{}'::text[]`),
     noticeDays: smallint("notice_days"),
+    /** Minimum units per basket line (e.g. dessert cups by 6); NULL = no minimum. */
+    minQuantity: smallint("min_quantity"),
     status: productStatusEnum("status").notNull().default("available"),
     sortOrder: integer("sort_order").notNull().default(0),
     seasonalStartsOn: date("seasonal_starts_on"),
@@ -50,6 +52,10 @@ export const product = pgTable(
     index("product_menu_idx").on(t.status, t.type, t.sortOrder),
     check("product_price_ck", sql`${t.basePriceRs} >= 0`),
     check("product_notice_ck", sql`${t.noticeDays} is null or ${t.noticeDays} between 0 and 60`),
+    check(
+      "product_min_quantity_ck",
+      sql`${t.minQuantity} is null or ${t.minQuantity} between 1 and 50`,
+    ),
     check(
       "product_season_ck",
       sql`(${t.seasonalStartsOn} is null and ${t.seasonalEndsOn} is null)

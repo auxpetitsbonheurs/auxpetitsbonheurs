@@ -53,7 +53,7 @@ budgets:
     inp_ms: 200
     cls: 0.1
   js_initial_kb: 170      # gzipped JS on first load per route
-  image_max_kb: 250
+  image_max_kb: 300       # brief: photos about 300 kB or less (aligned 2026-11-10)
 
 a11y:
   standard: WCAG 2.2 AA

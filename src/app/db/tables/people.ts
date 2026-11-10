@@ -46,7 +46,11 @@ export const customerAddress = pgTable(
     isDefault: boolean("is_default").notNull().default(false),
     createdAt: timestamp("created_at", tz).notNull().defaultNow(),
   },
-  (t) => [index("customer_address_customer_idx").on(t.customerId)],
+  (t) => [
+    index("customer_address_customer_idx").on(t.customerId),
+    // At most one default address per customer; setting a new default clears the old one in the same transaction.
+    uniqueIndex("customer_address_default_uq").on(t.customerId).where(sql`${t.isDefault}`),
+  ],
 ).enableRLS();
 
 export const admin = pgTable("admin", {

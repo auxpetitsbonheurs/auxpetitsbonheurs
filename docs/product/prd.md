@@ -210,7 +210,7 @@ Priority: Must / Should / Could. Persona: P1 customer, P2 Owner, P3 Admin (P2/P3
 
 | ID | Area | Requirement |
 |---|---|---|
-| NFR-001 | Performance | Home and menu load in under 3 s on a mid-range phone over 4G. project.yaml budgets also apply: Lighthouse perf >= 90, LCP <= 2.5 s, INP <= 200 ms, CLS <= 0.1, initial JS <= 170 kB gzipped per route. Images are resized/compressed automatically and lazy-loaded; max image 250 kB (project.yaml) – see Risk R9. |
+| NFR-001 | Performance | Home and menu load in under 3 s on a mid-range phone over 4G. project.yaml budgets also apply: Lighthouse perf >= 90, LCP <= 2.5 s, INP <= 200 ms, CLS <= 0.1, initial JS <= 170 kB gzipped per route. Images are resized/compressed automatically and lazy-loaded; max image 300 kB (brief and project.yaml, aligned 2026-11-10; server hard cap 1 MB per upload). |
 | NFR-002 | Accessibility | WCAG 2.2 AA (project.yaml); Lighthouse accessibility >= 95. Readable contrast, labels on every form field, alt text (product name by default), keyboard-usable checkout. Tap targets >= 44 px. |
 | NFR-003 | Security | Admin pages and data protected on the server; role checked on every action; uploads images only with size limit; spam protection on public forms without puzzles; tracking tokens long and random; rate limits on sign-in, signup, password reset, public forms and email-sending endpoints; webhooks, if any, idempotent. |
 | NFR-004 | Privacy | Customer data visible only to admins. Emails contain only necessary personal data. A short privacy note explains what is collected and why. No tracking cookies requiring a consent banner. `privacy.regions` in project.yaml is empty; the applicable regime is Mauritius Data Protection Act 2017 `[TO CONFIRM]`. Retention periods `[TO CONFIRM]`. |
@@ -269,7 +269,7 @@ Providers are not chosen here (decided in /setup-stack and ADRs); constraints on
 | R6 | Allergen mistakes harm a customer | Low | High | Allergen tags + kitchen note on every product page; allergen copy reviewed by the owner |
 | R7 | Concurrent admin edits overwrite each other | Med | Med | Optimistic concurrency (FR-054) |
 | R8 | Content (photos, translations, policies) arrives late and blocks phase 6/7 | Med | Med | Sample data first; owner content checklist with dates `[TO CONFIRM]` |
-| R9 | Briefs disagree on image size (300 kB vs 250 kB budget) and speed (3 s vs LCP 2.5 s) | Low | Low | Stricter project.yaml values apply unless the owner decides otherwise |
+| R9 | Briefs disagree on speed (3 s vs LCP 2.5 s); image size resolved 2026-11-10 at 300 kB to match the brief | Low | Low | Stricter project.yaml values apply for speed unless the owner decides otherwise |
 | R10 | Personal-data obligations (Mauritius DPA 2017) not yet reviewed | Med | Med | Privacy note, minimal data in emails, confirm regime and retention `[TO CONFIRM]` |
 | R11 | Customer cannot reach owner when a quote or order is stuck (no daily cap, no auto-expiry of Pending approval) | Med | Med | Today "To review" count; 24 h pending reminder push (FR-075) |
 

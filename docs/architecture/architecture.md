@@ -1,6 +1,6 @@
 # Architecture — Aux petits bonheurs
 
-Updated: 2026-11-10 · Rigor: standard · ADRs: `docs/architecture/adr/` (ADR-0001 stack)
+Updated: 2026-11-10 (feature-spec consolidation) · Rigor: standard · ADRs: `docs/architecture/adr/` (ADR-0001 stack)
 Companions: `data-model.md`, `api/contracts.md`. Requirements: `docs/product/prd.md` (FR/NFR IDs cited inline).
 
 ## Overview
@@ -92,7 +92,7 @@ src/
 - **Connection:** each request creates a `postgres` client (`max: 1`, `prepare: false`) to the Supavisor transaction pooler (port 6543) and closes it in `waitUntil`. Supabase region: the closest available to Mauritius (proposed `ap-south-1`, Mumbai; confirm by measuring at setup). Enable Workers **Smart Placement** so the Worker runs near the database for multi-query pages. Hyperdrive is the next step if TTFB > 600 ms (risk T2).
 - **Basket:** stored in an HttpOnly cookie `apb_basket` (compact JSON of product id, choices, quantity, message; max 10 lines, < 4 kB), so the basket count and `/basket` render on the server and work without JS. It holds no prices; the server re-prices on every render and on submit.
 - **Files:** bucket `public-images` (products, gallery, promotions, hero; public CDN URLs, long cache, versioned paths) and bucket `request-photos` (private; signed read URLs, 10 min).
-- **Image pipeline** (FR-029, FR-062, NFR-001/009): browser checks type and ≤ 10 MB → decodes (HEIC via lazily loaded `heic2any` when needed) → resizes to 1600 px and 640 px long edge, WebP (JPEG fallback) ≤ 250 kB → asks the action for signed upload URLs (auth/Turnstile, count ≤ 5, declared type/size) → PUTs directly to Storage → submits paths with the form. The server verifies each object exists under the issued prefix, has an allowed MIME and ≤ 1 MB, else rejects. Bucket-level MIME and size limits back this up. No image bytes pass through the Worker (CPU limit). Orphaned uploads are purged by cron after 24 h.
+- **Image pipeline** (FR-029, FR-062, NFR-001/009): browser checks type and ≤ 10 MB → decodes (HEIC via lazily loaded `heic2any` when needed) → resizes to 1600 px and 640 px long edge, WebP (JPEG fallback) ≤ 300 kB target (NFR-001/009, brief) → asks the action for signed upload URLs (auth/Turnstile, count ≤ 5, declared type/size) → PUTs directly to Storage → submits paths with the form. The server verifies each object exists under the issued prefix, has an allowed MIME and ≤ 1 MB, else rejects. Bucket-level MIME and size limits back this up. No image bytes pass through the Worker (CPU limit). Orphaned uploads are purged by cron after 24 h.
 
 **Key journey: place a website order (FR-015, FR-023, FR-024, FR-074)**
 ```mermaid
@@ -123,7 +123,9 @@ sequenceDiagram
 - **Session:** `@supabase/ssr` HttpOnly, Secure, SameSite=Lax cookies; server verifies the access token with `auth.getClaims()` (asymmetric JWT signing keys, verified locally via JWKS, no network call per request). Refresh happens server-side and rewrites cookies.
 - **Guards** in `auth.server.ts`, called at the top of **every** loader and action (never by layout alone):
   - `requireAdmin(request, { role?: 'owner' })` → valid claims → `admin` row exists and `active` → role matches → **session age ≤ 30 days**, where age = now − sign-in time from the JWT `amr` claim; otherwise sign out and redirect to `/admin/login` (FR-040, FR-041). Updates `last_sign_in_at` at sign-in.
-  - `requireCustomer` / `optionalCustomer` for `/account/*` and checkout prefill. A customer session reaching any `/admin` route gets 404 (FR-039).
+  - `requireCustomer` / `optionalCustomer` for `/account/*` and checkout prefill. A customer session reaching any `/admin` route (except login, invite, forgot, reset) is redirected to `/admin/login` like any non-admin, and no admin data is returned (FR-039; decision 2026-11-10, replaces the earlier 404). `requireCustomer` also requires a confirmed email (`email_confirmed_at`).
+  - **Linking guest orders (FR-038):** `saveDetails` and `signUp` only create an unconfirmed auth user; `auth/confirm` (`type=signup`) sets `customer.auth_user_id` on the row with the confirmed email. No order history is linked or shown before the email is confirmed, so a guest order placed under someone else's email can never expose their history.
+  - **Password reset:** customers `/account/reset`, admins `/admin/reset`; both receive the recovery session through `auth/confirm`.
   - Tracking routes authorise by `tracking_token` only (256-bit random, constant-time lookup by unique index) and expose only that order.
 - **Deactivation (FR-043):** sets `admin.active = false` (blocks the next request at once) and bans the auth user via the Admin API (`ban_duration`), which also stops token refresh; reactivation lifts the ban. Push subscriptions of a deactivated admin are deleted.
 - **Invitations (FR-042):** own `admin_invitation` token (7 days; Supabase links can't last that long). Accepting creates the auth user with the Admin API (`email_confirm: true`, password set by the invitee) and the `admin` row in one service call. The first Owner is created by a one-off seed script.
@@ -135,7 +137,7 @@ sequenceDiagram
 ## Integrations
 | Integration | How called | Failure handling |
 |---|---|---|
-| Resend (customer + admin emails) | REST `fetch` from `server/email/sender.ts`; templates rendered at send time | Outbox row written in the business transaction; immediate send in `waitUntil`; on error `attempts+1`, backoff 1 h, 2 h, 4 h, 8 h, 24 h; after 6 tries `dead` + Sentry alert + order_event `email_failed`. `dedupe_key` stops duplicates. Daily send count tracked; at 90/day non-critical emails (Thank you) defer to the next day (R1). |
+| Resend (customer + admin emails) | REST `fetch` from `server/email/sender.ts`; templates rendered at send time | Outbox row written in the business transaction; immediate send in `waitUntil`; on error `attempts+1`, backoff 1 h, 2 h, 4 h, 8 h, 24 h; after 6 tries `dead` + Sentry alert + order_event `email_failed`. `dedupe_key` stops duplicates. Daily send count tracked; at 90/day **non-critical** emails (`thank_you`, `admin_alert_*`, which push duplicates) defer to the next day; **critical** emails (order/request received, quote, order confirmed, declines, cancellation, quote closed, ready, on the way, auth, invitations) keep sending up to the provider's 100. Permanent provider errors (4xx except 429) are `dead` at once (R1). |
 | Web Push | VAPID-signed, aes128gcm payload via a Workers-compatible WebCrypto library (`lead-backend` picks, e.g. `@block65/webcrypto-web-push`) | 404/410 → delete subscription; other errors logged; push is never the only channel for events that also have email |
 | Supabase Auth hook | Standard Webhooks signature (`SUPABASE_AUTH_HOOK_SECRET`) | Verify signature + timestamp; respond within 5 s; failure means Supabase returns an error to the user (retry by the user) |
 | Turnstile | `siteverify` from actions on checkout, custom request, sign-up, sign-in link, reset, "Save my details" | Verify failure → `400 BOT_CHECK_FAILED`; Turnstile outage → allow with stricter rate limit (logged) |
@@ -151,7 +153,7 @@ Every outbound `fetch` uses `AbortSignal.timeout` (Resend 8 s, push 5 s, Turnsti
 | `retryEmails` | every tick | send due `pending` outbox rows | FR-074 |
 | `expireQuotes` | every tick | `quote_sent` with `quote_expires_on < today(MU)` → `closed` (versioned update), event, "Quote closed" email, push to admins | FR-032 |
 | `pendingAlerts` | every tick | website orders `pending_approval` created > 24 h ago with `pending_alert_sent_at` NULL → set marker, push once | FR-075 |
-| `eveningReminder` | 18:00 hour (`settings.evening_reminder_at`), `job_run(evening_reminder, date)` | push tomorrow's count + prep-list link | FR-072 |
+| `eveningReminder` | first tick from the `settings.evening_reminder_at` hour until 21:00, `job_run(evening_reminder, date)` | push tomorrow's *confirmed* count (approved..completed, as the prep list) + prep-list link; skipped when 0 | FR-072 |
 | `purge` | 03:00 | rate-limit buckets, sent outbox > 90 d, orphan uploads > 24 h, request photos past retention | data-model retention |
 Promotions need no job: "live" is computed at read time (FR-016). Cloudflare free cron cannot be paused per job, so the dispatcher logs each job's outcome to Workers Logs and Sentry Cron Monitors (free tier) watches `keepAlive`.
 
@@ -193,7 +195,7 @@ No per-PR previews (Supabase free = 2 projects). **CI** (GitHub Actions, bakery 
 ## Quality attributes
 | Attribute | Target | How achieved |
 |---|---|---|
-| Performance | Lighthouse ≥ 90, LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1, JS ≤ 170 kB gz, images ≤ 250 kB | SSR, Smart Placement, ≤ 3 DB round-trips per page (parallel queries), pre-sized WebP with `srcset`, explicit dimensions, lazy below fold, fonts subset + `font-display: swap`, lazy widgets, CI budget check |
+| Performance | Lighthouse ≥ 90, LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1, JS ≤ 170 kB gz, images ≤ 300 kB | SSR, Smart Placement, ≤ 3 DB round-trips per page (parallel queries), pre-sized WebP with `srcset`, explicit dimensions, lazy below fold, fonts subset + `font-display: swap`, lazy widgets, CI budget check |
 | CPU (free Worker 10 ms) | p99 < 10 ms CPU | No hashing, image work or bulk email on requests; small templates; measure in Workers Logs |
 | Availability | Best effort, no lost orders | Order write is one transaction; email/push after commit with retry; keep-alive; weekly backups |
 | Security | OWASP ASVS L1 | Section above; `/security-audit` before launch |
@@ -215,3 +217,4 @@ No per-PR previews (Supabase free = 2 projects). **CI** (GitHub Actions, bakery 
 | T10 | Privacy regime and retention periods unconfirmed (PRD Q12, R10) | privacy-compliance-specialist / owner | Owner confirmation; data-model retention table marks proposals |
 | D1 | Supabase region choice | technical-director | Measure latency from Mauritius at setup; record in README (cheap to change before launch only) |
 | D2 | Need ADRs? Locale URL scheme (`/fr` prefix), outbox-in-Postgres, own invitation tokens are recorded here; none conflicts with ADR-0001. Write ADRs only if reversed later. | technical-director | — |
+| D3 | Consolidation decisions 2026-11-10 (Team at `/admin/team`; customer on `/admin` → login redirect; uploads 300 kB target / 1 MB cap; status groups *active* vs *confirmed*; save-details links after email confirmation): see `docs/specs/features/README.md` | technical-director | Recorded; contracts v0.2 |
