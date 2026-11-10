@@ -142,3 +142,17 @@ describe("README launch URLs and Supabase redirect allowlist (S-002 AC5)", () =>
     expect(deploy).toMatch(/custom domain.*(edit|change|update).*redirect/i);
   });
 });
+
+describe("README links the Worker CPU runbook (S-019 AC6)", () => {
+  test("the Deploy section points to docs/runbooks/worker-cpu.md", () => {
+    expect(section("Deploy")).toContain("docs/runbooks/worker-cpu.md");
+  });
+
+  test("the runbook has numbered steps and names the API token only as a placeholder", () => {
+    const runbook = repoFile("docs/runbooks/worker-cpu.md");
+    expect(runbook).toMatch(/^1\. /m);
+    expect(runbook).toContain("<CLOUDFLARE_API_TOKEN>");
+    expect(runbook).toContain("npm run cpu:load");
+    expect(runbook).toContain("npm run cpu:report");
+  });
+});

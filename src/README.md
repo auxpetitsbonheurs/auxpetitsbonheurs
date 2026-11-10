@@ -129,6 +129,12 @@ the revert. In an emergency, Cloudflare dashboard → Workers & Pages → the Wo
 Deployments → the previous version → Rollback; migrations are backward-compatible
 (expand/contract), so the previous code runs on the newer schema.
 
+### Worker CPU check (free plan, 10 ms)
+
+How to measure CPU time per request on staging and record it in
+`docs/architecture/cpu-measurements.md`: [`docs/runbooks/worker-cpu.md`](../docs/runbooks/worker-cpu.md)
+(`npm run cpu:load`, `npm run cpu:report`).
+
 ### Supabase Auth redirect allowlist
 
 Exact values, no wildcards (threat-model G-04). Supabase dashboard → the environment's

@@ -21,8 +21,11 @@
 		"APP_ENV": "development",
 		"APP_TIME_ZONE": "Indian/Mauritius"
 	},
+	// Workers Logs keep our one structured line per request (tokens redacted, S-019 AC5).
+	// Automatic invocation logs are off: they store the full URL, i.e. tracking tokens.
 	"observability": {
-		"enabled": true
+		"enabled": true,
+		"logs": { "enabled": true, "invocation_logs": false }
 	},
 	"upload_source_maps": true,
 	"env": {
