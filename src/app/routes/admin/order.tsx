@@ -210,15 +210,24 @@ interface ApproveResult {
   error?: { code: string; message: string };
 }
 
-/** Sticky bar at the bottom (one thumb): Approve with its loading state, and the result in a polite live region. */
+/**
+ * Sticky bar at the bottom (one thumb): Approve with its loading state, and the result in a
+ * polite live region. The region is always rendered (sr-only while empty) so screen readers
+ * already track it when the result arrives; on success the Approve button disappears, so focus
+ * moves to the result instead of dropping to <body>.
+ */
 function ActionBar({ data: { order, allowed }, result }: { data: LoaderData; result: ApproveResult | undefined }) {
   const { t } = useI18n();
   const navigation = useNavigation();
   const pending = navigation.state !== "idle" && navigation.formData?.get("intent") === "approve";
   const success = result?.ok ? t("admin.order.approved", { number: order.number }) : "";
+  const resultRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (success) resultRef.current?.focus();
+  }, [success]);
   return (
     <div data-sticky-bar className="sticky bottom-0 z-10 mt-8 border-t bg-card py-3 shadow-md">
-      <p role="status" className="px-1 font-semibold empty:hidden">
+      <p ref={resultRef} role="status" tabIndex={-1} data-testid="approve-result" className={success ? "px-1 font-semibold outline-offset-2" : "sr-only"}>
         {success}
       </p>
       {allowed.approve ? (

@@ -69,6 +69,11 @@ test.describe("S-017 orders to review and Approve", () => {
       if (route.request().method() === "POST") await held;
       await route.continue();
     });
+    // The live region is in the accessibility tree before it fills, or some screen readers miss the result.
+    const status = page.getByTestId("approve-result");
+    await expect(status).toBeAttached();
+    await expect(status).toBeEmpty();
+    expect(await status.evaluate((el) => getComputedStyle(el).display)).not.toBe("none");
     const approve = page.getByRole("button", { name: "Approve" });
     await approve.click();
     await expect(approve).toHaveAttribute("aria-busy", "true");
@@ -78,6 +83,8 @@ test.describe("S-017 orders to review and Approve", () => {
     await expect(page.getByRole("status").filter({ hasText: `Order ${orderNumber(order.number)} approved.` })).toBeVisible();
     await expect(page.getByText("Approved", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Approve" })).toHaveCount(0);
+    // The focused button is gone: focus lands on the result, not on <body>.
+    await expect(status).toBeFocused();
     const [row] = await db<{ status: string; version: number }[]>`select status, version from orders where id = ${order.id}`;
     expect(row).toEqual({ status: "approved", version: 2 });
     const events = await db`select actor_admin_id from order_event where order_id = ${order.id} and type = 'approved'`;
