@@ -9,7 +9,7 @@ import {
   withZoom,
 } from "./support/a11y";
 import { setClock } from "./support/clock";
-import { E2E_POLICIES, SAMPLE_PRODUCT } from "./support/database";
+import { E2E_POLICIES, SAMPLE_PRODUCT, createOrder } from "./support/database";
 import { type Page, expect, test } from "./support/fixtures";
 
 const PRODUCT_PATH = `/menu/${SAMPLE_PRODUCT.slug}`;
@@ -599,4 +599,100 @@ test.describe("S-014 without JavaScript", () => {
     const rows = await db`select number from orders where contact_email = ${email}`;
     expect(rows).toHaveLength(1);
   });
+});
+
+test.describe("S-015 order confirmation", () => {
+  test("AC1, AC7: after placing an order the page focuses the heading and shows number, notice, link, Copy and Share", async ({ page, context, baseURL, db }) => {
+    await setClock(context, baseURL!, "2026-11-20T06:00:00Z");
+    await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: baseURL! });
+    await basketWithCake(page);
+    await hydrated(page);
+    await fillOrder(page, "pickup");
+    await page.getByRole("button", { name: "Place order" }).click();
+    await expect(page).toHaveURL(TOKEN_URL);
+    const token = TOKEN_URL.exec(page.url())![1]!;
+    const [order] = await db<{ number: number }[]>`select number from orders where tracking_token = ${token}`;
+    const number = `APB-${String(order!.number).padStart(4, "0")}`;
+
+    await expect(page.getByRole("heading", { level: 1, name: "Thank you, we have your order" })).toBeFocused();
+    await expect(page.getByText(number, { exact: true })).toBeVisible();
+    await expect(page.getByText("Not confirmed until we approve it")).toBeVisible();
+    const trackingUrl = `${baseURL}/t/${token}`;
+    await expect(page.getByText(trackingUrl, { exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Follow my order" })).toHaveAttribute("href", trackingUrl);
+    await expect(page.getByRole("link", { name: "Share link" })).toHaveAttribute("href", /^https:\/\/wa\.me\/\?text=/);
+
+    const status = page.getByRole("status").filter({ hasText: /copied/i });
+    await page.getByRole("button", { name: "Copy order number" }).click();
+    await expect(status).toHaveText("Order number copied");
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(number);
+    await page.getByRole("button", { name: "Copy link" }).click();
+    await expect(status).toHaveText("Link copied");
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(trackingUrl);
+  });
+
+  test("AC2, AC4: a refresh shows the same order with no-store, noindex and no-referrer headers", async ({ page, db }) => {
+    const order = await createOrder(db, "S-015 refresh");
+
+    for (let i = 0; i < 2; i += 1) {
+      const response = await page.goto(`/order/${order.trackingToken}/confirmed`);
+      expect(response!.status()).toBe(200);
+      const headers = response!.headers();
+      expect(headers["cache-control"]).toBe("no-store");
+      expect(headers["x-robots-tag"]).toContain("noindex");
+      expect(headers["referrer-policy"]).toBe("no-referrer");
+      await expect(page.getByText(`APB-${String(order.number).padStart(4, "0")}`, { exact: true })).toBeVisible();
+    }
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+    // Specs run in parallel, so "nothing new" is checked as: still exactly this one order behind the token.
+    expect((await db`select id from orders where tracking_token = ${order.trackingToken}`).length).toBe(1);
+  });
+
+  test("AC3: wrong and malformed tokens show the same not-found page with a 404 and the private headers", async ({ page, db }) => {
+    const order = await createOrder(db, "S-015 wrong");
+    const wrong = `${order.trackingToken.slice(0, 42)}${order.trackingToken.endsWith("A") ? "B" : "A"}`;
+    const bodies: string[] = [];
+    for (const token of [wrong, "A".repeat(43), "short"]) {
+      const response = await page.goto(`/order/${token}/confirmed`);
+      expect(response!.status()).toBe(404);
+      expect(response!.headers()["referrer-policy"]).toBe("no-referrer");
+      expect(response!.headers()["cache-control"]).toBe("no-store");
+      await expect(page.getByRole("heading", { level: 1, name: "We can't find this order" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Message us on WhatsApp" })).toBeVisible();
+      bodies.push((await page.locator("main").innerText()).replaceAll(token, ""));
+    }
+    expect(new Set(bodies).size).toBe(1);
+  });
+
+  test("AC5: a French order's confirmation is in French", async ({ page, db }) => {
+    const order = await createOrder(db, "S-015 fr");
+    await page.goto(`/fr/order/${order.trackingToken}/confirmed`);
+
+    await expect(page.locator("html")).toHaveAttribute("lang", "fr");
+    await expect(page.getByRole("heading", { level: 1, name: "Merci, nous avons bien reçu votre commande" })).toBeVisible();
+    await expect(page.getByText("Pas encore confirmée : nous devons d'abord l'accepter")).toBeVisible();
+  });
+
+  test("AC6: keyboard order, visible focus, no clipping or sideways scroll, 44 px targets at 100% and 200%", async ({ page, db }) => {
+    const order = await createOrder(db, "S-015 layout");
+    await page.goto(`/order/${order.trackingToken}/confirmed`);
+    await hydrated(page);
+
+    await expect(page.getByRole("button", { name: "Copy link" })).toBeVisible();
+    await expectAccessibleLayout(page);
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`AC7: axe clean in ${colorScheme} mode, also at 200% and on the not-found page`, async ({ page, db }) => {
+      await page.emulateMedia({ colorScheme });
+      const order = await createOrder(db, `S-015 axe ${colorScheme}`);
+      await page.goto(`/order/${order.trackingToken}/confirmed`);
+      await hydrated(page);
+      await expectNoA11yViolations(page);
+      await expectNoA11yViolations(page, { zoom: 2 });
+
+      await page.goto(`/order/${"A".repeat(43)}/confirmed`);
+      await expectNoA11yViolations(page);
+    });
+  }
 });

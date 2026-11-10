@@ -136,5 +136,30 @@
     "errors": {
       "quantity": "Choose a quantity from 1 to 50."
     }
+  },
+  "order": {
+    "confirmed": {
+      "metaTitle": "Order received",
+      "heading": "Thank you, we have your order",
+      "numberLabel": "Your order number",
+      "copyNumber": "Copy order number",
+      "copiedNumber": "Order number copied",
+      "notConfirmedTitle": "Not confirmed until we approve it",
+      "notConfirmedBody": "We check every order and email you as soon as we approve it.",
+      "trackingTitle": "Your private tracking link",
+      "trackingHint": "Keep this link to follow your order. Anyone with it can see your order, so share it only with people you trust.",
+      "followOrder": "Follow my order",
+      "copyLink": "Copy link",
+      "copiedLink": "Link copied",
+      "share": "Share link",
+      "shareText": "My Aux petits bonheurs order {{number}}: {{url}}",
+      "copyFailed": "Copying did not work. Select the text and copy it yourself."
+    },
+    "notFound": {
+      "metaTitle": "Order not found",
+      "title": "We can't find this order",
+      "body": "Check that you opened the whole link from your email or message. If it still does not work, message us on WhatsApp with your order number.",
+      "whatsapp": "Message us on WhatsApp"
+    }
   }
 }

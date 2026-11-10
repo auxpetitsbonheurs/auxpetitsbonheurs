@@ -136,5 +136,30 @@
     "errors": {
       "quantity": "Choisissez une quantité entre 1 et 50."
     }
+  },
+  "order": {
+    "confirmed": {
+      "metaTitle": "Commande reçue",
+      "heading": "Merci, nous avons bien reçu votre commande",
+      "numberLabel": "Votre numéro de commande",
+      "copyNumber": "Copier le numéro de commande",
+      "copiedNumber": "Numéro de commande copié",
+      "notConfirmedTitle": "Pas encore confirmée : nous devons d'abord l'accepter",
+      "notConfirmedBody": "Nous vérifions chaque commande et vous écrivons dès que nous l'acceptons.",
+      "trackingTitle": "Votre lien de suivi privé",
+      "trackingHint": "Gardez ce lien pour suivre votre commande. Toute personne qui l'a peut voir votre commande : ne le partagez qu'avec des personnes de confiance.",
+      "followOrder": "Suivre ma commande",
+      "copyLink": "Copier le lien",
+      "copiedLink": "Lien copié",
+      "share": "Partager le lien",
+      "shareText": "Ma commande Aux petits bonheurs {{number}} : {{url}}",
+      "copyFailed": "La copie n'a pas fonctionné. Sélectionnez le texte et copiez-le vous-même."
+    },
+    "notFound": {
+      "metaTitle": "Commande introuvable",
+      "title": "Nous ne trouvons pas cette commande",
+      "body": "Vérifiez que vous avez ouvert le lien en entier depuis votre e-mail ou votre message. Si cela ne marche toujours pas, écrivez-nous sur WhatsApp avec votre numéro de commande.",
+      "whatsapp": "Écrivez-nous sur WhatsApp"
+    }
   }
 }

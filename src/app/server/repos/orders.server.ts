@@ -24,3 +24,9 @@ export async function findOrderByIdempotencyKey(db: Executor, key: string): Prom
   const [row] = await db.select(placedRef).from(orders).where(eq(orders.idempotencyKey, key)).limit(1);
   return row;
 }
+
+/** The order behind a tracking token (unique index); callers check the format first. */
+export async function findOrderRefByToken(db: Executor, token: string): Promise<PlacedOrderRef | undefined> {
+  const [row] = await db.select(placedRef).from(orders).where(eq(orders.trackingToken, token)).limit(1);
+  return row;
+}
