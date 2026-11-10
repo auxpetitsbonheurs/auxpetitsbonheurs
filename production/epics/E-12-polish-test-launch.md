@@ -18,7 +18,28 @@ Phase 6 exit: section 6 requirements met on a real mid-range phone. Phase 7 exit
 ## Stories
 | ID | Title | Status | Estimate |
 |---|---|---|---|
-| (to be created by /create-stories E-12) | | draft | |
+| S-221 | The real menu, prices and photos replace the sample data | ready | 3 |
+| S-222 | Real texts and natural French, reviewed by the Owner | ready | 3 |
+| S-223 | The bakery's visual identity is applied and still accessible | ready | 3 |
+| S-224 | Pretty share previews and good search basics | ready | 3 |
+| S-225 | A short privacy note and every [TO CONFIRM] item settled | ready | 3 |
+| S-226 | Performance meets the budget on a real mid-range phone | ready | 5 |
+| S-227 | Accessibility audit: WCAG 2.2 AA, keyboard, zoom, contrast | ready | 5 |
+| S-228 | Security review before launch | ready | 5 |
+| S-229 | Privacy audit: data minimisation, cookies, emails and push | ready | 3 |
+| S-230 | Browsers and phones matrix, incl. admin push on iPhone and Android | ready | 3 |
+| S-231 | Weekly automatic backups to bakery-owned storage | ready | 3 |
+| S-232 | A backup is restored on a clean environment and verified | ready | 3 |
+| S-233 | Everything stays on free plans except the domain | ready | 2 |
+| S-234 | README and a one-page handover sheet | ready | 3 |
+| S-235 | Staging and live deploy automatically, secrets in bakery accounts | ready | 3 |
+| S-236 | Deploy-day checklist: real Juice number and pickup address | ready | 3 |
+| S-237 | Appendix A launch test checklist passes on staging | ready | 5 |
+| S-238 | Recorded test session with a customer on a real phone (gate concern 4) | ready | 5 |
+| S-239 | Findings triaged and the launch gate decided | ready | 3 |
+| S-240 | Launch: Owner real test order on her phone, walkthrough, handover | ready | 5 |
+
+Total: 71 pts. Story files: `production/stories/E-12/`. Dependencies on E-01..E-11 (R9) not yet done.
 
 ## Dependencies
 - E-01..E-11 complete (or cut items agreed); Owner availability for content and the test session.

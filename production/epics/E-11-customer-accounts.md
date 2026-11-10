@@ -17,7 +17,22 @@ J10: guest "Save my details" then confirm email, sign in, My orders shows prior 
 ## Stories
 | ID | Title | Status | Estimate |
 |---|---|---|---|
-| (to be created by /create-stories E-11) | | draft | |
+| S-206 | Sign up with email confirmation, then choose a password | ready | 5 |
+| S-207 | Sign in with my password and sign out safely | ready | 5 |
+| S-208 | Sign in with a one-time email link | ready | 3 |
+| S-209 | Reset a forgotten password | ready | 3 |
+| S-210 | Keep my profile and email language up to date | ready | 3 |
+| S-211 | Save, edit and delete my delivery addresses | ready | 3 |
+| S-212 | Checkout prefills my details and offers my saved addresses | ready | 3 |
+| S-213 | See my current and past orders with their status | ready | 3 |
+| S-214 | Reorder a past order at today's prices (cut #3) | ready | 5 |
+| S-215 | Offer "Save my details" after a guest order (cut #4) | ready | 3 |
+| S-216 | Earlier guest orders appear only after I confirm my email (cut #4) | ready | 5 |
+| S-217 | Count account usage without tracking anyone | ready | 2 |
+| S-218 | Account screens pass an accessibility and language sweep | ready | 3 |
+| S-219 | Journey J10 works end to end | ready | 3 |
+
+Total: 49 pts. Story files: `production/stories/E-11/`. Cut order: S-214 (#3), S-215/S-216 (#4), S-206..S-213 (#5; FR-034 is Must so cutting S-206..S-209 needs a product-director decision). Dependencies on earlier epics (R9) not yet done.
 
 ## Dependencies
 - E-05, E-10 (sign-in and reset emails).
