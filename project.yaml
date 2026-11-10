@@ -68,6 +68,7 @@ privacy:
 modes:
   rigor: standard
   automation: auto
+  push_tests: off        # Owner 2026-11-10: skip local unit tests before git push; CI runs them
 
 paths:
   code_root: src

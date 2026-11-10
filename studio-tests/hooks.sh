@@ -4,7 +4,7 @@
 set -u
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
-cp -R "$REPO/.claude" "$T/.claude"; cp "$REPO/project.yaml" "$T/"
+cp -R "$REPO/.claude" "$T/.claude"; grep -v "^  push_tests:" "$REPO/project.yaml" > "$T/project.yaml"
 cd "$T" && git init -q && git config user.email t@t && git config user.name t
 export CLAUDE_PROJECT_DIR="$T"
 pass=0; fail=0

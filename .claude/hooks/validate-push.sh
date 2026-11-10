@@ -12,6 +12,9 @@ target="${target##*:}"; target="${target:-$branch}"
 if printf '%s' "$target" | grep -qxE '(main|master|production|HEAD:main)'; then
   notes="Pushing to a protected-looking branch ($target). Prefer a feature branch + PR. "
 fi
+# project.yaml modes.push_tests: off -> CI runs the tests; skip the local run.
+push_tests="$(cfg modes.push_tests)"
+[ "$push_tests" = off ] && { [ -n "$notes" ] && advise PreToolUse "$notes"; exit 0; }
 [ "$RIGOR" = minimal ] && { [ -n "$notes" ] && advise PreToolUse "$notes"; exit 0; }
 res="$(bash "$WS_SCRIPTS/test-run.sh" unit 2>/dev/null)"
 case "$(printf '%s\n' "$res" | sed -n 's/^result: //p')" in
