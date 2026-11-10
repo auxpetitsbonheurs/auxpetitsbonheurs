@@ -20,10 +20,19 @@ const placedRef = {
   locale: orders.locale,
 } as const;
 
-/** The order a checkout form render already created, if any (FR-023). */
-export async function findOrderByIdempotencyKey(db: Executor, key: string): Promise<PlacedOrderRef | undefined> {
-  const [row] = await db.select(placedRef).from(orders).where(eq(orders.idempotencyKey, key)).limit(1);
-  return row;
+/** The order a checkout form render already created, if any (FR-023), with the email it was placed under (G-21). */
+export async function findOrderByIdempotencyKey(
+  db: Executor,
+  key: string,
+): Promise<{ ref: PlacedOrderRef; contactEmail: string | null } | undefined> {
+  const [row] = await db
+    .select({ ...placedRef, contactEmail: orders.contactEmail })
+    .from(orders)
+    .where(eq(orders.idempotencyKey, key))
+    .limit(1);
+  if (!row) return undefined;
+  const { contactEmail, ...ref } = row;
+  return { ref, contactEmail };
 }
 
 /** The order behind a tracking token (unique index); callers check the format first. */

@@ -88,7 +88,8 @@
       "contactName": "Indiquez votre nom.",
       "contactPhone": "Indiquez un numéro de téléphone, par exemple 5712 3456.",
       "contactEmail": "Indiquez une adresse e-mail, par exemple nom@exemple.com.",
-      "contactNote": "La note doit faire moins de 1 000 caractères."
+      "contactNote": "La note doit faire moins de 1 000 caractères.",
+      "resubmit": "Merci de vérifier vos informations et de passer à nouveau votre commande."
     }
   },
   "errors": {

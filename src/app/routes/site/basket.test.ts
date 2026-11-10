@@ -255,3 +255,56 @@ describe("idempotency key in the form (S-014 AC4)", () => {
     expect((await database.client.query("select * from orders")).rows).toEqual(before.rows);
   });
 });
+
+describe("a reused key from another submitter (threat-model G-21, tech-debt M1)", () => {
+  const KEY = "3b7e1f0a-2c4d-4e5f-8a9b-0c1d2e3f4a5b";
+  const form = (overrides: Record<string, string> = {}) => ({
+    intent: "placeOrder",
+    idempotencyKey: KEY,
+    displayedTotalRs: "850",
+    fulfilment: "pickup",
+    date: "2026-11-12",
+    "windowId.pickup": "morning",
+    "contact.name": "Aisha",
+    "contact.phone": "5712 3456",
+    "contact.email": "aisha@example.com",
+    acceptPolicies: "on",
+    ...overrides,
+  });
+  type KeyRefusal = Refusal & { data: { values: Record<string, string>; error: { message: string } } };
+
+  test.each([
+    ["with a basket", true],
+    ["after Back with an emptied basket", false],
+  ])("%s: no redirect, no link, a neutral message and a fresh key in the re-rendered form", async (_label, withBasket) => {
+    const id = await insertProduct(database.db);
+    const cookie = cookieWith([{ lineId: "a", productId: id, quantity: 1 }]);
+    const first = (await post(form(), cookie)) as Response;
+    const token = /\/order\/([^/]+)\//.exec(first.headers.get("Location")!)![1]!;
+
+    const refused = (await post(form({ "contact.email": "someone@example.com" }), withBasket ? cookie : undefined)) as unknown as KeyRefusal;
+
+    expect(refused).not.toBeInstanceOf(Response);
+    expect(refused.init.status).toBe(400);
+    expect(refused.data.error.code).toBe("VALIDATION_FAILED");
+    expect(refused.data.error.fields).toEqual({ form: "Please check your details and place your order again." });
+    expect(refused.data.values.idempotencyKey).toMatch(/^[0-9a-f-]{36}$/);
+    expect(refused.data.values.idempotencyKey).not.toBe(KEY);
+    expect(refused.data.values["contact.email"]).toBe("someone@example.com");
+    expect(JSON.stringify(refused.data)).not.toContain(token);
+    const { rows } = await database.client.query("select id from orders");
+    expect(rows).toHaveLength(1);
+  });
+
+  test("the message is French on /fr/basket", async () => {
+    const id = await insertProduct(database.db);
+    const cookie = cookieWith([{ lineId: "a", productId: id, quantity: 1 }]);
+    await post(form(), cookie);
+
+    const refused = (await action(
+      routeArgs(database, { path: "/fr/basket", cookie, form: form({ "contact.email": "someone@example.com" }) }) as never,
+    )) as unknown as KeyRefusal;
+
+    expect(refused.data.error.fields).toEqual({ form: "Merci de vérifier vos informations et de passer à nouveau votre commande." });
+  });
+});

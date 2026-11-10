@@ -88,7 +88,8 @@
       "contactName": "Enter your name.",
       "contactPhone": "Enter a phone number, for example 5712 3456.",
       "contactEmail": "Enter an email address, for example name@example.com.",
-      "contactNote": "Keep the note under 1,000 characters."
+      "contactNote": "Keep the note under 1,000 characters.",
+      "resubmit": "Please check your details and place your order again."
     }
   },
   "errors": {

@@ -94,6 +94,11 @@ function fieldMessages(fields: string[], locale: Locale): Record<string, string>
 function refusal(result: Exclude<PlaceOrderResult, { ok: true }>, values: Record<string, string>, locale: Locale) {
   switch (result.code) {
     case "VALIDATION_FAILED":
+      if ("keyReused" in result) {
+        // Another submitter's key (G-21): reveal nothing, and the re-rendered form gets a fresh key.
+        const fields = { form: translate("checkout.errors.resubmit", locale) };
+        return actionError(result.code, locale, { fields, extra: { values: { ...values, idempotencyKey: crypto.randomUUID() } } });
+      }
       return actionError(result.code, locale, { fields: fieldMessages(result.fields, locale), extra: { values } });
     case "DATE_UNAVAILABLE":
       return actionError(result.code, locale, { fields: { date: translate("checkout.errors.dateTooSoon", locale) }, extra: { values, reason: result.reason } });

@@ -2,7 +2,7 @@
 // (parse), 4 (product problems), 5 (date today or later + window in the list), 6
 // (server prices vs displayed total), 7 (one transaction) and 9 (caller redirects).
 // S-014 adds step 2 (idempotency: a known key returns the original order, also when a
-// race is lost on the unique index). Later: step 3 rate limit + Turnstile and the full
+// race is lost on the unique index), bound to the submitter's email (threat-model G-21). Later: step 3 rate limit + Turnstile and the full
 // assertOrderable rules (E-05), step 8 sending after commit (E-10).
 import { eq, sql } from "drizzle-orm";
 import { counter, emailOutbox, orderEvent, orderItem, orders } from "~/db/schema";
@@ -34,6 +34,8 @@ export type PlacedOrder = PlacedOrderRef & { ok: true; orderNumber: string; repl
 export type PlaceOrderResult =
   | PlacedOrder
   | { ok: false; code: "VALIDATION_FAILED"; fields: string[] }
+  /** The key belongs to an order placed under another email: nothing about it is revealed (G-21). */
+  | { ok: false; code: "VALIDATION_FAILED"; fields: []; keyReused: true }
   | { ok: false; code: "PRODUCT_UNAVAILABLE"; lineIds: string[] }
   | { ok: false; code: "DATE_UNAVAILABLE"; reason: "too_soon" }
   | ({ ok: false; code: "PRICE_CHANGED"; lines: PricedLine[] } & CheckoutTotals);
@@ -67,11 +69,12 @@ export async function placeOrder(form: Record<string, unknown>, ctx: PlaceOrderC
     orderNumber: formatOrderNumber(settings.orderNumberPrefix, ref.number),
     replayed,
   });
-  // Step 2 runs on the key alone, before the rest is validated: a replay after success
-  // posts with an emptied basket (cookie cleared) or a changed payload, and the key wins.
+  // Step 2 runs on the key and email alone, before the rest is validated: a replay after
+  // success posts with an emptied basket (cookie cleared) or a changed payload, and the
+  // key wins, but only for the submitter who placed the order (G-21).
   const key = Uuid.safeParse(form.idempotencyKey);
   const existing = key.success ? await findOrderByIdempotencyKey(ctx.db, key.data) : undefined;
-  if (existing) return placed(existing, true);
+  if (existing) return replayFor(form, existing, placed);
 
   const valid = validate(form, ctx.basket, settings);
   if (!valid.ok) return { ok: false, code: "VALIDATION_FAILED", fields: valid.fields };
@@ -94,8 +97,23 @@ export async function placeOrder(form: Record<string, unknown>, ctx: PlaceOrderC
     if (!isUniqueViolation(error, "orders_idempotency_key_unique")) throw error;
     const winner = await findOrderByIdempotencyKey(ctx.db, input.idempotencyKey);
     if (!winner) throw error;
-    return placed(winner, true);
+    return replayFor(form, winner, placed);
   }
+}
+
+const normaliseEmail = (email: string) => email.trim().toLowerCase();
+
+const KEY_REUSED = { ok: false, code: "VALIDATION_FAILED", fields: [], keyReused: true } as const;
+
+/** The original order only when the posted email is the order's (normalised); else a neutral refusal. */
+function replayFor(
+  form: Record<string, unknown>,
+  existing: { ref: PlacedOrderRef; contactEmail: string | null },
+  placed: (ref: PlacedOrderRef, replayed: boolean) => PlacedOrder,
+): PlaceOrderResult {
+  const posted = typeof form["contact.email"] === "string" ? normaliseEmail(form["contact.email"]) : "";
+  const stored = existing.contactEmail === null ? null : normaliseEmail(existing.contactEmail);
+  return posted !== "" && posted === stored ? placed(existing.ref, true) : { ...KEY_REUSED, fields: [] };
 }
 
 /** True when `error` (or a cause it wraps, e.g. DrizzleQueryError) is a 23505 on `constraint`. */

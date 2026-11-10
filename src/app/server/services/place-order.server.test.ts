@@ -359,8 +359,9 @@ describe("idempotent submit (S-014)", () => {
   test("AC3: when both requests pass the first lookup, the unique key rolls one back and it returns the winner (no consumed number)", async () => {
     const form = deliveryForm();
     const db = withTransactionBarrier(2);
+    // Same submitter (same email, G-21); the names differ so the payloads are not identical.
     const raced = (contactName: string) =>
-      placeOrder({ ...form, "contact.name": contactName, "contact.email": `${contactName}@example.com` }, { db, now: NOW, locale: "en", basket: [line("a", cakeId)] });
+      placeOrder({ ...form, "contact.name": contactName }, { db, now: NOW, locale: "en", basket: [line("a", cakeId)] });
 
     const results = await Promise.all([raced("first"), raced("second")]);
     for (const result of results) expectRefusedNever(result);
@@ -415,5 +416,53 @@ describe("idempotent submit (S-014)", () => {
     const refused = expectRefused(await place(form), "VALIDATION_FAILED");
     expect(refused.fields).toContain("idempotencyKey");
     await expectNoOrder();
+  });
+});
+
+describe("idempotency replay is bound to the submitter (threat-model G-21, tech-debt M1)", () => {
+  test("a replay whose email matches after trimming and lower-casing returns the original order", async () => {
+    const form = deliveryForm();
+    const first = await place(form);
+    expectRefusedNever(first);
+
+    const replay = await place({ ...form, "contact.email": "  AISHA@example.COM " }, { basket: [] });
+    expectRefusedNever(replay);
+    expect(replay).toMatchObject({ orderId: first.orderId, trackingToken: first.trackingToken, replayed: true });
+  });
+
+  test.each([
+    ["another email", { "contact.email": "someone@example.com" }],
+    ["no email", { "contact.email": "" }],
+  ])("a replay with %s gets a neutral refusal: no order, no link, nothing written", async (_label, overrides) => {
+    const form = deliveryForm();
+    const first = await place(form);
+    expectRefusedNever(first);
+
+    for (const basket of [[line("a", cakeId)], []]) {
+      const refused = expectRefused(await place({ ...form, ...overrides }, { basket }), "VALIDATION_FAILED");
+      expect(refused).toEqual({ ok: false, code: "VALIDATION_FAILED", fields: [], keyReused: true });
+      expect(JSON.stringify(refused)).not.toContain(first.trackingToken);
+    }
+    expect(await count("orders")).toBe(1);
+    expect(await count("customer")).toBe(1);
+    expect(await count("order_event")).toBe(1);
+    expect(await count("email_outbox")).toBe(1);
+    expect(await counterValue()).toBe(1);
+  });
+
+  test("the loser of a race with another email is refused, not given the winner's link", async () => {
+    const form = deliveryForm();
+    const db = withTransactionBarrier(2);
+    const raced = (email: string) =>
+      placeOrder({ ...form, "contact.email": email }, { db, now: NOW, locale: "en", basket: [line("a", cakeId)] });
+
+    const results = await Promise.all([raced("first@example.com"), raced("second@example.com")]);
+
+    const winners = results.filter((r) => r.ok);
+    const losers = results.filter((r) => !r.ok);
+    expect(winners).toHaveLength(1);
+    expect(losers).toEqual([{ ok: false, code: "VALIDATION_FAILED", fields: [], keyReused: true }]);
+    expect(await count("orders")).toBe(1);
+    expect(await counterValue()).toBe(1);
   });
 });
