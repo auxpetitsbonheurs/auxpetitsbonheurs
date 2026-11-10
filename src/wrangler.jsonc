@@ -2,10 +2,18 @@
  * Cloudflare Workers config (ADR-0001). Free plan.
  * Secrets are NOT stored here: set them with `wrangler secret put <NAME> --env <env>`
  * (see .dev.vars.example for the list). Locally they go in .dev.vars (gitignored).
+ *
+ * Only `staging` and `production` are deployable. The top level (local development) and `e2e`
+ * have their own Worker names and no workers.dev URL, route or cron, so a stray bare
+ * `wrangler deploy` can never replace a real Worker or serve anything. Deploy with
+ * `npm run deploy:staging|deploy:production`, which build with CLOUDFLARE_ENV and run
+ * scripts/check-deploy.ts first.
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "auxpetitsbonheurs",
+	"name": "auxpetitsbonheurs-local",
+	"workers_dev": false,
+	"preview_urls": false,
 	"compatibility_date": "2026-11-09",
 	"compatibility_flags": ["nodejs_compat"],
 	"main": "./workers/app.ts",
@@ -20,6 +28,8 @@
 	"env": {
 		"staging": {
 			"name": "auxpetitsbonheurs-staging",
+			"workers_dev": true,
+			"preview_urls": false,
 			"vars": {
 				"APP_ENV": "staging",
 				"APP_TIME_ZONE": "Indian/Mauritius"
@@ -33,6 +43,8 @@
 		// the database is the throwaway local Postgres the harness resets.
 		"e2e": {
 			"name": "auxpetitsbonheurs-e2e",
+			"workers_dev": false,
+			"preview_urls": false,
 			"vars": {
 				"APP_ENV": "development",
 				"APP_TIME_ZONE": "Indian/Mauritius",
@@ -45,6 +57,8 @@
 		},
 		"production": {
 			"name": "auxpetitsbonheurs",
+			"workers_dev": true,
+			"preview_urls": false,
 			"vars": {
 				"APP_ENV": "production",
 				"APP_TIME_ZONE": "Indian/Mauritius"

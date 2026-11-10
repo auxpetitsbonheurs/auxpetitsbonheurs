@@ -38,9 +38,10 @@ const developmentOnlySchema = z.object({ TEST_CLOCK: z.literal("on").optional() 
 const developmentSchema = coreSchema
   .extend(integrationSchema.partial().shape)
   .extend(developmentOnlySchema.shape);
+/** Deployed Workers never talk to a local Supabase (http): that is an e2e/dev build shipped by mistake. */
 const deployedSchema = coreSchema
   .extend(integrationSchema.shape)
-  .extend({ TEST_CLOCK: z.never().optional() });
+  .extend({ SUPABASE_URL: z.url({ protocol: /^https$/ }), TEST_CLOCK: z.never().optional() });
 
 export type ServerEnv = z.infer<typeof developmentSchema>;
 

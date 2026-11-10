@@ -3,11 +3,12 @@
 - [x] DONE 2026-11-10 (reset password + confirm email via Auth Admin API before reuse; tests in seed-owner.server.test.ts). TD: seed-owner reuses any existing auth.users row with the owner email without resetting password / checking email_confirmed_at (src/app/server/services/seed-owner.server.ts:80-83). Fix before running seed on production. Medium.
 - TD: db.server.ts closes the client when the Response returns; streamed loader promises would query after close. Add a guard/test before any streaming loader. Medium.
 - TD: threat-model G-19 — add gitleaks + client-bundle secret-name check to CI. Medium.
-- Low: `.catch` on waitUntil(close()); refuse APP_ENV=development on production Worker; CI cancel-in-progress also cancels main runs.
+- Low: `.catch` on waitUntil(close()); CI cancel-in-progress also cancels main runs.
+- [x] DONE 2026-11-10 (top level is not deployable + scripts/check-deploy.ts in the deploy scripts; deployed envs require https SUPABASE_URL; tests in deploy-guard.test.ts, env.server.test.ts). Low: refuse APP_ENV=development on production Worker.
 
 ## From review of S-005..S-008 (2026-11-10)
 - TD: root.tsx ErrorBoundary/Layout fall back to lang="en" + empty messages when root loader fails; /fr error page can show raw keys. Medium.
-- TD: wrangler.jsonc top-level env is APP_ENV=development; a bare `wrangler deploy` without --env runs lax. Guard in S-002. Medium.
+- [x] DONE 2026-11-10 (top-level Worker renamed `auxpetitsbonheurs-local` with no workers.dev URL/route/cron; deploy scripts build with CLOUDFLARE_ENV and refuse a build for another env). TD: wrangler.jsonc top-level env is APP_ENV=development; a bare `wrangler deploy` without --env runs lax. Guard in S-002. Medium.
 - TD: add `Vary: Cookie, Accept-Language` on locale redirects before any cache/CDN. Low.
 
 ## From S-011..S-013 (2026-11-10)
@@ -35,4 +36,4 @@
 - [x] DONE 2026-11-10 (result region always rendered, sr-only while empty, focused on success; assertions in tests/e2e/admin-approve.spec.ts AC2). TD (a11y): Approve success text goes into a `role="status"` region that is `empty:hidden` (display:none) until filled (src/app/routes/admin/order.tsx:248-250), so some screen readers miss it; and the focused Approve button is removed after success, dropping focus to `body` (order.tsx:251-258). Keep the region always rendered (sr-only when empty) and move focus to the status/heading. Medium.
 - Low: Worker CSRF pre-check `ADMIN_PATH` is case-sensitive and not decoded (src/app/server/origin.server.ts:37), while React Router matches case-insensitively and decodes (`/ADMIN/...`, `/%61dmin/...`). The admin middleware and `requireAdmin` still refuse cross-site mutations, so no bypass; make the regex `i` and test the decoded path for defence in depth.
 - Low: session cookies use the `sb-<ref>-auth-token` name without a `__Host-` prefix (src/app/server/supabase-auth.server.ts:12), so a compromised sibling subdomain could plant cookies (fixation). Consider `cookieOptions.name` with `__Host-` once Supabase SSR supports it on all chunks.
-- Low: a bare `wrangler deploy` right after an e2e run uploads the e2e build (TEST_CLOCK=on, SUPABASE_URL 127.0.0.1); harmless today (no reachable DB/auth) but add a guard that refuses non-https SUPABASE_URL outside the e2e build, alongside the existing APP_ENV TD.
+- [x] DONE 2026-11-10 (e2e env has no workers.dev URL; check-deploy refuses TEST_CLOCK/local addresses; staging/production refuse non-https SUPABASE_URL). Low: a bare `wrangler deploy` right after an e2e run uploads the e2e build (TEST_CLOCK=on, SUPABASE_URL 127.0.0.1); harmless today (no reachable DB/auth) but add a guard that refuses non-https SUPABASE_URL outside the e2e build, alongside the existing APP_ENV TD.

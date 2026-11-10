@@ -131,6 +131,18 @@ describe("parseEnv (S-005 AC6: the test clock is development-only)", () => {
   });
 });
 
+describe("parseEnv (deploy guard: no local Supabase outside development)", () => {
+  test.each(["staging", "production"])("%s refuses a non-https SUPABASE_URL", (APP_ENV) => {
+    const error = errorOf(() => parseEnv(bindings({ APP_ENV, SUPABASE_URL: "http://127.0.0.1:54321" })));
+
+    expect(error.variables).toEqual(["SUPABASE_URL"]);
+  });
+
+  test("development may use the local Supabase CLI over http", () => {
+    expect(parseEnv(bindings({ APP_ENV: "development", SUPABASE_URL: "http://127.0.0.1:54321" })).SUPABASE_URL).toBe("http://127.0.0.1:54321");
+  });
+});
+
 describe(".dev.vars.example (AC2)", () => {
   const example = readFileSync(
     fileURLToPath(new URL("../../.dev.vars.example", import.meta.url)),

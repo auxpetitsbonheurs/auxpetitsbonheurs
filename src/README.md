@@ -82,7 +82,7 @@ DATABASE_URL='<production connection string>' npm run db:migrate
 
 ```sh
 npm run deploy:staging
-npm run deploy            # production
+npm run deploy:production
 ```
 
 ## Secrets
