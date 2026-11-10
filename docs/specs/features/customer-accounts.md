@@ -27,17 +27,18 @@ Accounts are optional. A customer can sign up or sign in with email and password
 |---|---|---|---|---|---|
 | Sign in | `/account/sign-in?next=` | Server-rendered; button loading | n/a | Field errors; "Email or password is wrong" (generic); `RATE_LIMITED` "Too many tries, wait {n} min" | Redirect to `next` (default `/account`) |
 | Magic link tab | same page | Button loading | n/a | Validation only | "If this email can sign in, a link is on its way" (always, no enumeration), resend after 60 s |
-| Sign up | `/account/sign-up` | same | n/a | Field errors (password min 10, phone, email) | "Check your email to confirm" (also shown for an email already in use, with a sign-in email instead) |
+| Sign up | `/account/sign-up` | same | n/a | Field errors (phone, email); no password field (set after confirming) | "Check your email to confirm" (also shown for an email already in use, with a sign-in email instead) |
 | Forgot / set password | `/account/reset` | same | n/a | Link expired: "This link has expired, request a new one" | "Password updated" then `/account` |
 | Link landing | `/auth/confirm?token_hash&type&next` | Brief "Signing you in" | n/a | Invalid/expired: page with "Request a new link" | Redirect to `next` |
 | Profile | `/account` | Skeleton | n/a | Field errors; save failed with retry | Toast "Saved"; language switch applies at once |
 | Addresses | `/account/addresses` | Skeleton | "No saved addresses yet" + Add address | Field errors | List with default marker; add/edit/delete via drawer |
 | My orders | `/account/orders` | Skeleton cards | "You have no orders yet" + Order now | Retry | Sections Current and Past: number, date, window, total, status chip, Track and Reorder |
-| Save my details | `/account/save-details?t=` | Server-rendered | n/a | Weak password; `EMAIL_IN_USE` offers sign-in | Redirect to `/account/orders` after link confirmed (see rules) |
+| Save my details | `/account/save-details?t=` | Server-rendered | n/a | `EMAIL_IN_USE` offers sign-in | "Check your email"; after confirming: choose a password, then `/account/orders` |
+| Choose password (first time) | `/account/reset?mode=new&next=` | same | n/a | Weak password | "Password saved" then `next` |
 | Sign out | POST `/account/sign-out` | n/a | n/a | n/a | Redirect `/` |
 
 ### Flow
-- **Guest order → Save my details.** Confirmation page shows a card "Save your details for next time" (only if `offerSaveDetails`: no account on that email). Tap opens save-details with the tracking token; the customer picks a password (min 10); an account is created for the order's email; a confirmation email is sent; once confirmed, the customer row gets `auth_user_id` and My orders lists every order on that customer (same email). The order just placed is visible immediately.
+- **Guest order → Save my details.** Confirmation page shows a card "Save your details for next time" (only if `offerSaveDetails`: no account on that email). Tap opens save-details with the tracking token; the customer confirms (no password yet); an account is created for the order's email with a random discarded password; a confirmation email is sent; on confirming, the customer chooses a password (min 10) and the customer row gets `auth_user_id` and My orders lists every order on that customer (same email). Before confirmation the order just placed stays reachable through its tracking link only. Security (threat-model G-01): the password is chosen only after the email is confirmed, so someone holding a forwarded tracking link, or signing up with another person's email, can never pre-set that account's password.
 - **Sign in to order.** Top bar shows an account icon (signed out: Sign in; signed in: Account). Checkout is never gated. Signed-in checkout prefills name, phone, email, and offers saved addresses (radio list) with a "Save this address" checkbox.
 - **Reorder.** From a past order, Reorder rebuilds the basket from the order's items with the same options, at today's prices and promotions; items that are sold out, hidden, out of season, or whose option choice no longer exists are skipped and listed in a note on the basket ("Skipped: Vanilla cake (sold out)"). The customer then picks a new date at checkout.
 - **Language.** Profile language sets `customer.locale` (used for account emails and as default order language when they check out on a page in that language; the order stores the page language, FR-001).
@@ -51,20 +52,22 @@ Contract of record: `docs/architecture/api/contracts.md` "Customer accounts". Op
 |---|---|---|---|---|---|
 | Sign in (password) | `account/sign-in` `password` | email, password, turnstileToken | redirect `next` | `VALIDATION_FAILED`, `RATE_LIMITED`, `BOT_CHECK_FAILED`; wrong creds = generic message (`UNAUTHENTICATED` on fetcher) | public |
 | Magic link | `account/sign-in` `magicLink` | email, turnstileToken | `{ ok }` always | `RATE_LIMITED` | public |
-| Sign up | `account/sign-up` `signUp` | name, email, phone, password ≥ 10, locale, turnstileToken | `{ ok }` | `VALIDATION_FAILED`, `RATE_LIMITED` (RL-signup); `EMAIL_IN_USE` shown as generic success | public |
+| Sign up | `account/sign-up` `signUp` | name, email, phone, locale, turnstileToken (no password) | `{ ok }` | `VALIDATION_FAILED`, `RATE_LIMITED` (RL-signup); `EMAIL_IN_USE` shown as generic success | public |
 | Request reset / set password | `account/reset` | email+TS / password | `{ ok }` / redirect `/account` | `RATE_LIMITED`, `VALIDATION_FAILED` | public / recovery session |
 | Confirm link | `auth/confirm` | token_hash, type, next | cookies + redirect (`next` restricted to same-origin paths) | invalid → landing error | public |
 | Profile | `account/profile` `updateProfile` | name, phone (normalised +230), locale | ok | `VALIDATION_FAILED` | customer |
 | Addresses | `account/addresses` add/update/delete | label, address, landmark?, isDefault | ok | `VALIDATION_FAILED`, `NOT_FOUND` (other customer's id) | customer |
 | My orders | `account/orders` loader | none | current, past, trackingUrls | n/a | customer |
 | Reorder | `account/orders` `reorder` | orderId | redirect `/basket` + flash `skipped[]` | `NOT_FOUND` (not own order), `BASKET_FULL` | customer |
-| Save details | `account/save-details` `saveDetails` | trackingToken, password ≥ 10, TS | redirect `/account/orders` | `EMAIL_IN_USE`, `NOT_FOUND`, `RATE_LIMITED`, `BOT_CHECK_FAILED` | token |
+| Choose first password | `account/reset` `setPassword` (`mode=new`) | password ≥ 10 | redirect `next` | `VALIDATION_FAILED`, `RATE_LIMITED` | first-confirmation session |
+| Save details | `account/save-details` `saveDetails` | trackingToken, TS (no password) | `{ ok, confirmationSent }` | `EMAIL_IN_USE`, `NOT_FOUND`, `RATE_LIMITED`, `BOT_CHECK_FAILED` | token |
 | Sign out | `account/sign-out` | none | redirect `/` | n/a | customer |
 Sign-in and recovery emails are produced by the Supabase Send Email hook (`/hooks/supabase/send-email`), see `notifications.md`.
 
 ## Data Model Changes
 No new tables. Uses `customer` (`auth_user_id`, `locale`, `email` partial unique, `phone`), `customer_address`, `orders.customer_id`. Rules:
-- Sign-up matches an existing guest `customer` by lower-cased email; on email confirmation sets `auth_user_id` on that row (else creates the row). One auth user is either a customer or an admin, never both (checked at sign-up).
+- Sign-up matches an existing guest `customer` by lower-cased email; on email confirmation sets `auth_user_id` on that row (else creates the row). Checkout and manual orders never write `customer.email` or `auth_user_id` on an existing row, and website orders never match by phone alone (contracts "Customer matching", threat-model G-02).
+- My orders and `reorder` show only orders whose `customer_id` is the session's row and whose `contact_email` equals the confirmed email (or `source = manual`). One auth user is either a customer or an admin, never both (checked at sign-up).
 - Phone, address edits on the account change the `customer` row only. Existing orders keep their snapshot (FR-012 spirit; `contact_*` are snapshots).
 - Deleting an address never affects past orders (address copied onto the order).
 - Account deletion/erasure is an Owner-triggered anonymise action (data-model.md retention), not self-service in v1.
@@ -111,7 +114,9 @@ Server-side counts only, no PII, no cookies (NFR-011).
 - AC3: Given a wrong password or unknown email, then the same generic error appears and no account existence is revealed.
 - AC4: Given any email, when requesting a magic link, then the response is the same success message; if the account exists a sign-in email arrives in the account language.
 - AC5: Given a magic link, when opened within its validity, then the customer is signed in; given reuse or expiry, then it fails with a request-new-link page.
-- AC6: Given a new email, when signing up with a 10+ character password, then a confirmation email arrives and the account is active only after confirming.
+- AC6: Given a new email, when signing up, then a confirmation email arrives, the account is active only after confirming, and the confirmation lands on "Choose a password" (10+ characters).
+- AC6b (threat-model G-01): Given an attacker signs up or uses Save my details with the victim's email, when the victim confirms and chooses a password, then no password the attacker could know signs in to the account.
+- AC6c (threat-model G-02): Given customer C (email V, phone P) and a guest order with email A and phone P, then a new customer row with email A is created, C's email is unchanged, and an account confirmed for A lists only orders with email A.
 - AC7: Given a password of 9 characters, then `VALIDATION_FAILED` with a field message.
 - AC8: Given an email already used, when signing up, then the page looks identical to success and no duplicate account exists.
 - AC9: Given the reset flow, when a new password is set from a valid link, then the old password stops working and the customer lands on `/account`.
@@ -128,8 +133,8 @@ Server-side counts only, no PII, no cookies (NFR-011).
 - AC20: Given an item that was on promotion at purchase and the promotion has ended, then the reorder price is the full price.
 - AC21: Given a past order with a deleted option choice, then that line is skipped with a note.
 - AC22: Given all items unavailable, then the basket is unchanged and the note says so.
-- AC23: Given a guest order with email e, when Save my details is completed, then an account exists for e and, after email confirmation, all earlier orders with e appear in My orders.
-- AC24: Given the order just placed, then it is visible in My orders right after saving, before other past orders are linked.
+- AC23: Given a guest order with email e, when Save my details is completed, then an unconfirmed account exists for e; after email confirmation and choosing a password, all earlier orders with e appear in My orders.
+- AC24: Given Save my details completed but not yet confirmed, then My orders shows nothing and the order just placed stays reachable through its tracking link.
 - AC25: Given `EMAIL_IN_USE`, then the page offers sign-in instead of creating anything.
 - AC26: Given a manual order without email, then Save my details is not offered.
 - AC27: Given a wrong tracking token, then `NOT_FOUND`.
@@ -154,3 +159,4 @@ Flag: none · Rollout: launch (accounts are Should, can be hidden by removing th
 2. `account/addresses`: give an explicit path `/account/addresses` (the row has none) and an `isDefault` uniqueness rule. — **Resolved in contracts.md (2026-11-10).**
 3. `account/orders` `reorder`: define the flash shape `{ skipped: { name: Localized, reason: "sold_out" | "hidden" | "out_of_season" | "option_removed" | "free_text" | "basket_full" }[] }` and a basket loader field to show it. — **Resolved in contracts.md (2026-11-10).**
 4. `account/sign-in` `magicLink`: call Supabase with `shouldCreateUser: false` so unknown emails do not create accounts. — **Resolved in contracts.md (2026-11-10).**
+5. Security (threat-model G-01, G-02): `signUp` and `saveDetails` take no password; the first password is set at `account/reset?mode=new` after confirmation; customer-matching convention; My orders email filter. — **Resolved in contracts.md v0.3 (2026-11-10).**

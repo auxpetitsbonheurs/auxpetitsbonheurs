@@ -51,7 +51,7 @@ Server behaviour: pricing from `domain/pricing.ts` (client totals never trusted;
 
 ## Data Model Changes
 No schema change (`orders.idempotency_key` is reused for the form key). Rows written in one transaction: `orders` (source manual, status approved, snapshot contact, `time_window` snapshot, `paid`, `paid_at`/`paid_by` when paid on creation, `locale`), `order_item` (product lines with `product_id`; free-text lines with `product_id` NULL, `name_en = name_fr = entered name`, promotion fields null, options `[]`), `customer` (new or reused), `order_event` type `created` with actor admin and details `{source: manual}` (plus `marked_paid` when paid), `email_outbox` row only when email present.
-Customer matching (FR-057): normalise phone to E.164 (+230 default) and lowercase email; match by email first, then phone. If email and phone match different customers, use the email match and show a notice. If the match has no email and one was entered, the email is added to the customer. Contact fields on the order are snapshots and never overwrite an existing customer's name. New customers are created without an auth account.
+Customer matching (FR-057): normalise phone to E.164 (+230 default) and lowercase email; match by email first, then phone. If email and phone match different customers, use the email match and show a notice. If the match has no email and one was entered, the email is stored on the order snapshot only and the customer row is **not** changed (security, 2026-11-10, threat-model G-02: otherwise a caller who gives someone's phone and their own email could later confirm that email and read the other person's orders). Contact fields on the order are snapshots and never overwrite an existing customer's name. New customers are created without an auth account.
 
 ## Permissions matrix
 | Action | Anonymous | Customer | Admin | Owner |
@@ -94,7 +94,7 @@ No client analytics. Server log lines (no PII): `manual_order_created {items, fu
 - AC13: Given an existing customer's email in different case, then the same customer is reused.
 - AC14: Given no match, when saved, then one new customer row is created with the entered details.
 - AC15: Given an email entered, when saved, then an Order confirmed email is queued in the selected language with the tracking link; given no email, then no email_outbox row exists.
-- AC16: Given a matched customer without email and an entered email, then the email is added to the customer.
+- AC16: Given a matched customer without email and an entered email, then the order's `contact_email` is the entered email, the confirmation is sent to it, and `customer.email` and `customer.auth_user_id` are unchanged.
 - AC17: Given creation, then one order_event "created" with the admin as actor exists, written in the same transaction as the order.
 - AC18: Given any manual order, then the first status is approved and no pending_approval event occurs.
 - AC19: Given a double-tapped Save with the same idempotency key, then exactly one order exists and both requests redirect to it.
