@@ -1,2 +1,10 @@
-// Drizzle schema (PostgreSQL on Supabase). Tables are added by the data-model stories.
-export {};
+// Drizzle schema (PostgreSQL on Supabase). Design: docs/architecture/data-model.md.
+// Tables live in ./tables by domain; this barrel is what drizzle-kit and the app import.
+// `auth.users` is intentionally not re-exported (Supabase owns it).
+export * from "./tables/enums";
+export * from "./tables/people";
+export * from "./tables/catalogue";
+export * from "./tables/orders";
+export * from "./tables/settings";
+export * from "./tables/system";
+export type * from "./tables/json-types";
