@@ -133,3 +133,48 @@ describe("changing the basket (S-012 AC4)", () => {
     expect(response.headers.get("Location")).toBe("/fr/basket");
   });
 });
+
+describe("placeOrder from the basket page (S-013 AC11, AC2 envelope)", () => {
+  const form = (overrides: Record<string, string> = {}) => ({
+    intent: "placeOrder",
+    idempotencyKey: "6f1c1c55-8f42-4d39-9a51-2f0d5a3f0d11",
+    displayedTotalRs: "850",
+    fulfilment: "pickup",
+    date: "2026-11-12",
+    "windowId.pickup": "morning",
+    "contact.name": "Aisha",
+    "contact.phone": "5712 3456",
+    "contact.email": "aisha@example.com",
+    acceptPolicies: "on",
+    ...overrides,
+  });
+
+  test("success clears the basket and redirects to the confirmation in the page language", async () => {
+    const id = await insertProduct(database.db);
+    const cookie = cookieWith([{ lineId: "a", productId: id, quantity: 1 }]);
+
+    const response = (await action(routeArgs(database, { path: "/fr/basket", cookie, form: form() }) as never)) as Response;
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toMatch(/^\/fr\/order\/[A-Za-z0-9_-]{43}\/confirmed$/);
+    expect(response.headers.get("Set-Cookie")).toMatch(/^apb_basket=; Max-Age=0/);
+    const { rows } = await database.client.query<{ locale: string }>("select locale from orders");
+    expect(rows).toEqual([{ locale: "fr" }]);
+  });
+
+  test("a refusal is the localised envelope with field messages and the typed values", async () => {
+    const id = await insertProduct(database.db);
+    const cookie = cookieWith([{ lineId: "a", productId: id, quantity: 1 }]);
+
+    const refused = (await post(form({ "contact.phone": "12345", acceptPolicies: "" }), cookie)) as unknown as {
+      data: { error: { code: string; fields: Record<string, string> }; values: Record<string, string> };
+      init: { status: number; headers?: unknown };
+    };
+    expect(refused.init.status).toBe(400);
+    expect(refused.data.error.fields).toEqual({
+      "contact.phone": "Enter a phone number, for example 5712 3456.",
+      acceptPolicies: "Tick the box to accept the order policies.",
+    });
+    expect(refused.data.values).toMatchObject({ "contact.name": "Aisha", fulfilment: "pickup" });
+    expect(refused.init.headers).toBeUndefined();
+  });
+});

@@ -13,6 +13,10 @@ export type Connect = (url: string, options: typeof CONNECTION_OPTIONS) => postg
 
 /** Driver-independent type so services also accept an in-process test database. */
 export type Database = PgDatabase<PgQueryResultHKT, typeof schema>;
+/** A transaction handle from `db.transaction`. */
+export type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
+/** Repositories that may run inside a caller's transaction take either. */
+export type Executor = Database | Transaction;
 
 export interface RequestDb {
   /** Created on first use; requests that never query open no connection. */

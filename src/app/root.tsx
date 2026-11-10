@@ -16,8 +16,8 @@ import { I18nProvider, useI18n } from "~/i18n/react";
 import { localeFromPathname } from "~/lib/locale";
 import { twinPath } from "~/lib/locale-detect";
 
-export function loader({ request }: Route.LoaderArgs) {
-  const url = new URL(request.url);
+export function loader({ url }: Route.LoaderArgs) {
+  // `url` is normalised (no `.data` suffix on client data requests).
   const locale = localeFromPathname(url.pathname);
   // hreflang alternates: the EN and FR twins of this page, without the query (S-008 AC5).
   const alternates = {

@@ -20,6 +20,12 @@ export { SAMPLE_PRODUCT } from "../../../app/db/sample-data";
 
 export const E2E_OWNER = { email: "owner@e2e.test", name: "E2E Owner" } as const;
 
+/** Settings policies text (S-013 AC14): placeholder wording, not the bakery's real policy. */
+export const E2E_POLICIES = {
+  en: "E2E policy: free cancellation until 48 hours before. Keep cakes cool.",
+  fr: "Politique E2E : annulation gratuite jusqu'à 48 heures avant. Gardez les gâteaux au frais.",
+};
+
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
 /** Database name, checked so it can be used as an identifier (identifiers cannot be bound). */
@@ -60,7 +66,7 @@ async function seedBaseline(sql: postgres.Sql) {
   // Placeholder contact values so the footer shows its links (never real numbers).
   await sql`
     update settings set contact_whatsapp = '+230 5000 0000', contact_phone = '+230 5000 0001',
-      contact_email = 'hello@example.com' where id = 1`;
+      contact_email = 'hello@example.com', policies = ${JSON.stringify(E2E_POLICIES)}::jsonb where id = 1`;
   const p = SAMPLE_PRODUCT;
   const [sample] = await sql<{ id: string }[]>`
     insert into product (slug, type, name_en, name_fr, description_en, description_fr, base_price_rs)

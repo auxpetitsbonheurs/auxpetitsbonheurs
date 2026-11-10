@@ -9,3 +9,8 @@
 - TD: root.tsx ErrorBoundary/Layout fall back to lang="en" + empty messages when root loader fails; /fr error page can show raw keys. Medium.
 - TD: wrangler.jsonc top-level env is APP_ENV=development; a bare `wrangler deploy` without --env runs lax. Guard in S-002. Medium.
 - TD: add `Vary: Cookie, Accept-Language` on locale redirects before any cache/CDN. Low.
+
+## From S-011..S-013 (2026-11-10)
+- TD: site layout middleware still reads `request.url`, so client data requests are judged on `/x.data` paths (no redirect today because in-site requests never redirect). Use the normalised URL. Low.
+- TD: `updateLine` does not check `product.min_quantity` (contracts.md); add with E-05 when a product has a minimum. Low.
+- TD: e2e `fillOrder` relies on `Date` field typing in Chromium; when the E-05 date picker replaces the native input, update the helper. Low.

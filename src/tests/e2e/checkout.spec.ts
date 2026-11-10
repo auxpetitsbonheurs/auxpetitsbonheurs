@@ -8,7 +8,8 @@ import {
   expectTapTargets,
   withZoom,
 } from "./support/a11y";
-import { SAMPLE_PRODUCT } from "./support/database";
+import { setClock } from "./support/clock";
+import { E2E_POLICIES, SAMPLE_PRODUCT } from "./support/database";
 import { type Page, expect, test } from "./support/fixtures";
 
 const PRODUCT_PATH = `/menu/${SAMPLE_PRODUCT.slug}`;
@@ -52,6 +53,8 @@ test.describe("S-011 product page", () => {
 
     await expect(page).toHaveURL(/\/basket$/);
     await expect(page.getByRole("link", { name: "Basket, 1 item" })).toBeVisible();
+    // Regression: links built in loaders after a client navigation never carry the `.data` suffix.
+    await expect(page.getByRole("link", { name: "Français" })).toHaveAttribute("href", "/fr/basket");
     const cookie = (await page.context().cookies()).find((c) => c.name === "apb_basket");
     expect(cookie).toMatchObject({ httpOnly: true, sameSite: "Lax" });
   });
@@ -189,21 +192,24 @@ test.describe("S-012 basket and delivery or pickup", () => {
     await expect(delivery).not.toBeChecked();
     await expect(pickup).not.toBeChecked();
     await expect(page.getByLabel("Delivery address")).toBeHidden();
-    await expect(page.getByText("Total before delivery")).toBeVisible();
+    await expect(page.getByText("Total before delivery").first()).toBeVisible();
 
     await delivery.check();
     await expect(page.getByLabel("Delivery address")).toBeVisible();
     await expect(page.getByLabel(/Landmark/)).toBeVisible();
     await expect(page.getByText("Delivery fee Rs 200")).toBeVisible();
-    await expect(page.getByText("Total", { exact: true }).locator("visible=true")).toHaveCount(1);
-    await expect(page.getByText("Rs 1,050")).toBeVisible();
+    const bar = page.locator("[data-sticky-bar]");
+    await expect(bar.getByText("Total", { exact: true }).locator("visible=true")).toHaveCount(1);
+    await expect(bar.getByText("Rs 1,050")).toBeVisible();
     await page.getByLabel("Delivery address").fill("12 Royal Road, Rose Hill");
 
     await pickup.check();
-    await expect(page.getByText("Pickup address: Beau Bassin")).toBeVisible();
-    await expect(page.getByText("Pickup: free")).toBeVisible();
+    const step2 = page.getByRole("region", { name: "2. Delivery or pickup" });
+    await expect(step2.getByText("Pickup address: Beau Bassin")).toBeVisible();
+    await expect(step2.getByText("Pickup: free")).toBeVisible();
     await expect(page.getByLabel("Delivery address")).toBeHidden();
-    await expect(page.getByText("Rs 1,050")).toBeHidden();
+    await expect(bar.getByText("Rs 1,050")).toBeHidden();
+    await expect(bar.getByText("Rs 850").locator("visible=true")).toHaveCount(1);
     await expect(page.getByText("Delivery fee Rs 200")).toBeHidden();
   });
 
@@ -237,7 +243,7 @@ test.describe("S-012 basket and delivery or pickup", () => {
     await expect(page.getByRole("heading", { level: 2, name: "1. Panier" })).toBeVisible();
     await expect(page.getByRole("button", { name: `Augmenter la quantité de ${SAMPLE_PRODUCT.nameFr}` })).toBeVisible();
     await page.getByRole("radio", { name: /Retrait/ }).check();
-    await expect(page.getByText("Retrait : gratuit")).toBeVisible();
+    await expect(page.getByRole("region", { name: "2. Livraison ou retrait" }).getByText("Retrait : gratuit")).toBeVisible();
   });
 });
 
@@ -254,6 +260,206 @@ test.describe("S-012 without JavaScript", () => {
     await expect(page.getByRole("link", { name: "Basket, 2 items" })).toBeVisible();
 
     await page.getByRole("radio", { name: /Delivery/ }).check();
-    await expect(page.getByText("Rs 1,900")).toBeVisible();
+    await expect(page.locator("[data-sticky-bar]").getByText("Rs 1,900")).toBeVisible();
+  });
+});
+
+/** Fills a valid order on the basket page. */
+async function fillOrder(page: Page, fulfilment: "delivery" | "pickup", locale: "en" | "fr" = "en") {
+  const en = locale === "en";
+  await page.getByRole("radio", { name: en ? /^Delivery/ : /^Livraison/ }).first().waitFor();
+  if (fulfilment === "delivery") {
+    await page.getByRole("radio", { name: en ? /^Delivery/ : /^Livraison/ }).check();
+    await page.getByLabel(en ? "Delivery address" : "Adresse de livraison").fill("12 Royal Road, Rose Hill");
+  } else {
+    await page.getByRole("radio", { name: en ? /^Pickup/ : /^Retrait/ }).check();
+  }
+  await page.getByLabel("Date", { exact: true }).fill("2026-11-21");
+  await page.getByRole("radio", { name: en ? /^Morning/ : /^Matin/ }).locator("visible=true").check();
+  await page.getByLabel(en ? "Name" : "Nom", { exact: true }).fill("E2E Guest");
+  await page.getByLabel(en ? "Phone" : "Téléphone", { exact: true }).fill("5712 3456");
+  await page.getByLabel(en ? "Email" : "E-mail", { exact: true }).fill(`guest-${test.info().testId}-${Date.now()}@e2e.test`);
+  await page.getByRole("checkbox", { name: en ? "I accept the order policies" : "J'accepte les conditions de commande" }).check();
+}
+
+/** Tabs through the page; every focused control's box stays above the sticky bar. */
+async function expectFocusNotObscured(page: Page, bar: ReturnType<Page["locator"]>) {
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const covered: string[] = [];
+  for (let i = 0; i < 40; i += 1) {
+    await page.keyboard.press("Tab");
+    const focused = page.locator(":focus");
+    if ((await focused.count()) === 0) break;
+    const inBar = await focused.evaluate((el) => Boolean(el.closest("[data-sticky-bar]")));
+    if (inBar) break;
+    const [box, barBox] = [await focused.boundingBox(), await bar.boundingBox()];
+    if (box && barBox && box.y + box.height > barBox.y + 1 && box.y < barBox.y + barBox.height) {
+      covered.push((await focused.getAttribute("id")) ?? (await focused.textContent()) ?? "?");
+    }
+  }
+  expect(covered, "controls hidden under the sticky bar when focused").toEqual([]);
+}
+
+const TOKEN_URL = /\/order\/([A-Za-z0-9_-]{43})\/confirmed$/;
+
+test.describe("S-013 place an order as a guest", () => {
+  test.beforeEach(async ({ context, baseURL }) => {
+    await setClock(context, baseURL!, "2026-11-20T06:00:00Z");
+  });
+
+  test("AC4, AC11: a delivery order is stored pending approval and I land on its confirmation with an empty basket", async ({ page, db }) => {
+    await basketWithCake(page);
+    await hydrated(page);
+    await fillOrder(page, "delivery");
+    await page.getByRole("button", { name: "Place order" }).click();
+
+    await expect(page).toHaveURL(TOKEN_URL);
+    const token = TOKEN_URL.exec(page.url())![1]!;
+    const [order] = await db<{ status: string; total_rs: number; delivery_fee_rs: number; locale: string; contact_phone: string }[]>`
+      select status, total_rs, delivery_fee_rs, locale, contact_phone from orders where tracking_token = ${token}`;
+    expect(order).toEqual({ status: "pending_approval", total_rs: 1050, delivery_fee_rs: 200, locale: "en", contact_phone: "+23057123456" });
+    await expect(page.getByRole("link", { name: "Basket, 0 items" })).toBeVisible();
+  });
+
+  test("AC4, AC11: a French pickup order has no fee, locale fr and a /fr confirmation URL", async ({ page, db }) => {
+    await basketWithCake(page, "/fr/basket");
+    await hydrated(page);
+    await fillOrder(page, "pickup", "fr");
+    await page.getByRole("button", { name: "Commander" }).click();
+
+    await expect(page).toHaveURL(/\/fr\/order\/[A-Za-z0-9_-]{43}\/confirmed$/);
+    const token = TOKEN_URL.exec(page.url())![1]!;
+    const [order] = await db<{ total_rs: number; delivery_fee_rs: number; locale: string }[]>`
+      select total_rs, delivery_fee_rs, locale from orders where tracking_token = ${token}`;
+    expect(order).toEqual({ total_rs: 850, delivery_fee_rs: 0, locale: "fr" });
+  });
+
+  test("AC2, AC13: an empty submit moves focus to an error summary whose links reach each field", async ({ page }) => {
+    await basketWithCake(page);
+    await hydrated(page);
+    await page.getByRole("button", { name: "Place order" }).click();
+
+    const summary = page.getByRole("alert").filter({ hasText: "Please check your order" });
+    await expect(summary).toBeFocused();
+    for (const text of ["Choose delivery or pickup.", "Choose a date.", "Enter your name.", "Enter a phone number, for example 5712 3456.", "Enter an email address, for example name@example.com.", "Tick the box to accept the order policies."]) {
+      await expect(summary.getByRole("link", { name: text })).toBeVisible();
+    }
+    await summary.getByRole("link", { name: "Enter your name." }).click();
+    const name = page.getByLabel("Name", { exact: true });
+    await expect(name).toBeFocused();
+    await expect(name).toHaveAttribute("aria-invalid", "true");
+    await expect(name).toHaveAccessibleDescription("Enter your name.");
+    await expect(page.getByLabel("Phone", { exact: true })).toHaveAccessibleDescription(/Enter a phone number/);
+  });
+
+  test("AC1, AC2: an invalid phone is refused and the typed values stay", async ({ page }) => {
+    await basketWithCake(page);
+    await hydrated(page);
+    await fillOrder(page, "pickup");
+    await page.getByLabel("Phone", { exact: true }).fill("12345");
+    await page.getByRole("button", { name: "Place order" }).click();
+
+    await expect(page.getByRole("link", { name: "Enter a phone number, for example 5712 3456." })).toBeVisible();
+    await expect(page.getByLabel("Name", { exact: true })).toHaveValue("E2E Guest");
+    await expect(page).toHaveURL(/\/basket$/);
+  });
+
+  test("AC3: the date field starts at today in Mauritius and the times are the Settings windows", async ({ page }) => {
+    await basketWithCake(page);
+
+    await expect(page.getByLabel("Date", { exact: true })).toHaveAttribute("min", "2026-11-20");
+    await page.getByRole("radio", { name: /^Delivery/ }).check();
+    const times = page.getByRole("group", { name: "Delivery time" }).getByRole("radio");
+    await expect(times).toHaveCount(3);
+    for (const name of ["Morning · 09:00–12:00", "Afternoon · 12:00–17:00", "Evening · 17:00–20:00"]) {
+      await expect(page.getByRole("radio", { name, exact: true }).locator("visible=true")).toHaveCount(1);
+    }
+  });
+
+  test("AC12: keyboard, focus, 320/375 px and 200% zoom, 44 px targets; the sticky bar leaves while typing", async ({ page }) => {
+    await basketWithCake(page);
+    await page.getByRole("radio", { name: /^Delivery/ }).check();
+    await expectAccessibleLayout(page);
+
+    const bar = page.locator("[data-sticky-bar]");
+    await expect(bar).toHaveCSS("position", "sticky");
+    // Tabbing to each control keeps it clear of the sticky bar (WCAG 2.4.11 focus not obscured).
+    await expectFocusNotObscured(page, bar);
+    await page.getByLabel("Phone", { exact: true }).focus();
+    await expect(bar).toHaveCSS("position", "static");
+    await page.getByRole("checkbox", { name: "I accept the order policies" }).focus();
+    await expect(bar).toHaveCSS("position", "sticky");
+  });
+
+  test("AC13: fields have visible labels, autocomplete and keyboard types", async ({ page }) => {
+    await basketWithCake(page);
+
+    const fields: [string, string, string | null, string | null][] = [
+      ["Name", "name", "text", null],
+      ["Phone", "tel", "tel", "tel"],
+      ["Email", "email", "email", "email"],
+      ["Note for the bakery (optional)", "off", null, null],
+      ["Date", "off", "date", null],
+    ];
+    for (const [label, autocomplete, type, inputmode] of fields) {
+      const field = page.getByLabel(label, { exact: true });
+      await expect(field).toBeVisible();
+      await expect(field).toHaveAttribute("autocomplete", autocomplete);
+      if (type) await expect(field).toHaveAttribute("type", type);
+      if (inputmode) await expect(field).toHaveAttribute("inputmode", inputmode);
+      const id = await field.getAttribute("id");
+      await expect(page.locator(`label[for="${id}"]`)).toBeVisible();
+    }
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`AC13: axe clean in ${colorScheme} mode, with and without errors`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme });
+      await basketWithCake(page);
+      await hydrated(page);
+      await page.getByRole("radio", { name: /^Delivery/ }).check();
+      await expectNoA11yViolations(page);
+
+      await page.getByRole("button", { name: "Place order" }).click();
+      await expect(page.getByRole("alert").filter({ hasText: "Please check your order" })).toBeFocused();
+      await expectNoA11yViolations(page);
+      await expectNoA11yViolations(page, { zoom: 2 });
+    });
+  }
+
+  test("AC14: the summary shows items, fee line, total and Juice number; the policies open from Settings", async ({ page }) => {
+    await basketWithCake(page);
+    await page.getByRole("radio", { name: /^Delivery/ }).check();
+
+    const summary = page.getByRole("region", { name: "6. Summary" });
+    await expect(summary.getByText(`${SAMPLE_PRODUCT.nameEn} × 1`)).toBeVisible();
+    await expect(summary.getByText("Delivery fee", { exact: true })).toBeVisible();
+    await expect(summary.getByText("Total", { exact: true }).locator("visible=true")).toHaveCount(1);
+    await expect(summary.getByText("Rs 1,050")).toBeVisible();
+    await expect(summary.getByText("Pay by Juice to 5000 0000, or in cash when you receive your order.")).toBeVisible();
+
+    await expect(page.getByText(E2E_POLICIES.en)).toBeHidden();
+    await page.getByText("Read the order policies (cancellation and storage)").click();
+    await expect(page.getByText(E2E_POLICIES.en)).toBeVisible();
+
+    await page.getByRole("radio", { name: /^Pickup/ }).check();
+    await expect(summary.getByText("Pickup: free")).toBeVisible();
+    await expect(summary.getByText("Delivery fee", { exact: true })).toBeHidden();
+  });
+});
+
+test.describe("S-013 without JavaScript", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("a pickup order can be placed with plain form posts", async ({ page, context, baseURL, db }) => {
+    await setClock(context, baseURL!, "2026-11-20T06:00:00Z");
+    await basketWithCake(page);
+    await fillOrder(page, "pickup");
+    await page.getByRole("button", { name: "Place order" }).click();
+
+    await expect(page).toHaveURL(TOKEN_URL);
+    const token = TOKEN_URL.exec(page.url())![1]!;
+    const [order] = await db<{ total_rs: number }[]>`select total_rs from orders where tracking_token = ${token}`;
+    expect(order).toEqual({ total_rs: 850 });
   });
 });

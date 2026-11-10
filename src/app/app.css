@@ -186,3 +186,14 @@
 .checkout-form:has([name="fulfilment"]:checked) [data-when="none"] {
   display: none;
 }
+
+/* The sticky "Place order" bar leaves the bottom of the screen while a text field has focus (on-screen keyboard open). */
+.checkout-form:has(:is(input[type="text"], input[type="tel"], input[type="email"], input[type="date"], textarea):focus) [data-sticky-bar] {
+  position: static;
+  box-shadow: none;
+}
+
+/* Focused or scrolled-to controls stop above the sticky bar, never under it (WCAG 2.4.11). */
+html:has(.checkout-form [data-sticky-bar]) {
+  scroll-padding-bottom: 10rem;
+}

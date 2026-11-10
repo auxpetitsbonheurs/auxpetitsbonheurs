@@ -104,3 +104,20 @@ describe("missing keys (AC10)", () => {
     expect(warn).not.toHaveBeenCalled();
   });
 });
+
+describe("keys used in code exist (regression: a catalogue merge dropped checkout.sections.basket)", () => {
+  test("every literal t(\"…\") key in app/ has English text", async () => {
+    const { readdirSync, readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const root = new URL("..", import.meta.url).pathname;
+    const files = (readdirSync(root, { recursive: true }) as string[]).filter((f) => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f));
+    const used = new Set<string>();
+    for (const file of files) {
+      for (const match of readFileSync(join(root, file), "utf8").matchAll(/\b(?:t|translate)\(\s*"([a-zA-Z][\w.]*)"/g)) used.add(match[1]!);
+    }
+    const missing = [...used].filter((key) => texts(en, key).every((value) => typeof value !== "string"));
+
+    expect(used.size).toBeGreaterThan(50);
+    expect(missing).toEqual([]);
+  });
+});

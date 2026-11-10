@@ -35,8 +35,8 @@ export const middleware: Route.MiddlewareFunction[] = [
 ];
 
 /** Customer page frame (S-007): skip link, header, one main landmark, footer. */
-export async function loader({ request, context }: Route.LoaderArgs) {
-  const url = new URL(request.url);
+export async function loader({ request, url, context }: Route.LoaderArgs) {
+  // `url` is normalised: client data requests (`/basket.data`) must not leak into links.
   const other = localeFromPathname(url.pathname) === "fr" ? "en" : "fr";
   const contacts = await getFooterContacts(context.get(requestDbContext).db);
   return {

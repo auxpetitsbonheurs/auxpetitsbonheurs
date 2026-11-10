@@ -127,6 +127,8 @@ export async function tabThrough(page: Page, limit = 60): Promise<{ stops: Focus
       const stop = await tabStop(page);
       total = stop.total;
       if (!stop.stop || (stops.length > 0 && stop.stop.index === stops[0]!.index)) break;
+      // One control with inner Tab stops (a date field's day, month and year) counts once.
+      if (stops.length > 0 && stop.stop.index === stops.at(-1)!.index) continue;
       stops.push(stop.stop);
     }
   } finally {
