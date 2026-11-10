@@ -29,7 +29,7 @@ Not a market play. The value is fit to this bakery: owner approval gate on every
 1. Customers will order on the site instead of DMing, and the owner will move manual DM orders into it (north star: >= 90% of orders recorded in the system, PRD proposal, to confirm).
 2. Free plans (about 100 emails/day, 1 GB photos, no paid messaging) are enough, and push works on both iPhone and Android installed apps.
 3. Owner approval turnaround is fast enough that customers don't abandon (PRD proposes median <= 4 hours).
-4. Open owner inputs still unconfirmed: delivery fee, pickup address, Juice number, domain name.
+4. Launch values (owner 2026-11-10): delivery fee Rs 200; pickup in Beau Bassin; exact address and Juice number entered by the owner on deploy day; Cloudflare default address at launch, custom domain later by the owner.
 5. Owner confirmed on 2026-11-10 (overriding the build brief defaults): 3-day notice, Sunday closed, time windows kept, 5-day quote validity, cancellation free until 48h before; all editable in Settings.
 
 ## Constraints

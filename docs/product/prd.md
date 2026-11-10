@@ -302,12 +302,12 @@ Handover checklist (must all be ticked at launch): all service accounts on the b
 ## 12. Open questions
 
 For the owner (carried from the briefs):
-1. Delivery fee amount, pickup address, Juice number. Default Rs 200 is a placeholder. — owner Sabera. **OPEN (owner 2026-11-10: not decided yet)**
+1. Delivery fee amount, pickup address, Juice number. Default Rs 200 is a placeholder. — owner Sabera. **RESOLVED (owner 2026-11-10): fee Rs 200; pickup area Beau Bassin, exact address and real Juice number entered by the owner in Settings on deploy day (placeholder until then).**
 2. Notice period, closed days, time windows. **RESOLVED 2026-11-10**: notice 3 days, Sunday closed, windows Morning 9-12 / Afternoon 12-17 / Evening 17-20 (delivery and pickup); notice and closed days editable by the Owner in Availability.
 3. Cancellation policy after approval, and cake storage advice. **RESOLVED 2026-11-10**: free cancellation via WhatsApp until 48 hours before the order date, no refund after; storage: refrigerate, take out about 30 minutes before serving, best within 2-3 days. Tracking page still has no self-cancel after approval.
 4. Admins can see the Sales summary. **RESOLVED 2026-11-10**: yes.
 5. Admins can create and edit promotions. **RESOLVED 2026-11-10**: yes (and edit the menu).
-6. Domain name. — owner Sabera. **OPEN (owner 2026-11-10: not decided yet; decide before launch)**
+6. Domain name. — owner Sabera. **RESOLVED (owner 2026-11-10): launch on the free Cloudflare default address (`*.workers.dev`, since the app runs on Workers); the owner buys and connects a custom domain themself later.**
 7. Juice number in approval email and WhatsApp payment reminder. **RESOLVED 2026-11-10**: both.
 8. Quote validity. **RESOLVED 2026-11-10**: 5 days.
 
@@ -365,3 +365,4 @@ Rules: An admin edit that changes an order's date and/or total sends "Your order
 ## Changelog
 - 2026-11-09 v0.1 draft by product-manager from build-brief.md and feature-plan.md.
 - 2026-11-10 v0.2 owner answers applied: notice 3 days, Sunday closed, quote validity 5 days, cancellation policy and storage advice in FAQ, Admin rights confirmed, new FR-075 (24 h pending reminder); fee, address, Juice number, domain still open.
+- 2026-11-10 v0.3 launch values: fee Rs 200, pickup Beau Bassin, Juice number and exact address set by the owner on deploy day, Cloudflare default address at launch; bakery's Cloudflare, Supabase and Resend accounts created by the owner.
