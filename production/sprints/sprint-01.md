@@ -46,7 +46,7 @@ S-001 → S-003 → S-004/S-010 → S-005 → S-006 → S-007 → S-008 → S-01
 - Staging is not public-ready before E-05 (no Turnstile / order rate limit yet).
 
 ## Daily log
-- 2026-11-10: sprint planned.
+- 2026-11-10: sprint planned. All 20 E-01 stories built test-first and code-reviewed (status review). Blocked on Owner keys: S-002 AC2/AC7 (first staging deploy + smoke), S-019 AC2/AC3 (CPU measurement), first real backup run. Keys: docs/runbooks/deploy-keys.md.
 
 ## Review (filled at sprint end)
 - Completed: — · Carried over: —
