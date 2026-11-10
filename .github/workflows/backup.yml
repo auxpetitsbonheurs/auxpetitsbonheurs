@@ -51,7 +51,7 @@ jobs:
         # pg_dump from the Postgres 17 image (must be >= the Supabase server version).
         run: |
           mkdir -p backup/storage
-          docker run --rm -e SUPABASE_DB_URL -v "$PWD/backup:/backup" postgres:17 \
+          docker run --rm --user "$(id -u):$(id -g)" -e SUPABASE_DB_URL -v "$PWD/backup:/backup" postgres:17 \
             sh -c 'pg_dump --format=custom --no-owner --no-privileges --file=/backup/database.dump "$SUPABASE_DB_URL"'
       - name: Copy the Storage buckets
         run: |

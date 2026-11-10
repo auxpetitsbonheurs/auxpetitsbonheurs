@@ -33,6 +33,11 @@ describe("backup workflow steps (AC5)", () => {
     expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
 
+  test("pg_dump runs as the runner's user so it can write into the runner-owned backup folder", () => {
+    const dockerRun = workflow.slice(at("docker run"), at("pg_dump --format=custom"));
+    expect(dockerRun).toContain('--user "$(id -u):$(id -g)"');
+  });
+
   test("the plain dump and bucket copies never leave the runner unencrypted", () => {
     const uploads = [...workflow.matchAll(/rclone (copy|copyto|move|sync) [^\n]* gdrive:/g)].map((m) => m[0]);
     expect(uploads).toEqual(['rclone copy "$ARCHIVE" gdrive:']);
