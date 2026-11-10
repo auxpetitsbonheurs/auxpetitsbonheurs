@@ -11,15 +11,6 @@ Question: can the client (and Sabera/Sarah) click through ordering, quotes and d
     npm test                        # domain rule tests (Vitest)
     npm run build                   # typecheck + production build
 
-## Quick share link from a laptop (ngrok)
-
-Works only while the laptop is awake and both commands are running.
-
-    npm run share                                   # build + serve on :4173
-    ngrok http 4173 --url=<your-domain>.ngrok-free.app
-
-`vite.config.ts` allows `*.ngrok-free.app` hosts in `preview.allowedHosts`.
-
 ## Share link (Cloudflare Pages)
 
 Hosted on the bakery's own Cloudflare account (free plan), never a developer's.
