@@ -1,7 +1,7 @@
 // Order reads for the admin app (contracts.md `admin/orders`, `admin/order`). Lists are
-// keyset-paginated on the gap-free order number (newest first), which is unique and
+// keyset-paginated on the gap-free order number (oldest first for the review queue), which is unique and
 // increases with creation, so a cursor never skips or repeats a row.
-import { and, asc, desc, eq, inArray, lt } from "drizzle-orm";
+import { and, asc, eq, gt, inArray } from "drizzle-orm";
 import { type LocalizedText, type TimeWindow, orderItem, orders } from "~/db/schema";
 import type { OrderStatus } from "~/domain/status";
 import type { Locale } from "~/lib/locale";
@@ -38,14 +38,14 @@ const summaryColumns = {
   version: orders.version,
 } as const;
 
-/** One page of the review tab, newest first, after the order number `before` (exclusive). */
-export async function listReviewOrders(db: Executor, page: { before: number | null; limit: number }): Promise<{ rows: AdminOrderRow[]; more: boolean }> {
+/** One page of the review tab, oldest first (the longest wait first), after the order number `after` (exclusive). */
+export async function listReviewOrders(db: Executor, page: { after: number | null; limit: number }): Promise<{ rows: AdminOrderRow[]; more: boolean }> {
   const inTab = inArray(orders.status, [...REVIEW_STATUSES]);
   const rows = await db
     .select(summaryColumns)
     .from(orders)
-    .where(page.before === null ? inTab : and(inTab, lt(orders.number, page.before)))
-    .orderBy(desc(orders.number))
+    .where(page.after === null ? inTab : and(inTab, gt(orders.number, page.after)))
+    .orderBy(asc(orders.number))
     .limit(page.limit + 1);
   return { rows: rows.slice(0, page.limit), more: rows.length > page.limit };
 }

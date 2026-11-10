@@ -33,7 +33,7 @@ async function caught(run: () => unknown): Promise<Response> {
 }
 
 describe("orders to review (S-017 AC1)", () => {
-  test("lists pending orders newest first with number, name, date, window, total and source", async () => {
+  test("lists pending orders oldest first (the longest wait first) with number, name, date, window, total and source", async () => {
     const session = await signedInAdmin(database);
     await placeTestOrder(database, { overrides: { "contact.name": "First" } });
     await placeTestOrder(database, { overrides: { ...DELIVERY_ORDER, displayedTotalRs: "1050", "contact.name": "Second" } });
@@ -42,8 +42,8 @@ describe("orders to review (S-017 AC1)", () => {
 
     const page = await loader(routeArgs(database, { path: "/admin/orders?tab=review", auth: session.auth, cookie: session.cookie }) as never);
 
-    expect(page.data.map((o) => o.contactName)).toEqual(["Second", "First"]);
-    expect(page.data[0]).toMatchObject({
+    expect(page.data.map((o) => o.contactName)).toEqual(["First", "Second"]);
+    expect(page.data[1]).toMatchObject({
       number: "APB-0002",
       status: "pending_approval",
       source: "website",
@@ -66,11 +66,12 @@ describe("orders to review (S-017 AC1)", () => {
 
     const first = await loader(args("/admin/orders?tab=review"));
     expect(first.data).toHaveLength(30);
-    expect(first.data[0]!.number).toBe("APB-0031");
+    expect(first.data[0]!.number).toBe("APB-0001");
+    expect(first.data.at(-1)!.number).toBe("APB-0030");
     expect(first.nextCursor).toEqual(expect.any(String));
 
     const second = await loader(args(`/admin/orders?tab=review&cursor=${encodeURIComponent(first.nextCursor!)}`));
-    expect(second.data.map((o) => o.number)).toEqual(["APB-0001"]);
+    expect(second.data.map((o) => o.number)).toEqual(["APB-0031"]);
     expect(second.nextCursor).toBeNull();
   }, 120_000);
 

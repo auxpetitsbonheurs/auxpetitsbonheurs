@@ -9,7 +9,7 @@ Owner: remix-specialist, api-engineer, ui-engineer, postgres-specialist
 As the bakery Owner on my phone, I want to see orders waiting for review and approve one, so that the customer knows the bakery accepted the order.
 
 ## Acceptance Criteria
-- [x] AC1 (FR-048): Given orders in `pending_approval`, when I open `/admin/orders?tab=review`, then they are listed with number, customer name, date, window, total and source, newest first, with at most 30 per page and a cursor; given none, then "No orders to review." shows.
+- [x] AC1 (FR-048): Given orders in `pending_approval`, when I open `/admin/orders?tab=review`, then they are listed with number, customer name, date, window, total and source, oldest first, with at most 30 per page and a cursor; given none, then "No orders to review." shows.
 - [x] AC2 (FR-050): Given a pending order, when I open `/admin/orders/:id`, then I see items with options, contact, fulfilment and address, date, window, total, status and the current `version`.
 - [x] AC3 (FR-052): Given `pending_approval`, when I press Approve with the current version, then status becomes `approved`, `version` increases by 1, an `order_event` `approved` with my admin id and an `email_outbox` row `order_confirmed` (order locale, dedupe key per version) are written in one transaction.
 - [x] AC4 (FR-054): Given I loaded version 3 and someone else already changed the order, when I press Approve, then `ORDER_CHANGED` (409) shows "This order changed. Reload", and nothing changes.
@@ -39,7 +39,7 @@ As the bakery Owner on my phone, I want to see orders waiting for review and app
 - Bottom bar and Today are E-02/E-06; this slice is reached by typed URL or a link on the shell.
 
 ### Decisions (2026-11-10, implementation)
-- Review tab is newest first, as this story says (the spec's Flow says oldest first; E-06 settles the tab defaults). Keyset paging on the gap-free order number (unique, increases with creation) with an opaque base64url cursor: exact, no timestamp precision issues. A tab other than `review` redirects to `?tab=review` in this slice.
+- Review tab is oldest first, as the spec's Flow says (aligned in security/code review 2026-11-10; the story first said newest first): a review queue serves the longest-waiting order first, and the spec's Owner decisions do not override it. Keyset paging on the gap-free order number (unique, increases with creation) with an opaque base64url cursor: exact, no timestamp precision issues. A tab other than `review` redirects to `?tab=review` in this slice.
 - Approve is one conditional `UPDATE ... WHERE id AND version AND status = 'pending_approval'` in a transaction with the `approved` event and the `order_confirmed` outbox row (`order:<id>:order_confirmed:v<newVersion>`, order locale); no row matched is then explained as NOT_FOUND, ORDER_CHANGED (version differs) or INVALID_TRANSITION. An order without email (manual) gets no outbox row.
 - The order screen shows a sticky Approve bar, the result in a visible polite status region, and a focused conflict Alert with a "Reload the order" link. `domain/status.ts` holds the transition table (`transitionTarget`, `allowedActions`), approve only.
 - S-016 AC6's direct DB write in `skeleton-order.spec.ts` is replaced by the Owner approving on the admin order screen (separate page).

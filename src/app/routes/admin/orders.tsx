@@ -23,7 +23,7 @@ function itemsPreview(items: AdminOrderItem[] = [], locale: Locale): string[] {
 
 /**
  * `admin/orders` loader, minimal slice: tab `review` only (pending_approval, quote_needed),
- * newest first, 30 per page with a cursor. Search, filters, counts and the other tabs are E-06.
+ * oldest first (a queue: the longest wait is served first), 30 per page with a cursor. Search, filters, counts and the other tabs are E-06.
  */
 export async function loader(args: Route.LoaderArgs) {
   const me = await requireAdmin(args);
@@ -31,7 +31,7 @@ export async function loader(args: Route.LoaderArgs) {
   if (search.get("tab") !== "review") throw redirect(REVIEW_PATH);
   const db = args.context.get(requestDbContext).db;
   const limit = pageLimit(search.get("limit"));
-  const { rows, more } = await listReviewOrders(db, { before: decodeCursor(search.get("cursor")), limit });
+  const { rows, more } = await listReviewOrders(db, { after: decodeCursor(search.get("cursor")), limit });
   const items = await itemsOfOrders(db, rows.map((row) => row.id));
   const { orderNumberPrefix } = await getCheckoutSettings(db);
   const data = rows.map((row) => ({
@@ -109,7 +109,7 @@ export default function AdminOrders({ loaderData }: Route.ComponentProps) {
       {nextCursor && (
         <p className="mt-6">
           <a href={`${REVIEW_PATH}&cursor=${encodeURIComponent(nextCursor)}`} className="inline-flex min-h-11 items-center font-semibold text-primary-strong underline underline-offset-4">
-            {t("admin.orders.older")}
+            {t("admin.orders.more")}
           </a>
         </p>
       )}

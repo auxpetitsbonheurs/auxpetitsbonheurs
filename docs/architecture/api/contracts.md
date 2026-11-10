@@ -1,6 +1,6 @@
 # API Contract — loaders, actions, hooks and jobs
 
-Form: **framework-native typed contracts** (React Router v8 route modules on Cloudflare Workers; no public REST API, no OpenAPI). Owner: `lead-backend`; `lead-frontend` must agree to changes (coordination rule 5). Updated: 2026-11-10 · v0.12 (see the changelog at the end; v0.3 was not issued).
+Form: **framework-native typed contracts** (React Router v8 route modules on Cloudflare Workers; no public REST API, no OpenAPI). Owner: `lead-backend`; `lead-frontend` must agree to changes (coordination rule 5). Updated: 2026-11-10 · v0.13 (see the changelog at the end; v0.3 was not issued).
 Sources: `docs/product/prd.md`, `data-model.md`, `architecture.md`. Feature specs (`docs/specs/features/*.md`) link to the sections here instead of repeating them.
 
 ## Conventions
@@ -223,3 +223,4 @@ Internal contract shipped with the UI in one deploy, so there is no API versioni
 - 2026-11-10 v0.10 (S-009): error code `INVALID_CREDENTIALS` (401); `admin/login` loader/refusal details; admin responses `private, no-store` + noindex; CSRF 403 for cross-site `/admin*` mutations. Agreed lead-backend + lead-frontend (one agent acting as both).
 - 2026-11-10 v0.11 (S-017, implementation note, no shape change): `admin/orders` review tab is paged newest first on the order number (`nextCursor` = opaque base64url of the last number); rows are `OrderSummary` plus `dateLabel`; the `admin/order` loader adds `customer`, `telUrl`, `mapsUrl` and `allowed.approve`; `approve` answers `{ ok: true, order: { status, version } }` or `ORDER_CHANGED` / `INVALID_TRANSITION` / `NOT_FOUND`. Agreed lead-backend + lead-frontend (one agent acting as both).
 - 2026-11-10 v0.12 (S-018): `admin/order` `events` are `OrderEventView` (oldest first; `actor.name` by join on `admin`, kept after deactivation) plus `text`, the line already localised for the admin ("Approved by Sarah, 12 Nov 14:05", Mauritius time). Additive. Agreed lead-backend + lead-frontend (one agent acting as both).
+- 2026-11-10 v0.13 (S-017 review, implementation note, no shape change): `admin/orders` review tab is paged **oldest first** on the order number, per admin-orders spec Flow (a queue serves the longest wait first); `nextCursor` = opaque base64url of the last number shown, the next page continues after it. Supersedes the v0.11 "newest first" note. Agreed lead-backend + lead-frontend (one agent acting as both).

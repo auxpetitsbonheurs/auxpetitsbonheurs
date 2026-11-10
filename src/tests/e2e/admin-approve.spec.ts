@@ -33,14 +33,14 @@ async function accessibleLayout(page: Page) {
 }
 
 test.describe("S-017 orders to review and Approve", () => {
-  test("AC1: a pending order is listed with number, name, date, window, total and source; older pages by cursor", async ({ page, db }) => {
+  test("AC1: a pending order is listed with number, name, date, window, total and source; later pages by cursor", async ({ page, db }) => {
     const order = await pendingOrder(db, `List ${test.info().project.name}`);
     await signIn(page, E2E_ACCOUNTS.owner, "/admin/orders?tab=review");
 
     await expect(page.getByRole("heading", { level: 1, name: "Orders to review" })).toBeVisible();
     const link = page.getByRole("link", { name: `Order ${orderNumber(order.number)}`, exact: true });
     for (let pageNo = 0; pageNo < 20 && (await link.count()) === 0; pageNo += 1) {
-      await page.getByRole("link", { name: "Older orders" }).click();
+      await page.getByRole("link", { name: "More orders to review" }).click();
     }
     const card = page.getByRole("listitem").filter({ has: link });
     await expect(card).toContainText(`Customer:List ${test.info().project.name}`);

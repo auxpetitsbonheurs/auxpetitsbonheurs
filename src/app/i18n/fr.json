@@ -241,7 +241,7 @@
       "metaTitle": "Commandes à valider",
       "title": "Commandes à valider",
       "empty": "Aucune commande à valider.",
-      "older": "Commandes plus anciennes",
+      "more": "Autres commandes à valider",
       "orderLink": "Commande {{number}}",
       "itemPreview": "{{quantity}} × {{name}}",
       "moreItems": "+{{count}} autres",

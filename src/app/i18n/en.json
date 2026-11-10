@@ -241,7 +241,7 @@
       "metaTitle": "Orders to review",
       "title": "Orders to review",
       "empty": "No orders to review.",
-      "older": "Older orders",
+      "more": "More orders to review",
       "orderLink": "Order {{number}}",
       "itemPreview": "{{quantity}} × {{name}}",
       "moreItems": "+{{count}} more",
