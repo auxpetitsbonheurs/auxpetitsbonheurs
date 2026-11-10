@@ -14,6 +14,8 @@ export const Email = z.email().trim().toLowerCase().max(254);
 export const Fulfilment = z.enum(["delivery", "pickup"]);
 export const WindowId = z.string().min(1).max(40);
 export const Quantity = z.coerce.number().int().min(1).max(50);
+/** Optimistic concurrency token of an order or the settings row (FR-054). */
+export const Version = z.coerce.number().int().min(1);
 
 export const OptionPick = z.object({
   groupId: Uuid,

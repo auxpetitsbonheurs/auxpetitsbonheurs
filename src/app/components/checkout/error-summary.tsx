@@ -34,22 +34,25 @@ export interface ErrorSummaryProps {
   message: string;
   detail?: string;
   fields?: Record<string, string>;
+  /** Field name -> element id to link to; defaults to the checkout form's fields. */
+  anchors?: Record<string, string>;
+  title?: string;
 }
 
 /** Top-of-form Alert listing problems as links to their fields; takes focus (design-system "Checkout"). */
-export const ErrorSummary = forwardRef<HTMLDivElement, ErrorSummaryProps>(function ErrorSummary({ message, detail, fields }, ref) {
+export const ErrorSummary = forwardRef<HTMLDivElement, ErrorSummaryProps>(function ErrorSummary({ message, detail, fields, anchors = ANCHORS, title }, ref) {
   const { t } = useI18n();
   const entries = Object.entries(fields ?? {});
   return (
-    <Alert ref={ref} tone="danger" tabIndex={-1} role="alert" title={t("checkout.errorSummaryTitle")} className="mt-8 outline-offset-2" id="error-summary">
+    <Alert ref={ref} tone="danger" tabIndex={-1} role="alert" title={title ?? t("checkout.errorSummaryTitle")} className="mt-8 outline-offset-2" id="error-summary">
       <p>{message}</p>
       {detail && <p className="mt-1 font-semibold">{detail}</p>}
       {entries.length > 0 && (
         <ul className="mt-2 grid gap-1">
           {entries.map(([field, text]) =>
-            ANCHORS[field] ? (
+            anchors[field] ? (
               <li key={field}>
-                <a href={`#${ANCHORS[field]}`} onClick={focusField} className="inline-flex min-h-11 items-center font-semibold text-primary-strong underline underline-offset-4 wrap-anywhere">
+                <a href={`#${anchors[field]}`} onClick={focusField} className="inline-flex min-h-11 items-center font-semibold text-primary-strong underline underline-offset-4 wrap-anywhere">
                   {text}
                 </a>
               </li>

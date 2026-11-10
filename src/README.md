@@ -42,14 +42,17 @@ npm run test:e2e                  # builds with CLOUDFLARE_ENV=e2e, serves it, r
 ```
 
 The harness drops and recreates the local database `apb_e2e`, applies the
-migrations and seeds the sample product and one Owner. Its bindings are the
+migrations and seeds the sample product and the test accounts of
+`tests/e2e/support/auth-users.ts` (Owner, Admin, French admin, deactivated admin,
+customer). Admin sign-in talks to a local GoTrue stub (`tests/e2e/support/gotrue-stub.ts`,
+started by Playwright on 127.0.0.1:54321), never to Supabase. Its bindings are the
 placeholders in the `e2e` environment of `wrangler.jsonc`; nothing real is used.
 If a `.dev.vars` points at a remote database, the test Worker refuses to start
 (test mode only talks to a local database): move it aside while running e2e.
 To use an already-installed Chromium, set `PW_CHROMIUM_EXECUTABLE=/path/to/chrome`.
 Shared helpers live in `tests/e2e/support/`: `expectNoA11yViolations(page, { zoom: 2 })`
 (axe, serious and critical fail; 200% zoom also checks for sideways scroll),
-`createOrder(db, label)` and `setClock(context, baseURL, instant)`.
+`createOrder(db, label)`, `setClock(context, baseURL, instant)` and `signIn(page, account, next?)`.
 
 ## Deploy
 

@@ -105,7 +105,13 @@
       "PRICE_CHANGED": "Le prix a changé depuis l'ouverture de cette page. Vérifiez le nouveau total et envoyez à nouveau.",
       "PRODUCT_UNAVAILABLE": "Désolés, cet article n'est pas disponible pour le moment. Retirez-le ou choisissez-en un autre.",
       "BASKET_FULL": "Votre panier contient déjà 10 articles différents. Commandez-les d'abord ou retirez-en un.",
-      "INTERNAL": "Un problème est survenu de notre côté. Veuillez réessayer dans un instant."
+      "INTERNAL": "Un problème est survenu de notre côté. Veuillez réessayer dans un instant.",
+      "UNAUTHENTICATED": "Veuillez vous reconnecter.",
+      "INVALID_CREDENTIALS": "L'e-mail ou le mot de passe n'est pas correct. Réessayez ou réinitialisez votre mot de passe.",
+      "FORBIDDEN": "Vous ne pouvez pas faire cela.",
+      "ORDER_CHANGED": "Cette commande a changé. Rechargez",
+      "INVALID_TRANSITION": "Cette commande ne peut plus être modifiée ainsi. Rechargez.",
+      "RATE_LIMITED": "Trop de tentatives, patientez quelques minutes."
     }
   },
   "product": {
@@ -193,6 +199,43 @@
       "ready_for_pickup": "Prête à retirer",
       "completed": "Terminée",
       "other": "Mise à jour de la commande"
+    }
+  },
+  "admin": {
+    "shell": {
+      "brand": "Aux petits bonheurs",
+      "area": "Administration de la pâtisserie",
+      "signedInAs": "Connecté·e : {{name}}",
+      "signOut": "Se déconnecter",
+      "role": {
+        "owner": "Propriétaire",
+        "admin": "Administrateur"
+      }
+    },
+    "login": {
+      "metaTitle": "Connexion",
+      "title": "Connexion",
+      "intro": "Réservé à l'équipe de la pâtisserie.",
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "showPassword": "Afficher le mot de passe",
+      "hidePassword": "Masquer le mot de passe",
+      "passwordShown": "Votre mot de passe est visible.",
+      "passwordHidden": "Votre mot de passe est masqué.",
+      "submit": "Se connecter",
+      "signingIn": "Connexion en cours…",
+      "errorSummaryTitle": "Veuillez vérifier le formulaire",
+      "errors": {
+        "email": "Saisissez votre adresse e-mail.",
+        "emailFormat": "Saisissez une adresse e-mail, par exemple nom@exemple.com.",
+        "password": "Saisissez votre mot de passe."
+      }
+    },
+    "home": {
+      "metaTitle": "Aujourd'hui",
+      "title": "Bonjour, {{name}}",
+      "body": "Les commandes qui attendent votre validation sont dans la liste Commandes.",
+      "ordersToReview": "Commandes à valider"
     }
   }
 }

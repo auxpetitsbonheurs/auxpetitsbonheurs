@@ -10,6 +10,7 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import { SAMPLE_PHOTO, SAMPLE_PRODUCT } from "../../../app/db/sample-data";
 import { SUPABASE_GRANTS, SUPABASE_STUBS } from "../../../app/db/testing/supabase-stubs";
+import { E2E_ACCOUNTS } from "./auth-users";
 
 /** Must match DATABASE_URL in the `e2e` environment of wrangler.jsonc (CI's Postgres service uses it too). */
 export const E2E_DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:5432/apb_e2e";
@@ -18,7 +19,8 @@ const migrationsFolder = fileURLToPath(new URL("../../../drizzle", import.meta.u
 
 export { SAMPLE_PRODUCT } from "../../../app/db/sample-data";
 
-export const E2E_OWNER = { email: "owner@e2e.test", name: "E2E Owner" } as const;
+export { E2E_ACCOUNTS } from "./auth-users";
+export const E2E_OWNER = { email: E2E_ACCOUNTS.owner.email, name: E2E_ACCOUNTS.owner.name } as const;
 
 /** Settings policies text (S-013 AC14): placeholder wording, not the bakery's real policy. */
 export const E2E_POLICIES = {
@@ -57,12 +59,22 @@ async function recreate(url: URL) {
   }
 }
 
+/** The accounts the GoTrue stub accepts: auth users, admins (owner, helper, French, deactivated) and a customer. */
+async function seedAccounts(sql: postgres.Sql) {
+  for (const account of Object.values(E2E_ACCOUNTS)) {
+    await sql`insert into auth.users (id, email, email_confirmed_at) values (${account.id}, ${account.email}, now())`;
+    if (account.kind === "admin") {
+      await sql`
+        insert into admin (id, name, email, role, active, locale)
+        values (${account.id}, ${account.name}, ${account.email}, ${account.role}, ${account.active}, ${account.locale})`;
+    } else {
+      await sql`insert into customer (name, phone, email, auth_user_id) values (${account.name}, '+23057000001', ${account.email}, ${account.id})`;
+    }
+  }
+}
+
 async function seedBaseline(sql: postgres.Sql) {
-  const [user] = await sql<{ id: string }[]>`
-    insert into auth.users (email, email_confirmed_at) values (${E2E_OWNER.email}, now()) returning id`;
-  await sql`
-    insert into admin (id, name, email, role, active, locale)
-    values (${user!.id}, ${E2E_OWNER.name}, ${E2E_OWNER.email}, 'owner', true, 'en')`;
+  await seedAccounts(sql);
   // Placeholder contact values so the footer shows its links (never real numbers).
   await sql`
     update settings set contact_whatsapp = '+230 5000 0000', contact_phone = '+230 5000 0001',

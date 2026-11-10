@@ -105,7 +105,13 @@
       "PRICE_CHANGED": "The price has changed since you opened this page. Please check the new total and send again.",
       "PRODUCT_UNAVAILABLE": "Sorry, this item is not available right now. Please remove it or choose another.",
       "BASKET_FULL": "Your basket already holds 10 different items. Please order these first or remove one.",
-      "INTERNAL": "Something went wrong on our side. Please try again in a moment."
+      "INTERNAL": "Something went wrong on our side. Please try again in a moment.",
+      "UNAUTHENTICATED": "Please sign in again.",
+      "INVALID_CREDENTIALS": "Email or password is not right. Try again or reset your password.",
+      "FORBIDDEN": "You cannot do this.",
+      "ORDER_CHANGED": "This order changed. Reload",
+      "INVALID_TRANSITION": "This order can no longer be changed this way. Reload.",
+      "RATE_LIMITED": "Too many attempts, wait a few minutes."
     }
   },
   "product": {
@@ -193,6 +199,43 @@
       "ready_for_pickup": "Ready for pickup",
       "completed": "Completed",
       "other": "Order update"
+    }
+  },
+  "admin": {
+    "shell": {
+      "brand": "Aux petits bonheurs",
+      "area": "Bakery admin",
+      "signedInAs": "Signed in as {{name}}",
+      "signOut": "Sign out",
+      "role": {
+        "owner": "Owner",
+        "admin": "Admin"
+      }
+    },
+    "login": {
+      "metaTitle": "Sign in",
+      "title": "Sign in",
+      "intro": "For the bakery team.",
+      "email": "Email",
+      "password": "Password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "passwordShown": "Your password is visible.",
+      "passwordHidden": "Your password is hidden.",
+      "submit": "Sign in",
+      "signingIn": "Signing you in…",
+      "errorSummaryTitle": "Please check the form",
+      "errors": {
+        "email": "Enter your email address.",
+        "emailFormat": "Enter an email address, for example name@example.com.",
+        "password": "Enter your password."
+      }
+    },
+    "home": {
+      "metaTitle": "Today",
+      "title": "Hello, {{name}}",
+      "body": "Orders waiting for your review are in the Orders list.",
+      "ordersToReview": "Orders to review"
     }
   }
 }

@@ -17,7 +17,21 @@ function customerPages(locale: "en" | "fr") {
   ];
 }
 
+/**
+ * Admin app (no URL language: it follows the admin's own). Login and sign-out sit
+ * outside the guarded layout; every other admin module calls `requireAdmin` itself.
+ */
+const adminPages = [
+  route("admin/login", "routes/admin/login.tsx"),
+  route("admin/sign-out", "routes/admin/sign-out.tsx"),
+  route("admin", "routes/admin/layout.tsx", [
+    index("routes/admin/home.tsx"),
+    route("*", "routes/admin/not-found.tsx"),
+  ]),
+];
+
 export default [
+  ...adminPages,
   layout("routes/site/layout.tsx", { id: "site-en" }, customerPages("en")),
   route("fr", "routes/site/layout.tsx", { id: "site-fr" }, customerPages("fr")),
 ] satisfies RouteConfig;

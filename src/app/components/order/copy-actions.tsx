@@ -1,14 +1,12 @@
 import { Check, Copy, Share2 } from "lucide-react";
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { useI18n } from "~/i18n/react";
 
-/** True once React runs in the browser: copy buttons need JavaScript, so they appear only then. */
-export function useHydrated(): boolean {
-  return useSyncExternalStore(noSubscription, () => true, () => false);
-}
+import { useHydrated } from "~/lib/use-hydrated";
 
-const noSubscription = () => () => {};
+// Copy buttons need JavaScript, so they appear only once hydrated.
+export { useHydrated };
 
 /** Copies text and reports the outcome as one polite status message (design-system "Toast" rule: role=status). */
 export function useCopyStatus() {

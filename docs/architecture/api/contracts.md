@@ -1,6 +1,6 @@
 # API Contract — loaders, actions, hooks and jobs
 
-Form: **framework-native typed contracts** (React Router v8 route modules on Cloudflare Workers; no public REST API, no OpenAPI). Owner: `lead-backend`; `lead-frontend` must agree to changes (coordination rule 5). Updated: 2026-11-10 · v0.9 (see the changelog at the end; v0.3 was not issued).
+Form: **framework-native typed contracts** (React Router v8 route modules on Cloudflare Workers; no public REST API, no OpenAPI). Owner: `lead-backend`; `lead-frontend` must agree to changes (coordination rule 5). Updated: 2026-11-10 · v0.10 (see the changelog at the end; v0.3 was not issued).
 Sources: `docs/product/prd.md`, `data-model.md`, `architecture.md`. Feature specs (`docs/specs/features/*.md`) link to the sections here instead of repeating them.
 
 ## Conventions
@@ -18,7 +18,8 @@ Sources: `docs/product/prd.md`, `data-model.md`, `architecture.md`. Feature spec
 - **Rate-limit classes** (architecture.md "Cross-cutting"): `RL-order`, `RL-request`, `RL-auth`, `RL-signup`, `RL-track`, `RL-upload`. Admin actions are not rate-limited beyond auth.
 - **Bot check:** rows marked **TS** require `turnstileToken`.
 - **Pagination:** admin lists use `?cursor=&limit=` (default 30, max 100) → `{ data, nextCursor: string | null }`; cursor = opaque base64 of the sort key.
-- **Caching:** all HTML `no-store` (architecture.md); `/admin/sw.js` `no-cache`; Storage images are CDN-cached by path.
+- **Caching:** all HTML `no-store` (architecture.md); every `/admin` response `private, no-store` + `X-Robots-Tag: noindex, nofollow`; `/admin/sw.js` `no-cache`; Storage images are CDN-cached by path.
+- **CSRF:** any non-GET `/admin*` request whose `Origin` (or, without it, `Referer`) is not the site's origin → `403 FORBIDDEN`, answered by the Worker before routing.
 - **Limits** live as constants in `contracts/shared.ts` (`BASKET_MAX_LINES = 10`, `LINE_MAX_QUANTITY = 50`, `MAX_PHOTOS = 5`, `UPLOAD_MAX_BYTES = 1_048_576`, `UPLOAD_TARGET_BYTES = 307_200`, `DAY_HORIZON = 90`), imported by views and services; loaders do not echo them.
 - **Uploads:** the browser compresses every photo to ≤ 300 kB (target, NFR-009) at ≤ 1600 px; the server hard cap is 1 MB per object (`UPLOAD_REJECTED` above it). Same rule for customer and admin uploads.
 - **Order status groups** (single definition, `domain/status.ts`): *active* = every status except declined, cancelled, closed (calendar counts and lists, Today); *confirmed* = approved, in_preparation, ready_for_pickup, out_for_delivery, completed (prep list, evening reminder count, unpaid list).
@@ -30,6 +31,7 @@ Sources: `docs/product/prd.md`, `data-model.md`, `architecture.md`. Feature spec
 | `VALIDATION_FAILED` | 400 | zod failure; `fields` populated |
 | `BOT_CHECK_FAILED` | 400 | Turnstile verify failed |
 | `UNAUTHENTICATED` | 401 | no/expired session on an action called by fetcher (pages redirect instead) |
+| `INVALID_CREDENTIALS` | 401 | `admin/login` (and later `account/sign-in`): wrong password, unknown email, deactivated admin or customer-only account; one message for all |
 | `FORBIDDEN` | 403 | Admin calling an Owner action; customer session on admin action |
 | `NOT_FOUND` | 404 | unknown slug/id/token (tracking: same response for wrong and unknown token) |
 | `ORDER_CHANGED` | 409 | optimistic version mismatch ("This order changed, reload") |
@@ -128,7 +130,7 @@ All `admin` unless marked **owner**. Every order-mutating intent takes `{ versio
 
 | Module (path) | Loader input → output | Action intents | Req |
 |---|---|---|---|
-| `admin/login` (`/admin/login`) — public | `?next` | `signIn` `{ email, password }` (RL-auth) → redirect; non-admin or inactive → generic "invalid credentials" | FR-040 |
+| `admin/login` (`/admin/login`) — public | `?next` → `{ next }` (only `/admin` paths, else `/admin`); a signed-in admin is redirected to `next` | `signIn` `{ email, password }` (RL-auth) → redirect `next` with the session cookies; field problems `VALIDATION_FAILED` (no sign-in attempt, `values.email` echoed, never the password); wrong password, unknown, inactive or non-admin → `INVALID_CREDENTIALS` (401) | FR-040 |
 | `admin/forgot` — public | — | `requestReset` `{ email }` (RL-auth) → `{ ok }` always; recovery link `redirect_to` = `/admin/reset` | FR-040 |
 | `admin/reset` (`/admin/reset`) — public, recovery session from `auth/confirm` | → `{ email }`, or 410 `INVITE_INVALID`-style \"link expired\" when the recovery session is missing/expired | `setPassword` `{ password: min 10 }` (RL-auth) → redirect `/admin` (Today); caller must be an active admin, else generic error | FR-040 |
 | `admin/invite` (`/admin/invite/:token`) — public | → `{ name, email, role }` or `INVITE_INVALID` | `accept` `{ password: min 10, locale }` → creates auth user + admin, signs in, redirect `/admin` | FR-042 |
@@ -218,3 +220,4 @@ Internal contract shipped with the UI in one deploy, so there is no API versioni
 - 2026-11-10 v0.7 (review of S-013): the `placeOrder` form posts `displayedTotalRs.delivery` / `displayedTotalRs.pickup`; the server reads the one matching `fulfilment` as `displayedTotalRs` (a single `displayedTotalRs` is still accepted). Without JavaScript the page cannot know the choice, so a single total made the first delivery submit return `PRICE_CHANGED`.
 - 2026-11-10 v0.8 (S-014): idempotency lookup runs on the key alone before other validation; the replay redirect uses the order's locale; `placeOrder` refusals echo `values.idempotencyKey` (valid UUIDs only). No shape removed.
 - 2026-11-10 v0.9 (security review M1, threat-model G-21): an idempotency replay returns the original redirect only when the posted `contact.email` matches the order's (normalised); a mismatch (also after Back with an emptied basket, or when losing the insert race) is `VALIDATION_FAILED` `fields.form` with a fresh key in `values` and no order data. Agreed lead-backend + lead-frontend (one agent acting as both, recorded here).
+- 2026-11-10 v0.10 (S-009): error code `INVALID_CREDENTIALS` (401); `admin/login` loader/refusal details; admin responses `private, no-store` + noindex; CSRF 403 for cross-site `/admin*` mutations. Agreed lead-backend + lead-frontend (one agent acting as both).

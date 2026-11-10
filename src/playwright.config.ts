@@ -27,17 +27,26 @@ export default defineConfig({
     { name: "phone-375", use: { ...desktop, viewport: { width: 375, height: 667 } } },
     { name: "desktop-1280", use: { ...desktop, viewport: { width: 1280, height: 800 } } },
   ],
-  webServer: {
-    // The `e2e` environment in wrangler.jsonc holds the (placeholder) bindings.
-    command: `npm run build && npx vite preview --port ${PORT} --strictPort`,
-    url: baseURL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
-    env: {
-      CLOUDFLARE_ENV: "e2e",
-      CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: "false",
-      // No real network in tests: skip fetching the Request.cf placeholder from Cloudflare.
-      CLOUDFLARE_CF_FETCH_ENABLED: "false",
+  webServer: [
+    {
+      // Local GoTrue stub (S-009): the real @supabase/ssr adapter talks to it, never to Supabase.
+      command: "npx tsx tests/e2e/support/gotrue-stub.ts",
+      url: "http://127.0.0.1:54321/auth/v1/health",
+      reuseExistingServer: !process.env.CI,
+      timeout: 30_000,
     },
-  },
+    {
+      // The `e2e` environment in wrangler.jsonc holds the (placeholder) bindings.
+      command: `npm run build && npx vite preview --port ${PORT} --strictPort`,
+      url: baseURL,
+      reuseExistingServer: !process.env.CI,
+      timeout: 180_000,
+      env: {
+        CLOUDFLARE_ENV: "e2e",
+        CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: "false",
+        // No real network in tests: skip fetching the Request.cf placeholder from Cloudflare.
+        CLOUDFLARE_CF_FETCH_ENABLED: "false",
+      },
+    },
+  ],
 });
