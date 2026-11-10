@@ -3,7 +3,7 @@
 set -u
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
-cp -R "$REPO/.claude" "$T/.claude"; cp "$REPO/project.yaml" "$T/"; cd "$T"
+cp -R "$REPO/.claude" "$T/.claude"; cp "$REPO/studio-tests/fixtures/project.yaml" "$T/"; cd "$T"  # pristine template, not this project's live config
 export CLAUDE_PROJECT_DIR="$T"
 S=.claude/scripts; pass=0; fail=0
 eq() { if [ "$1" = "$2" ]; then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL $3: got '$1', want '$2'"; fi; }
