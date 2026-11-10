@@ -6,6 +6,7 @@ import { getEnv } from "~/server/env.server";
 import { refuseCrossSiteAdminRequest } from "~/server/origin.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { createSupabaseAuth } from "~/server/supabase-auth.server";
+import { withEnvironmentHeaders } from "./headers";
 
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
@@ -18,8 +19,8 @@ export default {
     const settings = getEnv(env);
     // CSRF: cross-site admin mutations stop here with 403, before any database or auth work.
     const refused = refuseCrossSiteAdminRequest(request);
-    if (refused) return refused;
-    return handleWithDb(settings.DATABASE_URL, ctx, (requestDb) => {
+    if (refused) return withEnvironmentHeaders(refused, settings.APP_ENV);
+    const response = await handleWithDb(settings.DATABASE_URL, ctx, (requestDb) => {
       const context = new RouterContextProvider();
       context.set(requestDbContext, requestDb);
       context.set(publicConfigContext, { supabaseUrl: settings.SUPABASE_URL });
@@ -28,6 +29,7 @@ export default {
       context.set(authContext, createSupabaseAuth({ url: settings.SUPABASE_URL, anonKey: settings.SUPABASE_ANON_KEY }, request));
       return requestHandler(request, context);
     });
+    return withEnvironmentHeaders(response, settings.APP_ENV);
   },
   // Hourly cron (see wrangler.jsonc). Jobs are dispatched by Mauritius local time:
   // quote expiry, 18:00 reminder, 24 h pending alert, email retries, promotions,

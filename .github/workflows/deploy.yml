@@ -1,0 +1,143 @@
+name: deploy
+
+# Staging and production deploys (S-002, ADR-0002).
+# - staging: after the `ci` workflow passes on a push to `main`, at the commit CI tested.
+# - production: when the `production` branch is fast-forwarded to a commit staging already
+#   runs (the Owner's deliberate action), or by "Run workflow" on the `production` branch.
+# Each deploy applies pending migrations first (expand/contract, backward-compatible), then
+# runs the guarded deploy script (scripts/check-deploy.ts refuses a build for another env).
+# Secrets are referenced by name only; docs/runbooks/deploy-keys.md says where each comes
+# from. Until they exist, the preflight job prints a notice and the deploy job is skipped,
+# so the workflow stays green.
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+  push:
+    branches: [production]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: read
+
+# One deploy per environment at a time, never cancelled half-way (a migration may be running).
+concurrency:
+  group: deploy-${{ github.ref == 'refs/heads/production' && 'production' || 'staging' }}
+  cancel-in-progress: false
+
+jobs:
+  staging-preflight:
+    if: >-
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+      || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      configured: ${{ steps.keys.outputs.configured }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: Check deploy keys
+        id: keys
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: src/scripts/check-deploy-keys.sh CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID STAGING_DATABASE_URL
+
+  staging:
+    needs: staging-preflight
+    if: needs.staging-preflight.outputs.configured == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+      - run: npm ci
+      - name: Apply pending migrations (staging)
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: npm run db:migrate
+      - name: Build, check and deploy (staging)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run deploy:staging
+      - name: Smoke check (staging is not indexed)
+        if: vars.STAGING_URL != ''
+        env:
+          STAGING_URL: ${{ vars.STAGING_URL }}
+        run: curl -fsS -o /dev/null -D - "$STAGING_URL/" | grep -i '^x-robots-tag: noindex, nofollow'
+
+  production-preflight:
+    if: github.ref == 'refs/heads/production' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      configured: ${{ steps.keys.outputs.configured }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check deploy keys
+        id: keys
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        run: src/scripts/check-deploy-keys.sh CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID PRODUCTION_DATABASE_URL
+      - name: Check staging already runs this commit
+        if: steps.keys.outputs.configured == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+        run: |
+          ids=$(gh api "repos/${{ github.repository }}/deployments?environment=staging&sha=$SHA" --jq '.[].id')
+          for id in $ids; do
+            ok=$(gh api "repos/${{ github.repository }}/deployments/$id/statuses" --jq '[.[] | select(.state == "success")] | length')
+            if [ "$ok" -gt 0 ]; then echo "Staging runs $SHA"; exit 0; fi
+          done
+          echo "::error::Commit $SHA has no successful staging deploy. Merge it to main, let staging deploy, then fast-forward production."
+          exit 1
+
+  production:
+    needs: production-preflight
+    if: needs.production-preflight.outputs.configured == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+      - run: npm ci
+      - name: Apply pending migrations (production)
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        run: npm run db:migrate
+      - name: Build, check and deploy (production)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run deploy:production

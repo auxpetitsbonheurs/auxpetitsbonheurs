@@ -29,7 +29,7 @@ One deployable app: a React Router (framework mode) Worker serves the bilingual 
 | Layer | Choice | ADR |
 |---|---|---|
 | Frontend + server | React Router v8 framework mode, SSR, loaders/actions; React 19; Tailwind 4 + shadcn/ui | ADR-0001 |
-| Runtime / hosting | Cloudflare Workers (free), envs `staging` + `production`, Workers Builds | ADR-0001 |
+| Runtime / hosting | Cloudflare Workers (free), envs `staging` + `production`, deployed by GitHub Actions | ADR-0001, ADR-0002 |
 | Database / ORM | Supabase Postgres (free) via Drizzle + `postgres` driver on the transaction pooler | ADR-0001 |
 | Auth | Supabase Auth (password, magic link, reset) via `@supabase/ssr` cookies; roles in our `admin` table | ADR-0001 |
 | Files | Supabase Storage, browser-side compression, signed upload URLs | ADR-0001 |
@@ -169,9 +169,9 @@ Promotions need no job: "live" is computed at read time (FR-016). Cloudflare fre
 | Env | URL | Data | Deploy trigger |
 |---|---|---|---|
 | local | `localhost:5173` (`npm run dev`, workerd) | Supabase CLI local stack (Docker) with seed data; fallback: staging project, read-mostly | — |
-| staging | `auxpetitsbonheurs-staging.<account>.workers.dev` | staging Supabase project, sample data, test inboxes | push to `main` (Workers Builds) |
-| production | bakery domain (TBD, PRD Q6); `workers.dev` until then | production Supabase project | fast-forward `production` branch (Workers Builds), after staging check |
-No per-PR previews (Supabase free = 2 projects). **CI** (GitHub Actions, bakery repo): lint, typecheck, unit tests, build + JS-budget check, Playwright against a local build on PRs and `main`. **Migrations:** generated with `drizzle-kit generate`, reviewed, applied with `npm run db:migrate` to staging, then production **before** the deploy that needs them; every migration is backward-compatible with the running code (expand/contract). Applying to shared DBs is the user's call. **Secrets:** `wrangler secret put --env <env>` (list in `src/.dev.vars.example`); GitHub Actions secrets for backups; all in bakery accounts (NFR-012).
+| staging | `auxpetitsbonheurs-staging.<account>.workers.dev` | staging Supabase project, sample data, test inboxes | `ci` green on `main` (GitHub Actions `deploy.yml`, ADR-0002) |
+| production | bakery domain (TBD, PRD Q6); `workers.dev` until then | production Supabase project | fast-forward `production` branch to a commit staging runs (`deploy.yml`) |
+No per-PR previews (Supabase free = 2 projects). **CI** (GitHub Actions, bakery repo): lint, typecheck, unit tests, build + JS-budget check, Playwright against a local build on PRs and `main`. **Migrations:** generated with `drizzle-kit generate`, reviewed, applied with `npm run db:migrate` to staging, then production **before** the deploy that needs them (the deploy workflow does this first, with a Session pooler URL); every migration is backward-compatible with the running code (expand/contract). Applying to shared DBs is the user's call. **Secrets:** Worker secrets per env in Cloudflare (list in `src/.dev.vars.example`); GitHub Actions secrets for deploys and backups (`docs/runbooks/deploy-keys.md`); all in bakery accounts (NFR-012).
 
 ## Backups & restore (NFR-005)
 - Weekly (Sunday 02:00 MU) GitHub Actions workflow in the bakery's private repo: `pg_dump --format=custom` via the direct connection string; copy both Storage buckets via the S3-compatible endpoint with `rclone`; encrypt the archive with `age` (key in the bakery's password manager); upload to the bakery's Google Drive (`rclone`, OAuth token as secret); keep 8 weeks. Failure emails the bakery address.
