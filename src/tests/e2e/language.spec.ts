@@ -168,7 +168,13 @@ test.describe("the switch (S-008 AC6, AC7)", () => {
 
   test("French page labels the basket in French", async ({ page, baseURL }) => {
     await page.context().addCookies([
-      { name: "apb_basket", value: encodeURIComponent(JSON.stringify([{ productId: "s", quantity: 2 }])), url: baseURL! },
+      {
+        name: "apb_basket",
+        value: encodeURIComponent(
+          JSON.stringify([{ lineId: "fr", productId: "00000000-0000-4000-8000-000000000001", options: [], quantity: 2 }]),
+        ),
+        url: baseURL!,
+      },
     ]);
     await page.goto("/fr/");
 

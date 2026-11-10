@@ -38,7 +38,22 @@ describe("t (AC1: French text with English fallback)", () => {
   });
 });
 
+/** Every leaf key path of a message tree. */
+function leafKeys(messages: unknown, prefix = ""): string[] {
+  return Object.entries(messages as Record<string, unknown>).flatMap(([key, value]) =>
+    typeof value === "object" && value !== null ? leafKeys(value, `${prefix}${key}.`) : [`${prefix}${key}`],
+  );
+}
+
 describe("catalogue completeness (AC3)", () => {
+  test("every English text has French text and the reverse (no orphan keys)", () => {
+    const missingFr = leafKeys(en).filter((key) => String(leaf(fr, key) ?? "").trim() === "");
+    const orphanFr = leafKeys(fr).filter((key) => leaf(en, key) === undefined);
+
+    expect(missingFr).toEqual([]);
+    expect(orphanFr).toEqual([]);
+  });
+
   test.each(SKELETON_KEYS)("%s has non-empty EN and FR text", (key) => {
     for (const messages of [en, fr]) {
       const values = texts(messages, key);

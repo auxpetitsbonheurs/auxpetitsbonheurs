@@ -103,6 +103,16 @@ npm run seed:owner -- --confirm-production
 
 Output never contains the password, the service-role key or the database URL.
 
+### Sample product (development and staging only)
+
+`npm run seed:sample` inserts "Chocolate cake" (`/menu/chocolate-cake`, Rs 850, one bundled
+photo) so the order journey can be tried before the real menu exists. It is idempotent and
+refuses `APP_ENV=production`; the price is sample data, not a launch price.
+
+```sh
+APP_ENV=staging DATABASE_URL='postgresql://…' npm run seed:sample
+```
+
 ## Backups
 
 Weekly backups to the bakery's own storage; documented in S-020.

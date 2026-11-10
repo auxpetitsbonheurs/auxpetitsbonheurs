@@ -7,7 +7,7 @@ import { todayMU } from "~/domain/time";
 import { readCookie } from "~/lib/cookies";
 import { localeFromPathname } from "~/lib/locale";
 import { LOCALE_COOKIE, decideLocale, localeCookie, twinPath } from "~/lib/locale-detect";
-import { readBasketCount } from "~/server/basket-count.server";
+import { readBasketCount } from "~/server/basket.server";
 import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
 import { getFooterContacts } from "~/server/repos/settings.server";

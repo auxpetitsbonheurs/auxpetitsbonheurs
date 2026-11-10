@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
+import { SAMPLE_PHOTO, SAMPLE_PRODUCT } from "../../../app/db/sample-data";
 import { SUPABASE_GRANTS, SUPABASE_STUBS } from "../../../app/db/testing/supabase-stubs";
 
 /** Must match DATABASE_URL in the `e2e` environment of wrangler.jsonc (CI's Postgres service uses it too). */
@@ -15,15 +16,7 @@ export const E2E_DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:5432/a
 
 const migrationsFolder = fileURLToPath(new URL("../../../drizzle", import.meta.url));
 
-export const SAMPLE_PRODUCT = {
-  slug: "chocolate-cake",
-  type: "cake",
-  nameEn: "Chocolate cake",
-  nameFr: "Gâteau au chocolat",
-  descriptionEn: "A rich chocolate sponge with ganache.",
-  descriptionFr: "Une génoise au chocolat et sa ganache.",
-  basePriceRs: 850,
-} as const;
+export { SAMPLE_PRODUCT } from "../../../app/db/sample-data";
 
 export const E2E_OWNER = { email: "owner@e2e.test", name: "E2E Owner" } as const;
 
@@ -69,9 +62,14 @@ async function seedBaseline(sql: postgres.Sql) {
     update settings set contact_whatsapp = '+230 5000 0000', contact_phone = '+230 5000 0001',
       contact_email = 'hello@example.com' where id = 1`;
   const p = SAMPLE_PRODUCT;
-  await sql`
+  const [sample] = await sql<{ id: string }[]>`
     insert into product (slug, type, name_en, name_fr, description_en, description_fr, base_price_rs)
-    values (${p.slug}, ${p.type}, ${p.nameEn}, ${p.nameFr}, ${p.descriptionEn}, ${p.descriptionFr}, ${p.basePriceRs})`;
+    values (${p.slug}, ${p.type}, ${p.nameEn}, ${p.nameFr}, ${p.descriptionEn}, ${p.descriptionFr}, ${p.basePriceRs})
+    returning id`;
+  const photo = SAMPLE_PHOTO;
+  await sql`
+    insert into product_photo (product_id, storage_path, width, height, sort_order)
+    values (${sample!.id}, ${photo.storagePath}, ${photo.width}, ${photo.height}, ${photo.sortOrder})`;
 }
 
 /** Drops, migrates and seeds the e2e database. Run once per Playwright run (global setup). */

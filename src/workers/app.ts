@@ -2,6 +2,7 @@ import { RouterContextProvider, createRequestHandler } from "react-router";
 import { clockContext, createClock } from "~/server/clock.server";
 import { handleWithDb, requestDbContext } from "~/server/db.server";
 import { getEnv } from "~/server/env.server";
+import { publicConfigContext } from "~/server/public-config.server";
 
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
@@ -15,6 +16,7 @@ export default {
     return handleWithDb(settings.DATABASE_URL, ctx, (requestDb) => {
       const context = new RouterContextProvider();
       context.set(requestDbContext, requestDb);
+      context.set(publicConfigContext, { supabaseUrl: settings.SUPABASE_URL });
       context.set(clockContext, createClock({ testClock: settings.TEST_CLOCK === "on" }, request));
       return requestHandler(request, context);
     });

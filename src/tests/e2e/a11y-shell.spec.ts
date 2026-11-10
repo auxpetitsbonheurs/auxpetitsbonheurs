@@ -14,7 +14,10 @@ async function setBasket(page: Page, baseURL: string, quantity: number) {
   await page.context().addCookies([
     {
       name: BASKET_COOKIE,
-      value: encodeURIComponent(JSON.stringify([{ productId: "sample", quantity }])),
+      // The cookie format S-011 owns; the product need not exist for the header count.
+      value: encodeURIComponent(
+        JSON.stringify([{ lineId: "shell", productId: "00000000-0000-4000-8000-000000000001", options: [], quantity }]),
+      ),
       url: baseURL,
     },
   ]);

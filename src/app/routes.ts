@@ -9,6 +9,7 @@ import { type RouteConfig, index, layout, route } from "@react-router/dev/routes
 function customerPages(locale: "en" | "fr") {
   return [
     index("routes/home.tsx", { id: `home-${locale}` }),
+    route("menu/:slug", "routes/site/product.tsx", { id: `product-${locale}` }),
     route("*", "routes/site/not-found.tsx", { id: `not-found-${locale}` }),
   ];
 }

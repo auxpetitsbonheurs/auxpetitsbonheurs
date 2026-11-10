@@ -32,6 +32,20 @@
     "notFoundBody": "We could not find this page. It may have moved.",
     "genericTitle": "Something went wrong",
     "genericBody": "Please try again in a moment.",
-    "backHome": "Back to the home page"
+    "backHome": "Back to the home page",
+    "codes": {
+      "VALIDATION_FAILED": "Some details need checking. Please correct the fields listed below.",
+      "NOT_FOUND": "We could not find this. It may have moved.",
+      "DATE_UNAVAILABLE": "This date is not available. Please choose another date.",
+      "PRICE_CHANGED": "The price has changed since you opened this page. Please check the new total and send again.",
+      "PRODUCT_UNAVAILABLE": "Sorry, this item is not available right now. Please remove it or choose another.",
+      "BASKET_FULL": "Your basket already holds 10 different items. Please order these first or remove one.",
+      "INTERNAL": "Something went wrong on our side. Please try again in a moment."
+    }
+  },
+  "product": {
+    "addToBasket": "Add to basket",
+    "soldOut": "Sold out",
+    "soldOutHint": "This cake is sold out for now. Message us on WhatsApp to ask when it is back."
   }
 }

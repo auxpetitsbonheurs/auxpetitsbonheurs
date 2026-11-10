@@ -18,7 +18,8 @@
     "db:migrate": "drizzle-kit migrate",
     "check:js-budget": "node scripts/check-js-budget.ts",
     "seed:owner": "tsx scripts/seed-owner.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "seed:sample": "tsx scripts/seed-sample.ts"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "5.3.0",

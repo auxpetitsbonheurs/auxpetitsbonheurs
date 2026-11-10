@@ -32,6 +32,20 @@
     "notFoundBody": "Nous ne trouvons pas cette page. Elle a peut-être changé d'adresse.",
     "genericTitle": "Un problème est survenu",
     "genericBody": "Veuillez réessayer dans un instant.",
-    "backHome": "Retour à l'accueil"
+    "backHome": "Retour à l'accueil",
+    "codes": {
+      "VALIDATION_FAILED": "Certaines informations sont à vérifier. Veuillez corriger les champs indiqués ci-dessous.",
+      "NOT_FOUND": "Nous ne trouvons pas cet élément. Il a peut-être changé d'adresse.",
+      "DATE_UNAVAILABLE": "Cette date n'est pas disponible. Veuillez choisir une autre date.",
+      "PRICE_CHANGED": "Le prix a changé depuis l'ouverture de cette page. Vérifiez le nouveau total et envoyez à nouveau.",
+      "PRODUCT_UNAVAILABLE": "Désolés, cet article n'est pas disponible pour le moment. Retirez-le ou choisissez-en un autre.",
+      "BASKET_FULL": "Votre panier contient déjà 10 articles différents. Commandez-les d'abord ou retirez-en un.",
+      "INTERNAL": "Un problème est survenu de notre côté. Veuillez réessayer dans un instant."
+    }
+  },
+  "product": {
+    "addToBasket": "Ajouter au panier",
+    "soldOut": "Épuisé",
+    "soldOutHint": "Ce gâteau est épuisé pour le moment. Écrivez-nous sur WhatsApp pour savoir quand il revient."
   }
 }
