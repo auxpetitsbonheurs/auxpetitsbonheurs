@@ -103,6 +103,34 @@ describe("parseEnv (AC3: time zone and environment are fixed sets)", () => {
   });
 });
 
+describe("parseEnv (S-005 AC6: the test clock is development-only)", () => {
+  test("development may enable TEST_CLOCK", () => {
+    const env = parseEnv(
+      bindings({ APP_ENV: "development", TEST_CLOCK: "on", DATABASE_URL: "postgresql://postgres:pw@127.0.0.1:5432/apb_e2e" }),
+    );
+
+    expect(env.TEST_CLOCK).toBe("on");
+  });
+
+  test.each(["staging", "production"])("%s refuses to start with TEST_CLOCK set", (appEnv) => {
+    const error = errorOf(() => parseEnv(bindings({ APP_ENV: appEnv, TEST_CLOCK: "on" })));
+
+    expect(error.variables).toEqual(["TEST_CLOCK"]);
+  });
+
+  test("with TEST_CLOCK on, DATABASE_URL must be a local database", () => {
+    const error = errorOf(() => parseEnv(bindings({ APP_ENV: "development", TEST_CLOCK: "on" })));
+
+    expect(error.variables).toEqual(["DATABASE_URL"]);
+  });
+
+  test("TEST_CLOCK accepts only the value on", () => {
+    const error = errorOf(() => parseEnv(bindings({ APP_ENV: "development", TEST_CLOCK: "yes" })));
+
+    expect(error.variables).toEqual(["TEST_CLOCK"]);
+  });
+});
+
 describe(".dev.vars.example (AC2)", () => {
   const example = readFileSync(
     fileURLToPath(new URL("../../.dev.vars.example", import.meta.url)),

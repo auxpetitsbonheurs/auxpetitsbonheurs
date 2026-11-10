@@ -1,7 +1,8 @@
 name: ci
 
 # Lint, typecheck, unit tests, build and the JS budget (NFR-001, NFR-012).
-# Needs no secrets: deploys run in Workers Builds (S-002), Playwright is added by S-005.
+# Needs no secrets: deploys run in Workers Builds (S-002). The e2e job (S-005) runs
+# Playwright against a local build and a throwaway Postgres service (test-only password).
 on:
   pull_request:
   push:
@@ -34,3 +35,42 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run check:js-budget
+
+  e2e:
+    needs: app
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          # Throwaway CI database; must match DATABASE_URL in wrangler.jsonc env "e2e".
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: |
+            src/test-results
+            src/playwright-report
+          retention-days: 7

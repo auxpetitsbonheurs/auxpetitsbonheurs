@@ -29,12 +29,23 @@ const integrationSchema = z.object({
   SENTRY_DSN: url,
 });
 
-const developmentSchema = coreSchema.extend(integrationSchema.partial().shape);
-const deployedSchema = coreSchema.extend(integrationSchema.shape);
+/**
+ * Test-only switches (S-005). `TEST_CLOCK=on` lets e2e specs set "now" per browser
+ * context; only development may set it, so staging and production refuse to start.
+ */
+const developmentOnlySchema = z.object({ TEST_CLOCK: z.literal("on").optional() });
+
+const developmentSchema = coreSchema
+  .extend(integrationSchema.partial().shape)
+  .extend(developmentOnlySchema.shape);
+const deployedSchema = coreSchema
+  .extend(integrationSchema.shape)
+  .extend({ TEST_CLOCK: z.never().optional() });
 
 export type ServerEnv = z.infer<typeof developmentSchema>;
 
-export const ENV_KEYS: readonly string[] = Object.keys(deployedSchema.shape);
+/** Every deployable variable (listed in .dev.vars.example); test-only switches excluded. */
+export const ENV_KEYS: readonly string[] = Object.keys(coreSchema.extend(integrationSchema.shape).shape);
 
 export class EnvError extends Error {
   readonly variables: string[];
@@ -46,11 +57,23 @@ export class EnvError extends Error {
   }
 }
 
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+/** Test mode (TEST_CLOCK) must never reach a shared database. */
+function isLocalDatabase(databaseUrl: string): boolean {
+  return LOCAL_HOSTS.has(new URL(databaseUrl).hostname);
+}
+
 export function parseEnv(bindings: Record<string, unknown>): ServerEnv {
   const appEnv = coreSchema.shape.APP_ENV.safeParse(bindings.APP_ENV);
   const schema = appEnv.success && appEnv.data === "development" ? developmentSchema : deployedSchema;
   const result = schema.safeParse(bindings, { reportInput: false });
-  if (result.success) return result.data;
+  if (result.success) {
+    if (result.data.TEST_CLOCK === "on" && !isLocalDatabase(result.data.DATABASE_URL)) {
+      throw new EnvError(["DATABASE_URL"]);
+    }
+    return result.data;
+  }
   // Only the names leave this function: zod issues are dropped, not attached as `cause`.
   const names = result.error.issues.map((issue) => String(issue.path[0]));
   throw new EnvError([...new Set(names)]);

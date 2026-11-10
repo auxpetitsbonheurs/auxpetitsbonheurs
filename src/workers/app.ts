@@ -1,4 +1,5 @@
 import { RouterContextProvider, createRequestHandler } from "react-router";
+import { clockContext, createClock } from "~/server/clock.server";
 import { handleWithDb, requestDbContext } from "~/server/db.server";
 import { getEnv } from "~/server/env.server";
 
@@ -14,6 +15,7 @@ export default {
     return handleWithDb(settings.DATABASE_URL, ctx, (requestDb) => {
       const context = new RouterContextProvider();
       context.set(requestDbContext, requestDb);
+      context.set(clockContext, createClock({ testClock: settings.TEST_CLOCK === "on" }, request));
       return requestHandler(request, context);
     });
   },

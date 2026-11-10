@@ -15,3 +15,8 @@ worker-configuration.d.ts
 
 !.dev.vars.example
 !.env.example
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/

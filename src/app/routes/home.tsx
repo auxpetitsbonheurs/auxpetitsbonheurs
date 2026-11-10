@@ -1,7 +1,5 @@
-import { env } from "cloudflare:workers";
-
+import { clockContext } from "~/server/clock.server";
 import type { Route } from "./+types/home";
-import { Welcome } from "../welcome/welcome";
 
 export function meta(_args: Route.MetaArgs) {
   return [
@@ -10,10 +8,21 @@ export function meta(_args: Route.MetaArgs) {
   ];
 }
 
-export function loader() {
-  return { message: `Aux petits bonheurs (${env.APP_ENV})` };
+const YEAR_MU = new Intl.DateTimeFormat("en", { year: "numeric", timeZone: "Indian/Mauritius" });
+
+export function loader({ context }: Route.LoaderArgs) {
+  return { year: YEAR_MU.format(context.get(clockContext).now()) };
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  return <Welcome message={loaderData.message} />;
+  return (
+    <>
+      <main className="p-4">
+        <h1>Aux petits bonheurs</h1>
+      </main>
+      <footer className="p-4">
+        <p>© {loaderData.year} Aux petits bonheurs</p>
+      </footer>
+    </>
+  );
 }

@@ -34,3 +34,7 @@ TURNSTILE_SECRET_KEY=replace-with-turnstile-secret
 
 # Error tracking (Sentry Developer plan, free)
 SENTRY_DSN=https://replace@o0.ingest.sentry.io/0
+
+# Test-only (development only; staging and production refuse to start with it set).
+# The Playwright harness sets it so specs can fix "now" with the apb_test_now cookie.
+# TEST_CLOCK=on

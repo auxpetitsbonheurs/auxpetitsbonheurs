@@ -17,7 +17,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "check:js-budget": "node scripts/check-js-budget.ts",
-    "seed:owner": "tsx scripts/seed-owner.ts"
+    "seed:owner": "tsx scripts/seed-owner.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
@@ -38,9 +39,11 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.11.0",
     "@cloudflare/vite-plugin": "^1.68.0",
     "@electric-sql/pglite": "0.5.12",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.63.0",
     "@react-router/dev": "^8.5.1",
     "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^22.20.5",
@@ -50,6 +53,7 @@
     "eslint": "^10.14.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.14.0",
+    "playwright-core": "1.63.0",
     "tailwindcss": "^4.2.2",
     "tsx": "4.23.15",
     "typescript": "^5.9.3",

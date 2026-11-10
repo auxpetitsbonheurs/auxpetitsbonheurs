@@ -28,6 +28,21 @@
 			// The scheduled handler dispatches jobs by Mauritius local time.
 			"triggers": { "crons": ["0 * * * *"] }
 		},
+		// Local end-to-end tests only (S-005): built with CLOUDFLARE_ENV=e2e by the Playwright
+		// harness and served by `vite preview`; never deployed. Placeholder values, no secrets;
+		// the database is the throwaway local Postgres the harness resets.
+		"e2e": {
+			"name": "auxpetitsbonheurs-e2e",
+			"vars": {
+				"APP_ENV": "development",
+				"APP_TIME_ZONE": "Indian/Mauritius",
+				"SUPABASE_URL": "http://127.0.0.1:54321",
+				"SUPABASE_ANON_KEY": "e2e-placeholder-anon-key",
+				"SUPABASE_SERVICE_ROLE_KEY": "e2e-placeholder-service-role-key",
+				"DATABASE_URL": "postgresql://postgres:postgres@127.0.0.1:5432/apb_e2e",
+				"TEST_CLOCK": "on"
+			}
+		},
 		"production": {
 			"name": "auxpetitsbonheurs",
 			"vars": {

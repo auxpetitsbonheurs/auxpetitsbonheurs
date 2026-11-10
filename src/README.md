@@ -32,6 +32,25 @@ npm run build
 npm run check:js-budget   # gzipped initial JS per route <= project.yaml budgets.js_initial_kb
 ```
 
+Then a second job runs the browser tests (`npm run test:e2e`, Playwright). Locally:
+
+```sh
+# Needs a local Postgres on 127.0.0.1:5432 with user/password postgres/postgres
+# (for example: docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:16).
+npx playwright install chromium   # once
+npm run test:e2e                  # builds with CLOUDFLARE_ENV=e2e, serves it, runs at 320/375/1280 px
+```
+
+The harness drops and recreates the local database `apb_e2e`, applies the
+migrations and seeds the sample product and one Owner. Its bindings are the
+placeholders in the `e2e` environment of `wrangler.jsonc`; nothing real is used.
+If a `.dev.vars` points at a remote database, the test Worker refuses to start
+(test mode only talks to a local database): move it aside while running e2e.
+To use an already-installed Chromium, set `PW_CHROMIUM_EXECUTABLE=/path/to/chrome`.
+Shared helpers live in `tests/e2e/support/`: `expectNoA11yViolations(page, { zoom: 2 })`
+(axe, serious and critical fail; 200% zoom also checks for sideways scroll),
+`createOrder(db, label)` and `setClock(context, baseURL, instant)`.
+
 ## Deploy
 
 Bakery's Cloudflare account; automated deploys are set up in S-002.

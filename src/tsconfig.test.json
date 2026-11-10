@@ -7,7 +7,9 @@
     "app/**/.client/**/*",
     "workers/**/*",
     "worker-configuration.d.ts",
-    "scripts/**/*"
+    "scripts/**/*",
+    "tests/**/*",
+    "playwright.config.ts"
   ],
   "exclude": [],
   "compilerOptions": {
