@@ -36,6 +36,26 @@ npm run check:js-budget   # gzipped initial JS per route <= project.yaml budgets
 
 Bakery's Cloudflare account; automated deploys are set up in S-002.
 
+### Database migrations
+
+Migrations live in `drizzle/` (`0000_initial` = schema, `0001_launch_seed` = settings,
+counter and Storage buckets). Generate with `npm run db:generate`, review the SQL, then
+apply with `npm run db:migrate` to **staging first, then production, before the deploy
+that needs them**. Each run reads `DATABASE_URL` from your shell for that environment
+(direct connection, never committed). Applying migrations is always a person's decision;
+tests use an in-process Postgres and never touch a real database.
+
+```sh
+DATABASE_URL='<staging connection string>' npm run db:migrate
+DATABASE_URL='<production connection string>' npm run db:migrate
+```
+
+### Launch checklist
+
+- [ ] Replace the Juice number: `0001_launch_seed` stores the fake placeholder `5000 0000`.
+      Set the real one in Settings (or `UPDATE settings SET juice_number = '…'`) on deploy day.
+- [ ] Set the full pickup street address (seeded as "Beau Bassin" only).
+
 ```sh
 npm run deploy:staging
 npm run deploy            # production

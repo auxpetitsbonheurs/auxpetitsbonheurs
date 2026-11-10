@@ -64,6 +64,23 @@ export const product = pgTable(
   ],
 ).enableRLS();
 
+/**
+ * Old slugs of renamed products, so `/menu/:old` 301-redirects (owner Q19).
+ * Written in the same transaction as the slug change; uniqueness against
+ * `product.slug` is checked in that transaction.
+ */
+export const productSlugHistory = pgTable(
+  "product_slug_history",
+  {
+    slug: text("slug").primaryKey(),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => product.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", tz).notNull().defaultNow(),
+  },
+  (t) => [index("product_slug_history_product_idx").on(t.productId)],
+).enableRLS();
+
 /** 1-5 ordered photos; the DB caps at 5 via sort_order 0..4 + unique. */
 export const productPhoto = pgTable(
   "product_photo",

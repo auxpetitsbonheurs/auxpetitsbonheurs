@@ -19,8 +19,32 @@ describe("schema invariants (docs/architecture/data-model.md)", () => {
     const withoutRls = tables.map(getTableConfig).filter((c) => !c.enableRLS);
 
     // Assert
-    expect(tables.length).toBeGreaterThanOrEqual(20);
     expect(withoutRls.map((c) => c.name)).toEqual([]);
+  });
+
+  test("the schema has exactly 24 tables (S-004: product_slug_history included before 0000)", () => {
+    expect(tables).toHaveLength(24);
+  });
+
+  test("product_slug_history keeps old slugs, cascades with the product and has RLS", () => {
+    const history = config("product_slug_history");
+    const column = (name: string) => history.columns.find((c) => c.name === name);
+    const [fk] = history.foreignKeys;
+    const reference = fk?.reference();
+
+    expect(history.columns.map((c) => c.name).sort()).toEqual(["created_at", "product_id", "slug"]);
+    expect(column("slug")?.primary).toBe(true);
+    expect(column("slug")?.getSQLType()).toBe("text");
+    expect(column("product_id")?.notNull).toBe(true);
+    expect(column("product_id")?.getSQLType()).toBe("uuid");
+    expect(column("created_at")?.notNull).toBe(true);
+    expect(column("created_at")?.getSQLType()).toBe("timestamp with time zone");
+    expect(column("created_at")?.hasDefault).toBe(true);
+    expect(history.foreignKeys).toHaveLength(1);
+    expect(getTableConfig(reference!.foreignTable).name).toBe("product");
+    expect(reference?.columns.map((c) => c.name)).toEqual(["product_id"]);
+    expect(fk?.onDelete).toBe("cascade");
+    expect(history.enableRLS).toBe(true);
   });
 
   test("auth.users is not exported, so drizzle-kit never manages it", () => {

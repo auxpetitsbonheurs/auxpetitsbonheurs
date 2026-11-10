@@ -37,6 +37,7 @@
   },
   "exclude": [
     "**/*.test.ts",
-    "**/*.test.tsx"
+    "**/*.test.tsx",
+    "app/**/testing/**"
   ]
 }

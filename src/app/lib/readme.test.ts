@@ -21,3 +21,17 @@ describe("README ownership documentation (NFR-012)", () => {
     );
   });
 });
+
+describe("README deploy runbook (S-004)", () => {
+  const deploy = readme.slice(readme.indexOf("## Deploy"), readme.indexOf("## Secrets"));
+
+  test("migrations go to staging first, then production, before the deploy that needs them", () => {
+    expect(deploy).toContain("npm run db:migrate");
+    expect(deploy.indexOf("staging")).toBeLessThan(deploy.indexOf("production"));
+    expect(deploy).toMatch(/before the deploy\s+that needs/i);
+  });
+
+  test("the launch checklist says to replace the placeholder Juice number", () => {
+    expect(deploy).toMatch(/replace (the )?Juice number/i);
+  });
+});
