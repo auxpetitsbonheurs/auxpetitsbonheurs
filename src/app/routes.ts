@@ -12,6 +12,7 @@ function customerPages(locale: "en" | "fr") {
     route("menu/:slug", "routes/site/product.tsx", { id: `product-${locale}` }),
     route("basket", "routes/site/basket.tsx", { id: `basket-${locale}` }),
     route("order/:token/confirmed", "routes/site/order-confirmed.tsx", { id: `order-confirmed-${locale}` }),
+    route("t/:token", "routes/site/tracking.tsx", { id: `tracking-${locale}` }),
     route("*", "routes/site/not-found.tsx", { id: `not-found-${locale}` }),
   ];
 }

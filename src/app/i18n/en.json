@@ -160,6 +160,38 @@
       "title": "We can't find this order",
       "body": "Check that you opened the whole link from your email or message. If it still does not work, message us on WhatsApp with your order number.",
       "whatsapp": "Message us on WhatsApp"
+    },
+    "tracking": {
+      "metaTitle": "Order tracking",
+      "heading": "Order {{number}}",
+      "status": "Status",
+      "paid": "Paid",
+      "unpaid": "Not paid yet",
+      "progressTitle": "Progress",
+      "stepOf": "Step {{current}} of {{total}}: {{label}}",
+      "stepDone": "Done:",
+      "stepCurrent": "Now:",
+      "stepNext": "Next:",
+      "otherStatusHint": "For the latest news about this order, message us on WhatsApp.",
+      "detailsTitle": "Your order",
+      "date": "Date",
+      "time": "Time",
+      "fulfilment": "Delivery or pickup",
+      "delivery": "Delivery",
+      "pickup": "Pickup from the bakery",
+      "address": "Address",
+      "landmark": "Landmark",
+      "cakeMessage": "Message on the cake: “{{message}}”",
+      "paymentTitle": "Payment"
+    },
+    "status": {
+      "pending_approval": "Pending approval",
+      "approved": "Approved",
+      "in_preparation": "In preparation",
+      "out_for_delivery": "Out for delivery",
+      "ready_for_pickup": "Ready for pickup",
+      "completed": "Completed",
+      "other": "Order update"
     }
   }
 }

@@ -1,11 +1,8 @@
-import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { insertProduct } from "~/db/testing/catalogue";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { requestDbContext } from "~/server/db.server";
-import { cookieFrom, routeArgs } from "~/server/testing/route-context";
-import { basketCookie } from "~/server/basket.server";
-import { action as basketAction } from "./basket";
+import { placeTestOrder } from "~/server/testing/orders";
+import { routeArgs } from "~/server/testing/route-context";
 import { loader, meta, middleware } from "./order-confirmed";
 
 let database: TestDatabase;
@@ -19,26 +16,7 @@ afterEach(async () => {
   await database.close();
 });
 
-/** Places a real order through the basket action and returns its confirmation path. */
-async function placeOrder(basketPath = "/basket"): Promise<{ path: string; token: string }> {
-  const productId = await insertProduct(database.db);
-  const cookie = cookieFrom(basketCookie([{ lineId: "a", productId, options: [], quantity: 1 }]));
-  const form = {
-    intent: "placeOrder",
-    idempotencyKey: randomUUID(),
-    displayedTotalRs: "850",
-    fulfilment: "pickup",
-    date: "2026-11-12",
-    "windowId.pickup": "morning",
-    "contact.name": "Aisha",
-    "contact.phone": "5712 3456",
-    "contact.email": "aisha@example.com",
-    acceptPolicies: "on",
-  };
-  const response = (await basketAction(routeArgs(database, { path: basketPath, cookie, form }) as never)) as Response;
-  const path = response.headers.get("Location")!;
-  return { path, token: /\/order\/([^/]+)\/confirmed$/.exec(path)![1]! };
-}
+const placeOrder = (basketPath = "/basket") => placeTestOrder(database, { basketPath });
 
 const load = (path: string, token: string, headers: Record<string, string> = {}) => {
   const args = routeArgs(database, { path, params: { token } });

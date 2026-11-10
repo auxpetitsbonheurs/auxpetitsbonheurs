@@ -160,6 +160,38 @@
       "title": "Nous ne trouvons pas cette commande",
       "body": "Vérifiez que vous avez ouvert le lien en entier depuis votre e-mail ou votre message. Si cela ne marche toujours pas, écrivez-nous sur WhatsApp avec votre numéro de commande.",
       "whatsapp": "Écrivez-nous sur WhatsApp"
+    },
+    "tracking": {
+      "metaTitle": "Suivi de commande",
+      "heading": "Commande {{number}}",
+      "status": "Statut",
+      "paid": "Payée",
+      "unpaid": "Pas encore payée",
+      "progressTitle": "Avancement",
+      "stepOf": "Étape {{current}} sur {{total}} : {{label}}",
+      "stepDone": "Fait :",
+      "stepCurrent": "En cours :",
+      "stepNext": "À venir :",
+      "otherStatusHint": "Pour les dernières nouvelles de cette commande, écrivez-nous sur WhatsApp.",
+      "detailsTitle": "Votre commande",
+      "date": "Date",
+      "time": "Heure",
+      "fulfilment": "Livraison ou retrait",
+      "delivery": "Livraison",
+      "pickup": "Retrait à la pâtisserie",
+      "address": "Adresse",
+      "landmark": "Repère",
+      "cakeMessage": "Message sur le gâteau : « {{message}} »",
+      "paymentTitle": "Paiement"
+    },
+    "status": {
+      "pending_approval": "En attente d'acceptation",
+      "approved": "Acceptée",
+      "in_preparation": "En préparation",
+      "out_for_delivery": "En cours de livraison",
+      "ready_for_pickup": "Prête à retirer",
+      "completed": "Terminée",
+      "other": "Mise à jour de la commande"
     }
   }
 }

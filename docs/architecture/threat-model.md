@@ -180,7 +180,7 @@ Priority: **H** must be fixed before launch; **M** should be fixed before launch
 - [x] Parameterised queries only (I2)
 - [x] CSRF: SameSite=Lax + Origin check (K7)
 - [~] Rate limits on auth and expensive endpoints (gaps G-08, G-09, G-12, G-15)
-- [x] Security headers (K6); [ ] extend `no-referrer` to all token routes (G-07)
+- [x] Security headers (K6); [~] extend `no-referrer` to all token routes (G-07): done for `/t/*` and `/order/*` (S-015/S-016, `token-page.server.ts`); save-details, auth and invite routes follow with their stories
 - [x] CORS: no cross-origin API; send no CORS headers
 - [~] Secrets: Worker secrets only; scanning and rotation missing (G-19, G-20)
 - [x] Webhooks signature-verified and idempotent (F1, F2); [ ] redirect allowlist (G-04)
