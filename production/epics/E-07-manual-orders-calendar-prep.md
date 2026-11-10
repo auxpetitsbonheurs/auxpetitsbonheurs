@@ -17,7 +17,18 @@ J6: a manual order for an existing customer shows Approved in the calendar and t
 ## Stories
 | ID | Title | Status | Estimate |
 |---|---|---|---|
-| (to be created by /create-stories E-07) | | draft | |
+| S-131 | Add a manual order from menu products | ready | 5 |
+| S-132 | Manual order free-text items, delivery fee and paid | ready | 3 |
+| S-133 | Manual order finds the existing customer | ready | 3 |
+| S-134 | Manual order warnings and relaxed availability rules | ready | 3 |
+| S-135 | Manual order confirmation email only when appropriate | ready | 2 |
+| S-136 | Calendar month view with order counts | ready | 5 |
+| S-137 | Calendar week and day lists | ready | 3 |
+| S-138 | Block and reopen a single day | ready | 5 |
+| S-139 | Prep list grouped by product and variant | ready | 5 |
+| S-140 | Share and print the prep list | ready | 3 |
+
+Total: 37 pts. Files: `production/stories/E-07/`.
 
 ## Dependencies
 - E-03, E-05, E-06.
