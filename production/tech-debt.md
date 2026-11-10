@@ -4,3 +4,8 @@
 - TD: db.server.ts closes the client when the Response returns; streamed loader promises would query after close. Add a guard/test before any streaming loader. Medium.
 - TD: threat-model G-19 — add gitleaks + client-bundle secret-name check to CI. Medium.
 - Low: `.catch` on waitUntil(close()); refuse APP_ENV=development on production Worker; CI cancel-in-progress also cancels main runs.
+
+## From review of S-005..S-008 (2026-11-10)
+- TD: root.tsx ErrorBoundary/Layout fall back to lang="en" + empty messages when root loader fails; /fr error page can show raw keys. Medium.
+- TD: wrangler.jsonc top-level env is APP_ENV=development; a bare `wrangler deploy` without --env runs lax. Guard in S-002. Medium.
+- TD: add `Vary: Cookie, Accept-Language` on locale redirects before any cache/CDN. Low.
