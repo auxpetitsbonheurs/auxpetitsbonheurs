@@ -119,16 +119,23 @@ Staging first, then production.
 5. Section 2 for `auxpetitsbonheurs-staging`: the four core secrets, staging values (the
    integrations can wait).
 6. Open `https://auxpetitsbonheurs-staging.<subdomain>.workers.dev/healthz`: expect `"ok":true`.
-7. Seed the first Owner on staging from your computer (README "Seeding the first Owner"):
-   `npm run seed:owner` with `APP_ENV=staging`, the staging `SUPABASE_URL`,
-   `SUPABASE_SERVICE_ROLE_KEY` and `DATABASE_URL`. Optionally `npm run seed:sample`.
+7. Make the Owner's account on staging, no computer needed:
+   a. Supabase **staging** project → Authentication → Users → **Add user** → **Create new
+      user**: your email, a strong password (keep it in the password manager), **Auto Confirm
+      User** on → Create user.
+   b. GitHub → Actions → **make-owner** → Run workflow: environment `staging`, the same email
+      (name optional) → Run. Green = you are the Owner; sign in at `/admin` with that email and
+      password. Re-running is safe. A red run says what to fix (no such user, or not confirmed).
+   (Alternative from a computer: README "Seeding the first Owner", `npm run seed:owner`.)
+   Optionally `npm run seed:sample`.
 8. Production: fast-forward the `production` branch to a commit staging runs
    (`git push origin <commit>:production`). The workflow checks staging, migrates the
    production database and creates the `auxpetitsbonheurs` Worker.
 9. Section 2 for `auxpetitsbonheurs`: the four core secrets, production values. Add email and
    Turnstile before the public launch (the deploy summary lists what is missing).
-10. Seed the production Owner: same as step 7 with production values and
-    `npm run seed:owner -- --confirm-production`.
+10. The production Owner: step 7 in the Supabase **production** project, then **make-owner**
+    with environment `production` (GitHub asks the `production` required reviewer to approve).
+    (Alternative from a computer: `npm run seed:owner -- --confirm-production`.)
 11. **Deploy day**: Supabase production project → Table Editor → `settings` (one row):
     set `juice_number` to the real Juice number (seeded as the fake `5000 0000`) and
     `pickup_address` to the full street address (seeded as "Beau Bassin" only). Or, in the

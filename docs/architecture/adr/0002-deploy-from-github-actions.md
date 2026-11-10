@@ -61,3 +61,14 @@ first page loads made the first deploy too hard.
   Turnstile is missing). `--strict` fails instead, for the launch checklist.
 - Consequence: a production Worker can run without bot protection or email. Accepted only
   until the public launch; the launch checklist must see a "ready" readiness report.
+
+## Amendment 2 (2026-11-10): the Owner account is made from GitHub Actions
+Deciders: orchestrator (automation mode `auto`, for owner review). `seed:owner` needs a
+computer, Node and the service-role key. Instead the Owner creates the auth user in the
+Supabase dashboard (Authentication → Users → Add user → Create new user, Auto Confirm) and
+runs the manual workflow `.github/workflows/make-owner.yml` (inputs: environment, email).
+It runs in the chosen GitHub Environment (production's required reviewer applies), with
+`contents: read` only, reads the existing `STAGING_DATABASE_URL` / `PRODUCTION_DATABASE_URL`
+secret, and inserts or re-activates the `admin` row with role `owner`; idempotent; refuses a
+missing, unconfirmed or customer user; never prints the database URL. No new secret.
+

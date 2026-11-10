@@ -53,10 +53,11 @@ export function parseSeedOwnerInput(env: Record<string, string | undefined>, arg
   return result.data;
 }
 
-async function findExisting(db: Database, email: string) {
+/** The admin row, auth user and customer link for a (lower-case) email. Shared with make-owner. */
+export async function findExisting(db: Database, email: string) {
   const [owner] = await db.select().from(admin).where(eq(admin.email, email));
   const [authUser] = await db
-    .select({ id: authUsers.id })
+    .select({ id: authUsers.id, emailConfirmedAt: authUsers.emailConfirmedAt })
     .from(authUsers)
     .where(eq(sql`lower(${authUsers.email})`, email));
   const customerMatch = or(

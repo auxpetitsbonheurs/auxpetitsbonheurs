@@ -1,0 +1,68 @@
+name: make-owner
+
+# Makes the bakery Owner's account, without running anything on a computer
+# (docs/runbooks/deploy-keys.md). First, in the Supabase dashboard of the chosen environment:
+# Authentication → Users → Add user → Create new user (the Owner's email, a strong password,
+# Auto Confirm User on). Then Actions → make-owner → Run workflow, choose the environment and
+# type the same email. It finds that confirmed auth user and makes it the active Owner
+# (src/app/server/services/make-owner.server.ts). Safe to re-run: an existing Owner is left as is.
+# Uses the GitHub Environment's protection (production asks for the required reviewer) and the
+# migration database URL secret; inputs reach the script as environment variables only, and
+# nothing prints the database URL.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Which site
+        type: choice
+        options: [staging, production]
+        required: true
+      email:
+        description: The email of the user you created in Supabase (Authentication → Users)
+        type: string
+        required: true
+      name:
+        description: Display name (optional; defaults to the part of the email before @)
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: make-owner-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  make-owner:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: ${{ inputs.environment }}
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+      - run: npm ci
+      - name: Check the database secret
+        env:
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          TARGET: ${{ inputs.environment }}
+        run: |
+          if [ "$TARGET" = "production" ]; then name=PRODUCTION_DATABASE_URL; else name=STAGING_DATABASE_URL; fi
+          scripts/check-keys.sh --require "$name"
+      - name: Make the Owner
+        env:
+          APP_ENV: ${{ inputs.environment }}
+          DATABASE_URL: ${{ inputs.environment == 'production' && secrets.PRODUCTION_DATABASE_URL || secrets.STAGING_DATABASE_URL }}
+          OWNER_EMAIL: ${{ inputs.email }}
+          OWNER_NAME: ${{ inputs.name }}
+        run: npm run make:owner

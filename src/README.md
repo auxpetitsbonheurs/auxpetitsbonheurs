@@ -199,7 +199,12 @@ environment, in this order:
    ("Launch readiness", names only). **Production must not be announced publicly before
    email and Turnstile are set.** The names and placeholders are in `.dev.vars.example`;
    CI needs none of them.
-6. Owner: seed the first Owner on staging (below).
+6. Owner: make your Owner account on staging without a computer: Supabase staging project →
+   Authentication → Users → Add user → Create new user (your email, a strong password, Auto
+   Confirm User on); then GitHub → Actions → **make-owner** → Run workflow (`staging`, the same
+   email). It reads `STAGING_DATABASE_URL` / `PRODUCTION_DATABASE_URL`, is safe to re-run and
+   fails with the fix when the user is missing or unconfirmed
+   (`.github/workflows/make-owner.yml`). Or seed it from a computer (below).
 7. Owner: repeat 4 to 6 for production (fast-forward `production`, Worker `auxpetitsbonheurs`,
    `--confirm-production`), then the launch checklist above.
 
