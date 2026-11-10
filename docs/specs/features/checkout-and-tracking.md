@@ -109,7 +109,7 @@ Cookieless, no PII (NFR-011), `track()` seam as in the catalogue spec.
 - **Double tap / refresh after submit / back button:** same `idempotencyKey` in the form -> one order; the replay redirects to the same confirmation.
 - Different payload re-using a key: original order is returned (key wins); the form renders a new key after a validation or price error only if the order was not created.
 - **Date goes stale** (page open across midnight Mauritius, or an admin blocks the day): `DATE_UNAVAILABLE`, picker re-rendered with the new statuses, other fields kept.
-- **Price changed** (promotion ended, product price edited, delivery fee edited): refused, nothing created; Alert shows old -> new; button reads "Place order at Rs {new}"; the next submit sends the new `displayedTotalRs`.
+- **Price changed** (promotion ended, product price edited, delivery fee edited): refused, nothing created; Alert shows old -> new; button reads "Place order at Rs {new}"; the next submit sends the new `displayedTotalRs`. The form carries one displayed total per fulfilment (`displayedTotalRs.delivery` / `.pickup`) so this also holds without JavaScript (contracts.md v0.7).
 - **Line became unavailable** (sold out, hidden, left season): refused with `PRODUCT_UNAVAILABLE`; the line shows an Alert and Remove; Place order stays blocked until removed.
 - Changing basket in another tab: server cookie wins at submit; the page the customer sees may be stale and gets `PRICE_CHANGED` or `PRODUCT_UNAVAILABLE`.
 - Empty basket on submit: `VALIDATION_FAILED`. 11th line: `BASKET_FULL`. Quantity 0 or 51: rejected.

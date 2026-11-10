@@ -161,6 +161,23 @@ describe("placeOrder from the basket page (S-013 AC11, AC2 envelope)", () => {
     expect(rows).toEqual([{ locale: "fr" }]);
   });
 
+  test("a no-JavaScript delivery post succeeds first time: the total for the chosen fulfilment is read", async () => {
+    const id = await insertProduct(database.db);
+    const cookie = cookieWith([{ lineId: "a", productId: id, quantity: 1 }]);
+    // Without JavaScript the form carries one displayed total per fulfilment.
+    const { displayedTotalRs: _unused, ...rest } = form();
+    const delivery = {
+      ...rest,
+      fulfilment: "delivery",
+      address: "12 Rue du Port, Beau Bassin",
+      "windowId.delivery": "morning",
+      "displayedTotalRs.pickup": "850",
+      "displayedTotalRs.delivery": "1050",
+    };
+    const response = (await post(delivery, cookie)) as Response;
+    expect(response.status).toBe(302);
+  });
+
   test("a refusal is the localised envelope with field messages and the typed values", async () => {
     const id = await insertProduct(database.db);
     const cookie = cookieWith([{ lineId: "a", productId: id, quantity: 1 }]);

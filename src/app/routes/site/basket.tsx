@@ -73,7 +73,7 @@ function removeBasketLine(form: Record<string, unknown>, request: Request, local
 }
 
 /** The typed values sent back with a refusal, so a no-JavaScript page keeps them (never prices). */
-const ECHOED = ["fulfilment", "address", "landmark", "date", "windowId.delivery", "windowId.pickup", "contact.name", "contact.phone", "contact.email", "contact.note", "acceptPolicies", "displayedTotalRs"];
+const ECHOED = ["fulfilment", "address", "landmark", "date", "windowId.delivery", "windowId.pickup", "contact.name", "contact.phone", "contact.email", "contact.note", "acceptPolicies", "displayedTotalRs", "displayedTotalRs.delivery", "displayedTotalRs.pickup"];
 
 function echo(form: Record<string, unknown>): Record<string, string> {
   return Object.fromEntries(ECHOED.flatMap((key) => (typeof form[key] === "string" ? [[key, form[key] as string]] : [])));
@@ -209,7 +209,8 @@ function useFocusOnRefusal(refused: unknown) {
 
 function priceChangeDetail(refused: OrderRefusal, t: (key: string, v?: Record<string, string>) => string) {
   if (refused.totalRs === undefined) return undefined;
-  const old = Number(refused.values.displayedTotalRs);
+  const shown = refused.values.displayedTotalRs ?? refused.values[`displayedTotalRs.${refused.values.fulfilment}`];
+  const old = Number(shown);
   return t("checkout.priceChanged", { old: formatRupees(Number.isFinite(old) ? old : 0), new: formatRupees(refused.totalRs) });
 }
 
@@ -229,7 +230,9 @@ function CheckoutForm({ data, refused }: { data: LoaderData; refused: OrderRefus
     <Form method="post" noValidate className="checkout-form">
       {refused && <ErrorSummary ref={summaryRef} message={refused.error.message} detail={priceChangeDetail(refused, t)} fields={refused.error.fields} />}
       <input type="hidden" name="idempotencyKey" value={data.idempotencyKey} />
-      <input type="hidden" name="displayedTotalRs" value={totalRs} />
+      {/* One total per choice so the first submit matches even without JavaScript (the server reads the chosen one). */}
+      <input type="hidden" name="displayedTotalRs.delivery" value={data.itemsTotalRs + deliveryFeeFor("delivery", data.deliveryFeeRs)} />
+      <input type="hidden" name="displayedTotalRs.pickup" value={data.itemsTotalRs} />
       <FulfilmentSection deliveryFee={formatRupees(data.deliveryFeeRs)} pickupAddress={data.pickup.address} pickupMapUrl={data.pickup.mapUrl} initial={values} errors={errors} onChoose={setFulfilment} />
       <DateSection today={data.earliestDate} todayLabel={data.earliestDateLabel} initial={values.date} error={errors.date} />
       <TimeSection windows={data.windows} initial={values} error={errors.windowId} />

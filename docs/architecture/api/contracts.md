@@ -1,6 +1,6 @@
 # API Contract — loaders, actions, hooks and jobs
 
-Form: **framework-native typed contracts** (React Router v8 route modules on Cloudflare Workers; no public REST API, no OpenAPI). Owner: `lead-backend`; `lead-frontend` must agree to changes (coordination rule 5). Updated: 2026-11-10 · v0.4 (owner decisions; v0.3 was not issued).
+Form: **framework-native typed contracts** (React Router v8 route modules on Cloudflare Workers; no public REST API, no OpenAPI). Owner: `lead-backend`; `lead-frontend` must agree to changes (coordination rule 5). Updated: 2026-11-10 · v0.7 (see the changelog at the end; v0.3 was not issued).
 Sources: `docs/product/prd.md`, `data-model.md`, `architecture.md`. Feature specs (`docs/specs/features/*.md`) link to the sections here instead of repeating them.
 
 ## Conventions
@@ -215,3 +215,4 @@ Internal contract shipped with the UI in one deploy, so there is no API versioni
 - 2026-11-10 v0.3 security (threat-model G-01, G-02): `signUp` and `saveDetails` take no password; the password is set after the first confirmation (`account/reset?mode=new`); customer-matching convention (no phone-only match on website orders, never overwrite `email`/`auth_user_id`); My orders filtered by the confirmed email.
 - 2026-11-10 v0.5 (S-012): `updateLine` / `removeLine` answer a redirect to `/basket` instead of `{ ok }`, so a no-JavaScript post re-renders from the new cookie; errors keep the envelope.
 - 2026-11-10 v0.6 (S-013): the `placeOrder` form posts one window list per fulfilment (`windowId.delivery` / `windowId.pickup`; the server reads the one matching `fulfilment` as `windowId`) and the contact fields as `contact.name` etc.; refusals also carry `values` (the typed fields, never prices) so a no-JavaScript page keeps them.
+- 2026-11-10 v0.7 (review of S-013): the `placeOrder` form posts `displayedTotalRs.delivery` / `displayedTotalRs.pickup`; the server reads the one matching `fulfilment` as `displayedTotalRs` (a single `displayedTotalRs` is still accepted). Without JavaScript the page cannot know the choice, so a single total made the first delivery submit return `PRICE_CHANGED`.

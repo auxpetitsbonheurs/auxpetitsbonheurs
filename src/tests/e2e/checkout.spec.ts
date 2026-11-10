@@ -462,4 +462,16 @@ test.describe("S-013 without JavaScript", () => {
     const [order] = await db<{ total_rs: number }[]>`select total_rs from orders where tracking_token = ${token}`;
     expect(order).toEqual({ total_rs: 850 });
   });
+
+  test("a delivery order is placed on the first submit, with no PRICE_CHANGED round trip", async ({ page, context, baseURL, db }) => {
+    await setClock(context, baseURL!, "2026-11-20T06:00:00Z");
+    await basketWithCake(page);
+    await fillOrder(page, "delivery");
+    await page.getByRole("button", { name: "Place order" }).click();
+
+    await expect(page).toHaveURL(TOKEN_URL);
+    const token = TOKEN_URL.exec(page.url())![1]!;
+    const [order] = await db<{ total_rs: number; delivery_fee_rs: number }[]>`select total_rs, delivery_fee_rs from orders where tracking_token = ${token}`;
+    expect(order).toEqual({ total_rs: 1050, delivery_fee_rs: 200 });
+  });
 });

@@ -26,7 +26,8 @@ export const RemoveLineInput = z.object({
 /**
  * `site/basket` placeOrder (contracts.md). The form posts flat fields: `contact.name`,
  * `contact.phone`, `contact.email`, `contact.note`, and one window list per fulfilment
- * (`windowId.delivery` / `windowId.pickup`) so a hidden list never submits a choice.
+ * (`windowId.delivery` / `windowId.pickup`) so a hidden list never submits a choice, and
+ * `displayedTotalRs.delivery` / `.pickup` when the client cannot send a single total.
  * The phone is normalised to E.164 by domain/phone. Turnstile arrives with E-05.
  */
 export const PlaceOrderBase = z.object({
@@ -58,7 +59,9 @@ function placeOrderShape(form: Record<string, unknown>) {
   const fulfilment = text(form, "fulfilment");
   return {
     idempotencyKey: text(form, "idempotencyKey"),
-    displayedTotalRs: text(form, "displayedTotalRs"),
+    // Without JavaScript the form posts one total per fulfilment (the page cannot know the
+    // choice yet); the one matching `fulfilment` is the total the customer was shown.
+    displayedTotalRs: text(form, "displayedTotalRs") ?? (fulfilment ? text(form, `displayedTotalRs.${fulfilment}`) : undefined),
     date: text(form, "date"),
     windowId: fulfilment ? text(form, `windowId.${fulfilment}`) : undefined,
     fulfilment,

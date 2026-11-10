@@ -48,7 +48,7 @@ As a guest customer, I want to enter my details, pick a date and time window and
 - Customer matching rule: contracts.md "Customer matching" and threat-model G-02.
 - Policy text "sheet" simplified to an expandable section in the skeleton (decision); the full sheet comes with E-05.
 - Decision: one window radio list per fulfilment (`windowId.delivery` / `windowId.pickup`), so a choice in the hidden list is never submitted; contracts.md v0.6.
-- Decision: refusals echo the typed values (never prices) so the page keeps them without JavaScript; with JavaScript the fields simply stay. Without JavaScript the hidden `displayedTotalRs` starts at the items total, so a first delivery submit returns `PRICE_CHANGED` with the right total and the second succeeds; pickup succeeds first time (e2e).
+- Decision: refusals echo the typed values (never prices) so the page keeps them without JavaScript; with JavaScript the fields simply stay. The form posts `displayedTotalRs.delivery` and `displayedTotalRs.pickup` and the server reads the one matching `fulfilment`, so a first submit succeeds with or without JavaScript (review fix; contracts.md v0.7).
 - Decision: date is a native `<input type="date" min=today>` (Mauritius) until the E-05 availability picker.
 - Decision (AC12): "hides when the keyboard is open" = the sticky bar unsticks (`position: static`) while a text field has focus, so it never covers the field and stays reachable at the end of the form; `scroll-padding-bottom` keeps focused controls clear of it (WCAG 2.4.11, e2e checked).
 - Decision: error-summary links move focus in script (a hash change is a router navigation that would drop the errors); plain anchors without JavaScript.

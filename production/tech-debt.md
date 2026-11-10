@@ -14,3 +14,9 @@
 - TD: site layout middleware still reads `request.url`, so client data requests are judged on `/x.data` paths (no redirect today because in-site requests never redirect). Use the normalised URL. Low.
 - TD: `updateLine` does not check `product.min_quantity` (contracts.md); add with E-05 when a product has a minimum. Low.
 - TD: e2e `fillOrder` relies on `Date` field typing in Chromium; when the E-05 date picker replaces the native input, update the helper. Low.
+
+## From review of S-011..S-013 (second pass, 2026-11-10)
+- TD: placeOrder accepts any future date (no upper bound) and no rate limit/Turnstile yet; staging must stay closed until E-05 (noted in S-013). Medium.
+- TD: a repeated submit with the same `idempotencyKey` hits the unique constraint and 500s until S-014 lands. Medium.
+- TD: basket cookie is unsigned by design (no prices, ids re-validated against the DB); tampering can only add products that exist, but add a total-quantity cap if abuse appears. Low.
+- Low: `contracts.md` changelog lists v0.4/v0.3 out of order; tidy when next edited.
