@@ -42,8 +42,15 @@ Not needed now: **Hyperdrive** (only if pages are slow, risk T2) and **Smart Pla
 Why Session pooler: GitHub's machines have no IPv6 and Supabase's direct connection is
 IPv6 only on the free plan.
 
-Until these four secrets exist, the deploy workflow says "Deploy skipped … not configured
+Staging needs `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and `STAGING_DATABASE_URL`;
+production needs the two Cloudflare secrets and `PRODUCTION_DATABASE_URL`. While none of an
+environment's secrets exist, the deploy workflow says "Deploy skipped ... not configured
 yet" and stays green. If only some exist, it fails and names the missing ones.
+
+GitHub **Environments** (Settings -> Environments): the workflow deploys into `staging` and
+`production`, which GitHub creates on the first run. Before the first production deploy open
+`production` and set **Required reviewers** (the Owner) and **Deployment branches: Selected
+branches -> `production`**, so nothing reaches production without a deliberate approval.
 
 ## 2. Cloudflare: Workers & Pages → `<worker>` → Settings → Variables and Secrets
 
