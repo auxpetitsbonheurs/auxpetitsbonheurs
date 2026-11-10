@@ -7,7 +7,10 @@
 kind="${1:-unit}"
 cd "${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}" 2>/dev/null || true
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-get() { bash "$HERE/yaml-get.sh" "$1"; }
+PROJ_YAML="$(pwd)/project.yaml"
+get() { bash "$HERE/yaml-get.sh" "$1" "$PROJ_YAML"; }
+# Run from paths.code_root when it holds the package manifest (e.g. src/).
+root=$(get paths.code_root); [ -n "$root" ] && [ "$root" != "." ] && [ -d "$root" ] && { [ -f "$root/package.json" ] || [ -f "$root/pyproject.toml" ] || [ -f "$root/go.mod" ]; } && cd "$root"
 pm=$(get stack.package_manager)
 [ -z "$pm" ] && { [ -f pnpm-lock.yaml ] && pm=pnpm || { [ -f yarn.lock ] && pm=yarn || pm=npm; }; }
 run_script() { # $1 = package.json script name

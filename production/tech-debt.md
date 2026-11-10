@@ -1,0 +1,6 @@
+
+## From review of S-001/S-003/S-004/S-010 (2026-11-10)
+- TD: seed-owner reuses any existing auth.users row with the owner email without resetting password / checking email_confirmed_at (src/app/server/services/seed-owner.server.ts:80-83). Fix before running seed on production. Medium.
+- TD: db.server.ts closes the client when the Response returns; streamed loader promises would query after close. Add a guard/test before any streaming loader. Medium.
+- TD: threat-model G-19 — add gitleaks + client-bundle secret-name check to CI. Medium.
+- Low: `.catch` on waitUntil(close()); refuse APP_ENV=development on production Worker; CI cancel-in-progress also cancels main runs.
