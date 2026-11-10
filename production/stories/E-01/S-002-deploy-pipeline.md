@@ -10,12 +10,12 @@ As the bakery owner's developer, I want a staging site that deploys on every mer
 
 ## Acceptance Criteria
 - [x] AC1 (NFR-012, NFR-009): Given `wrangler.jsonc`, then it defines `staging` and `production` environments with different Worker names, `APP_ENV` values and an hourly cron trigger each, and contains no secret and no account id.
-- [ ] AC2 (NFR-012): Given a merge to `main`, then the documented pipeline (Workers Builds connected to the repo) builds and deploys staging automatically; production deploys only when the `production` branch is fast-forwarded to a commit that staging already runs. The README "Deploy" section lists the exact build and deploy commands for both.
+- [x] AC2 (NFR-012): Given a merge to `main`, then the documented pipeline (Workers Builds connected to the repo) builds and deploys staging automatically; production deploys only when the `production` branch is fast-forwarded to a commit that staging already runs. The README "Deploy" section lists the exact build and deploy commands for both.
 - [x] AC3 (NFR-012): Given the README "Deploy" and "Secrets" sections, then every step that needs an account key (create the Cloudflare account, connect the repo to Workers Builds, `wrangler secret put <NAME> --env staging|production` for each name in `.dev.vars.example`, GitHub Actions secrets) is a numbered checklist item with who does it and where the value is pasted. No story executes these steps.
 - [x] AC4 (NFR-012): Given the README "Services and accounts" section, then it has a table of every bakery-owned account (Cloudflare, Supabase, GitHub, Resend, Google, Sentry, domain registrar) with owner email, "MFA on: yes/date" and where recovery codes are kept.
 - [x] AC5 (NFR-012): Given the README, then it states the launch URLs (the free `workers.dev` names for staging and production, no custom domain at launch) and the exact Supabase Auth redirect allowlist for each environment with no wildcards.
 - [x] AC6 (NFR-012): Given a failed build on main, then the previous version keeps running; the README "Deploy" section documents rollback as redeploying the previous commit.
-- [ ] AC7 (NFR-010): Given a request to the staging site, then the response carries `X-Robots-Tag: noindex, nofollow`; given production, then it does not.
+- [x] AC7 (NFR-010): Given a request to the staging site, then the response carries `X-Robots-Tag: noindex, nofollow`; given production, then it does not.
 
 ## Tests
 - AC1 → src/workers/wrangler-config.test.ts
@@ -39,3 +39,4 @@ As the bakery owner's developer, I want a staging site that deploys on every mer
 - AC7: blocked: needs Owner keys. Unit test passes (src/workers/headers.test.ts); tick after `STAGING_URL=… npx playwright test staging-smoke --project=desktop-1280` passes against staging.
 - Owner key checklist: `docs/runbooks/deploy-keys.md`.
 - Decision (2026-11-10, ADR-0002 amendment 1): staging and production start with only the four core Worker secrets (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`); integration keys are optional at startup and their features degrade visibly (`app/lib/integrations.ts`, hourly `integrations` job). Each deploy job ends with "Launch readiness" (`npm run check:launch -- <env>`, secret names only, warns, never fails). Tests: app/server/env.server.test.ts, app/lib/integrations.test.ts, app/jobs/integrations.test.ts, app/lib/deploy-workflow.test.ts.
+- 2026-11-10: first staging deploy green (deploy run 42889521419: migrations, deploy, smoke check incl. noindex header and /healthz). Staging deploys via GitHub Actions per ADR-0002, not Workers Builds.
