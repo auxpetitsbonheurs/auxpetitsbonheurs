@@ -16,7 +16,8 @@
     "deploy:staging": "npm run build && wrangler deploy --env staging",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "check:js-budget": "node scripts/check-js-budget.ts"
+    "check:js-budget": "node scripts/check-js-budget.ts",
+    "seed:owner": "tsx scripts/seed-owner.ts"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
@@ -50,6 +51,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.14.0",
     "tailwindcss": "^4.2.2",
+    "tsx": "4.23.15",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.72.2",
     "vite": "^8.0.3",

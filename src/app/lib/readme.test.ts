@@ -35,3 +35,14 @@ describe("README deploy runbook (S-004)", () => {
     expect(deploy).toMatch(/replace (the )?Juice number/i);
   });
 });
+
+describe("README secrets runbook (S-010)", () => {
+  const secrets = readme.slice(readme.indexOf("## Secrets"), readme.indexOf("## Backups"));
+
+  test("documents seeding the Owner for staging and production as the user's action", () => {
+    expect(secrets).toContain("npm run seed:owner");
+    expect(secrets).toContain("--confirm-production");
+    expect(secrets).toMatch(/staging/);
+    expect(secrets).toMatch(/you run/i);
+  });
+});

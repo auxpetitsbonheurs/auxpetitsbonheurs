@@ -66,6 +66,24 @@ npm run deploy            # production
 Secrets are set per environment with `npx wrangler secret put <NAME> --env <staging|production>`.
 The full list, with placeholders only, is in `.dev.vars.example`. CI needs none.
 
+### Seeding the first Owner (you run this, once per environment)
+
+Creates a confirmed Supabase Auth user and an active `owner` row in `admin`. It is safe to
+re-run ("Owner already exists" changes nothing, never the password). It refuses an email that
+belongs to a customer. You run it yourself, after the migrations, first for staging, then for
+production; CI never does. Type the password at a hidden prompt so it stays out of shell history:
+
+```sh
+read -rs OWNER_PASSWORD && export OWNER_PASSWORD     # 10+ characters
+export OWNER_EMAIL='owner@…' OWNER_NAME='…' APP_ENV=staging \
+  SUPABASE_URL='https://<ref>.supabase.co' SUPABASE_SERVICE_ROLE_KEY='…' DATABASE_URL='postgresql://…'
+npm run seed:owner
+# production: same with APP_ENV=production and the production project's values, plus
+npm run seed:owner -- --confirm-production
+```
+
+Output never contains the password, the service-role key or the database URL.
+
 ## Backups
 
 Weekly backups to the bakery's own storage; documented in S-020.
