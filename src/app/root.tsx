@@ -14,11 +14,18 @@ import "./app.css";
 import { messagesFor } from "~/i18n/catalog.server";
 import { I18nProvider, useI18n } from "~/i18n/react";
 import { localeFromPathname } from "~/lib/locale";
+import { twinPath } from "~/lib/locale-detect";
 
 export function loader({ request }: Route.LoaderArgs) {
-  const locale = localeFromPathname(new URL(request.url).pathname);
+  const url = new URL(request.url);
+  const locale = localeFromPathname(url.pathname);
+  // hreflang alternates: the EN and FR twins of this page, without the query (S-008 AC5).
+  const alternates = {
+    en: `${url.origin}${twinPath(url.pathname, "", "en")}`,
+    fr: `${url.origin}${twinPath(url.pathname, "", "fr")}`,
+  };
   // Only the active locale's messages reach the browser (S-006 AC5).
-  return { locale, messages: messagesFor(locale) };
+  return { locale, alternates, messages: messagesFor(locale) };
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -31,6 +38,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
+        {data && (
+          <>
+            <link rel="alternate" hrefLang="en" href={data.alternates.en} />
+            <link rel="alternate" hrefLang="fr" href={data.alternates.fr} />
+            <link rel="alternate" hrefLang="x-default" href={data.alternates.en} />
+          </>
+        )}
       </head>
       <body>
         <I18nProvider locale={locale} messages={data?.messages ?? {}}>

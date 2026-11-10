@@ -1,3 +1,19 @@
-import { type RouteConfig, index, layout } from "@react-router/dev/routes";
+import { type RouteConfig, index, layout, route } from "@react-router/dev/routes";
 
-export default [layout("routes/site/layout.tsx", [index("routes/home.tsx")])] satisfies RouteConfig;
+/**
+ * Customer pages exist twice: English unprefixed and French under /fr (FR-001),
+ * from the same route modules with locale-suffixed ids. An exact `fr` prefix (not
+ * an optional `:lang?` segment) keeps /basket from being read as a language and
+ * lets unknown paths such as /it/ get the in-shell 404 page.
+ */
+function customerPages(locale: "en" | "fr") {
+  return [
+    index("routes/home.tsx", { id: `home-${locale}` }),
+    route("*", "routes/site/not-found.tsx", { id: `not-found-${locale}` }),
+  ];
+}
+
+export default [
+  layout("routes/site/layout.tsx", { id: "site-en" }, customerPages("en")),
+  route("fr", "routes/site/layout.tsx", { id: "site-fr" }, customerPages("fr")),
+] satisfies RouteConfig;

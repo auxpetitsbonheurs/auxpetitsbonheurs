@@ -159,7 +159,7 @@ Promotions need no job: "live" is computed at read time (FR-016). Cloudflare fre
 
 ## i18n & locale
 - `i18next` + `react-i18next`, bundles `app/i18n/{en,fr}.json`; FR keys fall back to EN (NFR-007). Only the active locale's bundle ships to the browser.
-- Customer URLs: EN unprefixed, FR under `/fr/...` (same route modules, `:lang?` segment). The switch links to the twin URL and sets the `apb_locale` cookie (1 year). First visit without cookie: `Accept-Language` starting with `fr` → redirect to `/fr/...` (FR-001). `hreflang` alternates for SEO (NFR-010). The order's `locale` = the page locale at submit; all its emails use it.
+- Customer URLs: EN unprefixed, FR under `/fr/...` (same route modules registered twice in `routes.ts`, under no prefix and under an exact `fr` prefix, with locale-suffixed ids; S-008: an optional `:lang?` segment would read `/basket` as a language). The switch links to the twin URL and sets the `apb_locale` cookie (1 year). First visit without cookie: `Accept-Language` starting with `fr` → redirect to `/fr/...` (FR-001). `hreflang` alternates for SEO (NFR-010). The order's `locale` = the page locale at submit; all its emails use it.
 - Admin UI uses `admin.locale`; no URL prefix.
 - DB text: `*_en`/`*_fr` columns and `{en, fr}` jsonb; a single `localized(row, field, locale)` helper does fallback.
 - **Time zone:** Indian/Mauritius is fixed UTC+4 (no DST). `domain/time.ts` is the only place converting instants ↔ MU calendar dates (`todayMU(now)`, `muDateTimeToInstant`). Workers run in UTC; never use `new Date().getDate()` in domain code. Boundary tests: 23:59/00:00 MU, Monday notice example, promotion end minute (R4).
