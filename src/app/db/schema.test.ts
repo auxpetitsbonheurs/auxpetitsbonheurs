@@ -103,3 +103,13 @@ describe("schema invariants (docs/architecture/data-model.md)", () => {
     expect(checks).toContain("settings_singleton_ck");
   });
 });
+
+describe("order_event is an append-only log (S-018 AC3, FR-045)", () => {
+  test("the actor check ties actor type admin to an admin id, both ways", () => {
+    const event = config("order_event");
+    const check = event.checks.find((c) => c.name === "order_event_actor_ck");
+
+    expect(check).toBeDefined();
+    expect(event.foreignKeys.map((fk) => fk.reference().foreignTable)).toContain(schema.admin);
+  });
+});

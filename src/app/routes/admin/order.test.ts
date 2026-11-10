@@ -139,3 +139,39 @@ describe("approve intent", () => {
     expect(refused.data.error.message).toBe("Cette commande a changé. Rechargez");
   });
 });
+
+describe("activity log (S-018 AC1, AC2, AC5)", () => {
+  test("a new order shows the one created line (AC5)", async () => {
+    const id = await placed();
+
+    const page = await load(id);
+
+    expect(page.events).toHaveLength(1);
+    expect(page.events[0]).toMatchObject({ type: "created", actor: { type: "customer", name: null }, fromStatus: null, toStatus: "pending_approval" });
+    expect(page.events[0]!.text).toMatch(/^Created by customer, \d{1,2} [A-Z][a-z]{2} \d{2}:\d{2}$/);
+  });
+
+  test("created by the customer, then approved by Sarah on 12 Nov at 14:05 Mauritius time, oldest first (AC1)", async () => {
+    const id = await placed();
+    await action(
+      routeArgs(database, { path: `/admin/orders/${id}`, params: { id }, auth: session.auth, cookie: session.cookie, form: { intent: "approve", version: "1" }, now: "2026-11-12T10:05:00Z" }) as never,
+    );
+
+    const page = await load(id);
+
+    expect(page.events.map((e) => e.text)).toEqual([expect.stringMatching(/^Created by customer, /), "Approved by Sarah, 12 Nov 14:05"]);
+    expect(page.events[1]).toMatchObject({ at: "2026-11-12T10:05:00.000Z", actor: { type: "admin", name: "Sarah" }, type: "approved" });
+  });
+
+  test("in French the labels are French and the time is still Mauritius time (AC2)", async () => {
+    const french = await signedInAdmin(database, { name: "Amélie", locale: "fr" });
+    const id = await placed();
+    await action(
+      routeArgs(database, { path: `/admin/orders/${id}`, params: { id }, auth: french.auth, cookie: french.cookie, form: { intent: "approve", version: "1" }, now: "2026-11-12T10:05:00Z" }) as never,
+    );
+
+    const page = await loader(routeArgs(database, { path: `/admin/orders/${id}`, params: { id }, auth: french.auth, cookie: french.cookie }) as never);
+
+    expect(page.events.map((e) => e.text)).toEqual([expect.stringMatching(/^Créée par le client, /), "Validée par Amélie, 12 Nov 14:05"]);
+  });
+});

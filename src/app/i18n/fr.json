@@ -291,6 +291,19 @@
       "actionsLabel": "Actions sur la commande",
       "phone": "Téléphone",
       "languageTerm": "Langue du client"
+    },
+    "log": {
+      "title": "Historique",
+      "actor": {
+        "customer": "le client",
+        "system": "le système",
+        "admin": "un administrateur"
+      },
+      "event": {
+        "created": "Créée par {{actor}}, {{time}}",
+        "approved": "Validée par {{actor}}, {{time}}",
+        "other": "Modifiée par {{actor}}, {{time}}"
+      }
     }
   }
 }

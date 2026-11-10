@@ -5,7 +5,7 @@
 // race is lost on the unique index), bound to the submitter's email (threat-model G-21). Later: step 3 rate limit + Turnstile and the full
 // assertOrderable rules (E-05), step 8 sending after commit (E-10).
 import { eq, sql } from "drizzle-orm";
-import { counter, emailOutbox, orderEvent, orderItem, orders } from "~/db/schema";
+import { counter, emailOutbox, orderItem, orders } from "~/db/schema";
 import type { TimeWindow } from "~/db/schema";
 import type { BasketLine } from "~/domain/basket";
 import { formatOrderNumber, newTrackingToken } from "~/domain/order-number";
@@ -17,6 +17,7 @@ import { Uuid } from "~/server/contracts/shared";
 import type { Database, Transaction } from "~/server/db.server";
 import { type ProductRecord, findProductsByIds } from "~/server/repos/catalogue.server";
 import { resolveGuestCustomer } from "~/server/repos/customers.server";
+import { appendOrderEvent } from "~/server/repos/order-events.server";
 import { type PlacedOrderRef, findOrderByIdempotencyKey } from "~/server/repos/orders.server";
 import { type CheckoutSettings, getCheckoutSettings } from "~/server/repos/settings.server";
 
@@ -140,7 +141,7 @@ async function insertOrder(ctx: PlaceOrderContext, placement: Placement) {
       .returning({ id: orders.id });
     const orderId = order!.id;
     await tx.insert(orderItem).values(itemRows(orderId, placement));
-    await tx.insert(orderEvent).values({ orderId, actorType: "customer", type: "created", toStatus: "pending_approval" });
+    await appendOrderEvent(tx, { orderId, actor: { type: "customer" }, type: "created", toStatus: "pending_approval" });
     await tx.insert(emailOutbox).values({
       template: "order_received",
       toEmail: input.contact.email,

@@ -291,6 +291,19 @@
       "actionsLabel": "Order actions",
       "phone": "Phone",
       "languageTerm": "Customer language"
+    },
+    "log": {
+      "title": "Activity",
+      "actor": {
+        "customer": "customer",
+        "system": "the system",
+        "admin": "an admin"
+      },
+      "event": {
+        "created": "Created by {{actor}}, {{time}}",
+        "approved": "Approved by {{actor}}, {{time}}",
+        "other": "Changed by {{actor}}, {{time}}"
+      }
     }
   }
 }

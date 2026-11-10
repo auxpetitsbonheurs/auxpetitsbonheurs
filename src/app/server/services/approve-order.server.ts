@@ -3,9 +3,10 @@
 // in the outbox (order locale; sending is E-10). The versioned conditional UPDATE is the
 // lock: of two simultaneous approvals with the same version exactly one matches a row.
 import { and, eq } from "drizzle-orm";
-import { emailOutbox, orderEvent, orders } from "~/db/schema";
+import { emailOutbox, orders } from "~/db/schema";
 import { type OrderStatus, transitionTarget } from "~/domain/status";
 import type { Database, Transaction } from "~/server/db.server";
+import { appendOrderEvent } from "~/server/repos/order-events.server";
 
 export interface ApproveOrderInput {
   orderId: string;
@@ -36,14 +37,13 @@ export async function approveOrder(db: Database, input: ApproveOrderInput): Prom
       .where(and(eq(orders.id, input.orderId), eq(orders.version, input.version), eq(orders.status, "pending_approval")))
       .returning({ status: orders.status, version: orders.version, contactEmail: orders.contactEmail, locale: orders.locale });
     if (!changed) return refusal(tx, input);
-    await tx.insert(orderEvent).values({
+    await appendOrderEvent(tx, {
       orderId: input.orderId,
-      actorType: "admin",
-      actorAdminId: input.adminId,
+      actor: { type: "admin", adminId: input.adminId },
       type: "approved",
       fromStatus: "pending_approval",
       toStatus: to,
-      createdAt: input.now,
+      at: input.now,
     });
     if (changed.contactEmail) {
       await tx.insert(emailOutbox).values({

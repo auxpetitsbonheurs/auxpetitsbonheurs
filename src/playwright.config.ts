@@ -9,6 +9,7 @@ const baseURL = `http://localhost:${PORT}`;
 const executablePath = process.env.PW_CHROMIUM_EXECUTABLE || undefined;
 
 const desktop = devices["Desktop Chrome"];
+const SKELETON = /skeleton-order\.spec\.ts$/;
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -23,9 +24,12 @@ export default defineConfig({
     launchOptions: { executablePath },
   },
   projects: [
-    { name: "phone-320", use: { ...desktop, viewport: { width: 320, height: 640 } } },
-    { name: "phone-375", use: { ...desktop, viewport: { width: 375, height: 667 } } },
-    { name: "desktop-1280", use: { ...desktop, viewport: { width: 1280, height: 800 } } },
+    // The walking-skeleton journey (S-018 AC6) needs the clean database global setup leaves
+    // (its order must be APB-0001), so it runs first, alone, on a 375 px phone.
+    { name: "skeleton", testMatch: /skeleton-order\.spec\.ts$/, use: { ...desktop, viewport: { width: 375, height: 667 } } },
+    { name: "phone-320", testIgnore: SKELETON, dependencies: ["skeleton"], use: { ...desktop, viewport: { width: 320, height: 640 } } },
+    { name: "phone-375", testIgnore: SKELETON, dependencies: ["skeleton"], use: { ...desktop, viewport: { width: 375, height: 667 } } },
+    { name: "desktop-1280", testIgnore: SKELETON, dependencies: ["skeleton"], use: { ...desktop, viewport: { width: 1280, height: 800 } } },
   ],
   webServer: [
     {

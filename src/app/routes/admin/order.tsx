@@ -10,16 +10,26 @@ import { formatDayLabel, formatLogTime } from "~/domain/time";
 import { t as translate } from "~/i18n/catalog.server";
 import { localized } from "~/i18n/localized";
 import { useI18n } from "~/i18n/react";
-import { formatRupees } from "~/lib/locale";
+import { type Locale, formatRupees } from "~/lib/locale";
 import { actionError } from "~/server/action-result.server";
 import { requireAdmin } from "~/server/auth.server";
 import { ApproveInput, OrderId } from "~/server/contracts/admin";
 import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
 import { findAdminOrder } from "~/server/repos/admin-orders.server";
+import { type OrderEventView, listOrderEvents } from "~/server/repos/order-events.server";
 import { getCheckoutSettings } from "~/server/repos/settings.server";
 import { approveOrder } from "~/server/services/approve-order.server";
 import type { Route } from "./+types/order";
+
+const LOGGED_TYPES = new Set(["created", "approved"]);
+
+/** One log line in the admin's language: "Approved by Sarah, 12 Nov 14:05" (Mauritius time, FR-045). */
+function eventLine(event: OrderEventView, locale: Locale): string {
+  const actor = event.actor.name ?? translate(`admin.log.actor.${event.actor.type}`, locale);
+  const key = LOGGED_TYPES.has(event.type) ? event.type : "other";
+  return translate(`admin.log.event.${key}`, locale, { actor, time: formatLogTime(new Date(event.at), locale) });
+}
 
 const mapsSearch = (address: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 
@@ -44,6 +54,7 @@ export async function loader(args: Route.LoaderArgs) {
     telUrl: `tel:${contactPhone}`,
     mapsUrl: order.fulfilment === "delivery" && order.address ? mapsSearch(order.address) : null,
     allowed: allowedActions(order.status),
+    events: (await listOrderEvents(db, order.id)).map((event) => ({ ...event, text: eventLine(event, me.locale) })),
   };
 }
 
@@ -178,6 +189,22 @@ function ItemsSection({ data: { order } }: { data: LoaderData }) {
   );
 }
 
+/** The activity log (FR-045): a labelled list, oldest first; every order has at least its created line. */
+function ActivityLog({ events }: { events: LoaderData["events"] }) {
+  const { t } = useI18n();
+  return (
+    <Section id="log-heading" title={t("admin.log.title")}>
+      <ol aria-labelledby="log-heading" className="mt-3 grid gap-2 border-s-2 border-input ps-4">
+        {events.map((event, index) => (
+          <li key={index} className="wrap-anywhere">
+            <time dateTime={event.at}>{event.text}</time>
+          </li>
+        ))}
+      </ol>
+    </Section>
+  );
+}
+
 interface ApproveResult {
   ok: boolean;
   error?: { code: string; message: string };
@@ -248,6 +275,7 @@ export default function AdminOrder({ loaderData, actionData }: Route.ComponentPr
       <CustomerSection data={loaderData} />
       <FulfilmentSection data={loaderData} />
       <ItemsSection data={loaderData} />
+      <ActivityLog events={loaderData.events} />
       <ActionBar data={loaderData} result={result} />
     </>
   );

@@ -53,6 +53,8 @@ To use an already-installed Chromium, set `PW_CHROMIUM_EXECUTABLE=/path/to/chrom
 Shared helpers live in `tests/e2e/support/`: `expectNoA11yViolations(page, { zoom: 2 })`
 (axe, serious and critical fail; 200% zoom also checks for sideways scroll),
 `createOrder(db, label)`, `setClock(context, baseURL, instant)` and `signIn(page, account, next?)`.
+The walking-skeleton journey (`skeleton-order.spec.ts`) runs first, in its own `skeleton`
+project, because it needs the clean database (its order is APB-0001).
 
 ## Deploy
 

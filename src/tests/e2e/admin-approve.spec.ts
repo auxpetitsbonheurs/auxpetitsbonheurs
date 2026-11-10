@@ -171,3 +171,33 @@ test.describe("S-017 orders to review and Approve", () => {
     });
   }
 });
+
+test.describe("S-018 order activity log", () => {
+  test("AC7: the log is a labelled list, oldest first, not clipped at 100% and 200% zoom, and axe clean", async ({ page, db }) => {
+    const order = await pendingOrder(db, "Logged Order");
+    await db`insert into order_event (order_id, actor_type, type, to_status) values (${order.id}, 'customer', 'created', 'pending_approval')`;
+    await signIn(page, E2E_ACCOUNTS.helper, `/admin/orders/${order.id}`);
+    await expect(page.locator("html")).toHaveAttribute("data-hydrated", "true");
+    await page.getByRole("button", { name: "Approve" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "approved." })).toBeVisible();
+
+    const log = page.getByRole("list", { name: "Activity" });
+    await expect(log.getByRole("listitem")).toHaveText([/^Created by customer, /, /^Approved by Sarah, \d{1,2} [A-Z][a-z]{2} \d{2}:\d{2}$/]);
+    for (const zoom of [1, 2]) {
+      await withZoom(page, zoom, async () => {
+        await expectNoHorizontalScroll(page);
+        await expectNothingClipped(page);
+      });
+    }
+    await expectNoA11yViolations(page);
+    await expectNoA11yViolations(page, { zoom: 2 });
+  });
+
+  test("AC2: a French admin reads the log in French, in Mauritius time", async ({ page, db }) => {
+    const order = await pendingOrder(db, "Commande Française");
+    await db`insert into order_event (order_id, actor_type, type, to_status, created_at) values (${order.id}, 'customer', 'created', 'pending_approval', '2026-11-12T10:05:00Z')`;
+    await signIn(page, E2E_ACCOUNTS.french, `/admin/orders/${order.id}`);
+
+    await expect(page.getByRole("list", { name: "Historique" }).getByRole("listitem")).toHaveText(["Créée par le client, 12 Nov 14:05"]);
+  });
+});
