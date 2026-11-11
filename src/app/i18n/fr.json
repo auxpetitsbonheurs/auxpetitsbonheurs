@@ -308,6 +308,28 @@
         "approved": "Validée par {{actor}}, {{time}}",
         "other": "Modifiée par {{actor}}, {{time}}"
       }
+    },
+    "nav": {
+      "today": "Aujourd'hui",
+      "orders": "Commandes",
+      "calendar": "Calendrier",
+      "menu": "Carte",
+      "more": "Plus",
+      "gallery": "Galerie",
+      "customers": "Clients",
+      "sales": "Résumé des ventes",
+      "profile": "Mon profil",
+      "availability": "Disponibilités",
+      "settings": "Réglages",
+      "team": "Équipe"
+    },
+    "states": {
+      "ownerOnlyTitle": "Réservé aux propriétaires",
+      "ownerOnlyBody": "Seule une personne propriétaire peut ouvrir cette page. Si quelque chose doit changer ici, demandez-le à la propriétaire.",
+      "backToToday": "Retour à Aujourd'hui",
+      "notYetTitle": "Pas encore disponible",
+      "notYetBody": "Cette partie de l'application arrive bientôt. Tout le reste fonctionne normalement.",
+      "retry": "Réessayer"
     }
   }
 }

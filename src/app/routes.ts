@@ -28,6 +28,10 @@ const adminPages = [
     index("routes/admin/home.tsx"),
     route("orders", "routes/admin/orders.tsx"),
     route("orders/:id", "routes/admin/order.tsx"),
+    // Owner-only (S-022); placeholders until E-02/E-03 build the screens.
+    route("availability", "routes/admin/availability.tsx"),
+    route("settings", "routes/admin/settings.tsx"),
+    route("team", "routes/admin/team.tsx"),
     route("*", "routes/admin/not-found.tsx"),
   ]),
 ];

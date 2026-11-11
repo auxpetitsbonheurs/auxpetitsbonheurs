@@ -1,5 +1,5 @@
 # S-022: Owner-only screens refuse Admins on the server
-Status: ready
+Status: review
 Epic: E-02-admin-access-team
 Spec: docs/specs/features/admin-access-team.md#permissions-matrix
 Estimate: 3 pts
@@ -9,13 +9,13 @@ Owner: auth-specialist, remix-specialist, ui-engineer
 As the bakery Owner, I want Availability, Settings and Team reachable only by Owners, so that a helper cannot change prices, rules or people.
 
 ## Acceptance Criteria
-- [ ] AC1 (FR-041): Given an Admin session, when I GET `/admin/team`, `/admin/settings` or `/admin/availability`, then the response is HTTP 403 with the "Owner only" state and a back link, and no Owner data.
-- [ ] AC2 (FR-041): Given an Admin session, when I POST `invite`, `saveRules` or settings `save` directly, then the response is `FORBIDDEN` (403) and nothing changes.
-- [ ] AC3 (FR-041): Given an Owner session, when I open those three pages, then they load.
-- [ ] AC4 (FR-041): Given the policy table `OWNER_ONLY_MODULES`, then every module under `/admin` is declared owner-only or admin-allowed (Menu, Promotions, Gallery, Customers, Sales summary, Orders, Calendar, Profile are admin-allowed), and a test fails when a new `/admin` route has no declared policy.
-- [ ] AC5 (FR-041): Given an Admin who was just made Owner (or an Owner made Admin), when their next request arrives with the old session, then the new role applies at once (role is read from the database on every request, not cached in the token).
-- [ ] AC6 (NFR-002): Given the "Owner only" page at 320 px and 375 px wide and at 200% zoom, when I use only the keyboard, then every control is reachable in a logical order with a visible focus indicator, nothing is clipped, no horizontal scrolling occurs and every tap target is at least 44 x 44 px; focus moves to the `h1`.
-- [ ] AC7 (NFR-002, NFR-007): Given light and dark mode, then every text and control pair meets WCAG AA contrast per docs/design/tokens.json with no serious or critical axe violations, and the text exists in EN and FR.
+- [x] AC1 (FR-041): Given an Admin session, when I GET `/admin/team`, `/admin/settings` or `/admin/availability`, then the response is HTTP 403 with the "Owner only" state and a back link, and no Owner data.
+- [x] AC2 (FR-041): Given an Admin session, when I POST `invite`, `saveRules` or settings `save` directly, then the response is `FORBIDDEN` (403) and nothing changes.
+- [x] AC3 (FR-041): Given an Owner session, when I open those three pages, then they load.
+- [x] AC4 (FR-041): Given the policy table `OWNER_ONLY_MODULES`, then every module under `/admin` is declared owner-only or admin-allowed (Menu, Promotions, Gallery, Customers, Sales summary, Orders, Calendar, Profile are admin-allowed), and a test fails when a new `/admin` route has no declared policy.
+- [x] AC5 (FR-041): Given an Admin who was just made Owner (or an Owner made Admin), when their next request arrives with the old session, then the new role applies at once (role is read from the database on every request, not cached in the token).
+- [x] AC6 (NFR-002): Given the "Owner only" page at 320 px and 375 px wide and at 200% zoom, when I use only the keyboard, then every control is reachable in a logical order with a visible focus indicator, nothing is clipped, no horizontal scrolling occurs and every tap target is at least 44 x 44 px; focus moves to the `h1`.
+- [x] AC7 (NFR-002, NFR-007): Given light and dark mode, then every text and control pair meets WCAG AA contrast per docs/design/tokens.json with no serious or critical axe violations, and the text exists in EN and FR.
 
 ## Tests
 - AC1 → src/app/routes/admin/owner-only.test.ts and src/tests/e2e/admin-access.spec.ts

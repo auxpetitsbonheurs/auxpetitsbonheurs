@@ -1,6 +1,14 @@
 // S-021 (customer sessions kept out of /admin) and S-022 (Owner-only screens), end to
 // end through the real @supabase/ssr adapter and the local GoTrue stub.
-import { addSessionCookies } from "./support/admin";
+import {
+  expectKeyboardOperable,
+  expectNoA11yViolations,
+  expectNoHorizontalScroll,
+  expectNothingClipped,
+  expectTapTargets,
+  withZoom,
+} from "./support/a11y";
+import { addSessionCookies, signIn } from "./support/admin";
 import { E2E_ACCOUNTS, createOrder } from "./support/database";
 import { expect, test } from "./support/fixtures";
 
@@ -46,4 +54,71 @@ test.describe("S-021 a customer session never opens admin pages", () => {
     expect(await response.text()).toContain("FORBIDDEN");
     expect(await db`select status, version from orders where id = ${order.id}`).toEqual([{ status: "pending_approval", version: 1 }]);
   });
+});
+
+const OWNER_PAGES = ["/admin/team", "/admin/settings", "/admin/availability"];
+
+test.describe("S-022 Owner-only screens refuse Admins", () => {
+  test("AC1: an Admin gets 403 with the Owner only state, a back link and no Owner data", async ({ page }) => {
+    await signIn(page, E2E_ACCOUNTS.helper, "/admin");
+    for (const path of OWNER_PAGES) {
+      const response = await page.goto(path);
+      expect(response!.status(), path).toBe(403);
+      await expect(page.getByRole("heading", { level: 1, name: "Owner only" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Back to Today" })).toHaveAttribute("href", "/admin");
+      await expect(page.getByText("Not available yet")).toHaveCount(0);
+    }
+    await page.getByRole("link", { name: "Back to Today" }).click();
+    await expect(page).toHaveURL(/\/admin$/);
+  });
+
+  test("AC2: an Admin posting invite, saveRules or settings save directly gets FORBIDDEN 403", async ({ page, baseURL }) => {
+    await signIn(page, E2E_ACCOUNTS.helper, "/admin");
+    for (const [path, intent] of [["/admin/team", "invite"], ["/admin/availability", "saveRules"], ["/admin/settings", "save"]] as const) {
+      const response = await page.request.post(path, { form: { intent, version: "1" }, headers: { Origin: baseURL! }, maxRedirects: 0 });
+      expect(response.status(), path).toBe(403);
+      expect(await response.text()).toContain("FORBIDDEN");
+    }
+  });
+
+  test("AC3: an Owner opens the three pages", async ({ page }) => {
+    await signIn(page, E2E_ACCOUNTS.owner, "/admin");
+    for (const path of OWNER_PAGES) {
+      const response = await page.goto(path);
+      expect(response!.status(), path).toBe(200);
+      await expect(page.getByText("Not available yet")).toBeVisible();
+    }
+  });
+
+  test("AC6: the Owner only page takes focus on its h1, works by keyboard, no clipping, 44 px targets at 100% and 200%", async ({ page }) => {
+    await signIn(page, E2E_ACCOUNTS.helper, "/admin");
+    await page.goto("/admin/team");
+    await expect(page.locator("html")).toHaveAttribute("data-hydrated", "true");
+    await expect(page.getByRole("heading", { level: 1, name: "Owner only" })).toBeFocused();
+    for (const zoom of [1, 2]) {
+      await withZoom(page, zoom, async () => {
+        await expectNoHorizontalScroll(page);
+        await expectNothingClipped(page);
+        await expectTapTargets(page);
+        await expectKeyboardOperable(page);
+      });
+    }
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`AC7: axe clean in ${colorScheme} mode, in English and French`, async ({ page, context }) => {
+      await page.emulateMedia({ colorScheme });
+      await signIn(page, E2E_ACCOUNTS.helper, "/admin");
+      await page.goto("/admin/settings");
+      await expectNoA11yViolations(page);
+      await expectNoA11yViolations(page, { zoom: 2 });
+
+      await context.clearCookies();
+      await signIn(page, E2E_ACCOUNTS.french, "/admin");
+      await page.goto("/admin/settings");
+      await expect(page.getByRole("heading", { level: 1, name: "Réservé aux propriétaires" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Retour à Aujourd'hui" })).toBeVisible();
+      await expectNoA11yViolations(page);
+    });
+  }
 });

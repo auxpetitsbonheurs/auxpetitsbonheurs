@@ -7,7 +7,7 @@ Milestone: MVP (E-02 Admin access and team, E-03 Menu and content management) ·
 | Story | Title | Estimate | Owner | Status |
 |---|---|---|---|---|
 | S-021 | A customer account can never open admin pages | 2 | auth-specialist, test-engineer | review |
-| S-022 | Owner-only screens refuse Admins on the server | 3 | auth-specialist, remix-specialist, ui-engineer | ready |
+| S-022 | Owner-only screens refuse Admins on the server | 3 | auth-specialist, remix-specialist, ui-engineer | review |
 | S-023 | Rate limits on sign-in and password reset | 3 | api-engineer, postgres-specialist, auth-specialist | ready |
 | S-024 | Password reset emails through the auth email hook | 5 | email-specialist, auth-specialist, api-engineer | ready |
 | S-025 | Ask for a password reset link | 3 | auth-specialist, ui-engineer, remix-specialist | ready |

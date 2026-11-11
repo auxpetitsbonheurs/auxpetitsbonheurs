@@ -113,6 +113,36 @@ describe("30-day session (S-009 AC3)", () => {
   });
 });
 
+describe("Owner-only guard (S-022)", () => {
+  async function ownerCheck(cookie: string): Promise<number> {
+    try {
+      await requireAdmin(routeArgs(database, { path: "/admin/team", auth, cookie, now: NOW }), { role: "owner" });
+      return 200;
+    } catch (error) {
+      return (error as { init: { status: number } }).init.status;
+    }
+  }
+
+  test("AC5: a role change applies to the very next request of the old session, both ways", async () => {
+    const admin = await insertAdmin(database, auth, { role: "admin" });
+    const cookie = auth.sessionCookie(admin.id, ago(DAY));
+    expect(await ownerCheck(cookie)).toBe(403);
+
+    await database.client.query("update admin set role = 'owner' where id = $1", [admin.id]);
+    expect(await ownerCheck(cookie)).toBe(200);
+
+    await database.client.query("update admin set role = 'admin' where id = $1", [admin.id]);
+    expect(await ownerCheck(cookie)).toBe(403);
+  });
+
+  test("an Owner-only refusal never signs the Admin out", async () => {
+    const admin = await insertAdmin(database, auth, { role: "admin" });
+
+    expect(await ownerCheck(auth.sessionCookie(admin.id, ago(DAY)))).toBe(403);
+    expect(auth.signOuts).toEqual([]);
+  });
+});
+
 describe("safeNext (S-009 AC6)", () => {
   test.each([
     ["/admin/orders?tab=review", "/admin/orders?tab=review"],

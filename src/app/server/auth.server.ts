@@ -1,7 +1,7 @@
 // Admin authentication and the `requireAdmin` guard (architecture "Auth", FR-039..041).
 // `requireAdmin` runs at the top of EVERY admin loader and action, never in a layout
 // alone: valid claims -> admin row -> active -> session age <= 30 days from the amr
-// sign-in time. Full Owner/Admin role enforcement arrives with E-02 (S-021, S-022).
+// sign-in time; `{ role: "owner" }` for Owner-only modules (S-022, admin-policy.server.ts).
 import { type RouterContextProvider, redirect } from "react-router";
 import { readCookie } from "~/lib/cookies";
 import type { Locale } from "~/lib/locale";
@@ -88,14 +88,20 @@ function visitorLocale(request: Request): Locale {
 
 /**
  * The guard. Returns the active admin, or throws: 403 for a cross-site mutation; 403
+ * FORBIDDEN for an Admin when `{ role: "owner" }` is asked (FR-041: the page's
+ * ErrorBoundary shows the "Owner only" state, an action gets the envelope); 403
  * FORBIDDEN (envelope, no admin data) when a signed-in customer posts an admin action
  * (FR-039, S-021 AC3); else a redirect to the login page with `next` (empty body). An
  * ended admin session is signed out; a customer's session is left as it is.
  */
-export async function requireAdmin(args: GuardArgs): Promise<AdminUser> {
+export async function requireAdmin(args: GuardArgs, options: { role?: "owner" } = {}): Promise<AdminUser> {
   assertSameOrigin(args.request);
   const session = await adminSession(args);
-  if (session.status === "admin") return session.admin;
+  if (session.status === "admin") {
+    // Role comes from the admin row read for this request, so a role change applies at once (S-022 AC5).
+    if (options.role === "owner" && session.admin.role !== "owner") throw actionError("FORBIDDEN", session.admin.locale);
+    return session.admin;
+  }
   if (session.status === "not_admin" && isMutation(args.request)) throw actionError("FORBIDDEN", visitorLocale(args.request));
   const gateway = args.context.get(authContext);
   if (session.status === "ended") await gateway.signOut();

@@ -308,6 +308,28 @@
         "approved": "Approved by {{actor}}, {{time}}",
         "other": "Changed by {{actor}}, {{time}}"
       }
+    },
+    "nav": {
+      "today": "Today",
+      "orders": "Orders",
+      "calendar": "Calendar",
+      "menu": "Menu",
+      "more": "More",
+      "gallery": "Gallery",
+      "customers": "Customers",
+      "sales": "Sales summary",
+      "profile": "My profile",
+      "availability": "Availability",
+      "settings": "Settings",
+      "team": "Team"
+    },
+    "states": {
+      "ownerOnlyTitle": "Owner only",
+      "ownerOnlyBody": "Only an Owner can open this page. If something here needs changing, ask the Owner.",
+      "backToToday": "Back to Today",
+      "notYetTitle": "Not available yet",
+      "notYetBody": "This part of the app is coming soon. Everything else works as usual.",
+      "retry": "Try again"
     }
   }
 }

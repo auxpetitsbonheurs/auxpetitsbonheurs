@@ -17,6 +17,17 @@ export const ADMIN_MODULE_POLICY = {
   orders: "admin",
   order: "admin",
   "not-found": "admin",
+  more: "admin",
+  calendar: "admin",
+  menu: "admin",
+  promotions: "admin",
+  gallery: "admin",
+  customers: "admin",
+  sales: "admin",
+  profile: "admin",
+  team: "owner",
+  settings: "owner",
+  availability: "owner",
 } as const satisfies Record<string, AdminModulePolicy>;
 
 export type AdminModule = keyof typeof ADMIN_MODULE_POLICY;
@@ -26,3 +37,5 @@ function modulesWith(policy: AdminModulePolicy): AdminModule[] {
 }
 
 export const PUBLIC_ADMIN_MODULES = modulesWith("public");
+/** Availability, Settings and Team (FR-041): hidden from Admins in More and refused on the server. */
+export const OWNER_ONLY_MODULES = modulesWith("owner");

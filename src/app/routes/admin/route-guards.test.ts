@@ -6,7 +6,8 @@ import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import type { RouteConfigEntry } from "@react-router/dev/routes";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import routes from "~/routes";
-import { ADMIN_MODULE_POLICY, PUBLIC_ADMIN_MODULES } from "~/server/admin-policy.server";
+import { ADMIN_MODULE_POLICY, OWNER_ONLY_MODULES, PUBLIC_ADMIN_MODULES } from "~/server/admin-policy.server";
+import { signedInAdmin } from "~/server/testing/admin-session";
 import { FakeAuth } from "~/server/testing/fake-auth";
 import { routeArgs } from "~/server/testing/route-context";
 
@@ -71,6 +72,37 @@ describe.each(table)("$path ($file)", ({ path, file }) => {
       }
       expect(outcome, `${file} answered without the guard`).toBeInstanceOf(Response);
       expect((outcome as Response).headers.get("Location")).toBe(`/admin/login?next=${encodeURIComponent(url)}`);
+    }
+  });
+
+  test("an Owner-only module refuses an Admin with 403 in its loader and action (S-022 AC4)", async () => {
+    const name = moduleName(file) as keyof typeof ADMIN_MODULE_POLICY;
+    if (ADMIN_MODULE_POLICY[name] !== "owner") return;
+    const session = await signedInAdmin(database, { role: "admin" });
+    const module = modules[`./${name}.tsx`]!;
+
+    for (const handler of [module.loader, module.action]) {
+      if (!handler) continue;
+      const form = handler === module.action ? { intent: "x" } : undefined;
+      let outcome: unknown;
+      try {
+        outcome = await handler(routeArgs(database, { path, auth: session.auth, cookie: session.cookie, form }) as never);
+      } catch (error) {
+        outcome = error;
+      }
+      expect((outcome as { init?: { status: number } }).init?.status, `${file} let an Admin through`).toBe(403);
+    }
+  });
+});
+
+describe("the policy table (S-022 AC4)", () => {
+  test("Availability, Settings and Team are the Owner-only modules", () => {
+    expect([...OWNER_ONLY_MODULES].sort()).toEqual(["availability", "settings", "team"]);
+  });
+
+  test("Menu, Promotions, Gallery, Customers, Sales summary, Orders, Calendar and Profile are open to Admins", () => {
+    for (const name of ["menu", "promotions", "gallery", "customers", "sales", "orders", "order", "calendar", "profile"] as const) {
+      expect(ADMIN_MODULE_POLICY[name], name).toBe("admin");
     }
   });
 });
