@@ -5,6 +5,8 @@ import { BASKET_COOKIE, basketCookie, readBasketCount } from "~/server/basket.se
 import { cookieFrom, routeArgs } from "~/server/testing/route-context";
 import { priceBasket } from "~/domain/menu";
 import { checkoutTotals } from "~/domain/pricing";
+import { signedInAdmin } from "~/server/testing/admin-session";
+import { action as adminMenuAction } from "../admin/menu";
 import { action, loader, middleware } from "./basket";
 
 let database: TestDatabase;
@@ -70,6 +72,20 @@ describe("basket page (S-012 AC1)", () => {
     expect(data.lines.map((l) => [l.lineId, l.problem])).toEqual([["a", null], ["b", "hidden"]]);
     expect(data.itemsTotalRs).toBe(850);
     expect(data.today).toBe("2026-11-10");
+  });
+
+  test("a product the admin then hides shows as unavailable in the basket and leaves the total (S-043 AC6)", async () => {
+    const cake = await insertProduct(database.db);
+    const admin = await signedInAdmin(database);
+    const cookie = cookieWith([{ lineId: "a", productId: cake, quantity: 1 }]);
+    expect((await load(cookie)).lines[0]!.problem).toBeNull();
+
+    await adminMenuAction(routeArgs(database, { path: "/admin/menu", auth: admin.auth, cookie: admin.cookie, form: { intent: "setStatus", id: cake, status: "hidden" } }) as never);
+
+    const data = await load(cookie);
+    expect(data.lines.map((l) => [l.lineId, l.problem])).toEqual([["a", "hidden"]]);
+    expect(data.goneNames[cake]).toEqual({ en: "Chocolate cake", fr: "Gâteau au chocolat" });
+    expect(data.itemsTotalRs).toBe(0);
   });
 
   test("an empty basket has no lines", async () => {

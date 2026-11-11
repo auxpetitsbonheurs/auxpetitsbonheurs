@@ -384,7 +384,18 @@
         "seasonal_current": "Seasonal",
         "seasonal_scheduled": "Scheduled seasonal",
         "seasonal_ended": "Season over"
-      }
+      },
+      "show": "Show on the menu",
+      "hide": "Hide",
+      "markSoldOut": "Mark sold out",
+      "markAvailable": "Mark available",
+      "saving": "Saving…",
+      "statusDone": {
+        "available": "{{name}} is available again.",
+        "sold_out": "{{name}} is marked sold out.",
+        "hidden": "{{name}} is hidden from customers."
+      },
+      "statusFailed": "{{name}} was not changed. {{reason}}"
     },
     "product": {
       "newTitle": "New product",

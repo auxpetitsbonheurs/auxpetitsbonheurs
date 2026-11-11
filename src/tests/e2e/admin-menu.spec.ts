@@ -241,3 +241,97 @@ test.describe("S-046 product editor", () => {
     });
   }
 });
+
+const rowOf = (page: Page, name: string) => page.getByRole("listitem").filter({ has: page.getByRole("link", { name }) });
+
+async function openActions(page: Page, name: string) {
+  await page.getByRole("button", { name: `Actions for ${name}` }).click();
+  const sheet = page.getByRole("dialog", { name });
+  await expect(sheet).toBeVisible();
+  return sheet;
+}
+
+test.describe("S-043 hide or mark sold out", () => {
+  test("AC1: Mark sold out confirms in a toast, the row says Sold out and the customer page has no Add button", async ({ page, db }) => {
+    const product = await createProduct(db);
+    await signIn(page, E2E_ACCOUNTS.helper, "/admin/menu");
+    await hydrated(page);
+
+    await (await openActions(page, product.name)).getByRole("button", { name: "Mark sold out" }).click();
+
+    await expect(page.getByRole("status").filter({ hasText: `${product.name} is marked sold out.` })).toBeVisible();
+    await expect(rowOf(page, product.name)).toContainText("Sold out");
+    await page.goto(`/menu/${product.slug}`);
+    await expect(page.getByText("Sold out", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Add to basket" })).toHaveCount(0);
+  });
+
+  test("AC2, AC3: Hide makes the product URL a 404; Show brings it back", async ({ page, db }) => {
+    const product = await createProduct(db);
+    await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu");
+    await hydrated(page);
+
+    await (await openActions(page, product.name)).getByRole("button", { name: "Hide" }).click();
+    await expect(rowOf(page, product.name)).toContainText("Hidden");
+    await expect(page.getByRole("status").filter({ hasText: "is hidden from customers" })).toBeVisible();
+    expect((await page.request.get(`/menu/${product.slug}`)).status()).toBe(404);
+
+    await (await openActions(page, product.name)).getByRole("button", { name: "Show on the menu" }).click();
+    await expect(page.getByRole("status").filter({ hasText: `${product.name} is available again.` })).toBeVisible();
+    await expect(rowOf(page, product.name)).not.toContainText("Hidden");
+    expect((await page.request.get(`/menu/${product.slug}`)).status()).toBe(200);
+  });
+
+  test("AC4: Show on a product with no photo is refused with \"Add a photo first\" and the row stays Hidden", async ({ page, db }) => {
+    const product = await createProduct(db, { status: "hidden", photo: false });
+    await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu");
+    await hydrated(page);
+
+    await (await openActions(page, product.name)).getByRole("button", { name: "Show on the menu" }).click();
+
+    await expect(rowOf(page, product.name)).toContainText("Add a photo first");
+    await expect(rowOf(page, product.name)).toContainText("Hidden");
+    await expect(page.getByRole("status").filter({ hasText: `${product.name} was not changed.` })).toBeVisible();
+  });
+
+  test("AC8: the sheet by keyboard: focus moves in, Esc closes and focus returns; targets, zoom and the announced state", async ({ page, db }) => {
+    const product = await createProduct(db);
+    await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu");
+    await hydrated(page);
+    const trigger = page.getByRole("button", { name: `Actions for ${product.name}` });
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    const sheet = page.getByRole("dialog", { name: product.name });
+    await expect(sheet).toBeVisible();
+    for (const zoom of [1, 2]) {
+      await withZoom(page, zoom, async () => {
+        await expectNoHorizontalScroll(page);
+        await expectTapTargets(page);
+      });
+    }
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden();
+    await expect(trigger).toBeFocused();
+
+    await page.keyboard.press("Enter");
+    await page.keyboard.press("Tab"); // close button
+    await page.keyboard.press("Tab"); // Edit
+    await page.keyboard.press("Tab"); // Mark sold out
+    await expect(sheet.getByRole("button", { name: "Mark sold out" })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("status").filter({ hasText: "is marked sold out" })).toBeVisible();
+    await expect(rowOf(page, product.name)).toContainText("Sold out");
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`AC8: the row sheet has no serious or critical axe violations in ${colorScheme} mode, at 100% and 200%`, async ({ page, db }) => {
+      const product = await createProduct(db, { status: "sold_out" });
+      await page.emulateMedia({ colorScheme });
+      await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu");
+      await hydrated(page);
+      await openActions(page, product.name);
+      await expectNoA11yViolations(page);
+      await expectNoA11yViolations(page, { zoom: 2 });
+    });
+  }
+});

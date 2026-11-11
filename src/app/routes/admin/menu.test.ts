@@ -5,8 +5,10 @@ import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { signedInAdmin } from "~/server/testing/admin-session";
 import { insertCustomerAccount } from "~/server/testing/admins";
 import { FakeAuth } from "~/server/testing/fake-auth";
-import { routeArgs } from "~/server/testing/route-context";
-import { loader } from "./menu";
+import { TEST_SUPABASE_URL, routeArgs } from "~/server/testing/route-context";
+import { loadMenu } from "~/server/menu.server";
+import { loader as productPage } from "../site/product";
+import { action, loader } from "./menu";
 
 let database: TestDatabase;
 let session: Awaited<ReturnType<typeof signedInAdmin>>;
@@ -136,5 +138,134 @@ describe("French admin (S-041 AC8)", () => {
     expect(rowView(page.byType.cupcake_box[0]!, "fr", tr)).toMatchObject({ name: "Box of 6", tags: ["Masqué"] });
     expect(rowView(page.byType.cake[0]!, "fr", tr)).toMatchObject({ name: "Gâteau au chocolat", tags: ["Épuisé"] });
     expect(tr("admin.menu.group.cupcake_box")).toBe("Boîtes de cupcakes");
+  });
+});
+
+// ----- S-043: hide or mark sold out -----
+
+const post = (form: Record<string, string>, s: { auth: FakeAuth; cookie?: string } = session) =>
+  action(routeArgs(database, { path: "/admin/menu", auth: s.auth, cookie: s.cookie, form }) as never) as Promise<unknown>;
+const setStatus = (id: string, status: string, s?: { auth: FakeAuth; cookie?: string }) => post({ intent: "setStatus", id, status }, s);
+const statusOf = async (id: string) => (await database.client.query<{ status: string }>("select status from product where id = $1", [id])).rows[0]?.status;
+type Refusal = { data: { ok: false; error: { code: string; message: string; fields?: Record<string, string> } }; init: { status: number } };
+
+async function productPageStatus(slug: string): Promise<number | "ok"> {
+  try {
+    await productPage(routeArgs(database, { path: `/menu/${slug}`, params: { slug } }) as never);
+    return "ok";
+  } catch (error) {
+    return (error as { init?: { status: number } }).init?.status ?? (error as Response).status;
+  }
+}
+
+describe("mark sold out (S-043 AC1)", () => {
+  test("answers { ok, id, status } and the customer page shows Sold out, not addable", async () => {
+    const id = await insertProduct(database.db);
+
+    expect(await setStatus(id, "sold_out")).toEqual({ ok: true, id, status: "sold_out" });
+
+    const page = await productPage(routeArgs(database, { path: "/menu/chocolate-cake", params: { slug: "chocolate-cake" } }) as never);
+    expect(page.product.status).toBe("sold_out");
+  });
+
+  test("the cached menu's version changes and lists it as sold out (ADR-0004)", async () => {
+    const id = await insertProduct(database.db);
+    const menu = () => loadMenu({ db: database.db as never, supabaseUrl: TEST_SUPABASE_URL, now: new Date("2026-11-10T08:00:00Z") });
+    const before = await menu();
+
+    await setStatus(id, "sold_out");
+
+    const after = await menu();
+    expect(after.v).not.toBe(before.v);
+    expect(after.data.products.find((p) => p.id === id)?.status).toBe("sold_out");
+  });
+});
+
+describe("hide (S-043 AC2)", () => {
+  test("the product URL is a 404 and it leaves the public menu", async () => {
+    const id = await insertProduct(database.db);
+
+    await setStatus(id, "hidden");
+
+    expect(await productPageStatus("chocolate-cake")).toBe(404);
+    const menu = await loadMenu({ db: database.db as never, supabaseUrl: TEST_SUPABASE_URL, now: new Date("2026-11-10T08:00:00Z") });
+    expect(menu.data.products.map((p) => p.id)).not.toContain(id);
+  });
+});
+
+describe("show again (S-043 AC3)", () => {
+  test.each(["hidden", "sold_out"] as const)("a %s product becomes available", async (from) => {
+    const id = await insertProduct(database.db, { status: from });
+
+    expect(await setStatus(id, "available")).toEqual({ ok: true, id, status: "available" });
+    expect(await statusOf(id)).toBe("available");
+  });
+});
+
+describe("photo rule (S-043 AC4)", () => {
+  test("no photo: available is VALIDATION_FAILED \"Add a photo first\"; hidden is allowed", async () => {
+    const id = await insertProduct(database.db, { status: "hidden" });
+    await database.client.query("delete from product_photo where product_id = $1", [id]);
+
+    const refused = (await setStatus(id, "available")) as Refusal;
+
+    expect(refused.init.status).toBe(400);
+    expect(refused.data.error.code).toBe("VALIDATION_FAILED");
+    expect(refused.data.error.fields?.status).toMatch(/^Add a photo first/);
+    expect(await statusOf(id)).toBe("hidden");
+    expect(await setStatus(id, "hidden")).toMatchObject({ ok: true });
+  });
+});
+
+describe("bad input (S-043 AC5)", () => {
+  test("an unknown id is NOT_FOUND and nothing changes", async () => {
+    const id = await insertProduct(database.db);
+
+    const refused = (await setStatus("7d1f0c9e-1111-4222-8333-944455566677", "hidden")) as Refusal;
+
+    expect(refused.init.status).toBe(404);
+    expect(refused.data.error.code).toBe("NOT_FOUND");
+    expect(await statusOf(id)).toBe("available");
+  });
+
+  test.each([
+    ["an invalid status", (id: string) => ({ intent: "setStatus", id, status: "gone" })],
+    ["a malformed id", () => ({ intent: "setStatus", id: "nope", status: "hidden" })],
+    ["an unknown intent", (id: string) => ({ intent: "explode", id })],
+  ])("%s is VALIDATION_FAILED and nothing changes", async (_label, form) => {
+    const id = await insertProduct(database.db);
+
+    expect(((await post(form(id))) as Refusal).init.status).toBe(400);
+    expect(await statusOf(id)).toBe("available");
+  });
+});
+
+describe("who may change a status (S-043 AC7)", () => {
+  test("an Admin can", async () => {
+    const id = await insertProduct(database.db);
+    const helper = await signedInAdmin(database, { role: "admin" });
+
+    expect(await setStatus(id, "hidden", helper)).toMatchObject({ ok: true });
+  });
+
+  test("an anonymous visitor is redirected to sign in; nothing changes", async () => {
+    const id = await insertProduct(database.db);
+
+    const refused = await caught(() => setStatus(id, "hidden", { auth: new FakeAuth() }));
+
+    expect(refused.headers.get("Location")).toBe("/admin/login?next=%2Fadmin%2Fmenu");
+    expect(await statusOf(id)).toBe("available");
+  });
+
+  test("a customer session is refused with 403; nothing changes", async () => {
+    const id = await insertProduct(database.db);
+    const auth = new FakeAuth();
+    const customer = await insertCustomerAccount(database, auth);
+    const cookie = auth.sessionCookie(customer.id, new Date("2026-11-09T08:00:00Z"));
+
+    const refused = (await caught(() => setStatus(id, "hidden", { auth, cookie }))) as Response & { init?: { status: number } };
+
+    expect(refused.init?.status ?? refused.status).toBe(403);
+    expect(await statusOf(id)).toBe("available");
   });
 });

@@ -68,6 +68,11 @@ export function decodeCursor(raw: string | null): number | null {
   }
 }
 
+/** `admin/menu` row actions (S-043 setStatus, S-045 delete). */
+export const MenuActionInput = z.discriminatedUnion("intent", [
+  z.object({ intent: z.literal("setStatus"), id: Uuid, status: z.enum(PRODUCT_STATUSES) }),
+]);
+
 // ---------------------------------------------------------------------------
 // `admin/product` save (contracts.md `ProductInput`, S-046). The editor posts flat
 // dotted names (`name.en`, `description.fr`, repeated `allergens`); `parseProductForm`

@@ -1,23 +1,27 @@
-import { CakeSlice, Ellipsis, Plus } from "lucide-react";
-import { useState } from "react";
-import { Link, isRouteErrorResponse, useRevalidator, useRouteError } from "react-router";
+import { CakeSlice, Ellipsis, LoaderCircle, Plus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Link, isRouteErrorResponse, useFetcher, useRevalidator, useRouteError } from "react-router";
 import { AdminErrorBoundary } from "~/components/admin/admin-states";
 import { Alert } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import { Modal } from "~/components/ui/modal";
-import { PRODUCT_TYPES, type ProductType } from "~/domain/product";
+import { showToast } from "~/components/ui/toaster";
+import { PRODUCT_TYPES, type ProductStatusValue, type ProductType } from "~/domain/product";
 import { todayMU } from "~/domain/time";
 import { t as translate } from "~/i18n/catalog.server";
 import { localized } from "~/i18n/localized";
 import { useI18n } from "~/i18n/react";
 import type { Translate } from "~/i18n/translator";
 import { type Locale, formatRupees } from "~/lib/locale";
+import { actionError } from "~/server/action-result.server";
 import { requireAdmin } from "~/server/auth.server";
+import { MenuActionInput } from "~/server/contracts/admin";
 import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { type AdminMenuRow, listAdminMenu } from "~/server/repos/admin-menu.server";
 import { timed } from "~/server/server-timing.server";
+import { setProductStatus } from "~/server/services/product-status.server";
 import type { Route } from "./+types/menu";
 
 /** `admin/menu` (FR-061): every product by type, with its row actions. */
@@ -34,6 +38,26 @@ export async function loader(args: Route.LoaderArgs) {
     }),
   );
   return { title: translate(handle.titleKey, me.locale), byType };
+}
+
+/**
+ * `admin/menu` actions (contracts.md): `setStatus { id, status }` → `{ ok, id, status }`
+ * (S-043). Unknown id NOT_FOUND; bad input VALIDATION_FAILED; offering a product with no
+ * photo VALIDATION_FAILED `fields.status`.
+ */
+export async function action(args: Route.ActionArgs) {
+  const me = await requireAdmin(args);
+  const input = MenuActionInput.safeParse(Object.fromEntries(await args.request.formData()));
+  if (!input.success) return actionError("VALIDATION_FAILED", me.locale);
+  const db = args.context.get(requestDbContext).db;
+  const context = { adminId: me.id, now: args.context.get(clockContext).now() };
+  const result = await setProductStatus(db, input.data, context);
+  if (!result.ok) {
+    const fields = result.code === "VALIDATION_FAILED" ? { status: translate("admin.product.errors.status_photo", me.locale) } : undefined;
+    return actionError(result.code, me.locale, fields ? { fields } : {});
+  }
+  console.log(JSON.stringify({ level: "info", event: "product_status_changed", id: result.id, status: result.status, actorRole: me.role }));
+  return result;
 }
 
 export function meta({ loaderData }: Route.MetaArgs) {
@@ -79,12 +103,39 @@ function RowPhoto({ url }: { url: string | null }) {
   return <img src={url} alt="" width={56} height={56} loading="lazy" className="size-14 shrink-0 rounded-md bg-decorative object-cover" />;
 }
 
+/** One fetcher per product, shared by its row (optimistic state) and its sheet (the buttons). */
+const statusKey = (id: string) => `status-${id}`;
+type StatusResult = { ok: true; id: string; status: ProductStatusValue } | { ok: false; error: { message: string; fields?: Record<string, string> } };
+
+/**
+ * The row's status while a change is on its way (optimistic, S-043), and the toast or the
+ * inline error once the server answers. A refusal puts the row back and says why, in the
+ * row and in a toast that stays until dismissed.
+ */
+function useRowStatus(row: AdminMenuRow) {
+  const { t, locale } = useI18n();
+  const fetcher = useFetcher<StatusResult>({ key: statusKey(row.id) });
+  const pending = fetcher.state !== "idle" ? (fetcher.formData?.get("status") as ProductStatusValue | null) : null;
+  const handled = useRef<unknown>(null);
+  useEffect(() => {
+    const result = fetcher.data;
+    if (fetcher.state !== "idle" || !result || handled.current === result) return;
+    handled.current = result;
+    const name = localized(row.name, locale);
+    if (result.ok) showToast(t(`admin.menu.statusDone.${result.status}`, { name }));
+    else showToast(t("admin.menu.statusFailed", { name, reason: result.error.fields?.status ?? result.error.message }), "error");
+  });
+  const refusal = fetcher.state === "idle" && fetcher.data && !fetcher.data.ok ? (fetcher.data.error.fields?.status ?? fetcher.data.error.message) : null;
+  return { status: pending ?? row.status, saving: pending !== null, refusal };
+}
+
 function ProductRow({ row, onActions }: { row: AdminMenuRow; onActions: (row: AdminMenuRow) => void }) {
   const { t, locale } = useI18n();
-  const view = rowView(row, locale, t);
+  const { status, saving, refusal } = useRowStatus(row);
+  const view = rowView({ ...row, status }, locale, t);
   return (
     // Wraps at 200% zoom on a 320 px phone: the name takes its own line rather than a sliver.
-    <li className="flex min-h-20 flex-wrap items-center gap-3 p-3" data-status={row.status}>
+    <li className="flex min-h-20 flex-wrap items-center gap-3 p-3" data-status={status} aria-busy={saving || undefined}>
       <RowPhoto url={row.imageUrl} />
       <div className="min-w-0 flex-[1_1_8rem]">
         <Link to={`/admin/menu/${row.id}`} prefetch="intent" className="inline-flex min-h-11 items-center font-semibold wrap-anywhere hover:underline">
@@ -97,7 +148,14 @@ function ProductRow({ row, onActions }: { row: AdminMenuRow; onActions: (row: Ad
               {tag}
             </span>
           ))}
+          {saving && (
+            <span className="inline-flex items-center gap-1 text-muted-foreground">
+              <LoaderCircle aria-hidden="true" className="size-4 motion-safe:animate-spin" />
+              {t("admin.menu.saving")}
+            </span>
+          )}
         </p>
+        {refusal && <p className="mt-1 text-sm font-semibold text-destructive">{refusal}</p>}
       </div>
       <Button type="button" variant="ghost" size="icon" aria-label={t("admin.menu.actionsFor", { name: view.name })} onClick={() => onActions(row)}>
         <Ellipsis aria-hidden="true" />
@@ -141,6 +199,35 @@ function TypeGroup({ type, rows, onActions }: { type: ProductType; rows: AdminMe
   );
 }
 
+/** The status buttons a row offers: one tap each (S-043). */
+function statusChoices(status: ProductStatusValue): { status: ProductStatusValue; label: string }[] {
+  if (status === "hidden") return [{ status: "available", label: "admin.menu.show" }];
+  if (status === "sold_out") return [{ status: "available", label: "admin.menu.markAvailable" }, { status: "hidden", label: "admin.menu.hide" }];
+  return [{ status: "sold_out", label: "admin.menu.markSoldOut" }, { status: "hidden", label: "admin.menu.hide" }];
+}
+
+function StatusButtons({ row, onDone }: { row: AdminMenuRow; onDone: () => void }) {
+  const { t } = useI18n();
+  const fetcher = useFetcher<StatusResult>({ key: statusKey(row.id) });
+  const current = fetcher.state !== "idle" ? ((fetcher.formData?.get("status") as ProductStatusValue | null) ?? row.status) : row.status;
+  return statusChoices(current).map((choice) => (
+    <li key={choice.status}>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={() => {
+          // The sheet closes at once; the row shows the new state while the server confirms.
+          void fetcher.submit({ intent: "setStatus", id: row.id, status: choice.status }, { method: "post", action: "/admin/menu" });
+          onDone();
+        }}
+      >
+        {t(choice.label)}
+      </Button>
+    </li>
+  ));
+}
+
 function RowActions({ row, onClose }: { row: AdminMenuRow | null; onClose: () => void }) {
   const { t, locale } = useI18n();
   const name = row ? localized(row.name, locale) : "";
@@ -153,6 +240,7 @@ function RowActions({ row, onClose }: { row: AdminMenuRow | null; onClose: () =>
               <Link to={`/admin/menu/${row.id}`}>{t("admin.menu.edit")}</Link>
             </Button>
           </li>
+          <StatusButtons row={row} onDone={onClose} />
         </ul>
       )}
     </Modal>
