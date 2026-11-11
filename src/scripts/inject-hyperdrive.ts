@@ -19,7 +19,7 @@ try {
 }
 
 if (result.skip) {
-  console.log(`::notice::${variable} is not set: deploying without Hyperdrive (the Worker uses its DATABASE_URL secret). See docs/runbooks/deploy-keys.md.`);
+  console.log(`::notice::No Hyperdrive id (${variable} empty, or this deploy did not ask for Hyperdrive): deploying without it (the Worker uses its DATABASE_URL secret). See ADR-0003.`);
   process.exit(0);
 }
 

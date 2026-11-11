@@ -411,9 +411,9 @@ function describeEvent(e: DiagnosticEvent): string[] {
   const cpu = typeof e.cpuTime === "number" ? `, cpu ${e.cpuTime} ms` : "";
   const status = typeof e.event?.response?.status === "number" ? `, response ${e.event.response.status}` : "";
   const lines = [`  - outcome ${redactText(String(e.outcome ?? "unknown"))}${status}${cpu}`];
-  for (const x of e.exceptions ?? []) lines.push(`    - exception ${redactDiagnostic(`${String(x.name ?? "")}: ${String(x.message ?? "")}`).slice(0, 400)}`);
+  for (const x of e.exceptions ?? []) lines.push(`    - exception ${redactDiagnostic(`${String(x.name ?? "")}: ${String(x.message ?? "")}`).slice(0, 1500)}`);
   for (const l of e.logs ?? []) {
-    if (l.level === "error" || l.level === "warn") lines.push(`    - ${l.level} ${redactDiagnostic((l.message ?? []).map(String).join(" ")).slice(0, 400)}`);
+    if (l.level === "error" || l.level === "warn") lines.push(`    - ${l.level} ${redactDiagnostic((l.message ?? []).map(String).join(" ")).slice(0, 1500)}`);
   }
   return lines;
 }

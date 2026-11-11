@@ -19,9 +19,9 @@ on:
   workflow_dispatch:
     inputs:
       hyperdrive:
-        description: Staging only. Untick to deploy without the Hyperdrive binding (the Worker then uses DATABASE_URL), to compare.
+        description: Staging only. Tick to deploy with the Hyperdrive binding (off by default, ADR-0003 amendment; the Worker otherwise uses DATABASE_URL).
         type: boolean
-        default: true
+        default: false
 
 permissions:
   contents: read
@@ -104,9 +104,9 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # Optional plain repository variable (not a secret); empty = deploy without Hyperdrive.
-          # A manual run with hyperdrive unticked also leaves it out (ADR-0003 comparison).
-          HYPERDRIVE_ID: ${{ (github.event_name != 'workflow_dispatch' || inputs.hyperdrive) && vars.STAGING_HYPERDRIVE_ID || '' }}
+          # Plain repository variable (not a secret). Used only by a manual run with `hyperdrive`
+          # ticked: with the binding, parameterised queries timed out (ADR-0003 amendment).
+          HYPERDRIVE_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.hyperdrive && vars.STAGING_HYPERDRIVE_ID || '' }}
         run: npm run deploy:staging
       - name: Launch readiness (staging, secret names only)
         # Lists which core secrets and optional integrations the Worker still lacks
@@ -115,13 +115,49 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npm run check:launch -- staging
-      - name: Smoke check (staging is not indexed)
+      - name: Smoke check (staging is not indexed; a failed request is explained from wrangler tail)
+        # The first requests after a deploy are the cold ones. wrangler tail captures them; a
+        # failure prints the matching events' outcome, exceptions and error lines, redacted.
+        # The raw capture holds URLs with tokens: it is never printed and is deleted.
         if: vars.STAGING_URL != ''
         env:
           STAGING_URL: ${{ vars.STAGING_URL }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_HIDE_BANNER: "true"
+          WRANGLER_SEND_METRICS: "false"
         run: |
-          curl -fsS -o /dev/null -D - "$STAGING_URL/" | grep -i '^x-robots-tag: noindex, nofollow'
-          curl -fsS "$STAGING_URL/healthz"
+          SMOKE="$RUNNER_TEMP/smoke"
+          mkdir -p "$SMOKE"
+          trap 'rm -rf "$SMOKE"' EXIT
+          npx wrangler tail auxpetitsbonheurs-staging --format json > "$SMOKE/tail.json" 2> "$SMOKE/tail.log" &
+          tail_pid=$!
+          sleep 12 # let the tail connect; no request before it, so the first one stays cold
+          failed=0
+          check() { # GET a path; record a non-2xx/3xx answer or a timeout for the diagnostics
+            local started status
+            started=$(date +%s%3N)
+            status=$(curl -sS -o /dev/null -D "$SMOKE/headers" -w '%{http_code}' --max-time 20 "$STAGING_URL$1") || status=000
+            echo "GET $1 -> $status"
+            if [ "$status" = 000 ]; then
+              failed=1; printf '{"route":"GET %s","startedAt":%s,"endedAt":%s}\n' "$1" "$started" "$(date +%s%3N)" >> "$SMOKE/failures.jsonl"
+            elif [ "$status" -lt 200 ] || [ "$status" -ge 400 ]; then
+              failed=1; printf '{"route":"GET %s","startedAt":%s,"endedAt":%s,"status":%s}\n' "$1" "$started" "$(date +%s%3N)" "$status" >> "$SMOKE/failures.jsonl"
+            fi
+          }
+          check /
+          grep -qi '^x-robots-tag: noindex, nofollow' "$SMOKE/headers" || { echo "::error::/ lacks X-Robots-Tag: noindex, nofollow"; failed=1; }
+          check /healthz
+          check /menu/chocolate-cake
+          if [ "$failed" -ne 0 ]; then sleep 10; fi # let the failed requests' events reach the tail
+          kill "$tail_pid" 2>/dev/null || :
+          for _ in $(seq 1 10); do kill -0 "$tail_pid" 2>/dev/null || break; sleep 1; done
+          kill -9 "$tail_pid" 2>/dev/null || :
+          if [ "$failed" -ne 0 ]; then
+            node scripts/cpu-measure.ts --failures-only --tail "$SMOKE/tail.json" --timeouts "$SMOKE/failures.jsonl"
+            echo "::error::Staging smoke check failed (diagnostics above)."
+            exit 1
+          fi
 
   production-preflight:
     if: github.ref == 'refs/heads/production' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')

@@ -176,8 +176,9 @@ Per environment, staging first:
    `apb-staging` (or `apb-production`), paste that URI. Check the free-plan limits shown there.
 3. Copy the configuration's **ID** (not a secret). GitHub -> Settings -> Secrets and variables
    -> Actions -> **Variables** -> `STAGING_HYPERDRIVE_ID` (later `PRODUCTION_HYPERDRIVE_ID`).
-4. Re-run the **deploy** workflow. With the variable set the Worker is bound to Hyperdrive;
-   empty, the deploy prints a notice and the Worker keeps using `DATABASE_URL`. Keep
-   `DATABASE_URL` set as the fallback.
+4. Staging: automatic deploys do **not** bind Hyperdrive (ADR-0003 amendment: parameterised
+   queries timed out through it). To re-test, Actions -> **deploy** -> Run workflow on `main`
+   with **hyperdrive** ticked, then run **cpu-measure**. Production binds it whenever
+   `PRODUCTION_HYPERDRIVE_ID` is set, so leave that empty. Keep `DATABASE_URL` set.
 
 Rollback: delete the variable's value and redeploy.

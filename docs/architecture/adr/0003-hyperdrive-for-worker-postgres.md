@@ -43,3 +43,23 @@ warm near the database, so the Worker talks to a local endpoint without the TLS/
 ## Revisit when
 The re-measurement after enabling Hyperdrive; free-plan limits change; the bakery moves to a
 paid Workers plan.
+
+## Amendment 2026-11-11: staging deploys without Hyperdrive by default
+Appended (the decision above is kept as written). Evidence, all staging, same code (f5587fe):
+- With the binding (deploy 43057716678): the smoke check got 503 on `/` and `/healthz`;
+  cpu-measure 43058081580 got 503 on `GET /menu/chocolate-cake`: both attempts stalled and
+  every parameterised query (`settings ... where id = $1`, `product ... where slug = $1`)
+  failed with postgres.js `QUERY_TIMEOUT` (5 s). Earlier, run 43053423171 had a 500 on add
+  to basket from a failed `product ... in ($1)` query.
+- Without it (manual deploy 43058444929, `hyperdrive` unticked): cpu-measure 43058749134,
+  10 rounds of product, add to basket, basket, place order and tracking, all 2xx/3xx.
+- Likely cause (not proven): postgres.js 4 describes a query whose parameters it cannot type
+  (any string) with Parse/Describe/**Flush** and waits before Bind/Sync; through Hyperdrive
+  that wait does not return. Queries without parameters (`select 1`) worked.
+
+Decision: automatic staging deploys never inject the binding; a manual **deploy** run with the
+`hyperdrive` input ticked does (to re-test). `STAGING_HYPERDRIVE_ID` is kept untouched.
+Production still follows `PRODUCTION_HYPERDRIVE_ID`: leave that variable empty.
+Revisit by a ticked manual deploy plus cpu-measure after a driver change (e.g. postgres.js
+typed parameters or node-postgres) or a Hyperdrive change; the smoke check and cpu-measure
+print the failing query's cause from `wrangler tail`.

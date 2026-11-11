@@ -172,6 +172,33 @@ describe("scripts/cpu-measure.ts", () => {
   });
 });
 
+describe("scripts/cpu-measure.ts --failures-only (deploy smoke check)", () => {
+  const script = fileURLToPath(new URL("../../scripts/cpu-measure.ts", import.meta.url));
+
+  test("prints only the failed requests' diagnostics, no CPU table, exits 0, never a token", () => {
+    const dir = mkdtempSync(join(tmpdir(), "smoke-"));
+    const at = 1_731_000_000_000;
+    const tail = JSON.stringify({
+      outcome: "ok",
+      eventTimestamp: at + 10,
+      exceptions: [],
+      logs: [{ level: "error", message: [`{"event":"server_error","route":"/t/${TOKEN}","causes":[{"code":"QUERY_TIMEOUT"}]}`] }],
+      event: { request: { url: `${BASE}/`, method: "GET" }, response: { status: 503 } },
+      cpuTime: 4,
+    });
+    writeFileSync(join(dir, "tail.json"), tail);
+    writeFileSync(join(dir, "failures.jsonl"), `${JSON.stringify({ route: "GET /", startedAt: at, endedAt: at + 900, status: 503 })}\n`);
+
+    const result = spawnSync(process.execPath, [script, "--failures-only", "--tail", join(dir, "tail.json"), "--timeouts", join(dir, "failures.jsonl"), "--summary", ""], { encoding: "utf8" });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("`GET /` answered 503");
+    expect(result.stdout).toContain("QUERY_TIMEOUT");
+    expect(result.stdout).not.toContain("| Route |");
+    expect(result.stdout).not.toContain(TOKEN);
+  });
+});
+
 describe("cpu-measure workflow", () => {
   const workflow = readFileSync(fileURLToPath(new URL("../../../.github/workflows/cpu-measure.yml", import.meta.url)), "utf8");
   const runBlocks = workflow.slice(workflow.indexOf("\n    steps:")).split(/\n\s+- (?:name|uses):/).filter((step) => /\n\s+run:/.test(step)).map((step) => step.slice(step.search(/\n\s+run:/)));

@@ -5,6 +5,8 @@
 // tracking tokens); wrangler's own messages are printed only redacted, when no events arrived.
 // Usage: node scripts/cpu-measure.ts --tail <tail.json> [--tail-log <stderr file>] --phase warm
 //          --rounds 50 --host <host> [--summary <file>] [--samples-out <csv>] [--report-out <md>]
+//        node scripts/cpu-measure.ts --failures-only --tail <tail.json> --timeouts <failures.jsonl>
+//          (deploy smoke check: only the failed requests' diagnostics, always exit 0)
 // Runs with Node's built-in TypeScript type stripping (Node >= 22.18).
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
@@ -28,6 +30,8 @@ const { values } = parseArgs({
     tail: { type: "string" },
     "tail-log": { type: "string" },
     timeouts: { type: "string" },
+    /** Deploy smoke check: print only the failed requests' diagnostics, exit 0. */
+    "failures-only": { type: "boolean", default: false },
     phase: { type: "string", default: "warm" },
     rounds: { type: "string", default: "0" },
     host: { type: "string", default: "staging" },
@@ -41,15 +45,20 @@ const phase = values.phase as Phase;
 if (phase !== "cold" && phase !== "warm") throw new Error("--phase must be cold or warm");
 
 const raw = existsSync(values.tail) ? readFileSync(values.tail, "utf8") : "";
+const timeouts: TimedOutRequest[] = values.timeouts && existsSync(values.timeouts)
+  ? readFileSync(values.timeouts, "utf8").split("\n").filter(Boolean).map((line) => JSON.parse(line))
+  : [];
+const diagnostics = timeoutDiagnostics(raw, timeouts);
+if (values["failures-only"]) {
+  console.log(diagnostics || "No failed requests recorded.");
+  if (values.summary && diagnostics) appendFileSync(values.summary, `${diagnostics}\n`);
+  process.exit(0);
+}
 const summaries = cpuByRoute(raw).map(summarizeRoute);
 const markdown = renderJobSummary({ summaries, phase, rounds: Number(values.rounds), host: values.host });
 console.log(markdown);
 if (values.summary) appendFileSync(values.summary, `${markdown}\n`);
 
-const timeouts: TimedOutRequest[] = values.timeouts && existsSync(values.timeouts)
-  ? readFileSync(values.timeouts, "utf8").split("\n").filter(Boolean).map((line) => JSON.parse(line))
-  : [];
-const diagnostics = timeoutDiagnostics(raw, timeouts);
 if (diagnostics) {
   console.log(diagnostics);
   if (values.summary) appendFileSync(values.summary, `${diagnostics}\n`);

@@ -77,7 +77,7 @@ describe("deploy workflow steps (AC2)", () => {
   });
 
   test("after deploying, each job checks /healthz when the site URL variable is set (S-020)", () => {
-    expect(job("staging")).toContain('curl -fsS "$STAGING_URL/healthz"');
+    expect(job("staging")).toContain("check /healthz");
     expect(job("production")).toContain('curl -fsS "$PRODUCTION_URL/healthz"');
   });
 
@@ -105,15 +105,25 @@ describe("deploy workflow steps (AC2)", () => {
     expect(job(`${name}-preflight`)).not.toContain("HYPERDRIVE");
   });
 
-  test("a manual staging deploy can leave Hyperdrive out (input hyperdrive, default true); production ignores it", () => {
+  test("staging deploys without Hyperdrive unless a manual run asks for it (ADR-0003 amendment); production ignores the input", () => {
     expect(workflow).toMatch(/workflow_dispatch:\s*\n\s+inputs:\s*\n\s+hyperdrive:\s*\n(?:\s+[a-z]+:.*\n)*?\s+type:\s*boolean/);
-    expect(workflow).toMatch(/hyperdrive:\s*\n(?:\s+[a-z]+:.*\n)*?\s+default:\s*true/);
-    // Automatic (workflow_run) deploys have no inputs: they keep the binding when the variable is set.
+    expect(workflow).toMatch(/hyperdrive:\s*\n(?:\s+[a-z]+:.*\n)*?\s+default:\s*false/);
+    // Automatic (workflow_run) deploys have no inputs, so they never get the binding.
     expect(job("staging")).toContain(
-      "HYPERDRIVE_ID: ${{ (github.event_name != 'workflow_dispatch' || inputs.hyperdrive) && vars.STAGING_HYPERDRIVE_ID || '' }}",
+      "HYPERDRIVE_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.hyperdrive && vars.STAGING_HYPERDRIVE_ID || '' }}",
     );
     expect(job("production")).not.toContain("inputs.hyperdrive");
     expect(job("production")).toContain("HYPERDRIVE_ID: ${{ vars.PRODUCTION_HYPERDRIVE_ID }}");
+  });
+
+  test("the staging smoke check runs under wrangler tail and explains a failed first request, redacted", () => {
+    const staging = job("staging");
+    const smoke = staging.slice(staging.indexOf("- name: Smoke check"));
+    expect(smoke).toContain("wrangler tail auxpetitsbonheurs-staging --format json");
+    expect(smoke).toContain("--failures-only");
+    expect(smoke).toContain("CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}");
+    expect(smoke).toMatch(/rm -rf "\$SMOKE"/);
+    expect(smoke).not.toMatch(/\bcat\b[^\n]*tail\.json/);
   });
 
   test("each deploy job waits for its preflight and runs only when keys are configured", () => {
