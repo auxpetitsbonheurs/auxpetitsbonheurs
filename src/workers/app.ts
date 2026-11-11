@@ -27,7 +27,7 @@ async function respond(request: Request, settings: ServerEnv, ctx: ExecutionCont
     // Supabase Auth for this request (lazy: no client until a guard or sign-in needs it).
     context.set(authContext, createSupabaseAuth({ url: settings.SUPABASE_URL, anonKey: settings.SUPABASE_ANON_KEY }, request));
     return requestHandler(request, context);
-  });
+  }, undefined, { idempotent: request.method === "GET" || request.method === "HEAD" });
 }
 
 export default {
