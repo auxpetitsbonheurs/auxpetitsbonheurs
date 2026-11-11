@@ -91,7 +91,8 @@
       "contactEmail": "Indiquez une adresse e-mail, par exemple nom@exemple.com.",
       "contactNote": "La note doit faire moins de 1 000 caractères.",
       "resubmit": "Merci de vérifier vos informations et de passer à nouveau votre commande."
-    }
+    },
+    "totalUpdated": "Total mis à jour de {{old}} à {{new}}"
   },
   "errors": {
     "notFoundTitle": "Page introuvable",
@@ -139,14 +140,11 @@
     "lineTotal": "Total de la ligne",
     "subtotal": "Sous-total",
     "unavailableItem": "Article plus disponible",
-    "problems": {
-      "sold_out": "Épuisé : retirez-le pour passer votre commande.",
-      "hidden": "Plus disponible : retirez-le pour passer votre commande.",
-      "out_of_season": "Hors saison : retirez-le pour passer votre commande."
-    },
     "errors": {
       "quantity": "Choisissez une quantité entre 1 et 50."
-    }
+    },
+    "noLongerAvailable": "N'est plus disponible",
+    "priceUpdated": "Prix mis à jour de {{old}} à {{new}}"
   },
   "order": {
     "confirmed": {

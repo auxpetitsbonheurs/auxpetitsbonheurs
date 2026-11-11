@@ -1,5 +1,5 @@
 // `placeOrder` pipeline (checkout spec, order is normative). Built in S-013: steps 1
-// (parse), 4 (product problems), 5 (date today or later + window in the list), 6
+// (parse), 4 (product problems: unavailable lines are left out, ADR-0004), 5 (date today or later + window in the list), 6
 // (server prices vs displayed total), 7 (one transaction) and 9 (caller redirects).
 // S-014 adds step 2 (idempotency: a known key returns the original order, also when a
 // race is lost on the unique index), bound to the submitter's email (threat-model G-21). Later: step 3 rate limit + Turnstile and the full
@@ -37,7 +37,6 @@ export type PlaceOrderResult =
   | { ok: false; code: "VALIDATION_FAILED"; fields: string[] }
   /** The key belongs to an order placed under another email: nothing about it is revealed (G-21). */
   | { ok: false; code: "VALIDATION_FAILED"; fields: []; keyReused: true }
-  | { ok: false; code: "PRODUCT_UNAVAILABLE"; lineIds: string[] }
   | { ok: false; code: "DATE_UNAVAILABLE"; reason: "too_soon" }
   | ({ ok: false; code: "PRICE_CHANGED"; lines: PricedLine[] } & CheckoutTotals);
 
@@ -83,8 +82,10 @@ export async function placeOrder(form: Record<string, unknown>, ctx: PlaceOrderC
 
   const products = await findProductsByIds(ctx.db, ctx.basket.map((l) => l.productId));
   const lines = priceLines(ctx.basket, products);
-  const unavailable = lines.filter((l) => l.problem !== null).map((l) => l.lineId);
-  if (unavailable.length > 0) return { ok: false, code: "PRODUCT_UNAVAILABLE", lineIds: unavailable };
+  // ADR-0004: sold-out, hidden and deleted lines are left out (the page showed them dimmed
+  // and outside the total); only a basket with nothing orderable is refused.
+  const orderable = lines.filter((l) => l.problem === null);
+  if (orderable.length === 0) return { ok: false, code: "VALIDATION_FAILED", fields: ["basket"] };
 
   if (input.date < todayMU(ctx.now)) return { ok: false, code: "DATE_UNAVAILABLE", reason: "too_soon" };
 
@@ -92,7 +93,7 @@ export async function placeOrder(form: Record<string, unknown>, ctx: PlaceOrderC
   if (input.displayedTotalRs !== totals.totalRs) return { ok: false, code: "PRICE_CHANGED", lines, ...totals };
 
   try {
-    return placed(await insertOrder(ctx, { input, window, lines, totals, products }), false);
+    return placed(await insertOrder(ctx, { input, window, lines: orderable, totals, products }), false);
   } catch (error) {
     // Lost race: both requests passed the lookup; ours rolled back (no number consumed).
     if (!isUniqueViolation(error, "orders_idempotency_key_unique")) throw error;

@@ -125,7 +125,7 @@ describe("add to basket (S-011 AC4, AC5)", () => {
     expect(response.headers.get("Location")).toBe("/basket");
     const cookie = response.headers.get("Set-Cookie")!;
     expect(cookie).toContain(`${BASKET_COOKIE}=`);
-    expect(cookie).toContain("HttpOnly");
+    expect(cookie).not.toContain("HttpOnly"); // ADR-0004: the browser writes it too
 
     const fr = (await addToBasket(id, undefined, "/fr/menu/chocolate-cake")) as Response;
     expect(fr.headers.get("Location")).toBe("/fr/basket");

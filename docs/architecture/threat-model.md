@@ -13,7 +13,7 @@ Scale context: single bakery, under 1k orders a month, 1 to 5 admins. The likely
 | High | 0 open (G-01..G-04 specified 2026-11-10) |
 | Medium | 12 |
 | Low | 8 |
-Threats modelled: **82** · specified: 47 · partial: 18 · gap: 17. Gap items: **24** (G-01..G-24; G-01..G-04 specified).
+Threats modelled: **83** · specified: 48 · partial: 18 · gap: 17. Gap items: **24** (G-01..G-24; G-01..G-04 specified).
 
 ## A. Admin authentication and roles (Supabase Auth, `requireAdmin`)
 | ID | S/T/R/I/D/E | Threat | L | I | Mitigation | Where | Status |
@@ -66,6 +66,7 @@ Threats modelled: **82** · specified: 47 · partial: 18 · gap: 17. Gap items: 
 | D10 | D | Exhausting the Worker free quota (100k requests/day) or Supabase limits, which takes the site down | L | H | None at the edge; app-level limits only | — | gap (G-12) |
 | D11 | D | `/healthz` hit repeatedly, each call costing a DB query and an Auth call | L | L | Public, no secrets; no limit or caching | contracts | gap (G-24) |
 | D12 | T | Gaps or duplicates in order numbers under concurrency | M | L | Counter row inside the transaction | NFR-013 | specified |
+| D13 | T/I | The basket cookie is readable and writable by page script since ADR-0004 (not HttpOnly); a tampered cookie or the public `GET /api/menu` used to learn or change prices | M | L | Cookie holds no prices or PII (ids, choices, quantity, cake message); the server re-validates every line with zod, drops invalid ones, caps 10 lines / 4000 bytes and always re-prices and re-checks availability (D1, D3). `/api/menu` serves only public catalogue and checkout data (hidden products, admin fields and the order-number prefix excluded); its prices are display-only. Script injection stays covered by the nonce CSP (K6). `POST /api/basket/reissue` only re-sets the caller's own lines. | ADR-0004; contracts v0.15 | specified |
 
 ## E. Uploads and Storage (custom-request photos, admin images)
 | ID | S/T/R/I/D/E | Threat | L | I | Mitigation | Where | Status |

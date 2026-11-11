@@ -5,6 +5,8 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  type ShouldRevalidateFunctionArgs,
+  useLocation,
   useRouteLoaderData,
 } from "react-router";
 import { useEffect } from "react";
@@ -22,17 +24,33 @@ export function loader({ url, context }: Route.LoaderArgs) {
   // Admin pages have no URL language: they follow the admin's (set by the admin middleware).
   const adminLocale = context.get(adminLocaleContext);
   const locale = adminLocale ?? localeFromPathname(url.pathname);
-  // hreflang alternates: the EN and FR twins of this page, without the query (S-008 AC5); none for admin pages.
-  const alternates = adminLocale
-    ? null
-    : { en: `${url.origin}${twinPath(url.pathname, "", "en")}`, fr: `${url.origin}${twinPath(url.pathname, "", "fr")}` };
+  // hreflang alternates (S-008 AC5) are built from the current URL in Layout; none for admin pages.
   // Only the active locale's messages reach the browser (S-006 AC5).
-  return { locale, alternates, messages: messagesFor(locale) };
+  return { locale, origin: adminLocale ? null : url.origin, messages: messagesFor(locale) };
+}
+
+const isAdminPath = (pathname: string) => pathname === "/admin" || pathname.startsWith("/admin/");
+
+/**
+ * ADR-0004: customer navigations within one language need nothing new from the root (locale
+ * and messages are per language; hreflang follows the URL), so they make no request for it.
+ */
+export function shouldRevalidate({ currentUrl, nextUrl, defaultShouldRevalidate }: ShouldRevalidateFunctionArgs) {
+  if (isAdminPath(currentUrl.pathname) || isAdminPath(nextUrl.pathname)) return defaultShouldRevalidate;
+  if (localeFromPathname(currentUrl.pathname) !== localeFromPathname(nextUrl.pathname)) return defaultShouldRevalidate;
+  return false;
+}
+
+/** The EN and FR twins of the current page, without the query. */
+function useAlternates(origin: string | null | undefined) {
+  const { pathname } = useLocation();
+  return origin ? { en: `${origin}${twinPath(pathname, "", "en")}`, fr: `${origin}${twinPath(pathname, "", "fr")}` } : null;
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const data = useRouteLoaderData<typeof loader>("root");
   const locale = data?.locale ?? "en";
+  const alternates = useAlternates(data?.origin);
   return (
     <html lang={locale}>
       <head>
@@ -40,11 +58,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
-        {data?.alternates && (
+        {alternates && (
           <>
-            <link rel="alternate" hrefLang="en" href={data.alternates.en} />
-            <link rel="alternate" hrefLang="fr" href={data.alternates.fr} />
-            <link rel="alternate" hrefLang="x-default" href={data.alternates.en} />
+            <link rel="alternate" hrefLang="en" href={alternates.en} />
+            <link rel="alternate" hrefLang="fr" href={alternates.fr} />
+            <link rel="alternate" hrefLang="x-default" href={alternates.en} />
           </>
         )}
       </head>

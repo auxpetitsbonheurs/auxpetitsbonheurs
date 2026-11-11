@@ -20,11 +20,11 @@ let counter = 0;
 const nextId = () => `line${(counter += 1)}`;
 
 describe("basket cookie (S-011 AC4)", () => {
-  test("is HttpOnly, SameSite=Lax and holds product id and quantity but no prices", () => {
+  test("is readable by the page script (ADR-0004: not HttpOnly), SameSite=Lax, and holds product id and quantity but no prices", () => {
     const header = basketCookie([line("abc", PRODUCT_A, 1)]);
 
     expect(header.startsWith(`${BASKET_COOKIE}=`)).toBe(true);
-    expect(header).toContain("HttpOnly");
+    expect(header).not.toContain("HttpOnly");
     expect(header).toContain("SameSite=Lax");
     expect(header).toContain("Path=/");
     const stored = JSON.parse(decodeURIComponent(valueOf(header))) as Record<string, unknown>[];

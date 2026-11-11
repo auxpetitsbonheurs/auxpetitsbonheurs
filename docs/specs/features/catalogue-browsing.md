@@ -38,7 +38,7 @@ Out of scope: basket and checkout, custom cake form (the gallery button only lin
 Components (design-system names): Top bar, Language switch, Basket button + count, Site menu, Promo banner, Footer, Hero, Promotion card, How it works, Product card, Chip (filter), Price, Badge (sale/promo/soldout/allergen), Photo carousel, Allergen list, Option picker, Message-on-cake field, Stepper, Product page layout, Gallery grid, WhatsApp button, Empty state, Error state.
 
 ### Flow
-Home or Menu -> filter (chips, URL-driven so the back button and shared links keep filters) -> Product -> choose options, message, quantity -> Add to basket (redirect `/basket` without JS, which also covers a tap before the page is interactive; with JS the page stays: the button shows a spinner and "Adding…" (`aria-busy`, `aria-disabled`, keeps focus, repeat taps ignored), then an inline "Added to your basket" confirmation with a "View basket" link in a polite status region, and the header count bumps; amended 2026-11-11).
+Home or Menu -> filter (chips, URL-driven so the back button and shared links keep filters) -> Product -> choose options, message, quantity -> Add to basket (redirect `/basket` without JS, which also covers a tap before the page is interactive; with JS the line is added in the browser with no network call (ADR-0004): an inline "Added to your basket" confirmation with a "View basket" link appears in a polite status region, the header count bumps at once, and a double tap adds once; only when the cookie cannot be written from script does it fall back to the server post, with a spinner and "Adding…" (`aria-busy`, `aria-disabled`, keeps focus); amended 2026-11-11).
 
 ### Locale handling (FR-001)
 - Every customer route exists at `/x` (EN) and `/fr/x` (FR). The URL is authoritative: opening `/fr/menu` renders French and sets cookie `apb_locale=fr` (1 year, `SameSite=Lax`, functional, no consent needed).
@@ -157,7 +157,7 @@ Optional, cookieless (NFR-011); a `track()` seam that is a no-op until a provide
 - Performance: Home and Menu < 3 s on mid-range 4G (NFR-001); Lighthouse perf >= 90, LCP <= 2.5 s, INP <= 200 ms, CLS <= 0.1, initial JS <= 170 kB gz per route. Hero image `fetchpriority=high`, other images lazy; carousel and lightbox `lazy()`; images <= 300 kB (aligned with brief 2026-11-10).
 - Accessibility: WCAG 2.2 AA, Lighthouse a11y >= 95; chips and language switch are 44 px; selection not colour-only; live regions for price and basket count; `prefers-reduced-motion` honoured; 320 px / 200% zoom without clipping.
 - Security: all reads public; hidden products never serialised to the client; output escaping for Settings rich text (plain text + line breaks only, no HTML).
-- Privacy: no personal data collected; only functional cookies (`apb_locale`, `apb_basket`, `apb_banner_dismissed`); no consent banner.
+- Privacy: no personal data collected; only functional cookies (`apb_locale`, `apb_basket`, `apb_banner_dismissed`) and the functional localStorage menu cache `apb_menu` (public data, ADR-0004); no consent banner.
 
 ## Rollout / flags
 Flag: none · Rollback: redeploy previous build; content in Settings is unaffected.

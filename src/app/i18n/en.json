@@ -91,7 +91,8 @@
       "contactEmail": "Enter an email address, for example name@example.com.",
       "contactNote": "Keep the note under 1,000 characters.",
       "resubmit": "Please check your details and place your order again."
-    }
+    },
+    "totalUpdated": "Total updated from {{old}} to {{new}}"
   },
   "errors": {
     "notFoundTitle": "Page not found",
@@ -139,14 +140,11 @@
     "lineTotal": "Line total",
     "subtotal": "Subtotal",
     "unavailableItem": "Item no longer available",
-    "problems": {
-      "sold_out": "Sold out: please remove it to place your order.",
-      "hidden": "No longer available: please remove it to place your order.",
-      "out_of_season": "Out of season: please remove it to place your order."
-    },
     "errors": {
       "quantity": "Choose a quantity from 1 to 50."
-    }
+    },
+    "noLongerAvailable": "No longer available",
+    "priceUpdated": "Price updated from {{old}} to {{new}}"
   },
   "order": {
     "confirmed": {

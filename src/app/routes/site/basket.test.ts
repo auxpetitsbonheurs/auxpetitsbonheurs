@@ -3,6 +3,8 @@ import { insertProduct } from "~/db/testing/catalogue";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { BASKET_COOKIE, basketCookie, readBasketCount } from "~/server/basket.server";
 import { cookieFrom, routeArgs } from "~/server/testing/route-context";
+import { priceBasket } from "~/domain/menu";
+import { checkoutTotals } from "~/domain/pricing";
 import { action, loader, middleware } from "./basket";
 
 let database: TestDatabase;
@@ -18,7 +20,13 @@ afterEach(async () => {
 const cookieWith = (lines: { lineId: string; productId: string; quantity: number }[]) =>
   cookieFrom(basketCookie(lines.map((l) => ({ ...l, options: [] }))));
 
-const load = (cookie?: string, path = "/basket") => loader(routeArgs(database, { path, cookie }) as never);
+/** The loader's data as the view prices it (ADR-0004: lines are priced from the menu by `priceBasket`). */
+async function load(cookie?: string, path = "/basket") {
+  const data = await loader(routeArgs(database, { path, cookie }) as never);
+  const menu = data.menu.data;
+  const lines = priceBasket(data.basket, menu).map((line) => ({ ...line, imageUrl: menu.products.find((p) => p.id === line.productId)?.photos[0]?.url ?? null }));
+  return { ...data, ...menu.checkout, lines, itemsTotalRs: checkoutTotals(lines, null, 0).itemsTotalRs };
+}
 const post = (form: Record<string, string>, cookie?: string) => action(routeArgs(database, { path: "/basket", cookie, form }) as never);
 
 type Refusal = { data: { ok: false; error: { code: string; fields?: Record<string, string> } }; init: { status: number } };
@@ -49,6 +57,19 @@ describe("basket page (S-012 AC1)", () => {
     expect(data.windows.delivery.map((w) => w.id)).toEqual(["morning", "afternoon", "evening"]);
     expect(data.windows.pickup.map((w) => w.id)).toEqual(["morning", "afternoon", "evening"]);
     expect(data.payment.juiceNumber).toBe("5000 0000");
+  });
+
+  test("carries the public menu with its version, and names a hidden line's product for its own basket only", async () => {
+    const cake = await insertProduct(database.db);
+    const hidden = await insertProduct(database.db, { slug: "gone", nameEn: "Old tart", status: "hidden" });
+
+    const data = await load(cookieWith([{ lineId: "a", productId: cake, quantity: 1 }, { lineId: "b", productId: hidden, quantity: 1 }]));
+    expect(data.menu.v).toMatch(/^m-[0-9a-f]{24}$/);
+    expect(data.menu.data.products.map((p) => p.id)).toEqual([cake]);
+    expect(data.goneNames).toEqual({ [hidden]: { en: "Old tart", fr: "Gâteau au chocolat" } });
+    expect(data.lines.map((l) => [l.lineId, l.problem])).toEqual([["a", null], ["b", "hidden"]]);
+    expect(data.itemsTotalRs).toBe(850);
+    expect(data.today).toBe("2026-11-10");
   });
 
   test("an empty basket has no lines", async () => {

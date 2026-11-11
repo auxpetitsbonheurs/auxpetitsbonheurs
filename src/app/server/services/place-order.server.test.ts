@@ -282,11 +282,32 @@ describe("server prices (S-013 AC8)", () => {
 });
 
 describe("availability (S-013 AC9)", () => {
-  test.each(["sold_out", "hidden"])("a %s line is PRODUCT_UNAVAILABLE with its lineId", async (status) => {
+  test.each(["sold_out", "hidden"])("a %s line is left out of the order and its total (ADR-0004)", async (status) => {
     const tart = await insertProduct(database.db, { slug: "tart", nameEn: "Tart", status: status as "sold_out" | "hidden" });
 
-    const refused = expectRefused(await place(deliveryForm(), { basket: [line("a", cakeId), line("b", tart)] }), "PRODUCT_UNAVAILABLE");
-    expect(refused.lineIds).toEqual(["b"]);
+    const result = await place(deliveryForm(), { basket: [line("a", cakeId), line("b", tart)] });
+    expectRefusedNever(result);
+    const { rows } = await database.client.query<{ total_rs: number }>("select total_rs from orders");
+    expect(rows).toEqual([{ total_rs: 1050 }]);
+    const items = await database.client.query<{ product_id: string }>("select product_id from order_item");
+    expect(items.rows.map((r) => r.product_id)).toEqual([cakeId]);
+  });
+
+  test("a line that became unavailable after the page showed it changes the total: PRICE_CHANGED marks it", async () => {
+    const tart = await insertProduct(database.db, { slug: "tart", nameEn: "Tart", basePriceRs: 400 });
+    await database.client.query("update product set status = 'sold_out' where id = $1", [tart]);
+
+    const refused = expectRefused(await place(deliveryForm({ displayedTotalRs: "1450" }), { basket: [line("a", cakeId), line("b", tart)] }), "PRICE_CHANGED");
+    expect(refused).toMatchObject({ itemsTotalRs: 850, totalRs: 1050 });
+    expect(refused.lines.map((l) => [l.lineId, l.problem])).toEqual([["a", null], ["b", "sold_out"]]);
+    await expectNoOrder();
+  });
+
+  test("a basket with nothing orderable left is VALIDATION_FAILED on the basket", async () => {
+    const tart = await insertProduct(database.db, { slug: "tart", nameEn: "Tart", status: "sold_out" });
+
+    const refused = expectRefused(await place(deliveryForm(), { basket: [line("b", tart)] }), "VALIDATION_FAILED");
+    expect(refused.fields).toEqual(["basket"]);
     await expectNoOrder();
   });
 

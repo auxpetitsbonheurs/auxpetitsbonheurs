@@ -1,7 +1,7 @@
 // Catalogue reads for the customer site (S-011). Status rules (hidden = 404, sold out
 // = shown but not addable) are applied by callers via domain/pricing productProblem.
-import { eq, getTableName, inArray, sql } from "drizzle-orm";
-import { product, productPhoto } from "~/db/schema";
+import { asc, eq, getTableName, inArray, ne, sql } from "drizzle-orm";
+import { optionChoice, optionGroup, product, productPhoto } from "~/db/schema";
 import type { Database } from "~/server/db.server";
 
 export type ProductStatus = (typeof product.$inferSelect)["status"];
@@ -89,4 +89,51 @@ export async function findProductsByIds(db: Database, ids: readonly string[]): P
   if (unique.length === 0) return new Map();
   const rows = await selectProducts(db).where(inArray(product.id, unique));
   return new Map(rows.map((row) => [row.id, toRecord(row)]));
+}
+
+export interface OptionGroupRecord {
+  id: string;
+  name: Localized;
+  kind: string;
+  required: boolean;
+  textMaxLength: number | null;
+  quantityMin: number | null;
+  quantityMax: number | null;
+  choices: { id: string; name: Localized; priceDeltaRs: number }[];
+}
+
+export type MenuProductRecord = ProductRecord & { status: "available" | "sold_out"; optionGroups: OptionGroupRecord[] };
+
+const productIdColumn = sql.raw(`"${getTableName(product)}"."id"`);
+
+/** Option groups with their choices, in sort order, aggregated in the same statement. */
+const optionGroupsJson = sql<OptionGroupRecord[] | string>`coalesce((
+  select json_agg(json_build_object(
+    'id', og.id, 'name', json_build_object('en', og.name_en, 'fr', og.name_fr), 'kind', og.kind,
+    'required', og.required, 'textMaxLength', og.text_max_length, 'quantityMin', og.quantity_min, 'quantityMax', og.quantity_max,
+    'choices', coalesce((
+      select json_agg(json_build_object('id', oc.id, 'name', json_build_object('en', oc.name_en, 'fr', oc.name_fr), 'priceDeltaRs', oc.price_delta_rs) order by oc.sort_order)
+      from ${optionChoice} oc where oc.group_id = og.id
+    ), '[]'::json)
+  ) order by og.sort_order)
+  from ${optionGroup} og where og.product_id = ${productIdColumn}
+), '[]'::json)`;
+
+const parseJsonColumn = <T>(value: T | string): T => (typeof value === "string" ? (JSON.parse(value) as T) : value);
+
+/**
+ * The public menu (ADR-0004): every product that is not hidden, in menu order, with photos
+ * and option groups, in one query. Hidden products never leave the server.
+ */
+export async function listMenuProducts(db: Database): Promise<MenuProductRecord[]> {
+  const rows = await db
+    .select({ ...columns, optionGroups: optionGroupsJson })
+    .from(product)
+    .where(ne(product.status, "hidden"))
+    .orderBy(asc(product.sortOrder), asc(product.nameEn));
+  return rows.map((row) => ({
+    ...toRecord(row),
+    status: row.status === "sold_out" ? ("sold_out" as const) : ("available" as const),
+    optionGroups: parseJsonColumn(row.optionGroups),
+  }));
 }

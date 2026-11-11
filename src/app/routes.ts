@@ -37,7 +37,11 @@ const adminPages = [
 ];
 
 /** Resource routes (no page, no language). */
-const resourceRoutes = [route("healthz", "routes/hooks/healthz.ts")];
+const resourceRoutes = [
+  route("healthz", "routes/hooks/healthz.ts"),
+  route("api/menu", "routes/hooks/menu.ts"),
+  route("api/basket/reissue", "routes/hooks/basket-reissue.ts"),
+];
 
 export default [
   ...resourceRoutes,

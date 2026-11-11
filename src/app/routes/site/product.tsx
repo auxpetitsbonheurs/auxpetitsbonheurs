@@ -1,4 +1,4 @@
-import { type FormEvent, useRef } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { Link, type ShouldRevalidateFunctionArgs, data, isRouteErrorResponse, redirect, useFetcher } from "react-router";
 import { NotFoundContent } from "~/components/shell/not-found-content";
 import { Alert } from "~/components/ui/alert";
@@ -8,6 +8,7 @@ import { DomainError } from "~/domain/errors";
 import { productProblem } from "~/domain/pricing";
 import { localized } from "~/i18n/localized";
 import { useI18n } from "~/i18n/react";
+import { basketStore } from "~/lib/basket-store";
 import { publicImageUrl } from "~/lib/images";
 import { type Locale, formatRupees, localeFromPathname, localePath } from "~/lib/locale";
 import { actionError, domainErrorResult } from "~/server/action-result.server";
@@ -131,30 +132,55 @@ export default function Product({ loaderData, actionData }: Route.ComponentProps
   );
 }
 
+/** Taps closer together than this add once (a double tap is one add). */
+const DOUBLE_TAP_MS = 800;
+
 /**
- * Add to basket (S-011 AC4). Before hydration it is a plain form post (the server
- * redirects to the basket). Once hydrated the post goes through a fetcher: the button
- * shows "Adding…" with a spinner and stays focusable (aria-disabled, aria-busy), repeat
- * taps are ignored until the answer, then "Added to your basket" is announced with a link
- * to the basket while the header count updates.
+ * Add to basket (S-011 AC4, ADR-0004). Before hydration it is a plain form post (the server
+ * redirects to the basket). Once hydrated the line is added in the browser with no network
+ * call: the basket cookie is written, the header count updates through the store, and "Added
+ * to your basket" is announced with a link to the basket. A double tap adds once. When the
+ * cookie cannot be written from script (an old HttpOnly cookie, cookies blocked) it falls
+ * back to the server post through a fetcher ("Adding…" until the answer).
  */
 function AddToBasketForm({ productId, refusal }: { productId: string; refusal?: string }) {
   const { t, locale } = useI18n();
   const fetcher = useFetcher<typeof action>();
   const inFlight = useRef(false);
+  const lastTap = useRef(-Infinity);
+  const [added, setAdded] = useState(0);
+  const [localError, setLocalError] = useState<string>();
   const busy = fetcher.state !== "idle";
   const result = fetcher.data;
-  const error = result && !result.ok ? result.error.message : refusal;
-  const added = fetcher.state !== "submitting" && result?.ok === true;
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (inFlight.current || busy) return;
+  const serverAdded = fetcher.state !== "submitting" && result?.ok === true;
+  const error = localError ?? (result && !result.ok ? result.error.message : refusal);
+  useEffect(() => {
+    if (serverAdded) basketStore.refresh();
+  }, [serverAdded]);
+  const postToServer = (form: FormData) => {
     inFlight.current = true;
-    const form = new FormData(event.currentTarget);
     form.set("respond", "inline");
     void fetcher.submit(form, { method: "post" }).finally(() => {
       inFlight.current = false;
     });
+  };
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const now = performance.now();
+    if (inFlight.current || busy || now - lastTap.current < DOUBLE_TAP_MS) return;
+    lastTap.current = now;
+    try {
+      basketStore.add({ productId, options: [], quantity: 1 });
+      setLocalError(undefined);
+      setAdded((n) => n + 1);
+    } catch (problem) {
+      if (problem instanceof DomainError) {
+        setAdded(0);
+        setLocalError(t(`errors.codes.${problem.code}`));
+        return;
+      }
+      postToServer(new FormData(event.currentTarget));
+    }
   };
   return (
     <>
@@ -172,8 +198,8 @@ function AddToBasketForm({ productId, refusal }: { productId: string; refusal?: 
         </SubmitButton>
       </form>
       <div role="status">
-        {added && (
-          <Alert tone="success" title={t("product.added")} className="mt-4">
+        {(added > 0 || serverAdded) && !error && (
+          <Alert key={added} tone="success" title={t("product.added")} className="mt-4">
             <Link to={localePath(locale, "/basket")} className="mt-1 inline-flex min-h-11 items-center font-semibold link">
               {t("product.viewBasket")}
             </Link>

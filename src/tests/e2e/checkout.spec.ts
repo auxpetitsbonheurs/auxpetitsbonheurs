@@ -61,7 +61,8 @@ test.describe("S-011 product page", () => {
     await expect(page).toHaveURL(new RegExp(`${PRODUCT_PATH}$`));
     await expect(page.getByRole("link", { name: "Basket, 1 item" })).toBeVisible();
     const cookie = (await page.context().cookies()).find((c) => c.name === "apb_basket");
-    expect(cookie).toMatchObject({ httpOnly: true, sameSite: "Lax" });
+    // ADR-0004: written by the browser too, so not HttpOnly; never prices.
+    expect(cookie).toMatchObject({ httpOnly: false, sameSite: "Lax" });
 
     await page.getByRole("link", { name: "View basket" }).click();
     await expect(page).toHaveURL(/\/basket$/);
@@ -70,36 +71,8 @@ test.describe("S-011 product page", () => {
     await expect(page.getByRole("link", { name: "Français" })).toHaveAttribute("href", "/fr/basket");
   });
 
-  test("AC4: while adding, the button says Adding…, is busy but keeps focus, and a double tap adds once", async ({ page }) => {
-    await page.goto(PRODUCT_PATH);
-    await hydrated(page);
-    let release!: () => void;
-    const held = new Promise<void>((resolve) => (release = resolve));
-    let posts = 0;
-    await page.route(/\/menu\/[^/]+(\.data)?(\?.*)?$/, async (route) => {
-      if (route.request().method() === "POST") {
-        posts += 1;
-        await held;
-      }
-      await route.continue();
-    });
-
-    const button = page.getByRole("button", { name: "Add to basket" });
-    await button.focus();
-    await button.dblclick();
-    const busy = page.getByRole("button", { name: "Adding…" });
-    await expect(busy).toHaveAttribute("aria-busy", "true");
-    await expect(busy).toHaveAttribute("aria-disabled", "true");
-    await expect(busy).toHaveJSProperty("disabled", false);
-    await expect(busy).toBeFocused();
-    await expect(page.getByTestId("pending-spinner")).toBeVisible();
-    await busy.click({ force: true });
-    release();
-
-    await expect(page.getByRole("status").filter({ hasText: "Added to your basket" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Basket, 1 item" })).toBeVisible();
-    expect(posts).toBe(1);
-  });
+  // "Adding…" (busy, focus kept) now shows only on the server fallback, and a double tap adds
+  // once with no request at all: both in basket-instant.spec.ts (ADR-0004).
 
   test("AC4: a tap before the page is interactive still adds (plain form post to the basket)", async ({ page }) => {
     // Hold the app's JavaScript so the tap lands before hydration.
@@ -176,11 +149,16 @@ test.describe("S-012 basket and delivery or pickup", () => {
     const response = await page.goto("/basket");
     expect(response!.headers()["cache-control"]).toBe("no-store");
     await basketWithCake(page);
-    await hydrated(page);
 
-    const data = page.waitForResponse((r) => r.url().includes("/basket") && r.request().method() === "POST");
-    await page.getByRole("button", { name: `Increase quantity of ${SAMPLE_PRODUCT.nameEn}` }).click();
-    expect((await data).headers()["cache-control"]).toBe("no-store");
+    // With JavaScript a line update makes no request (ADR-0004); its no-JavaScript post and
+    // the client data request are sent here directly, with the page's cookies.
+    const cookie = (await page.context().cookies()).find((c) => c.name === "apb_basket")!;
+    const [line] = JSON.parse(decodeURIComponent(cookie.value)) as { lineId: string }[];
+    const update = await page.request.post("/basket", { form: { intent: "updateLine", lineId: line!.lineId, quantity: "2" }, maxRedirects: 0 });
+    expect(update.status()).toBe(302);
+    expect(update.headers()["cache-control"]).toBe("no-store");
+    const data = await page.request.get("/basket.data");
+    expect(data.headers()["cache-control"]).toBe("no-store");
   });
 
   test("AC1: an empty basket shows the empty state and no form", async ({ page }) => {

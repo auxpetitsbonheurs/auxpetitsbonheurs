@@ -3,14 +3,17 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { cn } from "~/lib/utils";
 import { useI18n } from "~/i18n/react";
+import { useBasketCount } from "~/lib/basket-store";
 
 /**
  * Header basket link (design-system "Basket button + count"). Its accessible name
  * carries the count ("Basket, 2 items"); a polite live region announces changes;
  * the badge bumps when the count changes after load, never under reduced motion.
  */
-export function BasketLink({ href, count }: { href: string; count: number }) {
+export function BasketLink({ href, count: serverCount }: { href: string; count: number }) {
   const { t } = useI18n();
+  // The server's count until hydration, then the browser basket's (ADR-0004: updates at once).
+  const count = useBasketCount(serverCount);
   const [countAtLoad] = useState(count);
   const changed = count !== countAtLoad;
   return (
