@@ -75,5 +75,17 @@ the flow.
 - JS budget: basket route 158.3 kB gz, product 152.8 kB (limit 170 kB).
 - Rollback: revert the commit; cookies written by the browser remain valid for the server.
 
-## Measurements (staging, Pixel 7 emulation, median of 5)
-Recorded after deploy in the amendment below.
+## Measurements (staging, Pixel 7 emulation, median of 5, 2026-11-11)
+Deploy 43113159231 (commit 570aceb). Before = ADR-0003 amendment run (fetcher POST).
+
+| Step | Before | After |
+|---|---|---|
+| Tap Add to "Added to your basket" | 1141 ms | 55 ms (no request) |
+| Tap Add to header count | 1423 ms | 58 ms |
+| Basket, first visit (document load, empty cache) | basket.data 1039 ms TTFB | 1159 ms to Place order visible |
+| Basket, repeat visit (View basket, menu cached) | about 1.9 s (`basket.data`) | 103 ms (only a background `GET /api/menu`) |
+| Checkout open (Place order visible) | — | 108 ms |
+| Place order to confirmation | 4351 ms | 4210 ms (server work unchanged) |
+
+The first deploy measured 360 ms (230-1340) for the repeat visit: the basket route module was
+downloaded on the tap. The basket links now preload it (`prefetch="render"`, no data prefetch).
