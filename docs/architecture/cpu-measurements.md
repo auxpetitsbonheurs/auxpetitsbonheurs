@@ -30,3 +30,16 @@ Overall: PENDING
 |---|---|---|---|---|---|
 | Cold | 0 | - | - | - | not measured |
 | Warm | 0 | - | - | - | not measured |
+
+## Staging run 2026-11-11 (warm, 50 rounds; cpu-measure run 43028697816, commit de79662)
+
+| Route | Count | p50 | p95 | p99 | Max | Exceeded CPU |
+|---|---|---|---|---|---|---|
+| POST /basket (place order) | 50 | 24 | 32 | 37 | 37 | 0 |
+| GET /basket | 50 | 38 | 75 | 137 | 137 | 0 |
+| GET /t/[token] (tracking) | 50 | 34 | 99 | 155 | 155 | 0 |
+| POST /menu/chocolate-cake (add to basket) | 50 | 9 | 13 | 18 | 18 | 0 |
+| GET /menu/chocolate-cake | 1 | 53 | – | – | 53 | 0 |
+| GET /healthz | 2 | 50 | – | – | 54 | 0 |
+
+Verdict: FAIL against the 10 ms target (all three hot paths). Cloudflare stopped no request (exceededCpu 0 of 150+). Leading suspect: a new TLS + SCRAM pooler connection per request (the DB-free add-to-basket POST is ~9 ms). Next lever: Hyperdrive (free plan) — Owner decision pending.
