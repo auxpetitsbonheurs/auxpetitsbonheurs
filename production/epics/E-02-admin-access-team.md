@@ -1,6 +1,6 @@
 # E-02: Admin access, roles and team
 
-Status: planned · Milestone: MVP
+Status: in-progress (sprint 02) · Milestone: MVP
 PRD: FR-039, FR-041, FR-042, FR-043, FR-044, FR-046, FR-047 (NFR-003) · Specs: docs/specs/features/admin-access-team.md
 Release phase: 1 Foundations (part 2)
 
@@ -30,7 +30,7 @@ Phase 1 exit: the Owner invites an Admin by email, the Admin signs in, and the A
 | [S-031](../stories/E-02/S-031-change-role-last-owner.md) | Change an admin's role without losing the last Owner | ready | 5 |
 | [S-032](../stories/E-02/S-032-deactivate-reactivate.md) | Deactivate and reactivate an admin | ready | 5 |
 | [S-033](../stories/E-02/S-033-admin-shell-bottom-bar.md) | Admin app frame with one-handed bottom bar | ready | 3 |
-| [S-034](../stories/E-02/S-034-orders-to-review-dot.md) | Orders badge showing how many need review | draft (contract gap: layout loader needs a review count) | 2 |
+| [S-034](../stories/E-02/S-034-orders-to-review-dot.md) | Orders badge showing how many need review | ready (contract v0.14, 2026-11-11) | 2 |
 | [S-035](../stories/E-02/S-035-installable-app.md) | Install the admin app on the home screen | ready | 3 |
 | [S-036](../stories/E-02/S-036-my-profile.md) | My profile with name, language, password and alert switches | ready | 3 |
 

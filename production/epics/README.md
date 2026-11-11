@@ -68,7 +68,7 @@ No FR is unmapped. NFRs are verified in E-12 and carried as acceptance criteria 
 
 ## Story numbering and open items (2026-11-10)
 - Stories were written in parallel, so each epic got a pre-allocated block (E-01 S-001..020, E-02 021..040, E-03 041..060, E-04 061..080, E-05 081..110, E-06 111..130, E-07 131..150, E-08 151..170, E-09 171..185, E-10 186..205, E-11 206..220, E-12 221..240). Gaps are expected; new stories take the next free number after S-240.
-- S-034 (orders "to review" dot) stays draft: `admin/layout` loader has no review count in contracts.md; lead-backend + lead-frontend to agree.
-- E-03 sample data (8 products, 12 photos, 2 promotions) has no story yet: add as S-241 when E-03 is planned.
+- [x] RESOLVED 2026-11-11: S-034 (orders "to review" dot) — `admin/layout` loader adds `badges: { toReview }` (contracts.md v0.14, lead-backend + lead-frontend); story ready, in sprint 02.
+- [x] ADDED 2026-11-11: S-241 "Load the Owner's real menu on staging" (E-03, 3 pts, ready, sprint 02) seeds the real menu from docs/content/menu-source/ (placeholder-priced cakes hidden at Rs 0). It covers the menu part of the E-03 sample data; gallery photos and promotions follow S-052..S-055 or E-12. Next free story number: S-242.
 - S-204 (phone normalisation) may duplicate E-05 FR-021 work; drop if E-05 delivers it.
 - Open product questions carried in story Notes: S-159 AC4 (decline after expiry before job runs), S-036 password change vs other sessions.

@@ -48,6 +48,15 @@ S-001 → S-003 → S-004/S-010 → S-005 → S-006 → S-007 → S-008 → S-01
 ## Daily log
 - 2026-11-10: sprint planned. All 20 E-01 stories built test-first and code-reviewed (status review). Blocked on Owner keys: S-002 AC2/AC7 (first staging deploy + smoke), S-019 AC2/AC3 (CPU measurement), first real backup run. Keys: docs/runbooks/deploy-keys.md.
 
-## Review (filled at sprint end)
-- Completed: — · Carried over: —
-- Velocity: —
+## Review (filled 2026-11-11, closed early: all work built)
+- Completed: 64 committed pts + 2 stretch stories (S-019 3 pts, S-020 5 pts) built test-first and code-reviewed by agents in ~2 days (2026-11-10 → 2026-11-11). Staging is live and deploys from GitHub Actions (S-002 proven green).
+- Status: all 20 E-01 stories stay `review` (S-019 `in-progress`: CPU measured, the follow-ups are tracked in tech-debt.md) until the Owner's phone test of the skeleton journey on staging; nothing is carried over as build work. The Owner's phone test is the sprint 01 exit and runs alongside sprint 02.
+- Velocity: ~66 pts in ~2 agent-days. This is agent throughput, not founder hours, so it is not a pts-per-hour figure; the real limits are Owner review time and Owner-held keys. Sprint 02 plans on agent throughput and batches the Owner's checks.
+- Follow-ups from the sprint:
+  - Hyperdrive reverted: parameterised queries stalled through it; staging deploys without the binding by default (ADR-0003 amendment).
+  - Worker CPU over the 10 ms free-plan limit on some requests: Owner accepted and monitors (risk T3, 2026-11-11); alert and re-measure before launch are in tech-debt.md.
+  - Perf and UX fixes after the first staging use: Smart Placement, one-query catalogue reads, cached Settings, Server-Timing, one round trip per query, pending states on Add to basket / Place order, instant language switch.
+  - Client-side basket (ADR-0004) in progress outside the sprint; it touches `basket.server.ts`, so sprint 02 menu stories that change product status (S-043) rebase on it.
+  - Owner design change: Honey & cream identity (D4) applied across site and admin.
+  - Owner menu source started (docs/content/menu-source/): cookies with box sizes, six cake flavours with Size 6/7/8 inch; prices pending. Loaded by S-241 in sprint 02.
+- Notes → retrospective: estimates held (no story blew up); the blockers were all external (keys, Supabase pooler behaviour), so sprint 02 lists the keys it needs up front.

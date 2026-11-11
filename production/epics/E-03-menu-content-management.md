@@ -1,6 +1,6 @@
 # E-03: Menu and content management
 
-Status: planned · Milestone: MVP
+Status: in-progress (sprint 02) · Milestone: MVP
 PRD: FR-061, FR-062, FR-063, FR-064, FR-066, FR-067 · Specs: docs/specs/features/admin-menu-content.md, pricing-availability-promotions.md (promotion lifecycle)
 Release phase: 2 Menu and content management
 
@@ -37,8 +37,9 @@ Phase 2 exit: an admin creates a cake with sizes, flavours, add-ons and a messag
 | [S-058](../stories/E-03/S-058-settings-business.md) | Owner edits delivery fee, contacts, Juice number and business rules | ready | 5 |
 | [S-059](../stories/E-03/S-059-settings-site-content.md) | Owner edits homepage, About, FAQ, policies and privacy text | ready | 3 |
 | [S-060](../stories/E-03/S-060-whatsapp-templates.md) | Owner edits WhatsApp message templates with a live preview | ready | 3 |
+| [S-241](../stories/E-03/S-241-load-real-menu-staging.md) | Load the Owner's real menu on staging | ready | 3 |
 
-Total: 73 points (S-041..S-060). Gap: the success measure's sample data (8 products over 4 types, 12 gallery photos, 1 live and 1 scheduled promotion) has no story yet; the number block S-041..S-060 is full, so it needs a new story (for example "Load launch sample data", extending `seed:sample` from S-011) with a number allocated by the orchestrator.
+Total: 76 points (S-041..S-060 and S-241). Sample data: the menu part of the success measure is met with the Owner's real menu instead of sample products (S-241, added 2026-11-11, numbered after S-240; 7 real products over 2 types today, more as the Owner sends them). Gallery photos and promotions for the success measure come with S-054/S-052..S-053 (sprint 02 stretch) or E-12 launch content.
 
 ## Dependencies
 - E-01, E-02 (roles for Owner-only screens).

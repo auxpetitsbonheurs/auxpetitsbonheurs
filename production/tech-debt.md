@@ -2,7 +2,7 @@
 ## From review of S-001/S-003/S-004/S-010 (2026-11-10)
 - [x] DONE 2026-11-10 (reset password + confirm email via Auth Admin API before reuse; tests in seed-owner.server.test.ts). TD: seed-owner reuses any existing auth.users row with the owner email without resetting password / checking email_confirmed_at (src/app/server/services/seed-owner.server.ts:80-83). Fix before running seed on production. Medium.
 - TD: db.server.ts closes the client when the Response returns; streamed loader promises would query after close. Add a guard/test before any streaming loader. Medium.
-- TD: threat-model G-19 — add gitleaks + client-bundle secret-name check to CI. Medium.
+- TD: threat-model G-19 — add gitleaks + client-bundle secret-name check to CI. Medium. Scheduled: sprint 02 batch 4.
 - Low: `.catch` on waitUntil(close()); CI cancel-in-progress also cancels main runs.
 - [x] DONE 2026-11-10 (top level is not deployable + scripts/check-deploy.ts in the deploy scripts; deployed envs require https SUPABASE_URL; tests in deploy-guard.test.ts, env.server.test.ts). Low: refuse APP_ENV=development on production Worker.
 
@@ -20,7 +20,7 @@
 - TD: placeOrder accepts any future date (no upper bound) and no rate limit/Turnstile yet; staging must stay closed until E-05 (noted in S-013). Medium.
 - [x] DONE 2026-11-10 (S-014: key lookup before validation, lost race returns the winner; tests in place-order.server.test.ts and checkout.spec.ts). TD: a repeated submit with the same `idempotencyKey` hits the unique constraint and 500s until S-014 lands. Medium.
 - TD: basket cookie is unsigned by design (no prices, ids re-validated against the DB); tampering can only add products that exist, but add a total-quantity cap if abuse appears. Low.
-- Low: `contracts.md` changelog lists v0.4/v0.3 out of order; tidy when next edited.
+- [x] DONE 2026-11-11 (reordered with contracts v0.14). Low: `contracts.md` changelog lists v0.4/v0.3 out of order; tidy when next edited.
 
 ## From security review of S-014/S-015/S-016 (2026-11-10)
 - [x] DONE 2026-11-10 (replay only when the posted email matches the order's; else neutral VALIDATION_FAILED with a fresh key; contracts v0.9; tests in place-order.server.test.ts and basket.test.ts). TD: idempotency replay is not bound to the submitter (threat-model G-21 not implemented; contracts v0.8 "changed payload still gets the redirect" contradicts it). Anyone holding a form's `idempotencyKey` (shared phone, cached page) gets the original order's tracking token, and their own order is silently not created (src/app/server/services/place-order.server.ts:73-74, :95). Fix: replay only when the posted `contact.email` matches the order's email (an emptied basket still replays); otherwise refuse with `VALIDATION_FAILED` and render a fresh key. Needs the contract change agreed by lead-backend + lead-frontend. Medium.
