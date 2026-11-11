@@ -22,3 +22,11 @@ Photos cropped from the Owner's catalogue screenshots (lower resolution than ori
 | Chocolate Cake 🍫 | Moist chocolate sponge with Lindt chocolate ganache and SMBC frosting | Rs [price] | photos/chocolate-cake.jpg |
 
 Still missing: Vanilla and Pistachio (description + photo); sizes and prices for all cakes; French descriptions (to be drafted by copywriter, Owner to approve).
+
+## Cake ordering options (Owner, 2026-11-11)
+- Decision: one menu card per flavour (own photo + description); the customer picks **size** then **date**.
+- Sizes (option group "Size", required, single choice), prices per size per flavour = placeholders:
+  - 6 inch — 5–10 people — Rs [price]
+  - 7 inch — 10–15 people — Rs [price]
+  - 8 inch — 15–20 people — Rs [price]
+- Date: chosen at checkout (availability rules apply).
