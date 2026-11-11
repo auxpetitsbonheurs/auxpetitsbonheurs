@@ -29,8 +29,23 @@ const date = values.date ?? new Date(Date.now() + 7 * 86_400_000).toISOString().
 const runId = Date.now().toString(36);
 const productPath = `/menu/${values.product}`;
 
+/** No request may hang the run: after this long, fail naming the route (never the token). */
+const REQUEST_TIMEOUT_MS = 15_000;
+
+function routeOf(url: string): string {
+  return new URL(url).pathname.replace(/^(\/(?:fr\/)?t\/)[^/]+/, "$1[redacted]");
+}
+
 async function call(url: string, init: RequestInit = {}): Promise<Response> {
-  return fetch(url, { redirect: "manual", ...init });
+  const label = `${init.method ?? "GET"} ${routeOf(url)}`;
+  try {
+    return await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS), ...init });
+  } catch (error) {
+    if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
+      throw new Error(`${label} got no response within ${REQUEST_TIMEOUT_MS / 1000} s`);
+    }
+    throw new Error(`${label} failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 async function round(index: number, productId: string): Promise<void> {
