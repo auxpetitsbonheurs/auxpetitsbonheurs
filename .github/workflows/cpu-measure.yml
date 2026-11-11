@@ -49,11 +49,15 @@ jobs:
       PHASE: ${{ inputs.phase }}
       COUNT: ${{ inputs.count }}
       ORDER_DATE: ${{ inputs.date }}
-      RAW: ${{ runner.temp }}/cpu-raw
-      OUT: ${{ runner.temp }}/cpu-out
       WRANGLER_HIDE_BANNER: "true"
       WRANGLER_SEND_METRICS: "false"
     steps:
+      # runner.temp is not available in job-level env; set the paths here.
+      - name: Set temp paths
+        working-directory: .
+        run: |
+          echo "RAW=$RUNNER_TEMP/cpu-raw" >> "$GITHUB_ENV"
+          echo "OUT=$RUNNER_TEMP/cpu-out" >> "$GITHUB_ENV"
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
