@@ -143,12 +143,3 @@ export function adminLocale(source: AdminLocaleSource): Locale {
   const first = (source.acceptLanguage ?? "").split(",")[0]?.trim().toLowerCase() ?? "";
   return first === "fr" || first.startsWith("fr-") ? "fr" : "en";
 }
-
-/**
- * RL-auth placeholder (S-009 note): the sign-in rate limit (5 per 15 min per email+IP)
- * is built with the rate-limit helper in S-023 (E-02); until then this always allows,
- * and the staging site is not announced. The action already answers RATE_LIMITED (429).
- */
-export function signInAllowed(): boolean {
-  return true;
-}

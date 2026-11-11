@@ -12,7 +12,8 @@ import { useI18n } from "~/i18n/react";
 import type { Locale } from "~/lib/locale";
 import { actionError } from "~/server/action-result.server";
 import { adminMiddleware, adminPageLocale } from "~/server/admin-page.server";
-import { adminSession, safeNext, signInAdmin, signInAllowed } from "~/server/auth.server";
+import { AUTH_ACTIONS, clearAuthAttempts, consumeAuthAttempt, rateLimitedResult } from "~/server/auth-rate-limit.server";
+import { adminSession, safeNext, signInAdmin } from "~/server/auth.server";
 import { type SignInField, signInProblems } from "~/server/contracts/admin";
 import { assertSameOrigin } from "~/server/origin.server";
 import type { Route } from "./+types/login";
@@ -38,7 +39,10 @@ function fieldErrors(problems: ReturnType<typeof signInProblems>, locale: Locale
   );
 }
 
-/** `admin/login` signIn: one generic refusal for every credential problem (FR-040, NFR-003). */
+/**
+ * `admin/login` signIn: one generic refusal for every credential problem (FR-040, NFR-003).
+ * RL-auth (S-023) counts each real attempt (field problems are not attempts) per email + IP.
+ */
 export async function action(args: Route.ActionArgs) {
   assertSameOrigin(args.request);
   const locale = adminPageLocale(args);
@@ -47,10 +51,18 @@ export async function action(args: Route.ActionArgs) {
   const values = { email };
   const problems = signInProblems(form);
   if (Object.keys(problems).length > 0) return actionError("VALIDATION_FAILED", locale, { fields: fieldErrors(problems, locale), extra: { values } });
-  if (!signInAllowed()) return actionError("RATE_LIMITED", locale, { extra: { values } });
+  const limit = await consumeAuthAttempt(args, AUTH_ACTIONS.signIn, email);
+  if (!limit.ok) return rateLimitedResult(limit.retryAfterSeconds, locale, { values });
   const result = await signInAdmin(args, { email: email.toLowerCase(), password: String(form.password) });
   if (!result.ok) return actionError("INVALID_CREDENTIALS", locale, { extra: { values } });
+  await clearAuthAttempts(args, AUTH_ACTIONS.signIn, email);
   return redirect(safeNext(form.next), { headers: result.headers });
+}
+
+/** Carries the action's `Retry-After` (RATE_LIMITED, S-023) onto the document and `.data` responses. */
+export function headers({ actionHeaders }: Route.HeadersArgs) {
+  const retryAfter = actionHeaders.get("Retry-After");
+  return retryAfter ? { "Retry-After": retryAfter } : new Headers();
 }
 
 export function meta({ loaderData }: Route.MetaArgs) {
@@ -63,6 +75,8 @@ interface LoginRefusal {
   ok: false;
   error: { code: string; message: string; fields?: Record<string, string> };
   values?: { email?: string };
+  /** RATE_LIMITED only (S-023): whole minutes until the next attempt is accepted. */
+  retryAfterMinutes?: number;
 }
 
 export default function AdminLogin({ loaderData, actionData }: Route.ComponentProps) {
@@ -90,6 +104,7 @@ export default function AdminLogin({ loaderData, actionData }: Route.ComponentPr
           {refused && !fields && (
             <Alert ref={alertRef} tone="danger" role="alert" tabIndex={-1} className="mt-6 outline-offset-2">
               <p className="font-semibold">{refused.error.message}</p>
+              {refused.retryAfterMinutes !== undefined && <p className="mt-1">{t("admin.login.retryIn", { count: refused.retryAfterMinutes })}</p>}
             </Alert>
           )}
           <Form method="post" noValidate className="mt-6 grid gap-5">

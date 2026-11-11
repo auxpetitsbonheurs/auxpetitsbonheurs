@@ -84,6 +84,8 @@ export async function expectNothingClipped(page: Page) {
     for (const el of document.body.querySelectorAll<HTMLElement>("*")) {
       const s = getComputedStyle(el);
       if (el.clientWidth <= 1) continue; // visually hidden by design
+      // A typed value longer than its field scrolls inside it (caret, arrow keys): not clipped content.
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) continue;
       const hides = ["hidden", "clip"].includes(s.overflowX) || s.textOverflow === "ellipsis";
       if (hides && el.scrollWidth > el.clientWidth + 1) out.push(`<${el.tagName.toLowerCase()}> clips its content`);
     }

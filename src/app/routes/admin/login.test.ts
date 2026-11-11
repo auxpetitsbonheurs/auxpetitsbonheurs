@@ -92,6 +92,70 @@ describe("field errors (S-009 AC5)", () => {
   });
 });
 
+describe("RL-auth on sign-in (S-023)", () => {
+  const ip = { "cf-connecting-ip": "203.0.113.7" };
+  const attempt = (email: string, password: string, headers = ip) => post({ email, password }, { headers });
+
+  test("AC1: the fifth attempt is still checked; the sixth is RATE_LIMITED 429 with Retry-After, keeping the email", async () => {
+    const admin = await insertAdmin(database, auth);
+    for (let i = 0; i < 4; i += 1) await attempt(admin.email, "wrong");
+
+    const fifth = (await attempt(admin.email, "wrong")) as Refusal;
+    const sixth = (await attempt(admin.email, TEST_PASSWORD)) as Refusal & { init: { headers: Record<string, string> } };
+
+    expect(fifth.data.error.code).toBe("INVALID_CREDENTIALS");
+    expect(sixth.init.status).toBe(429);
+    expect(new Headers(sixth.init.headers).get("Retry-After")).toBe(String(15 * 60));
+    expect(sixth.data.error).toEqual({ code: "RATE_LIMITED", message: "Too many attempts, wait a few minutes." });
+    expect(sixth.data).toMatchObject({ values: { email: admin.email }, retryAfterMinutes: 15 });
+    expect(auth.attempts).toHaveLength(5);
+  });
+
+  test("AC3: another email from the same IP, or the same email from another IP, is not limited", async () => {
+    const admin = await insertAdmin(database, auth);
+    for (let i = 0; i < 6; i += 1) await attempt(admin.email, "wrong");
+
+    expect(((await attempt("other@example.com", "wrong")) as Refusal).data.error.code).toBe("INVALID_CREDENTIALS");
+    expect(((await attempt(admin.email, TEST_PASSWORD, { "cf-connecting-ip": "198.51.100.1" })) as Response).status).toBe(302);
+  });
+
+  test("AC6: known and unknown emails get the same limited answer", async () => {
+    const admin = await insertAdmin(database, auth);
+    for (let i = 0; i < 5; i += 1) {
+      await attempt(admin.email, "wrong");
+      await attempt("nobody@example.com", "wrong");
+    }
+
+    const known = (await attempt(admin.email, "wrong")) as Refusal;
+    const unknown = (await attempt("nobody@example.com", "wrong")) as Refusal;
+
+    expect({ ...known.data, values: undefined }).toEqual({ ...unknown.data, values: undefined });
+    expect(known.init.status).toBe(unknown.init.status);
+  });
+
+  test("a successful sign-in starts the count again", async () => {
+    const admin = await insertAdmin(database, auth);
+    for (let i = 0; i < 4; i += 1) await attempt(admin.email, "wrong");
+    expect(((await attempt(admin.email, TEST_PASSWORD)) as Response).status).toBe(302);
+
+    for (let i = 0; i < 4; i += 1) await attempt(admin.email, "wrong");
+    expect(((await attempt(admin.email, "wrong")) as Refusal).data.error.code).toBe("INVALID_CREDENTIALS");
+  });
+
+  test("field problems are not counted (no sign-in attempt is made)", async () => {
+    for (let i = 0; i < 6; i += 1) await post({ email: "sarah@", password: "x" }, { headers: ip });
+
+    expect(((await attempt("sarah@example.com", "wrong")) as Refusal).data.error.code).toBe("INVALID_CREDENTIALS");
+  });
+
+  test("the limited message is French for a French visitor", async () => {
+    for (let i = 0; i < 5; i += 1) await post({ email: "a@example.com", password: "x" }, { headers: ip, cookie: "apb_locale=fr" });
+
+    const limited = (await post({ email: "a@example.com", password: "x" }, { headers: ip, cookie: "apb_locale=fr" })) as Refusal;
+    expect(limited.data.error.message).toBe("Trop de tentatives, patientez quelques minutes.");
+  });
+});
+
 describe("French (S-009 AC12)", () => {
   test("labels come from the French catalogue and errors are French", async () => {
     const options = { cookie: "apb_locale=fr" };

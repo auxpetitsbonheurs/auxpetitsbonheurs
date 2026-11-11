@@ -168,6 +168,60 @@ test.describe("S-009 admin sign-in", () => {
     await expect(page).toHaveURL(/\/admin$/);
   });
 
+  test.describe("S-023 RL-auth", () => {
+    async function exhaust(page: Page, email: string) {
+      await page.goto("/admin/login");
+      await expect(page.locator("html")).toHaveAttribute("data-hydrated", "true");
+      for (let i = 0; i < 5; i += 1) {
+        const response = page.waitForResponse((r) => r.request().method() === "POST");
+        await submit(page, email, `wrong-${i}`);
+        expect((await response).status()).toBe(401);
+        await expect(page.getByRole("alert")).toHaveText(GENERIC);
+      }
+      const limited = page.waitForResponse((r) => r.request().method() === "POST");
+      await submit(page, email, "still wrong");
+      return limited;
+    }
+
+    test("AC8: the sixth attempt says wait, is announced, keeps the fields, and passes keyboard, zoom, 44 px and axe checks", async ({ page }) => {
+      const response = await exhaust(page, "limited@e2e.test");
+      expect((await response).status()).toBe(429);
+      expect((await response).headers()["retry-after"]).toMatch(/^\d+$/);
+
+      const alert = page.getByRole("alert");
+      await expect(alert).toContainText("Too many attempts, wait a few minutes.");
+      await expect(alert).toContainText(/You can try again in \d+ minutes?\./);
+      await expect(alert).toBeFocused();
+      await expect(page.getByLabel("Email", { exact: true })).toHaveValue("limited@e2e.test");
+      await expect(page.getByLabel("Password", { exact: true })).toHaveValue("still wrong");
+
+      for (const zoom of [1, 2]) {
+        await withZoom(page, zoom, async () => {
+          await expectNoHorizontalScroll(page);
+          await expectNothingClipped(page);
+          await expectTapTargets(page);
+          await expectKeyboardOperable(page);
+        });
+      }
+      for (const colorScheme of ["light", "dark"] as const) {
+        // Reduced motion: the colour change is instant, so axe never samples a half-way transition.
+        await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await expectNoA11yViolations(page);
+      }
+    });
+
+    test("AC3: the limit is per email and IP: the Owner on another connection still signs in", async ({ page, browser, baseURL }) => {
+      expect((await exhaust(page, E2E_ACCOUNTS.owner.email)).status()).toBe(429);
+      await expect(page.getByRole("alert")).toContainText("Too many attempts");
+
+      const other = await browser.newContext({ baseURL, extraHTTPHeaders: { "cf-connecting-ip": "198.51.100.23" } });
+      const otherPage = await other.newPage();
+      await signIn(otherPage, E2E_ACCOUNTS.owner, "/admin");
+      await expect(otherPage).toHaveURL(/\/admin$/);
+      await other.close();
+    });
+  });
+
   for (const colorScheme of ["light", "dark"] as const) {
     test(`AC11: axe clean in ${colorScheme} mode, empty and with errors`, async ({ page }) => {
       await page.emulateMedia({ colorScheme });

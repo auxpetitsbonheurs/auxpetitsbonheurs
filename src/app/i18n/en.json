@@ -232,7 +232,9 @@
         "email": "Enter your email address.",
         "emailFormat": "Enter an email address, for example name@example.com.",
         "password": "Enter your password."
-      }
+      },
+      "retryIn_one": "You can try again in {{count}} minute.",
+      "retryIn_other": "You can try again in {{count}} minutes."
     },
     "home": {
       "metaTitle": "Today",

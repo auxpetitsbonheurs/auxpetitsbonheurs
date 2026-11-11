@@ -134,6 +134,8 @@ test.describe("S-033 admin frame", () => {
 
   test("AC8: skip link jumps past the bar; keyboard order, visible focus, no clipping or sideways scroll, 44 px targets at 100% and 200%", async ({ page }) => {
     await signIn(page, E2E_ACCOUNTS.owner, "/admin/more");
+    // A fresh load, so the first Tab starts from the top of the page (not from the sign-in button).
+    await page.goto("/admin/more");
     await hydrated(page);
 
     await page.keyboard.press("Tab");

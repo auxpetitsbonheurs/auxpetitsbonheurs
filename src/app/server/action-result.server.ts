@@ -37,14 +37,14 @@ export function isErrorCode(code: string): code is ErrorCode {
 export function actionError<Extra extends object = object>(
   code: ErrorCode,
   locale: Locale,
-  options: { fields?: Record<string, string>; extra?: Extra } = {},
+  options: { fields?: Record<string, string>; extra?: Extra; headers?: HeadersInit } = {},
 ) {
   const body = {
     ok: false as const,
     error: { code, message: t(`errors.codes.${code}`, locale), ...(options.fields ? { fields: options.fields } : {}) },
     ...(options.extra ?? ({} as Extra)),
   };
-  return data(body, { status: STATUS[code] });
+  return data(body, { status: STATUS[code], ...(options.headers ? { headers: options.headers } : {}) });
 }
 
 /** Maps a known DomainError to its envelope; anything else is rethrown (500 boundary). */
