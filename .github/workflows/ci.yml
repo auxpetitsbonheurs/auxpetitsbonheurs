@@ -66,7 +66,12 @@ jobs:
           cache: npm
           cache-dependency-path: src/package-lock.json
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # Not the "with deps" install flavour: it always runs `apt-get update`, and Ubuntu mirror DNS outages failed
+      # runs 43031233818 and 43039279359 before any test ran. The script touches apt (with
+      # retries) only if the runner image lacks a library Chromium needs.
+      - run: npx playwright install chromium
+      - run: scripts/ensure-browser-deps.sh
+        timeout-minutes: 8
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v4
         if: failure()

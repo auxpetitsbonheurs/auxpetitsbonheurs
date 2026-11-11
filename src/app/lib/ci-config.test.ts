@@ -54,8 +54,13 @@ describe("CI e2e job (S-005 AC5)", () => {
     expect(e2e).toMatch(/--health-cmd "pg_isready -U postgres"/);
   });
 
-  test("installs only Chromium and keeps traces of failed runs", () => {
-    expect(e2e).toContain("npx playwright install --with-deps chromium");
+  test("installs only Chromium, without an unconditional apt run, and keeps traces of failed runs", () => {
+    // CI runs 43031233818 and 43039279359: `--with-deps` runs apt-get update, whose mirrors did not resolve.
+    expect(e2e).toMatch(/run: npx playwright install chromium\n/);
+    expect(e2e).not.toContain("--with-deps");
+    expect(e2e).toContain("run: scripts/ensure-browser-deps.sh");
+    expect(e2e.indexOf("npx playwright install chromium")).toBeLessThan(e2e.indexOf("ensure-browser-deps.sh"));
+    expect(e2e.indexOf("ensure-browser-deps.sh")).toBeLessThan(e2e.indexOf("run: npm run test:e2e"));
     expect(e2e).toMatch(/if:\s*failure\(\)/);
     expect(e2e).toContain("test-results");
   });
