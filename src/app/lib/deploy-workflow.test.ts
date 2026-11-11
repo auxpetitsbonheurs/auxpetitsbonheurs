@@ -55,6 +55,27 @@ describe("deploy workflow steps (AC2)", () => {
     expect(steps).toContain("CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}");
   });
 
+  test("staging seeds the sample cake after migrations and before deploying, with APP_ENV=staging", () => {
+    const steps = job("staging");
+    const migrate = steps.indexOf("run: npm run db:migrate");
+    const seed = steps.indexOf("run: npm run seed:sample");
+    const deploy = steps.indexOf("run: npm run deploy:staging");
+    expect(migrate).toBeGreaterThan(0);
+    expect(seed).toBeGreaterThan(migrate);
+    expect(deploy).toBeGreaterThan(seed);
+    const step = steps.slice(steps.lastIndexOf("- name:", seed), seed);
+    expect(step).toContain("APP_ENV: staging");
+    expect(step).toContain("DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}");
+  });
+
+  test("the sample seed is staging-only: no other job runs it or seeds anything", () => {
+    expect(workflow.match(/seed:sample/g)).toHaveLength(1);
+    for (const name of ["staging-preflight", "production-preflight", "production"]) {
+      expect(job(name)).not.toMatch(/seed:|seed-sample/);
+    }
+    expect(workflow).not.toMatch(/echo .*DATABASE_URL/);
+  });
+
   test("after deploying, each job checks /healthz when the site URL variable is set (S-020)", () => {
     expect(job("staging")).toContain('curl -fsS "$STAGING_URL/healthz"');
     expect(job("production")).toContain('curl -fsS "$PRODUCTION_URL/healthz"');
