@@ -158,3 +158,26 @@ describe("scripts/check-keys.sh (skip cleanly until the keys exist)", () => {
     expect(out).toContain("configured=true");
   });
 });
+
+describe("manual staging deploy requires green CI for the same commit (tech-debt review follow-up)", () => {
+  const preflight = job("staging-preflight");
+  const gate = preflight.slice(preflight.indexOf("name: Require a green ci run"), preflight.indexOf("name: Check deploy keys"));
+
+  test("the workflow token may read Actions runs, and nothing broader is added", () => {
+    expect(workflow).toMatch(/^permissions:\n\s+contents: read\n\s+deployments: read\n\s+actions: read\n/m);
+  });
+
+  test("a workflow_dispatch run queries the ci workflow for a successful run of the same SHA, before the key check", () => {
+    expect(gate).toContain("if: github.event_name == 'workflow_dispatch'");
+    expect(gate).toContain("GH_TOKEN: ${{ github.token }}");
+    expect(gate).toContain("SHA: ${{ github.sha }}");
+    expect(gate).toMatch(/actions\/workflows\/ci\.yml\/runs\?head_sha=\$SHA&status=success/);
+    expect(preflight.indexOf("name: Require a green ci run")).toBeGreaterThan(-1);
+  });
+
+  test("it fails with a clear message when there is none", () => {
+    expect(gate).toContain("::error::");
+    expect(gate).toMatch(/no successful ci run/i);
+    expect(gate).toMatch(/exit 1/);
+  });
+});
