@@ -31,5 +31,5 @@ As the bakery Owner, I want repeated sign-in or reset attempts slowed down, so t
 ## Notes
 - Depends on: S-004, S-009 (E-01).
 - The helper is generic (class, key, window, max); `RL-order` and `RL-track` reuse it in E-05. Sizes from architecture "Cross-cutting": sign-in/link/reset 5 / 15 min per email+IP.
-- Cron purge wiring is added with the other jobs; this story ships the function and its test.
+- Cron purge wiring: added in the batch-1 review (hourly `purgeRateLimits` job in app/jobs/dispatch.ts), so buckets never outlive a day.
 - Built 2026-11-12: Postgres fixed windows in the existing `rate_limit_bucket` (architecture "Cross-cutting"), so no new infrastructure and no ADR; Workers KV was not used (eventually consistent, so concurrent attempts could slip past). IP = `CF-Connecting-IP`. A successful sign-in resets that email + IP count. Field problems are not counted. The limited alert also says how many minutes to wait (`retryAfterMinutes`, contract v0.17).

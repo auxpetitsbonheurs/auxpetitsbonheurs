@@ -1,6 +1,7 @@
 import { CalendarCog, ChartColumn, ChevronRight, Images, type LucideIcon, Settings, UserRound, Users, UsersRound } from "lucide-react";
-import { Link } from "react-router";
+import { Form, Link, useNavigation } from "react-router";
 import { AdminErrorBoundary } from "~/components/admin/admin-states";
+import { SubmitButton } from "~/components/ui/submit-button";
 import { t as translate } from "~/i18n/catalog.server";
 import { useI18n } from "~/i18n/react";
 import { requireAdmin } from "~/server/auth.server";
@@ -61,6 +62,8 @@ function MoreList({ items, label }: { items: { key: MoreKey; href: string; label
 
 export default function AdminMore({ loaderData }: Route.ComponentProps) {
   const { t } = useI18n();
+  const navigation = useNavigation();
+  const signingOut = navigation.state !== "idle" && navigation.formAction === "/admin/sign-out";
   return (
     <>
       <h1>{loaderData.title}</h1>
@@ -73,6 +76,11 @@ export default function AdminMore({ loaderData }: Route.ComponentProps) {
           <MoreList items={loaderData.ownerItems} label={t("admin.more.ownerSection")} />
         </section>
       )}
+      <Form method="post" action="/admin/sign-out" className="mt-8">
+        <SubmitButton pending={signingOut} pendingText={t("admin.shell.signingOut")} variant="outline" className="w-full">
+          {t("admin.shell.signOut")}
+        </SubmitButton>
+      </Form>
     </>
   );
 }

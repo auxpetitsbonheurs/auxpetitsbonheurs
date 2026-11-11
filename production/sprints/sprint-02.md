@@ -83,6 +83,7 @@ Within a batch, stories run in the order listed (later ones may depend on earlie
 ## Daily log
 <!-- One line per working session. -->
 - 2026-11-11: sprint planned; S-034 contract resolved; S-241 written.
+- 2026-11-12: batch 1 built (S-021, S-022, S-033, S-023 → review). Review (security-lead + ux-lead): every /admin loader and action guarded (route-guards.test walks routes.ts incl. .data; owner modules refuse Admins); rate limiter = Postgres fixed window in the existing table (no new infra, no ADR). Fixed: rate-limit buckets were never purged (now an hourly job); Sign out moved from the header to the end of More (design-system thumb zone: header read-only, less header height at 320 px). Left (Medium): no per-email cap across many IPs (spec is email + IP); Supabase Auth still rate-limits by the Worker's shared egress IP (tech-debt A5); e2e basket-instant cookie test can flake when a random line id contains "rs" (ADR-0004 owner).
 
 ## Review (filled at sprint end)
 - Completed: — · Carried over: —

@@ -5,6 +5,7 @@ import { createRequestDb } from "~/server/db.server";
 import { getEnv } from "~/server/env.server";
 import { integrationsCheck } from "./integrations";
 import { keepAlive } from "./keep-alive";
+import { purgeRateLimits } from "./purge-rate-limits";
 import type { JobContext, JobResult } from "./types";
 
 export type { JobContext, JobResult } from "./types";
@@ -17,6 +18,7 @@ export interface Job {
 export const JOBS: readonly Job[] = [
   { name: "keepAlive", run: keepAlive },
   { name: "integrations", run: integrationsCheck },
+  { name: "purgeRateLimits", run: purgeRateLimits },
 ];
 
 /** Error name and message with any URL (it could carry credentials) replaced. */

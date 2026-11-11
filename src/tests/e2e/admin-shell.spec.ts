@@ -63,6 +63,7 @@ test.describe("S-033 admin frame", () => {
     for (const name of ["Gallery", "Customers", "Sales summary", "My profile", "Availability", "Settings", "Team"]) {
       await expect(main.getByRole("link", { name })).toBeVisible();
     }
+    await expect(main.getByRole("button", { name: "Sign out" })).toBeVisible();
     await main.getByRole("link", { name: "Team" }).click();
     await expect(page).toHaveURL(/\/admin\/team$/);
     await expect(page.getByText("Not available yet")).toBeVisible();
@@ -75,6 +76,7 @@ test.describe("S-033 admin frame", () => {
     await expect(main.getByRole("link", { name: "Gallery" })).toBeVisible();
     for (const name of ["Availability", "Settings", "Team"]) await expect(main.getByRole("link", { name })).toHaveCount(0);
     await expect(main.getByText("For Owners")).toHaveCount(0);
+    await expect(main.getByRole("button", { name: "Sign out" })).toBeVisible();
 
     await page.goto("/admin/team");
     await expect(page.getByRole("heading", { level: 1, name: "Owner only" })).toBeVisible();

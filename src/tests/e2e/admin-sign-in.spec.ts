@@ -103,6 +103,9 @@ test.describe("S-009 admin sign-in", () => {
     const adminPage = await page.reload();
     expect(adminPage!.headers()["cache-control"]).toBe("private, no-store");
 
+    // Sign out lives at the end of More (thumb zone; the header holds no actions, S-033 review).
+    await expect(page.getByRole("banner").getByRole("button")).toHaveCount(0);
+    await page.getByRole("navigation", { name: "Admin" }).getByRole("link", { name: "More" }).click();
     await page.getByRole("button", { name: "Sign out" }).click();
     await expect(page).toHaveURL(/\/admin\/login$/);
     expect((await page.context().cookies()).filter((c) => c.name.startsWith("sb-"))).toEqual([]);
@@ -251,6 +254,7 @@ test.describe("S-009 admin sign-in", () => {
     await signIn(page, E2E_ACCOUNTS.french, "/admin");
     await expect(page.locator("html")).toHaveAttribute("lang", "fr");
     await expect(page.getByRole("heading", { level: 1, name: `Bonjour, ${E2E_ACCOUNTS.french.name}` })).toBeVisible();
+    await page.goto("/admin/more");
     await expect(page.getByRole("button", { name: "Se déconnecter" })).toBeVisible();
   });
 });
