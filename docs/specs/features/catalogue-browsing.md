@@ -38,7 +38,7 @@ Out of scope: basket and checkout, custom cake form (the gallery button only lin
 Components (design-system names): Top bar, Language switch, Basket button + count, Site menu, Promo banner, Footer, Hero, Promotion card, How it works, Product card, Chip (filter), Price, Badge (sale/promo/soldout/allergen), Photo carousel, Allergen list, Option picker, Message-on-cake field, Stepper, Product page layout, Gallery grid, WhatsApp button, Empty state, Error state.
 
 ### Flow
-Home or Menu -> filter (chips, URL-driven so the back button and shared links keep filters) -> Product -> choose options, message, quantity -> Add to basket (redirect `/basket` without JS; toast + count bump with JS).
+Home or Menu -> filter (chips, URL-driven so the back button and shared links keep filters) -> Product -> choose options, message, quantity -> Add to basket (redirect `/basket` without JS, which also covers a tap before the page is interactive; with JS the page stays: the button shows a spinner and "Adding…" (`aria-busy`, `aria-disabled`, keeps focus, repeat taps ignored), then an inline "Added to your basket" confirmation with a "View basket" link in a polite status region, and the header count bumps; amended 2026-11-11).
 
 ### Locale handling (FR-001)
 - Every customer route exists at `/x` (EN) and `/fr/x` (FR). The URL is authoritative: opening `/fr/menu` renders French and sets cookie `apb_locale=fr` (1 year, `SameSite=Lax`, functional, no consent needed).

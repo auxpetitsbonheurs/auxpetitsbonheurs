@@ -6,7 +6,7 @@ import { insertProduct } from "~/db/testing/catalogue";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { TEST_SUPABASE_URL, cookieFrom, routeArgs } from "~/server/testing/route-context";
 import { BASKET_COOKIE } from "~/server/basket.server";
-import { action, loader, productView } from "./product";
+import { action, loader, productView, shouldRevalidate } from "./product";
 
 let database: TestDatabase;
 
@@ -33,9 +33,9 @@ async function thrownStatus(promise: Promise<unknown>): Promise<number | undefin
   throw new Error("expected the loader to throw");
 }
 
-function addToBasket(productId: string, cookie?: string, path = "/menu/chocolate-cake") {
+function addToBasket(productId: string, cookie?: string, path = "/menu/chocolate-cake", extra: Record<string, string> = {}) {
   return action(
-    routeArgs(database, { path, params: { slug: "chocolate-cake" }, cookie, form: { intent: "addToBasket", productId, quantity: "1" } }) as never,
+    routeArgs(database, { path, params: { slug: "chocolate-cake" }, cookie, form: { intent: "addToBasket", productId, quantity: "1", ...extra } }) as never,
   );
 }
 
@@ -131,6 +131,19 @@ describe("add to basket (S-011 AC4, AC5)", () => {
     expect(fr.headers.get("Location")).toBe("/fr/basket");
   });
 
+  test("with JavaScript (respond=inline) it stays on the page: { ok, basketCount } plus the cookie, no redirect", async () => {
+    const id = await insertProduct(database.db);
+
+    const first = (await addToBasket(id, undefined, undefined, { respond: "inline" })) as unknown as { data: { ok: true; basketCount: number }; init: { status?: number; headers: Record<string, string> } };
+    expect(first).not.toBeInstanceOf(Response);
+    expect(first.data).toEqual({ ok: true, basketCount: 1 });
+    expect(first.init.status ?? 200).toBe(200);
+    const cookie = cookieFrom(first.init.headers["Set-Cookie"]!);
+
+    const second = (await addToBasket(id, cookie, undefined, { respond: "inline" })) as unknown as { data: { basketCount: number } };
+    expect(second.data.basketCount).toBe(2);
+  });
+
   test("an 11th distinct product is BASKET_FULL (422)", async () => {
     let cookie: string | undefined;
     for (let i = 0; i < 10; i += 1) {
@@ -156,5 +169,19 @@ describe("page language (S-011 AC7)", () => {
     await database.db.update(product).set({ nameFr: null }).where(eq(product.slug, "chocolate-cake"));
     const fallback = await view("/fr/menu/chocolate-cake");
     expect(productView(fallback.product, "fr").name).toBe("Chocolate cake");
+  });
+});
+
+describe("revalidation after Add (staging latency)", () => {
+  const args = (intent: string, ok: boolean) =>
+    ({ formData: new URLSearchParams({ intent }) as unknown as FormData, actionResult: { ok }, defaultShouldRevalidate: true }) as never;
+
+  test("a successful inline add does not reload the product (only the header count changes)", () => {
+    expect(shouldRevalidate(args("addToBasket", true))).toBe(false);
+  });
+
+  test("anything else keeps the default", () => {
+    expect(shouldRevalidate(args("addToBasket", false))).toBe(true);
+    expect(shouldRevalidate({ defaultShouldRevalidate: true } as never)).toBe(true);
   });
 });

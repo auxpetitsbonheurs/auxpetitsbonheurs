@@ -14,7 +14,8 @@
       "email": "Email",
       "copyright": "© {{year}} Aux petits bonheurs",
       "pickup": "Pickup in {{address}}"
-    }
+    },
+    "loading": "Loading…"
   },
   "language": {
     "other": "Français"
@@ -116,6 +117,9 @@
   },
   "product": {
     "addToBasket": "Add to basket",
+    "adding": "Adding…",
+    "added": "Added to your basket",
+    "viewBasket": "View basket",
     "soldOut": "Sold out",
     "soldOutHint": "This cake is sold out for now. Message us on WhatsApp to ask when it is back."
   },

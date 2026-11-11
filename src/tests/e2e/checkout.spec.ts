@@ -14,6 +14,11 @@ import { type Page, expect, test } from "./support/fixtures";
 
 const PRODUCT_PATH = `/menu/${SAMPLE_PRODUCT.slug}`;
 
+/** Waits until React has hydrated, so clicks go through fetchers. */
+async function hydrated(page: Page) {
+  await expect(page.locator("html")).toHaveAttribute("data-hydrated", "true");
+}
+
 /** Every layout check the a11y ACs name, at 100% and 200% zoom. */
 async function expectAccessibleLayout(page: Page) {
   for (const zoom of [1, 2]) {
@@ -47,16 +52,71 @@ test.describe("S-011 product page", () => {
     await expect(page.getByRole("banner")).toBeVisible();
   });
 
-  test("AC4: Add to basket goes to /basket and the header count shows 1", async ({ page }) => {
+  test("AC4: Add to basket stays on the page, confirms it and the header count shows 1", async ({ page }) => {
     await page.goto(PRODUCT_PATH);
+    await hydrated(page);
     await page.getByRole("button", { name: "Add to basket" }).click();
+
+    await expect(page.getByRole("status").filter({ hasText: "Added to your basket" })).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`${PRODUCT_PATH}$`));
+    await expect(page.getByRole("link", { name: "Basket, 1 item" })).toBeVisible();
+    const cookie = (await page.context().cookies()).find((c) => c.name === "apb_basket");
+    expect(cookie).toMatchObject({ httpOnly: true, sameSite: "Lax" });
+
+    await page.getByRole("link", { name: "View basket" }).click();
+    await expect(page).toHaveURL(/\/basket$/);
+    await expect(page.getByRole("heading", { level: 1, name: "Your basket" })).toBeVisible();
+    // Regression: links built in loaders after a client navigation never carry the `.data` suffix.
+    await expect(page.getByRole("link", { name: "Français" })).toHaveAttribute("href", "/fr/basket");
+  });
+
+  test("AC4: while adding, the button says Adding…, is busy but keeps focus, and a double tap adds once", async ({ page }) => {
+    await page.goto(PRODUCT_PATH);
+    await hydrated(page);
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    let posts = 0;
+    await page.route(/\/menu\/[^/]+(\.data)?(\?.*)?$/, async (route) => {
+      if (route.request().method() === "POST") {
+        posts += 1;
+        await held;
+      }
+      await route.continue();
+    });
+
+    const button = page.getByRole("button", { name: "Add to basket" });
+    await button.focus();
+    await button.dblclick();
+    const busy = page.getByRole("button", { name: "Adding…" });
+    await expect(busy).toHaveAttribute("aria-busy", "true");
+    await expect(busy).toHaveAttribute("aria-disabled", "true");
+    await expect(busy).toHaveJSProperty("disabled", false);
+    await expect(busy).toBeFocused();
+    await expect(page.getByTestId("pending-spinner")).toBeVisible();
+    await busy.click({ force: true });
+    release();
+
+    await expect(page.getByRole("status").filter({ hasText: "Added to your basket" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Basket, 1 item" })).toBeVisible();
+    expect(posts).toBe(1);
+  });
+
+  test("AC4: a tap before the page is interactive still adds (plain form post to the basket)", async ({ page }) => {
+    // Hold the app's JavaScript so the tap lands before hydration.
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    await page.route(/\/assets\/.*\.js$/, async (route) => {
+      await held;
+      await route.continue();
+    });
+    await page.goto(PRODUCT_PATH, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("html")).not.toHaveAttribute("data-hydrated", "true");
+
+    await page.getByRole("button", { name: "Add to basket" }).click();
+    release();
 
     await expect(page).toHaveURL(/\/basket$/);
     await expect(page.getByRole("link", { name: "Basket, 1 item" })).toBeVisible();
-    // Regression: links built in loaders after a client navigation never carry the `.data` suffix.
-    await expect(page.getByRole("link", { name: "Français" })).toHaveAttribute("href", "/fr/basket");
-    const cookie = (await page.context().cookies()).find((c) => c.name === "apb_basket");
-    expect(cookie).toMatchObject({ httpOnly: true, sameSite: "Lax" });
   });
 
   test("AC7: the French page shows the French name", async ({ page }) => {
@@ -103,13 +163,13 @@ test.describe("S-011 without JavaScript", () => {
 async function basketWithCake(page: Page, basketPath = "/basket") {
   await page.goto(basketPath === "/basket" ? PRODUCT_PATH : `/fr${PRODUCT_PATH}`);
   await page.getByRole("button", { name: /Add to basket|Ajouter au panier/ }).click();
-  await expect(page).toHaveURL(new RegExp(`${basketPath}$`));
+  // Hydrated: confirmed on the page; not yet hydrated: the plain post lands on the basket.
+  const basketUrl = new RegExp(`${basketPath}$`);
+  await expect(page.getByRole("status").filter({ hasText: /Added to your basket|Ajouté à votre panier/ }).or(page.getByRole("heading", { level: 1, name: /Your basket|Votre panier/ }))).toBeVisible();
+  if (!basketUrl.test(page.url())) await page.goto(basketPath);
+  await expect(page).toHaveURL(basketUrl);
 }
 
-/** Waits until React has hydrated, so clicks go through fetchers. */
-async function hydrated(page: Page) {
-  await expect(page.locator("html")).toHaveAttribute("data-hydrated", "true");
-}
 
 test.describe("S-012 basket and delivery or pickup", () => {
   test("M2: the basket page, its data request and a line update are all Cache-Control: no-store", async ({ page }) => {
@@ -516,7 +576,7 @@ test.describe("S-014 double tap creates one order", () => {
     await setClock(context, baseURL!, "2026-11-20T06:00:00Z");
   });
 
-  test("AC7: double-click Send: the button is busy and disabled, keeps its name, and one order is made", async ({ page, db }) => {
+  test("AC7: double-click Send: the button is busy, says Sending your order…, keeps focus, and one order is made", async ({ page, db }) => {
     await basketWithCake(page);
     await hydrated(page);
     await fillOrder(page, "pickup");
@@ -529,13 +589,16 @@ test.describe("S-014 double tap creates one order", () => {
       await route.continue();
     });
 
-    const button = page.getByRole("button", { name: "Place order" });
-    await button.dblclick();
-    await expect(button).toBeDisabled();
+    await page.getByRole("button", { name: "Place order" }).dblclick();
+    const button = page.getByRole("button", { name: "Sending your order…" });
     await expect(button).toHaveAttribute("aria-busy", "true");
-    await expect(button).toHaveAccessibleName("Place order");
-    await expect(page.getByTestId("sending-spinner")).toBeVisible();
+    await expect(button).toHaveAttribute("aria-disabled", "true");
+    // Not the disabled attribute: it keeps keyboard focus; a further tap is ignored.
+    await expect(button).toHaveJSProperty("disabled", false);
+    await expect(button).toBeFocused();
+    await expect(page.getByTestId("pending-spinner")).toBeVisible();
     await expect(page.getByRole("status").filter({ hasText: "Sending your order…" })).toBeAttached();
+    await button.click({ force: true });
     release();
 
     await expect(page).toHaveURL(TOKEN_URL);

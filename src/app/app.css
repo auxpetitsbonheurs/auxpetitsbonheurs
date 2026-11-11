@@ -74,6 +74,23 @@
       transform: scale(1.15);
     }
   }
+
+  /* Navigation progress bar: appears after a short delay (no flash on fast pages), then fills slowly. */
+  --animate-nav-progress: nav-progress 8s var(--ease-enter) 150ms both;
+
+  @keyframes nav-progress {
+    0% {
+      opacity: 0;
+      transform: scaleX(0.05);
+    }
+    5% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 1;
+      transform: scaleX(0.9);
+    }
+  }
 }
 
 :root {

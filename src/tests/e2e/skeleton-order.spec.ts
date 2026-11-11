@@ -15,9 +15,11 @@ test("S-018 AC6, S-016 AC6: guest order to APB-0001, double click still one orde
   // A guest orders for delivery.
   await setClock(context, baseURL!, "2026-11-20T06:00:00Z");
   await page.goto(`/menu/${SAMPLE_PRODUCT.slug}`);
-  await page.getByRole("button", { name: "Add to basket" }).click();
-  await expect(page).toHaveURL(/\/basket$/);
   await expect(page.locator("html")).toHaveAttribute("data-hydrated", "true");
+  await page.getByRole("button", { name: "Add to basket" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Added to your basket" })).toBeVisible();
+  await page.getByRole("link", { name: "View basket" }).click();
+  await expect(page).toHaveURL(/\/basket$/);
   await page.getByRole("radio", { name: /^Delivery/ }).check();
   await page.getByLabel("Delivery address").fill("12 Royal Road, Rose Hill");
   await page.getByLabel("Date", { exact: true }).fill("2026-11-21");

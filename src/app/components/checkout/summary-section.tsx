@@ -1,5 +1,5 @@
-import { Check, LoaderCircle } from "lucide-react";
-import { Button } from "~/components/ui/button";
+import { Check } from "lucide-react";
+import { SubmitButton } from "~/components/ui/submit-button";
 import { useI18n } from "~/i18n/react";
 import { formatRupees } from "~/lib/locale";
 import type { FieldErrors } from "./fulfilment-section";
@@ -124,13 +124,10 @@ export function PlaceOrderBar({ itemsTotalRs, deliveryFeeRs, label, submitting }
         <div className="min-w-0">
           <TotalByChoice itemsTotalRs={itemsTotalRs} deliveryFeeRs={deliveryFeeRs} />
         </div>
-        <Button type="submit" name="intent" value="placeOrder" size="lg" disabled={submitting} aria-busy={submitting || undefined} className="min-w-1/2 grow">
-          {submitting && <LoaderCircle aria-hidden="true" data-testid="sending-spinner" className="motion-safe:animate-spin" />}
+        {/* Focusable while busy (aria-disabled, not disabled); repeat taps are ignored and the idempotency key covers the rest. */}
+        <SubmitButton name="intent" value="placeOrder" size="lg" pending={submitting} pendingText={t("checkout.sending")} pendingLabel={t("checkout.sending")} className="min-w-1/2 grow">
           {label}
-        </Button>
-        <p role="status" className="sr-only">
-          {submitting ? t("checkout.sending") : ""}
-        </p>
+        </SubmitButton>
       </div>
     </div>
   );

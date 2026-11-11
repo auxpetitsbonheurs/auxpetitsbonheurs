@@ -42,7 +42,7 @@ Out of scope: custom request form and quote creation/expiry (FR-028..033; this s
 4. **Time window**: radio rows from `windows.delivery` or `windows.pickup` by fulfilment (Settings, FR-020); shown after step 2.
 5. **Your details**: name, phone (`tel`), email, optional note. Prefilled when signed in.
 6. **Summary**: items, delivery fee line or "Pickup: free", total, payment info (Juice number from Settings, or cash on delivery/pickup), policy checkbox (label opens policies in a sheet, includes the 48 h cancellation text from `/faq#cancellation`).
-Sticky bar: total + "Place order". Hides with the keyboard. While submitting the button is loading and disabled.
+Sticky bar: total + "Place order". Hides with the keyboard. From the tap until the confirmation page has loaded (including the redirect), the button shows a spinner and "Sending your order…", is `aria-busy` and `aria-disabled` (not `disabled`, so focus stays on it) and ignores further taps (amended 2026-11-11, staging latency report).
 
 ### Tracking page content
 - Header: number, status badge (customer wording), paid status. Summary: items with options, date, window, delivery/pickup (address, landmark), delivery fee, total, payment info.

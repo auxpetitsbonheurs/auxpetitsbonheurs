@@ -1,5 +1,6 @@
 import { ShoppingBasket } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router";
 import { cn } from "~/lib/utils";
 import { useI18n } from "~/i18n/react";
 
@@ -14,8 +15,8 @@ export function BasketLink({ href, count }: { href: string; count: number }) {
   const changed = count !== countAtLoad;
   return (
     <>
-      <a
-        href={href}
+      <Link
+        to={href}
         aria-label={t("shell.basketLink", { count })}
         className="relative inline-flex size-11 items-center justify-center rounded-md text-foreground transition-colors duration-(--motion-fast) hover:bg-muted"
       >
@@ -33,7 +34,7 @@ export function BasketLink({ href, count }: { href: string; count: number }) {
             {count > 99 ? "99+" : count}
           </span>
         )}
-      </a>
+      </Link>
       <p role="status" aria-live="polite" className="sr-only">
         {t("shell.basketStatus", { count })}
       </p>

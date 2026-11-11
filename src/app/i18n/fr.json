@@ -14,7 +14,8 @@
       "email": "E-mail",
       "copyright": "© {{year}} Aux petits bonheurs",
       "pickup": "Retrait à {{address}}"
-    }
+    },
+    "loading": "Chargement…"
   },
   "language": {
     "other": "English"
@@ -116,6 +117,9 @@
   },
   "product": {
     "addToBasket": "Ajouter au panier",
+    "adding": "Ajout en cours…",
+    "added": "Ajouté à votre panier",
+    "viewBasket": "Voir le panier",
     "soldOut": "Épuisé",
     "soldOutHint": "Ce gâteau est épuisé pour le moment. Écrivez-nous sur WhatsApp pour savoir quand il revient."
   },

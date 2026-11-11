@@ -116,6 +116,24 @@ test("S-008 AC2: the switch keeps the page and query and remembers English for a
   expect(cookie!.expires - Date.now() / 1000).toBeLessThanOrEqual(ONE_YEAR_S + 60);
 });
 
+test("the switch changes language without reloading the page once it is interactive", async ({ page }) => {
+  await page.goto("/fr/basket");
+  await expect(page.locator("html")).toHaveAttribute("data-hydrated", "true");
+  await page.evaluate(() => ((window as unknown as { samePage: boolean }).samePage = true));
+  const documents: string[] = [];
+  page.on("request", (r) => {
+    if (r.resourceType() === "document") documents.push(r.url());
+  });
+
+  await page.getByRole("link", { name: "English" }).click();
+
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.getByRole("heading", { level: 1, name: "Your basket" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Français" })).toHaveAttribute("href", "/fr/basket");
+  expect(await page.evaluate(() => (window as unknown as { samePage?: boolean }).samePage)).toBe(true);
+  expect(documents).toEqual([]);
+});
+
 test.describe("hreflang and lang (S-008 AC5)", () => {
   for (const [path, lang] of [
     ["/", "en"],
