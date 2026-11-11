@@ -43,3 +43,6 @@ Overall: PENDING
 | GET /healthz | 2 | 50 | – | – | 54 | 0 |
 
 Verdict: FAIL against the 10 ms target (all three hot paths). Cloudflare stopped no request (exceededCpu 0 of 150+). Leading suspect: a new TLS + SCRAM pooler connection per request (the DB-free add-to-basket POST is ~9 ms). Next lever: Hyperdrive (free plan) — Owner decision pending.
+
+## Decision 2026-11-11 (Owner): accept and monitor
+Staging (Hyperdrive off, run 43063416243) is stable but hot paths use ~20–50 ms CPU p50 (p99 up to ~108 ms) vs the 10 ms free-plan target; Cloudflare blocked no request (exceededCpu 0). Owner chose to stay on the free plan and monitor. Actions: alert on any `exceededCpu` / 1102 error (E-12 observability), re-run cpu-measure before launch (S-226); switch to Workers Paid ($5/month) only if blocks appear. Risk T3 stays open at "monitor".

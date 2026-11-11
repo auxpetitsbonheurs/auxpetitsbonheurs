@@ -48,3 +48,8 @@
 - TD (launch blocker): email (`RESEND_API_KEY`, `EMAIL_FROM`) is optional at startup; E-10's sender must leave outbox rows `pending` (no attempts consumed) while unconfigured, so they go out once the keys are set. Production public launch requires it. Medium.
 - Low: Sentry (when added) must be a no-op without `SENTRY_DSN`; push and the auth email hook stay off without their keys (`integrationConfigured`).
 - Low: `scripts/check-deploy.ts` checks the build, not the Worker's secrets; launch readiness runs after the deploy (needs the Worker to exist). A first production deploy therefore always warns until the secrets are entered.
+
+## CPU (risk T3) — Owner decision 2026-11-11: accept and monitor
+- [ ] Alert on Worker `exceededCpu` / error 1102 in staging and production (fold into E-12 observability story).
+- [ ] Re-run cpu-measure on staging before launch; if any request is blocked, raise Workers Paid ($5/month) with the Owner.
+- [ ] Hyperdrive needs a different driver (postgres.js param-type round-trip stalls through it); revisit only if CPU becomes a problem.
