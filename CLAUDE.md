@@ -68,3 +68,9 @@ See `docs/COLLABORATIVE-DESIGN-PRINCIPLE.md` for the full protocol.
 - **Helpers in `.claude/scripts/` emit observations, never verdicts.** Skills
   and agents decide; scripts report facts.
 - Read large docs by section (Grep for `^#`, then Read with offset/limit).
+
+## Owner preferences (standing)
+
+- **UX comes first.** Customers, the Owner and admins must never be frustrated: every action gives instant feedback, nothing feels slow or broken, and edge cases (sold out, price changes, errors) are handled calmly without blocking the flow. Involve `ux-lead` on any user-facing change and check it on a real phone width before calling it done.
+- Work autonomously; ask only for major design decisions (popup question with options + "Other").
+- Manual setup steps for the Owner: only the minimum needed for the current step, one action per line with where to click.
