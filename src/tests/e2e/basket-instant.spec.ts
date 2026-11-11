@@ -208,6 +208,16 @@ test.describe("ADR-0004 menu cached in the phone", () => {
     expect(again.status()).toBe(304);
   });
 
+  test("the basket's code is loaded ahead from the header link, with no data prefetch", async ({ page }) => {
+    const requests = await requestsDuring(page, async () => {
+      await page.goto(CAKE_PATH);
+      await hydrated(page);
+      await expect(page.locator('link[rel="modulepreload"][href*="basket"]')).not.toHaveCount(0);
+      await menuCached(page);
+    });
+    expect(requests.filter((r) => r.includes(".data"))).toEqual([]);
+  });
+
   test("a repeat visit renders the basket from the cached menu with no loader request", async ({ page }) => {
     await addFromProductPage(page, CAKE_PATH);
 

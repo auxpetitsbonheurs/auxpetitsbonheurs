@@ -20,6 +20,9 @@ export function BasketLink({ href, count: serverCount }: { href: string; count: 
     <>
       <Link
         to={href}
+        // ADR-0004: load the basket's code ahead, so opening it needs no request at all (no
+        // data is prefetched: the root and layout skip revalidation, the basket has a clientLoader).
+        prefetch="render"
         aria-label={t("shell.basketLink", { count })}
         className="relative inline-flex size-11 items-center justify-center rounded-md text-foreground transition-colors duration-(--motion-fast) hover:bg-muted"
       >

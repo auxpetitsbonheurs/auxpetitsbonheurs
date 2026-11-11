@@ -200,7 +200,7 @@ function AddToBasketForm({ productId, refusal }: { productId: string; refusal?: 
       <div role="status">
         {(added > 0 || serverAdded) && !error && (
           <Alert key={added} tone="success" title={t("product.added")} className="mt-4">
-            <Link to={localePath(locale, "/basket")} className="mt-1 inline-flex min-h-11 items-center font-semibold link">
+            <Link to={localePath(locale, "/basket")} prefetch="render" className="mt-1 inline-flex min-h-11 items-center font-semibold link">
               {t("product.viewBasket")}
             </Link>
           </Alert>
