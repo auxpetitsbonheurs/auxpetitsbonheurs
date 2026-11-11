@@ -90,9 +90,15 @@
       "contactPhone": "Indiquez un numéro de téléphone, par exemple 5712 3456.",
       "contactEmail": "Indiquez une adresse e-mail, par exemple nom@exemple.com.",
       "contactNote": "La note doit faire moins de 1 000 caractères.",
-      "resubmit": "Merci de vérifier vos informations et de passer à nouveau votre commande."
+      "resubmit": "Merci de vérifier vos informations et de passer à nouveau votre commande.",
+      "nothingOrderable": "Rien dans votre panier ne peut être commandé pour le moment. Retirez les articles indisponibles ou choisissez autre chose."
     },
-    "totalUpdated": "Total mis à jour de {{old}} à {{new}}"
+    "totalUpdated": "Le total est passé de {{old}} à {{new}}",
+    "leftOutLine": "{{name}} : non inclus, plus disponible",
+    "notSentTitle": "Votre commande n'a pas encore été envoyée",
+    "leftOutRefusal_one": "Cet article n'est plus disponible et ne fait pas partie de votre commande : {{names}}.",
+    "leftOutRefusal_other": "Ces articles ne sont plus disponibles et ne font pas partie de votre commande : {{names}}.",
+    "totalChanged": "Le total est passé de {{old}} à {{new}}. Vérifiez-le, puis appuyez sur Commander pour confirmer."
   },
   "errors": {
     "notFoundTitle": "Page introuvable",
@@ -122,7 +128,9 @@
     "added": "Ajouté à votre panier",
     "viewBasket": "Voir le panier",
     "soldOut": "Épuisé",
-    "soldOutHint": "Ce gâteau est épuisé pour le moment. Écrivez-nous sur WhatsApp pour savoir quand il revient."
+    "soldOutHint": "Ce gâteau est épuisé pour le moment. Écrivez-nous sur WhatsApp pour savoir quand il revient.",
+    "addedCount_one": "Ajouté à votre panier",
+    "addedCount_other": "Ajouté à votre panier ({{count}} dans le panier)"
   },
   "basket": {
     "metaTitle": "Votre panier",
@@ -139,12 +147,20 @@
     "eachPrice": "{{price}} l'unité",
     "lineTotal": "Total de la ligne",
     "subtotal": "Sous-total",
-    "unavailableItem": "Article plus disponible",
+    "unavailableItem": "Cet article n'est plus disponible",
     "errors": {
       "quantity": "Choisissez une quantité entre 1 et 50."
     },
-    "noLongerAvailable": "N'est plus disponible",
-    "priceUpdated": "Prix mis à jour de {{old}} à {{new}}"
+    "noLongerAvailable": "Plus disponible. Cet article ne fera pas partie de votre commande.",
+    "priceUpdated": "Le prix est passé de {{old}} à {{new}}",
+    "notInOrder": "Il ne fera pas partie de votre commande.",
+    "unavailableCount_one": "{{count}} article n'est plus disponible",
+    "unavailableCount_other": "{{count}} articles ne sont plus disponibles",
+    "nothingOrderable": "Rien dans votre panier ne peut être commandé pour le moment. Retirez les articles indisponibles ou choisissez autre chose.",
+    "removed": "Retiré de votre panier : {{name}}.",
+    "undo": "Annuler",
+    "undoRemove": "Annuler le retrait de {{name}}",
+    "restored": "De retour dans votre panier : {{name}}."
   },
   "order": {
     "confirmed": {
@@ -162,7 +178,10 @@
       "copiedLink": "Lien copié",
       "share": "Partager le lien",
       "shareText": "Ma commande Aux petits bonheurs {{number}} : {{url}}",
-      "copyFailed": "La copie n'a pas fonctionné. Sélectionnez le texte et copiez-le vous-même."
+      "copyFailed": "La copie n'a pas fonctionné. Sélectionnez le texte et copiez-le vous-même.",
+      "leftOutTitle": "Non inclus dans votre commande",
+      "leftOutBody_one": "Cet article n'était plus disponible au moment de votre commande : {{names}}.",
+      "leftOutBody_other": "Ces articles n'étaient plus disponibles au moment de votre commande : {{names}}."
     },
     "notFound": {
       "metaTitle": "Commande introuvable",

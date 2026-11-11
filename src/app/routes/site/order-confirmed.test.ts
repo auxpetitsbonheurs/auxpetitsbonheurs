@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
+import { insertProduct } from "~/db/testing/catalogue";
 import { requestDbContext } from "~/server/db.server";
 import { placeTestOrder } from "~/server/testing/orders";
 import { routeArgs } from "~/server/testing/route-context";
@@ -43,6 +44,27 @@ describe("confirmation (S-015 AC1)", () => {
     expect(data).toMatchObject({ number: "APB-0001", trackingUrl: `http://localhost/t/${token}`, offerSaveDetails: false });
     // Minimal slice: no contact data in the page until the Save-my-details card (E-11).
     expect(JSON.stringify(data)).not.toContain("aisha");
+  });
+});
+
+describe("items left out of the order (UX audit H1, spec AC41)", () => {
+  const tartId = () => insertProduct(database.db, { slug: `tart-${Date.now()}`, nameEn: "Lemon tart", nameFr: "Tarte au citron", status: "sold_out" });
+
+  test("the left-out cookie names the products in the page language; refreshing shows them again", async () => {
+    const tart = await tartId();
+    const { path, token } = await placeTestOrder(database, { basketPath: "/fr/basket" });
+    const cookie = `apb_left_out=${tart}`;
+
+    const data = (await load(path, token, { cookie })) as { leftOut: string[] };
+    expect(data.leftOut).toEqual(["Tarte au citron"]);
+    expect(await load(path, token, { cookie })).toEqual(data);
+  });
+
+  test("without the cookie, or with an id that is no product, nothing is named", async () => {
+    const { path, token } = await placeTestOrder(database);
+
+    expect(((await load(path, token)) as { leftOut: string[] }).leftOut).toEqual([]);
+    expect(((await load(path, token, { cookie: "apb_left_out=00000000-0000-4000-8000-000000000000" })) as { leftOut: string[] }).leftOut).toEqual([]);
   });
 });
 

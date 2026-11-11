@@ -8,7 +8,12 @@ import { formatOrderNumber } from "~/domain/order-number";
 import { t as translate } from "~/i18n/catalog.server";
 import { useI18n } from "~/i18n/react";
 import { localeFromPathname, localePath } from "~/lib/locale";
-import { requestDbContext } from "~/server/db.server";
+import { localized } from "~/i18n/localized";
+import { type Locale } from "~/lib/locale";
+import { nameList } from "~/lib/left-out";
+import { type Database, requestDbContext } from "~/server/db.server";
+import { readLeftOut } from "~/server/left-out.server";
+import { findProductsByIds } from "~/server/repos/catalogue.server";
 import { findOrderRefByToken } from "~/server/repos/orders.server";
 import { getCheckoutSettings } from "~/server/repos/settings.server";
 import { isTrackingToken, orderLanguageRedirect, tokenPageHeaders } from "~/server/token-page.server";
@@ -36,7 +41,22 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
     number: formatOrderNumber(orderNumberPrefix, order.number),
     trackingUrl: `${url.origin}${localePath(order.locale, `/t/${order.trackingToken}`)}`,
     offerSaveDetails: false,
+    leftOut: await leftOutNamesFor(db, request, locale),
   };
+}
+
+/**
+ * Names of the products the order left out (UX audit H1, AC41), from the `apb_left_out`
+ * cookie the basket action set for this page only (product ids, never personal data).
+ */
+async function leftOutNamesFor(db: Database, request: Request, locale: Locale): Promise<string[]> {
+  const ids = readLeftOut(request);
+  if (ids.length === 0) return [];
+  const products = await findProductsByIds(db, ids);
+  return ids.flatMap((id) => {
+    const found = products.get(id);
+    return found ? [localized(found.name, locale)] : [];
+  });
 }
 
 export function meta({ loaderData }: Route.MetaArgs) {
@@ -68,11 +88,11 @@ function NumberCard({ number, onCopy, copied }: { number: string; onCopy?: () =>
 }
 
 export default function OrderConfirmed({ loaderData }: Route.ComponentProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const heading = useFocusOnArrival();
   const hydrated = useHydrated();
   const { status, copy } = useCopyStatus();
-  const { number, trackingUrl } = loaderData;
+  const { number, trackingUrl, leftOut } = loaderData;
   const copiedNumber = t("order.confirmed.copiedNumber");
   const copiedLink = t("order.confirmed.copiedLink");
   return (
@@ -81,6 +101,11 @@ export default function OrderConfirmed({ loaderData }: Route.ComponentProps) {
         {t("order.confirmed.heading")}
       </h1>
       <NumberCard number={number} copied={status === copiedNumber} onCopy={hydrated ? () => copy(number, copiedNumber) : undefined} />
+      {leftOut.length > 0 && (
+        <Alert tone="warning" title={t("order.confirmed.leftOutTitle")} className="mt-6">
+          <p>{t("order.confirmed.leftOutBody", { count: leftOut.length, names: nameList(leftOut, locale) })}</p>
+        </Alert>
+      )}
       <Alert tone="info" title={t("order.confirmed.notConfirmedTitle")} className="mt-6">
         <p>{t("order.confirmed.notConfirmedBody")}</p>
       </Alert>

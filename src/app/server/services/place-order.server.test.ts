@@ -291,6 +291,19 @@ describe("availability (S-013 AC9)", () => {
     expect(rows).toEqual([{ total_rs: 1050 }]);
     const items = await database.client.query<{ product_id: string }>("select product_id from order_item");
     expect(items.rows.map((r) => r.product_id)).toEqual([cakeId]);
+    // UX audit H1: the caller names what was left out on the confirmation page.
+    expect(result.leftOut).toEqual([tart]);
+  });
+
+  test("an order with nothing left out says so, and a replay names nothing (UX audit H1)", async () => {
+    const form = deliveryForm();
+    const first = await place(form, { basket: [line("a", cakeId)] });
+    expectRefusedNever(first);
+    expect(first.leftOut).toEqual([]);
+
+    const replay = await place(form, { basket: [] });
+    expectRefusedNever(replay);
+    expect(replay.leftOut).toEqual([]);
   });
 
   test("a line that became unavailable after the page showed it changes the total: PRICE_CHANGED marks it", async () => {

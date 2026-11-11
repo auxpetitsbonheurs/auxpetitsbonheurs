@@ -4,7 +4,9 @@
 // snapshot is what the loader read from the request, so hydration matches the HTML.
 import { useSyncExternalStore } from "react";
 import { useLocation } from "react-router";
-import { type BasketLine, type NewBasketLine, addLine, basketItemCount, removeLine, setLineQuantity } from "~/domain/basket";
+import { type BasketLine, type NewBasketLine, addLine, removeLine, restoreLine, setLineQuantity } from "~/domain/basket";
+import { orderableItemCount } from "~/domain/menu";
+import { menuStore } from "./menu-cache";
 import { basketCookie, basketCookieValue, decodeBasket, newLineId } from "~/domain/basket-cookie";
 
 export interface CookieJar {
@@ -20,6 +22,8 @@ export interface BasketStore {
   add(line: NewBasketLine): BasketLine[];
   setQuantity(lineId: string, quantity: number): BasketLine[];
   remove(lineId: string): BasketLine[];
+  /** Undo of a Remove: the same line back at `index` (UX audit M3). */
+  restore(line: BasketLine, index: number): BasketLine[];
   /** False when the cookie cannot be written from script (an old HttpOnly cookie, cookies off). */
   writable(): boolean;
   /** Re-reads the cookie (another tab, a server response) and notifies when it changed. */
@@ -57,6 +61,11 @@ export function createBasketStore(jar: CookieJar, lineId: () => string = newLine
     add: (line) => save(addLine(read(), line, lineId)),
     setQuantity: (id, quantity) => save(setLineQuantity(read(), id, quantity)),
     remove: (id) => save(removeLine(read(), id)),
+    restore(line, index) {
+      const current = read();
+      const next = restoreLine(current, line, index);
+      return next === current ? current : save(next);
+    },
     writable() {
       try {
         return basketCookieValue(jar.read()) !== undefined || probe(jar);
@@ -103,8 +112,24 @@ export function useBasketLines(serverLines: BasketLine[]): BasketLine[] {
   return useSyncExternalStore(basketStore.subscribe, basketStore.lines, () => serverLines);
 }
 
+/** Re-renders on a basket change or a menu change (a line may turn sold out). */
+function subscribeBasketAndMenu(listener: () => void) {
+  const offBasket = basketStore.subscribe(listener);
+  const offMenu = menuStore.subscribe(listener);
+  return () => {
+    offBasket();
+    offMenu();
+  };
+}
+
+/** Items that will be ordered, for the header count (UX audit M1: known sold-out or gone lines are not counted). */
+function orderableCount(): number {
+  const { entry, goneNames } = menuStore.state();
+  return orderableItemCount(basketStore.lines(), entry?.data ?? null, new Set(goneNames.keys()));
+}
+
 /** Items in the basket for the header count. */
 export function useBasketCount(serverCount: number): number {
   useLocation();
-  return useSyncExternalStore(basketStore.subscribe, () => basketItemCount(basketStore.lines()), () => serverCount);
+  return useSyncExternalStore(subscribeBasketAndMenu, orderableCount, () => serverCount);
 }

@@ -34,6 +34,8 @@ export interface MenuStore {
   offer(entry: MenuEntry): void;
   /** Replaces the current copy whatever its age (prices from a placeOrder refusal). */
   replace(entry: MenuEntry): void;
+  /** Adds names of basket products the server found hidden (the basket loader's `goneNames`). */
+  rememberGone(names: Readonly<Record<string, LocalizedName>>): void;
   /** Fetches /api/menu unless fresh; `force` asks the server even within max-age (ETag answers 304). */
   revalidate(options?: { force?: boolean }): Promise<void>;
 }
@@ -119,6 +121,12 @@ export function createMenuStore(io: MenuStoreIo): MenuStore {
     replace(entry) {
       init();
       take(entry);
+    },
+    rememberGone(names) {
+      init();
+      const fresh = Object.entries(names).filter(([id]) => !state.goneNames.has(id));
+      if (fresh.length === 0) return;
+      set({ ...state, goneNames: new Map([...state.goneNames, ...fresh]) });
     },
     revalidate({ force = false } = {}) {
       init();

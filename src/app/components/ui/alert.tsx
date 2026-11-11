@@ -1,17 +1,18 @@
-import { CircleAlert, CircleCheck, Info } from "lucide-react";
+import { CircleAlert, CircleCheck, Info, TriangleAlert } from "lucide-react";
 import { type ComponentProps, forwardRef } from "react";
 import { cn } from "~/lib/utils";
 
-type Tone = "info" | "danger" | "success";
+type Tone = "info" | "warning" | "danger" | "success";
 
 const toneClass: Record<Tone, string> = {
   info: "border-info",
+  warning: "border-warning",
   danger: "border-destructive",
   success: "border-success",
 };
 
-const toneIcon = { info: Info, danger: CircleAlert, success: CircleCheck } as const;
-const iconClass: Record<Tone, string> = { info: "text-info", danger: "text-destructive", success: "text-success" };
+const toneIcon = { info: Info, warning: TriangleAlert, danger: CircleAlert, success: CircleCheck } as const;
+const iconClass: Record<Tone, string> = { info: "text-info", warning: "text-warning", danger: "text-destructive", success: "text-success" };
 
 /**
  * Inline banner (design-system "Alert"): icon + title + text. Text stays in the

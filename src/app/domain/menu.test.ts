@@ -3,7 +3,7 @@
 import { describe, expect, test } from "vitest";
 import type { BasketLine } from "./basket";
 import { menu, menuProduct } from "./testing/menu";
-import { type MenuEntry, fresherEntry, isMenuEntry, menuWithServerPrices, mergePriceNotes, priceBasket, priceChanges } from "./menu";
+import { type MenuEntry, fresherEntry, isMenuEntry, menuWithServerPrices, mergePriceNotes, orderableItemCount, priceBasket, priceChanges } from "./menu";
 import { checkoutTotals } from "./pricing";
 
 const CAKE = "11111111-1111-4111-8111-111111111111";
@@ -62,5 +62,23 @@ describe("menu entries", () => {
     expect(next.v).not.toBe("v1");
     expect(next.data.products.map((p) => [p.id, p.basePriceRs, p.status])).toEqual([[CAKE, 850, "available"], [TART, 400, "sold_out"]]);
     expect(next.data.checkout.deliveryFeeRs).toBe(250);
+  });
+});
+
+describe("orderableItemCount (header badge, UX audit H1.4 / M1)", () => {
+  const lines = [line("a", CAKE, 2), line("b", TART), line("c", GONE, 3)];
+
+  test("counts only what will be ordered: sold out and known-gone products are left out", () => {
+    const cached = menu([menuProduct(CAKE, 850), menuProduct(TART, 400, { status: "sold_out" })]);
+
+    expect(orderableItemCount(lines, cached, new Set([GONE]))).toBe(2);
+  });
+
+  test("a product the cached menu does not know yet still counts (a new cake must never look unadded)", () => {
+    expect(orderableItemCount(lines, menu([menuProduct(CAKE, 850)]), new Set())).toBe(6);
+  });
+
+  test("without a cached menu every line counts", () => {
+    expect(orderableItemCount(lines, null, new Set())).toBe(6);
   });
 });

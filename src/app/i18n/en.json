@@ -90,9 +90,15 @@
       "contactPhone": "Enter a phone number, for example 5712 3456.",
       "contactEmail": "Enter an email address, for example name@example.com.",
       "contactNote": "Keep the note under 1,000 characters.",
-      "resubmit": "Please check your details and place your order again."
+      "resubmit": "Please check your details and place your order again.",
+      "nothingOrderable": "Nothing in your basket can be ordered right now. Remove the unavailable items or choose something else."
     },
-    "totalUpdated": "Total updated from {{old}} to {{new}}"
+    "totalUpdated": "Total updated from {{old}} to {{new}}",
+    "leftOutLine": "{{name}}: not included, no longer available",
+    "notSentTitle": "Your order has not been sent yet",
+    "leftOutRefusal_one": "This item is no longer available and was left out: {{names}}.",
+    "leftOutRefusal_other": "These items are no longer available and were left out: {{names}}.",
+    "totalChanged": "The total changed from {{old}} to {{new}}. Check it, then press Place order to confirm."
   },
   "errors": {
     "notFoundTitle": "Page not found",
@@ -122,7 +128,9 @@
     "added": "Added to your basket",
     "viewBasket": "View basket",
     "soldOut": "Sold out",
-    "soldOutHint": "This cake is sold out for now. Message us on WhatsApp to ask when it is back."
+    "soldOutHint": "This cake is sold out for now. Message us on WhatsApp to ask when it is back.",
+    "addedCount_one": "Added to your basket",
+    "addedCount_other": "Added to your basket ({{count}} in basket)"
   },
   "basket": {
     "metaTitle": "Your basket",
@@ -143,8 +151,16 @@
     "errors": {
       "quantity": "Choose a quantity from 1 to 50."
     },
-    "noLongerAvailable": "No longer available",
-    "priceUpdated": "Price updated from {{old}} to {{new}}"
+    "noLongerAvailable": "No longer available. It will not be part of your order.",
+    "priceUpdated": "Price updated from {{old}} to {{new}}",
+    "notInOrder": "It will not be part of your order.",
+    "unavailableCount_one": "{{count}} item is no longer available",
+    "unavailableCount_other": "{{count}} items are no longer available",
+    "nothingOrderable": "Nothing in your basket can be ordered right now. Remove the unavailable items or choose something else.",
+    "removed": "Removed from your basket: {{name}}.",
+    "undo": "Undo",
+    "undoRemove": "Undo removing {{name}}",
+    "restored": "Back in your basket: {{name}}."
   },
   "order": {
     "confirmed": {
@@ -162,7 +178,10 @@
       "copiedLink": "Link copied",
       "share": "Share link",
       "shareText": "My Aux petits bonheurs order {{number}}: {{url}}",
-      "copyFailed": "Copying did not work. Select the text and copy it yourself."
+      "copyFailed": "Copying did not work. Select the text and copy it yourself.",
+      "leftOutTitle": "Not included in your order",
+      "leftOutBody_one": "{{names}} was no longer available when you ordered.",
+      "leftOutBody_other": "{{names}} were no longer available when you ordered."
     },
     "notFound": {
       "metaTitle": "Order not found",

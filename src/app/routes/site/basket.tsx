@@ -1,6 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { Undo2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Form, type MetaArgs, redirect, useNavigation } from "react-router";
-import { BasketLineItem, type BasketLineView } from "~/components/checkout/basket-line-item";
+import { BasketLineItem, type BasketLineView, type RemovedLine } from "~/components/checkout/basket-line-item";
+import { Alert } from "~/components/ui/alert";
+import { Button } from "~/components/ui/button";
+import { leftOutNames, nameList } from "~/lib/left-out";
 import { DateSection, DetailsSection, TimeSection } from "~/components/checkout/checkout-steps";
 import { ErrorSummary } from "~/components/checkout/error-summary";
 import { type FulfilmentChoice, FulfilmentSection } from "~/components/checkout/fulfilment-section";
@@ -18,6 +22,7 @@ import { isPendingIntent } from "~/lib/pending";
 import { type Locale, formatRupees, localeFromPathname, localePath } from "~/lib/locale";
 import { type ActionErrorBody, actionError } from "~/server/action-result.server";
 import { basketCookie, clearBasketCookie, readBasket } from "~/server/basket.server";
+import { leftOutCookie } from "~/server/left-out.server";
 import { clockContext } from "~/server/clock.server";
 import { Uuid } from "~/server/contracts/shared";
 import { RemoveLineInput, UpdateLineInput } from "~/server/contracts/site";
@@ -114,12 +119,17 @@ function echo(form: Record<string, unknown>): Record<string, string> {
 /** Form field name -> its message key (dots are key separators in the catalogue). */
 const fieldMessageKey = (field: string) => `checkout.errors.${field.replace(/\.(\w)/g, (_, c: string) => c.toUpperCase())}`;
 
-function fieldMessages(fields: string[], locale: Locale): Record<string, string> {
+/**
+ * `basketHasLines`: a `basket` refusal for a basket with lines means nothing in it can be
+ * ordered (UX audit H2), not that it is empty.
+ */
+function fieldMessages(fields: string[], locale: Locale, basketHasLines: boolean): Record<string, string> {
   const known = new Set(["basket", "fulfilment", "address", "landmark", "date", "windowId", "contact.name", "contact.phone", "contact.email", "contact.note", "acceptPolicies"]);
-  return Object.fromEntries(fields.map((f) => (known.has(f) ? [f, translate(fieldMessageKey(f), locale)] : ["form", translate("checkout.errors.form", locale)])));
+  const keyFor = (f: string) => (f === "basket" && basketHasLines ? "checkout.errors.nothingOrderable" : fieldMessageKey(f));
+  return Object.fromEntries(fields.map((f) => (known.has(f) ? [f, translate(keyFor(f), locale)] : ["form", translate("checkout.errors.form", locale)])));
 }
 
-function refusal(result: Exclude<PlaceOrderResult, { ok: true }>, values: Record<string, string>, locale: Locale) {
+function refusal(result: Exclude<PlaceOrderResult, { ok: true }>, values: Record<string, string>, locale: Locale, basketHasLines: boolean) {
   switch (result.code) {
     case "VALIDATION_FAILED":
       if ("keyReused" in result) {
@@ -127,7 +137,7 @@ function refusal(result: Exclude<PlaceOrderResult, { ok: true }>, values: Record
         const fields = { form: translate("checkout.errors.resubmit", locale) };
         return actionError(result.code, locale, { fields, extra: { values: { ...values, idempotencyKey: crypto.randomUUID() } } });
       }
-      return actionError(result.code, locale, { fields: fieldMessages(result.fields, locale), extra: { values } });
+      return actionError(result.code, locale, { fields: fieldMessages(result.fields, locale, basketHasLines), extra: { values } });
     case "DATE_UNAVAILABLE":
       return actionError(result.code, locale, { fields: { date: translate("checkout.errors.dateTooSoon", locale) }, extra: { values, reason: result.reason } });
     case "PRICE_CHANGED": {
@@ -139,15 +149,21 @@ function refusal(result: Exclude<PlaceOrderResult, { ok: true }>, values: Record
 
 async function submitOrder(form: Record<string, unknown>, args: Route.ActionArgs, locale: Locale) {
   const { request, context } = args;
+  const basket = readBasket(request);
   const result = await timed(context, "place-order", () => placeOrder(form, {
     db: context.get(requestDbContext).db,
     now: context.get(clockContext).now(),
     locale,
-    basket: readBasket(request),
+    basket,
   }));
-  if (!result.ok) return refusal(result, echo(form), locale);
+  if (!result.ok) return refusal(result, echo(form), locale, basket.length > 0);
   // The order's own locale: a replay from either language returns the original redirect (S-014 AC2).
-  return redirect(localePath(result.locale, `/order/${result.trackingToken}/confirmed`), { headers: { "Set-Cookie": clearBasketCookie() } });
+  const confirmation = localePath(result.locale, `/order/${result.trackingToken}/confirmed`);
+  const headers = new Headers({ "Set-Cookie": clearBasketCookie() });
+  // Lines left out are named on the confirmation page (UX audit H1): ids in a cookie for that order's pages only
+  // (Path=/order/:token so the client data request `confirmed.data` gets it too).
+  if (result.leftOut.length > 0) headers.append("Set-Cookie", leftOutCookie(result.leftOut, localePath(result.locale, `/order/${result.trackingToken}`)));
+  return redirect(confirmation, { headers });
 }
 
 export async function action(args: Route.ActionArgs) {
@@ -173,7 +189,7 @@ export function meta({ matches }: MetaArgs) {
 
 type LoaderData = Route.ComponentProps["loaderData"];
 type ActionData = Route.ComponentProps["actionData"];
-type T = (key: string, values?: Record<string, string>) => string;
+type T = (key: string, values?: Record<string, string | number>) => string;
 
 interface BasketModel {
   menu: Menu;
@@ -181,6 +197,8 @@ interface BasketModel {
   views: BasketLineView[];
   itemsTotalRs: number;
   orderable: PricedLine[];
+  /** Lines that will not be ordered, named for the summary's "not included" rows (UX audit H1). */
+  leftOut: { lineId: string; name: string }[];
 }
 
 /**
@@ -192,6 +210,8 @@ function useBasketModel(data: LoaderData, t: T, locale: Locale): BasketModel {
   const cached = useMenuState();
   // The loader's copy seeds the cache (and, when newer, produces the notes).
   useEffect(() => menuStore.offer(data.menu), [data.menu]);
+  // Hidden products the server named: the header count leaves them out too (UX audit M1).
+  useEffect(() => menuStore.rememberGone(data.goneNames), [data.goneNames]);
   const menu = fresherEntry(cached.entry, data.menu).data;
   const basket = useBasketLines(data.basket);
   const lines = priceBasket(basket, menu);
@@ -214,14 +234,20 @@ function useBasketModel(data: LoaderData, t: T, locale: Locale): BasketModel {
     };
   });
   const orderable = lines.filter((l) => l.problem === null);
-  return { menu, lines, views, itemsTotalRs: checkoutTotals(lines, null, menu.checkout.deliveryFeeRs).itemsTotalRs, orderable };
+  const leftOut = views.filter((v) => v.unavailable).map((v) => ({ lineId: v.lineId, name: v.name }));
+  return { menu, lines, views, itemsTotalRs: checkoutTotals(lines, null, menu.checkout.deliveryFeeRs).itemsTotalRs, orderable, leftOut };
 }
 
-function EmptyBasket() {
+/**
+ * No checkout: "Your basket is empty." with no lines, or, when lines exist but none can be
+ * ordered, "Nothing in your basket can be ordered right now." (UX audit H2). Either way the
+ * next step is "See the menu".
+ */
+function NoCheckout({ hasLines }: { hasLines: boolean }) {
   const { t, locale } = useI18n();
   return (
     <>
-      <p className="mt-6 text-lg">{t("basket.empty")}</p>
+      <p className="mt-6 max-w-measure text-lg">{t(hasLines ? "basket.nothingOrderable" : "basket.empty")}</p>
       <p className="mt-4">
         {/* "See the menu" goes home until the menu page exists (E-04). */}
         <a href={localePath(locale, "/")} className="inline-flex min-h-11 items-center font-semibold link">
@@ -232,7 +258,69 @@ function EmptyBasket() {
   );
 }
 
-function BasketSection({ lines, itemsTotalRs, lineError }: { lines: BasketLineView[]; itemsTotalRs: number; lineError?: string }) {
+/** "1 item is no longer available", said once when a background refresh flips lines (UX audit M2). */
+function UnavailableAnnouncement({ count }: { count: number }) {
+  const { t } = useI18n();
+  return (
+    <p role="status" className="sr-only">
+      {count > 0 ? t("basket.unavailableCount", { count }) : ""}
+    </p>
+  );
+}
+
+/**
+ * After Remove (with JavaScript): "Removed from your basket: {name}." with Undo, which puts
+ * the same line back where it was (UX audit M3). It stays until Undo or the next Remove: no
+ * timer, so keyboard and screen-reader users have the time they need.
+ */
+function RemovedNote({ removed, restored, onUndo }: { removed: RemovedLine | null; restored: string | null; onUndo: () => void }) {
+  const { t } = useI18n();
+  return (
+    <div role="status" className="mt-4 empty:hidden">
+      {removed && (
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span>{t("basket.removed", { name: removed.name })}</span>
+          <Button type="button" variant="outline" size="sm" onClick={onUndo} aria-label={t("basket.undoRemove", { name: removed.name })}>
+            <Undo2 aria-hidden="true" />
+            {t("basket.undo")}
+          </Button>
+        </p>
+      )}
+      {restored && <p>{t("basket.restored", { name: restored })}</p>}
+    </div>
+  );
+}
+
+function useUndoRemove() {
+  const [removed, setRemoved] = useState<RemovedLine | null>(null);
+  const [restored, setRestored] = useState<string | null>(null);
+  const onRemoved = (line: RemovedLine) => {
+    setRestored(null);
+    setRemoved(line);
+  };
+  const onUndo = () => {
+    if (!removed) return;
+    try {
+      basketStore.restore(removed.line, removed.index);
+      setRestored(removed.name);
+    } catch {
+      // A full basket (another tab filled it): nothing to put back.
+    }
+    setRemoved(null);
+    requestAnimationFrame(() => document.getElementById("basket-heading")?.focus());
+  };
+  return { removed, restored, onRemoved, onUndo };
+}
+
+interface BasketSectionProps {
+  lines: BasketLineView[];
+  itemsTotalRs: number;
+  showSubtotal: boolean;
+  lineError?: string;
+  onRemoved: (removed: RemovedLine) => void;
+}
+
+function BasketSection({ lines, itemsTotalRs, showSubtotal, lineError, onRemoved }: BasketSectionProps) {
   const { t } = useI18n();
   return (
     <section aria-labelledby="basket-heading" className="mt-8">
@@ -246,13 +334,16 @@ function BasketSection({ lines, itemsTotalRs, lineError }: { lines: BasketLineVi
       )}
       <ul className="mt-2">
         {lines.map((line) => (
-          <BasketLineItem key={line.lineId} line={line} />
+          <BasketLineItem key={line.lineId} line={line} onRemoved={onRemoved} />
         ))}
       </ul>
-      <p className="mt-2 flex flex-wrap justify-between gap-x-4 text-lg font-semibold">
-        <span>{t("basket.subtotal")}</span>
-        <span className="whitespace-nowrap">{formatRupees(itemsTotalRs)}</span>
-      </p>
+      {/* No "Subtotal Rs 0" when nothing can be ordered (UX audit H2). */}
+      {showSubtotal && (
+        <p className="mt-2 flex flex-wrap justify-between gap-x-4 text-lg font-semibold">
+          <span>{t("basket.subtotal")}</span>
+          <span className="whitespace-nowrap">{formatRupees(itemsTotalRs)}</span>
+        </p>
+      )}
     </section>
   );
 }
@@ -262,7 +353,7 @@ interface OrderRefusal extends ActionErrorBody {
   values: Record<string, string>;
   totalRs?: number;
   deliveryFeeRs?: number;
-  lines?: Pick<PricedLine, "productId" | "unitPriceRs" | "problem">[];
+  lines?: (Pick<PricedLine, "productId" | "unitPriceRs" | "problem"> & { name?: PricedLine["name"] })[];
 }
 
 /** Refusal of placeOrder (has `values`) vs. a basket line refusal. */
@@ -285,6 +376,8 @@ function useFocusOnRefusal(refused: OrderRefusal | undefined) {
  */
 function useRefusalPrices(refused: OrderRefusal | undefined, current: MenuEntry) {
   useEffect(() => {
+    // Nothing orderable at submit (UX audit H2): fetch the menu so the page shows why.
+    if (refused?.error.fields?.basket) void menuStore.revalidate({ force: true });
     if (refused?.error.code !== "PRICE_CHANGED" || !refused.lines) return;
     const fee = refused.values.fulfilment === "delivery" ? refused.deliveryFeeRs : undefined;
     menuStore.replace(menuWithServerPrices(current, refused.lines, fee));
@@ -294,12 +387,48 @@ function useRefusalPrices(refused: OrderRefusal | undefined, current: MenuEntry)
   }, [refused]);
 }
 
-/** "Total updated from Rs X to Rs Y" for a PRICE_CHANGED refusal (the total the customer was shown). */
-function totalNote(refused: OrderRefusal | undefined, t: T) {
+interface RefusalNote {
+  leftOut?: string;
+  total?: string;
+}
+
+/**
+ * A PRICE_CHANGED refusal explained (UX audit H1.2, M4): which items were left out (by
+ * name) and the total change from what the customer was shown. The view adds "Your order
+ * has not been sent yet".
+ */
+function refusalNote(refused: OrderRefusal | undefined, t: T, locale: Locale): RefusalNote | undefined {
   if (refused?.error.code !== "PRICE_CHANGED" || refused.totalRs === undefined) return undefined;
   const shown = Number(refused.values.displayedTotalRs ?? refused.values[`displayedTotalRs.${refused.values.fulfilment}`]);
-  if (!Number.isFinite(shown) || shown === refused.totalRs) return undefined;
-  return t("checkout.totalUpdated", { old: formatRupees(shown), new: formatRupees(refused.totalRs) });
+  const names = leftOutNames(refused.lines ?? [], locale);
+  const leftOut = names.length > 0 ? t("checkout.leftOutRefusal", { count: names.length, names: nameList(names, locale) }) : undefined;
+  const changed = Number.isFinite(shown) && shown !== refused.totalRs;
+  // A no-break space keeps "Rs" with its number in running text (design-system Price).
+  const rs = (amount: number) => formatRupees(amount).replace(" ", "\u00a0");
+  const total = changed ? t("checkout.totalChanged", { old: rs(shown), new: rs(refused.totalRs) }) : undefined;
+  return leftOut || total ? { leftOut, total } : undefined;
+}
+
+/**
+ * The refusal note, next to the sticky Place order bar: an info Alert in an always-mounted
+ * polite status region, scrolled into view without moving focus off the button.
+ */
+function RefusalNoteAlert({ note }: { note: RefusalNote | undefined }) {
+  const { t } = useI18n();
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (note) ref.current?.scrollIntoView({ block: "nearest" });
+  }, [note]);
+  return (
+    <div role="status" ref={ref} className="mt-4 scroll-mb-28">
+      {note && (
+        <Alert tone="info" title={t("checkout.notSentTitle")}>
+          {note.leftOut && <p>{note.leftOut}</p>}
+          {note.total && <p>{note.total}</p>}
+        </Alert>
+      )}
+    </div>
+  );
 }
 
 function CheckoutForm({ data, model, refused }: { data: LoaderData; model: BasketModel; refused: OrderRefusal | undefined }) {
@@ -318,7 +447,8 @@ function CheckoutForm({ data, model, refused }: { data: LoaderData; model: Baske
   const priceChanged = refused?.error.code === "PRICE_CHANGED";
   const label = priceChanged ? t("checkout.placeOrderAt", { total: formatRupees(totalRs) }) : t("checkout.placeOrder");
   const items = model.orderable.map((l) => ({ lineId: l.lineId, name: localized(l.name, locale), quantity: l.quantity, lineTotalRs: l.lineTotalRs }));
-  const note = totalNote(refused, t);
+  // Memoised on the refusal so the note scrolls into view once, not on every render.
+  const note = useMemo(() => refusalNote(refused, t, locale), [refused, t, locale]);
   return (
     <Form method="post" noValidate className="checkout-form">
       {refused && !priceChanged && <ErrorSummary ref={summaryRef} message={refused.error.message} fields={refused.error.fields} />}
@@ -333,6 +463,7 @@ function CheckoutForm({ data, model, refused }: { data: LoaderData; model: Baske
       <DetailsSection initial={values} errors={errors} />
       <SummarySection
         items={items}
+        leftOut={model.leftOut}
         itemsTotalRs={itemsTotalRs}
         deliveryFeeRs={checkout.deliveryFeeRs}
         juiceNumber={checkout.payment.juiceNumber}
@@ -340,9 +471,7 @@ function CheckoutForm({ data, model, refused }: { data: LoaderData; model: Baske
         errors={errors}
         initialAccepted={values.acceptPolicies === "on"}
       />
-      <p role="status" className="mt-4 text-sm">
-        {note}
-      </p>
+      <RefusalNoteAlert note={note} />
       <PlaceOrderBar itemsTotalRs={itemsTotalRs} deliveryFeeRs={checkout.deliveryFeeRs} label={label} submitting={submitting} />
     </Form>
   );
@@ -354,12 +483,17 @@ export default function Basket({ loaderData, actionData }: Route.ComponentProps)
   const refused = orderRefusal(actionData);
   useRefusalPrices(refused, fresherEntry(menuStore.state().entry, loaderData.menu));
   const lineError = actionData && !actionData.ok && !refused ? actionData.error.message : undefined;
+  const undo = useUndoRemove();
+  const hasLines = model.views.length > 0;
+  const canOrder = model.orderable.length > 0;
   return (
     <>
       <h1>{t("basket.metaTitle")}</h1>
-      {model.views.length > 0 && <BasketSection lines={model.views} itemsTotalRs={model.itemsTotalRs} lineError={lineError} />}
-      {/* Checkout needs something orderable; otherwise the normal empty-basket message. */}
-      {model.orderable.length === 0 ? <EmptyBasket /> : <CheckoutForm data={loaderData} model={model} refused={refused} />}
+      <RemovedNote removed={undo.removed} restored={undo.restored} onUndo={undo.onUndo} />
+      <UnavailableAnnouncement count={model.leftOut.length} />
+      {hasLines && <BasketSection lines={model.views} itemsTotalRs={model.itemsTotalRs} showSubtotal={canOrder} lineError={lineError} onRemoved={undo.onRemoved} />}
+      {/* Checkout needs something orderable; otherwise the empty or nothing-orderable message. */}
+      {canOrder ? <CheckoutForm data={loaderData} model={model} refused={refused} /> : <NoCheckout hasLines={hasLines} />}
     </>
   );
 }

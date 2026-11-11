@@ -1,10 +1,11 @@
-import { Minus, Plus, Trash2 } from "lucide-react";
-import { type FormEvent, useEffect } from "react";
+import { CircleSlash, Info, Minus, Plus, Trash2 } from "lucide-react";
+import { type ComponentProps, type FormEvent, useEffect, useState } from "react";
 import { useFetcher } from "react-router";
 import { Button } from "~/components/ui/button";
-import { LINE_MAX_QUANTITY, LINE_MIN_QUANTITY } from "~/domain/basket";
+import { type BasketLine, LINE_MAX_QUANTITY, LINE_MIN_QUANTITY } from "~/domain/basket";
 import { useI18n } from "~/i18n/react";
 import { basketStore } from "~/lib/basket-store";
+import { useHydrated } from "~/lib/use-hydrated";
 import { cn } from "~/lib/utils";
 
 export interface BasketLineView {
@@ -51,6 +52,34 @@ function focusBasket() {
   requestAnimationFrame(() => (document.getElementById("basket-heading") ?? document.getElementById("main"))?.focus());
 }
 
+/**
+ * A stepper button at its limit. Before hydration it is `disabled` (a post would only be
+ * refused). Once hydrated it is `aria-disabled` instead, so it stays focusable: a tap or
+ * Enter changes nothing and shows the limit hint, tied to the button (UX audit M5).
+ */
+function LimitButton({ atLimit, hintId, onLimit, ...props }: ComponentProps<typeof Button> & { atLimit: boolean; hintId?: string; onLimit: () => void }) {
+  const hydrated = useHydrated();
+  const blocked = atLimit && hydrated;
+  return (
+    <Button
+      {...props}
+      type="submit"
+      variant="outline"
+      size="icon"
+      name="quantity"
+      disabled={atLimit && !hydrated}
+      aria-disabled={blocked || undefined}
+      aria-describedby={hintId}
+      className="aria-disabled:opacity-50"
+      onClick={(event) => {
+        if (!blocked) return;
+        event.preventDefault();
+        onLimit();
+      }}
+    />
+  );
+}
+
 /** Quantity stepper (design-system "Stepper", compact): every control is named after the product. */
 function QuantityStepper({ line }: { line: BasketLineView }) {
   const { t } = useI18n();
@@ -59,8 +88,11 @@ function QuantityStepper({ line }: { line: BasketLineView }) {
     const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
     basketStore.setQuantity(lineId, Number(submitter?.value));
   });
+  // The limit hint shows only once a limit button was pressed (not on every 1-item line).
+  const [hint, setHint] = useState<"min" | "max" | null>(null);
   const atMin = quantity <= LINE_MIN_QUANTITY;
   const atMax = quantity >= LINE_MAX_QUANTITY;
+  const shown = (hint === "min" && atMin) || (hint === "max" && atMax) ? hint : null;
   const hintId = `quantity-hint-${lineId}`;
   return (
     <div>
@@ -71,22 +103,20 @@ function QuantityStepper({ line }: { line: BasketLineView }) {
           <span className="text-sm" aria-hidden="true">
             {t("basket.quantity")}
           </span>
-          <Button type="submit" variant="outline" size="icon" name="quantity" value={quantity - 1} disabled={atMin} aria-label={t("basket.decrease", { name })}>
+          <LimitButton value={quantity - 1} atLimit={atMin} hintId={shown === "min" ? hintId : undefined} onLimit={() => setHint("min")} aria-label={t("basket.decrease", { name })}>
             <Minus aria-hidden="true" />
-          </Button>
+          </LimitButton>
           <output aria-live="polite" className="min-w-6 text-center text-lg font-semibold tabular-nums">
             {quantity}
           </output>
-          <Button type="submit" variant="outline" size="icon" name="quantity" value={quantity + 1} disabled={atMax} aria-label={t("basket.increase", { name })}>
+          <LimitButton value={quantity + 1} atLimit={atMax} hintId={shown === "max" ? hintId : undefined} onLimit={() => setHint("max")} aria-label={t("basket.increase", { name })}>
             <Plus aria-hidden="true" />
-          </Button>
+          </LimitButton>
         </div>
       </fetcher.Form>
-      {(atMin || atMax) && (
-        <p id={hintId} className="mt-1 text-sm text-muted-foreground">
-          {t(atMin ? "basket.atMinimum" : "basket.atMaximum")}
-        </p>
-      )}
+      <p id={hintId} aria-live="polite" className="text-sm text-muted-foreground">
+        {shown && <span className="mt-1 inline-block">{t(shown === "min" ? "basket.atMinimum" : "basket.atMaximum")}</span>}
+      </p>
       {fetcher.data && !fetcher.data.ok && (
         <p role="alert" className="mt-1 font-semibold text-destructive">
           {fetcher.data.error.message}
@@ -96,10 +126,21 @@ function QuantityStepper({ line }: { line: BasketLineView }) {
   );
 }
 
-function RemoveButton({ line }: { line: BasketLineView }) {
+/** A line removed in the browser, kept so Undo can put it back where it was (UX audit M3). */
+export interface RemovedLine {
+  line: BasketLine;
+  index: number;
+  name: string;
+}
+
+function RemoveButton({ line, onRemoved }: { line: BasketLineView; onRemoved?: (removed: RemovedLine) => void }) {
   const { t } = useI18n();
   const { fetcher, onSubmit } = useLineChange(() => {
+    const lines = basketStore.lines();
+    const index = lines.findIndex((l) => l.lineId === line.lineId);
     basketStore.remove(line.lineId);
+    const removed = lines[index];
+    if (removed) onRemoved?.({ line: removed, index, name: line.name });
     focusBasket();
   });
   return (
@@ -115,11 +156,41 @@ function RemoveButton({ line }: { line: BasketLineView }) {
 }
 
 /**
+ * The line's live note (always mounted, polite): "No longer available. It will not be part
+ * of your order." when the line turns unavailable (prefixed with the name for screen
+ * readers, UX audit M2), else the price note.
+ */
+function LineNote({ line }: { line: BasketLineView }) {
+  const { t } = useI18n();
+  return (
+    <p aria-live="polite" className="text-sm">
+      {line.unavailable && (
+        <span className="mt-1 flex items-start gap-1.5 text-base font-semibold">
+          <CircleSlash aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
+          <span>
+            {!line.nameUnknown && <span className="sr-only">{line.name}: </span>}
+            {t(line.nameUnknown ? "basket.notInOrder" : "basket.noLongerAvailable")}
+          </span>
+        </span>
+      )}
+      {line.priceNote && !line.unavailable && (
+        // Calm but not missable (UX audit L1): icon + semibold, no warning colour.
+        <span className="mt-1 flex items-start gap-1.5 font-semibold">
+          <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+          <span>{line.priceNote}</span>
+        </span>
+      )}
+    </p>
+  );
+}
+
+/**
  * Basket line (design-system "Basket line"): photo, name, unit price, stepper, line price,
  * Remove. A price that changed carries one calm note, announced politely; an unavailable
- * line is dimmed (photo and prices; text keeps AA contrast), says so, and offers Remove only.
+ * line is dimmed (photo and prices; text keeps AA contrast), says it will not be part of the
+ * order, and offers Remove only.
  */
-export function BasketLineItem({ line }: { line: BasketLineView }) {
+export function BasketLineItem({ line, onRemoved }: { line: BasketLineView; onRemoved?: (removed: RemovedLine) => void }) {
   const { t } = useI18n();
   return (
     <li data-unavailable={line.unavailable || undefined} className="flex flex-wrap items-start gap-x-4 gap-y-3 border-b py-4 last:border-b-0">
@@ -129,10 +200,7 @@ export function BasketLineItem({ line }: { line: BasketLineView }) {
       <div className="min-w-0 flex-1 basis-40">
         <p className={cn("font-semibold", line.unavailable && "text-muted-foreground")}>{line.name}</p>
         {!line.unavailable && <p className="text-sm text-muted-foreground">{t("basket.eachPrice", { price: line.unitPrice })}</p>}
-        {line.unavailable && !line.nameUnknown && <p className="mt-1 font-semibold">{t("basket.noLongerAvailable")}</p>}
-        <p aria-live="polite" className="text-sm">
-          {line.priceNote && !line.unavailable && <span className="mt-1 inline-block">{line.priceNote}</span>}
-        </p>
+        <LineNote line={line} />
       </div>
       {!line.unavailable && (
         <p className="font-semibold whitespace-nowrap">
@@ -142,7 +210,7 @@ export function BasketLineItem({ line }: { line: BasketLineView }) {
       )}
       <div className="flex w-full flex-wrap items-start justify-between gap-3">
         {!line.unavailable && <QuantityStepper line={line} />}
-        <RemoveButton line={line} />
+        <RemoveButton line={line} onRemoved={onRemoved} />
       </div>
     </li>
   );

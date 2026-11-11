@@ -208,11 +208,21 @@ test.describe("S-012 basket and delivery or pickup", () => {
     await expect(page.getByRole("group", { name: "Quantity of Lemon tart" }).locator("output")).toHaveAttribute("aria-live", "polite");
   });
 
-  test("AC3: at quantity 1 Decrease is disabled and explained", async ({ page }) => {
+  test("AC3, spec AC47 (UX audit M5): at quantity 1 Decrease changes nothing; pressing it explains, tied to the button", async ({ page }) => {
     await basketWithCake(page);
+    await hydrated(page);
+    const decrease = page.getByRole("button", { name: `Decrease quantity of ${SAMPLE_PRODUCT.nameEn}` });
+    const hint = page.getByText("1 is the smallest quantity. To take this out, press Remove.");
 
-    await expect(page.getByRole("button", { name: `Decrease quantity of ${SAMPLE_PRODUCT.nameEn}` })).toBeDisabled();
-    await expect(page.getByText("1 is the smallest quantity. To take this out, press Remove.")).toBeVisible();
+    await expect(decrease).toHaveAttribute("aria-disabled", "true");
+    await expect(hint).toHaveCount(0);
+    await decrease.focus();
+    await page.keyboard.press("Enter");
+
+    await expect(hint).toBeVisible();
+    await expect(decrease).toHaveAccessibleDescription("1 is the smallest quantity. To take this out, press Remove.");
+    await expect(page.getByRole("group", { name: `Quantity of ${SAMPLE_PRODUCT.nameEn}` }).locator("output")).toHaveText("1");
+    await expect(decrease).toBeFocused();
   });
 
   test("AC4: changing the quantity and removing update totals and the header count, and survive a reload", async ({ page }) => {

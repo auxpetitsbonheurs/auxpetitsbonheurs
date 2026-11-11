@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, CircleSlash } from "lucide-react";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { useI18n } from "~/i18n/react";
 import { formatRupees } from "~/lib/locale";
@@ -73,6 +73,8 @@ function PolicyAcceptance({ policies, error, initial }: { policies: string; erro
 
 export interface SummarySectionProps {
   items: SummaryItem[];
+  /** Lines that will not be ordered (sold out, hidden, deleted): one "not included" row each (UX audit H1). */
+  leftOut?: { lineId: string; name: string }[];
   itemsTotalRs: number;
   deliveryFeeRs: number;
   juiceNumber: string | null;
@@ -82,7 +84,7 @@ export interface SummarySectionProps {
 }
 
 /** Step 6 (FR-022): items, fee line or "Pickup: free", total, payment info, policies. */
-export function SummarySection({ items, itemsTotalRs, deliveryFeeRs, juiceNumber, policies, errors, initialAccepted }: SummarySectionProps) {
+export function SummarySection({ items, leftOut = [], itemsTotalRs, deliveryFeeRs, juiceNumber, policies, errors, initialAccepted }: SummarySectionProps) {
   const { t } = useI18n();
   return (
     <section aria-labelledby="summary-heading" className="mt-10">
@@ -95,6 +97,12 @@ export function SummarySection({ items, itemsTotalRs, deliveryFeeRs, juiceNumber
             <li key={item.lineId} className={row}>
               <span>{t("checkout.itemLine", { name: item.name, quantity: item.quantity })}</span>
               {amount(item.lineTotalRs)}
+            </li>
+          ))}
+          {leftOut.map((line) => (
+            <li key={line.lineId} data-left-out className="flex items-start gap-1.5 text-muted-foreground">
+              <CircleSlash aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
+              <span>{t("checkout.leftOutLine", { name: line.name })}</span>
             </li>
           ))}
         </ul>

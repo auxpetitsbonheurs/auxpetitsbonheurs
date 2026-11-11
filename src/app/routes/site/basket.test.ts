@@ -217,6 +217,54 @@ describe("placeOrder from the basket page (S-013 AC11, AC2 envelope)", () => {
   });
 });
 
+describe("what is left out of the order (UX audit H1, H2; spec AC41, AC42)", () => {
+  const form = (overrides: Record<string, string> = {}) => ({
+    intent: "placeOrder",
+    idempotencyKey: "5a1c1c55-8f42-4d39-9a51-2f0d5a3f0d22",
+    displayedTotalRs: "850",
+    fulfilment: "pickup",
+    date: "2026-11-12",
+    "windowId.pickup": "morning",
+    "contact.name": "Aisha",
+    "contact.phone": "5712 3456",
+    "contact.email": "aisha@example.com",
+    acceptPolicies: "on",
+    ...overrides,
+  });
+
+  test("an order placed without a sold-out line names it for the confirmation page only, with no PII in the URL", async () => {
+    const cake = await insertProduct(database.db);
+    const tart = await insertProduct(database.db, { slug: "tart", nameEn: "Tart", status: "sold_out" });
+    const cookie = cookieWith([{ lineId: "a", productId: cake, quantity: 1 }, { lineId: "b", productId: tart, quantity: 1 }]);
+
+    const response = (await post(form(), cookie)) as Response;
+
+    expect(response.status).toBe(302);
+    const location = response.headers.get("Location")!;
+    expect(location).toMatch(/^\/order\/[A-Za-z0-9_-]{43}\/confirmed$/);
+    const cookies = response.headers.getSetCookie();
+    expect(cookies[0]).toMatch(/^apb_basket=; Max-Age=0/);
+    expect(cookies[1]).toBe(`apb_left_out=${tart}; Max-Age=900; Path=${location.replace(/\/confirmed$/, "")}; HttpOnly; SameSite=Lax; Secure`);
+  });
+
+  test("nothing left out: no left-out cookie", async () => {
+    const cake = await insertProduct(database.db);
+
+    const response = (await post(form(), cookieWith([{ lineId: "a", productId: cake, quantity: 1 }]))) as Response;
+    expect(response.headers.getSetCookie()).toHaveLength(1);
+  });
+
+  test("lines that can all not be ordered get their own message; an empty basket keeps 'Your basket is empty.'", async () => {
+    const tart = await insertProduct(database.db, { slug: "tart", nameEn: "Tart", status: "sold_out" });
+
+    const stuck = (await post(form(), cookieWith([{ lineId: "b", productId: tart, quantity: 1 }]))) as unknown as Refusal;
+    expect(stuck.data.error.fields?.basket).toBe("Nothing in your basket can be ordered right now. Remove the unavailable items or choose something else.");
+
+    const empty = (await post(form())) as unknown as Refusal;
+    expect(empty.data.error.fields?.basket).toBe("Your basket is empty.");
+  });
+});
+
 describe("idempotency key in the form (S-014 AC4)", () => {
   const KEY = "0d9f8a2e-4c1b-4f6a-9e1d-7b2c3a4d5e6f";
   const form = (overrides: Record<string, string> = {}) => ({

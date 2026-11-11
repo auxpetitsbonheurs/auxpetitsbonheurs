@@ -149,6 +149,7 @@ function AddToBasketForm({ productId, refusal }: { productId: string; refusal?: 
   const inFlight = useRef(false);
   const lastTap = useRef(-Infinity);
   const [added, setAdded] = useState(0);
+  const [inBasket, setInBasket] = useState(1);
   const [localError, setLocalError] = useState<string>();
   const busy = fetcher.state !== "idle";
   const result = fetcher.data;
@@ -170,8 +171,10 @@ function AddToBasketForm({ productId, refusal }: { productId: string; refusal?: 
     if (inFlight.current || busy || now - lastTap.current < DOUBLE_TAP_MS) return;
     lastTap.current = now;
     try {
-      basketStore.add({ productId, options: [], quantity: 1 });
+      const lines = basketStore.add({ productId, options: [], quantity: 1 });
       setLocalError(undefined);
+      // "(2 in basket)" so a deliberate second tap visibly counts (UX audit M6).
+      setInBasket(lines.filter((l) => l.productId === productId).reduce((sum, l) => sum + l.quantity, 0));
       setAdded((n) => n + 1);
     } catch (problem) {
       if (problem instanceof DomainError) {
@@ -199,7 +202,7 @@ function AddToBasketForm({ productId, refusal }: { productId: string; refusal?: 
       </form>
       <div role="status">
         {(added > 0 || serverAdded) && !error && (
-          <Alert key={added} tone="success" title={t("product.added")} className="mt-4">
+          <Alert key={added} tone="success" title={t("product.addedCount", { count: serverAdded ? 1 : inBasket })} className="mt-4">
             <Link to={localePath(locale, "/basket")} prefetch="render" className="mt-1 inline-flex min-h-11 items-center font-semibold link">
               {t("product.viewBasket")}
             </Link>

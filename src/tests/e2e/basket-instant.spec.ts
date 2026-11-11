@@ -117,6 +117,43 @@ test.describe("ADR-0004 instant Add to basket", () => {
     await expect(page.getByRole("link", { name: "Basket, 1 item" })).toBeVisible();
   });
 
+  test("AC46: a deliberate second Add says how many are now in the basket", async ({ page }) => {
+    await addFromProductPage(page, CAKE_PATH);
+    // A deliberate second tap comes after the 800 ms double-tap guard.
+    const firstTap = await page.evaluate(() => performance.now());
+    await page.waitForFunction((at) => performance.now() - at > 850, firstTap);
+
+    await page.getByRole("button", { name: "Add to basket" }).click();
+
+    await expect(page.getByRole("status").filter({ hasText: "Added to your basket (2 in basket)" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Basket, 2 items" })).toBeVisible();
+  });
+
+  test("AC44: Remove says what was removed and Undo puts the same line back, with no network request", async ({ page }) => {
+    await addFromProductPage(page, CAKE_PATH);
+    await page.goto("/basket");
+    await hydrated(page);
+    await menuCached(page);
+    await page.getByRole("button", { name: `Increase quantity of ${SAMPLE_PRODUCT.nameEn}` }).click();
+
+    const requests = await requestsDuring(page, async () => {
+      await page.getByRole("button", { name: `Remove ${SAMPLE_PRODUCT.nameEn} from basket` }).click();
+      const removed = page.getByRole("status").filter({ hasText: `Removed from your basket: ${SAMPLE_PRODUCT.nameEn}.` });
+      await expect(removed).toBeVisible();
+      await expect(page.getByText("Your basket is empty.")).toBeVisible();
+      await expectNoA11yViolations(page);
+      await removed.getByRole("button", { name: `Undo removing ${SAMPLE_PRODUCT.nameEn}` }).click();
+    });
+
+    expect(requests).toEqual([]);
+    await expect(page.getByRole("status").filter({ hasText: `Back in your basket: ${SAMPLE_PRODUCT.nameEn}.` })).toBeVisible();
+    await expect(page.getByRole("group", { name: `Quantity of ${SAMPLE_PRODUCT.nameEn}` }).locator("output")).toHaveText("2");
+    await expect(page.getByRole("link", { name: "Basket, 2 items" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: "1. Basket" })).toBeFocused();
+    await page.reload();
+    await expect(page.getByRole("group", { name: `Quantity of ${SAMPLE_PRODUCT.nameEn}` }).locator("output")).toHaveText("2");
+  });
+
   test("the server reads the browser-written basket: the basket page shows the line", async ({ page }) => {
     await addFromProductPage(page, CAKE_PATH);
     await page.goto("/basket");
@@ -278,8 +315,9 @@ test.describe("ADR-0004 menu cached in the phone", () => {
 
     await page.reload();
 
-    await expect(page.getByText("Prix mis à jour de Rs 450 à Rs 500")).toBeVisible();
-    await expect(page.getByText("N'est plus disponible")).toBeVisible();
+    await expect(page.getByText("Le prix est passé de Rs 450 à Rs 500")).toBeVisible();
+    await expect(page.getByText("Plus disponible. Cet article ne fera pas partie de votre commande.")).toBeVisible();
+    await expect(page.getByText(`${gone.name} (fr) : non inclus, plus disponible`)).toBeVisible();
     await expect(page.getByRole("button", { name: `Retirer ${gone.name} (fr) du panier` })).toBeVisible();
   });
 });
@@ -295,11 +333,15 @@ test.describe("ADR-0004 unavailable lines", () => {
 
     const line = page.locator("li[data-unavailable]");
     await expect(line).toContainText("Mango tart");
-    await expect(line).toContainText("No longer available");
+    await expect(line).toContainText("No longer available. It will not be part of your order.");
     await expect(line.getByRole("button", { name: "Remove Mango tart from basket" })).toBeVisible();
     await expect(line.getByRole("group")).toHaveCount(0);
     await expect(page.getByText("Subtotal").locator("..")).toContainText("Rs 850");
     await expect(page.getByRole("button", { name: "Place order" })).toBeVisible();
+    // UX audit H1: the summary says it is not included; the header counts only what will be ordered (M1).
+    await expect(page.locator("[data-left-out]")).toHaveText("Mango tart: not included, no longer available");
+    await expect(page.getByRole("link", { name: "Basket, 1 item" })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "1 item is no longer available" })).toBeAttached();
     await expectAccessibleLayout(page);
     for (const colorScheme of ["light", "dark"] as const) {
       // Before a load, as the other specs do: switching after load would scan mid-transition.
@@ -310,18 +352,78 @@ test.describe("ADR-0004 unavailable lines", () => {
     }
   });
 
-  test("a hidden product's line keeps its name; with nothing orderable left, the empty-basket message replaces checkout", async ({ page, db }) => {
+  test("AC42: a hidden product's line keeps its name; with nothing orderable left, its own message and See the menu replace checkout", async ({ page, db }) => {
     const gone = await freshProduct(db, "Guava tart", 300);
     await addFromProductPage(page, `/menu/${gone.slug}`);
     await db`update product set status = 'hidden' where id = ${gone.id}`;
 
     await page.goto("/basket");
+    await hydrated(page);
 
     await expect(page.locator("li[data-unavailable]")).toContainText("Guava tart");
-    await expect(page.getByText("Your basket is empty.")).toBeVisible();
+    await expect(page.getByText("Nothing in your basket can be ordered right now. Remove the unavailable items or choose something else.")).toBeVisible();
+    await expect(page.getByRole("link", { name: "See the menu" })).toBeVisible();
+    await expect(page.getByText("Your basket is empty.")).toHaveCount(0);
+    await expect(page.getByText("Subtotal")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Place order" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Basket, 0 items" })).toBeVisible();
+    await expectAccessibleLayout(page);
+    await expectNoA11yViolations(page);
+
     await page.getByRole("button", { name: "Remove Guava tart from basket" }).click();
     await expect(page.locator("main li")).toHaveCount(0);
+    await expect(page.getByText("Your basket is empty.")).toBeVisible();
+  });
+
+  test("AC42: when everything sold out after the page loaded, the refusal says nothing can be ordered, not that the basket is empty", async ({ page, db, context, baseURL }) => {
+    await setClock(context, baseURL!, "2026-11-20T06:00:00Z");
+    const tart = await freshProduct(db, "Quince tart", 300);
+    await addFromProductPage(page, `/menu/${tart.slug}`);
+    await page.goto("/basket");
+    await hydrated(page);
+    await fillPickup(page);
+    await db`update product set status = 'sold_out' where id = ${tart.id}`;
+
+    await page.getByRole("button", { name: "Place order" }).click();
+
+    await expect(page.getByText("Nothing in your basket can be ordered right now. Remove the unavailable items or choose something else.").first()).toBeVisible();
+    await expect(page.getByText("Your basket is empty.")).toHaveCount(0);
+    await expect(page.locator("li[data-unavailable]")).toContainText("Quince tart");
+  });
+
+  test("AC40: an item sold out after the page loaded is named at Place order: not sent yet, left out, new total; then the order shows it was not included (AC41)", async ({ page, db, context, baseURL }) => {
+    await setClock(context, baseURL!, "2026-11-20T06:00:00Z");
+    const gone = await freshProduct(db, "Cherry tart", 300);
+    await addFromProductPage(page, CAKE_PATH);
+    await addFromProductPage(page, `/menu/${gone.slug}`);
+    await page.goto("/basket");
+    await hydrated(page);
+    await fillPickup(page);
+    await db`update product set status = 'sold_out' where id = ${gone.id}`;
+
+    const button = page.getByRole("button", { name: "Place order" });
+    await button.click();
+
+    const note = page.getByRole("status").filter({ hasText: "Your order has not been sent yet" });
+    await expect(note).toContainText("This item is no longer available and was left out: Cherry tart.");
+    await expect(note).toContainText("The total changed from Rs 1,150 to Rs 850.");
+    await expect(note).toBeInViewport();
+    const again = page.getByRole("button", { name: "Place order at Rs 850" });
+    await expect(again).toBeFocused();
+    await expect(page.locator("li[data-unavailable]")).toContainText("No longer available. It will not be part of your order.");
+    await expect(page.locator("[data-left-out]")).toHaveText("Cherry tart: not included, no longer available");
+    await expectNoA11yViolations(page);
+
+    await again.click();
+
+    await expect(page).toHaveURL(/\/order\/[A-Za-z0-9_-]{43}\/confirmed$/);
+    expect(page.url()).not.toMatch(/[?#]/);
+    const leftOut = page.locator("main").getByText("Not included in your order");
+    await expect(leftOut).toBeVisible();
+    await expect(page.getByText("Cherry tart was no longer available when you ordered.")).toBeVisible();
+    await expectNoA11yViolations(page);
+    await page.reload();
+    await expect(page.getByText("Cherry tart was no longer available when you ordered.")).toBeVisible();
   });
 
   test("placing the order leaves the unavailable line out of the order", async ({ page, db, context, baseURL }) => {
@@ -341,6 +443,37 @@ test.describe("ADR-0004 unavailable lines", () => {
     const items = await db<{ name_en: string }[]>`select i.name_en from order_item i join orders o on o.id = i.order_id where o.tracking_token = ${token}`;
     expect(items.map((i) => i.name_en)).toEqual([SAMPLE_PRODUCT.nameEn]);
     await expect(page.getByRole("link", { name: "Basket, 0 items" })).toBeVisible();
+    // AC41: the confirmation names what was not included.
+    await expect(page.getByText("Not included in your order")).toBeVisible();
+    await expect(page.getByText("Kiwi tart was no longer available when you ordered.")).toBeVisible();
+  });
+
+  test("AC41: an order with nothing left out shows no left-out note", async ({ page, context, baseURL }) => {
+    await setClock(context, baseURL!, "2026-11-20T06:00:00Z");
+    await addFromProductPage(page, CAKE_PATH);
+    await page.goto("/basket");
+    await hydrated(page);
+    await fillPickup(page);
+
+    await page.getByRole("button", { name: "Place order" }).click();
+
+    await expect(page).toHaveURL(/\/order\/[A-Za-z0-9_-]{43}\/confirmed$/);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByText("Not included in your order")).toHaveCount(0);
+  });
+
+  test("AC45: a line that turns unavailable while the basket is open from the cache is announced politely", async ({ page, db }) => {
+    await addFromProductPage(page, CAKE_PATH);
+    const gone = await freshProduct(db, "Damson tart", 300);
+    await addFromProductPage(page, `/menu/${gone.slug}`);
+    await db`update product set status = 'sold_out' where id = ${gone.id}`;
+
+    await page.getByRole("link", { name: "View basket" }).click();
+
+    const note = page.locator("li[data-unavailable] [aria-live='polite']");
+    await expect(note).toHaveText("Damson tart: No longer available. It will not be part of your order.");
+    await expect(page.getByRole("status").filter({ hasText: "1 item is no longer available" })).toBeAttached();
+    await expect(page.getByRole("link", { name: "Basket, 1 item" })).toBeVisible();
   });
 
   test("PRICE_CHANGED at Place order re-renders the summary with the new price and the same calm note, keeping what was typed", async ({ page, db, context, baseURL }) => {
@@ -355,7 +488,11 @@ test.describe("ADR-0004 unavailable lines", () => {
     await page.getByRole("button", { name: "Place order" }).click();
 
     await expect(page.getByText("Price updated from Rs 400 to Rs 450")).toBeVisible();
-    await expect(page.getByText("Total updated from Rs 400 to Rs 450")).toBeVisible();
+    // UX audit M4: says the order was not sent yet, next to the button; no alarm.
+    const note = page.getByRole("status").filter({ hasText: "Your order has not been sent yet" });
+    await expect(note).toContainText("The total changed from Rs 400 to Rs 450. Check it, then press Place order to confirm.");
+    await expect(note).not.toContainText("left out");
+    await expect(note).toBeInViewport();
     await expect(page.getByRole("alert")).toHaveCount(0);
     await expect(page.getByLabel("Name", { exact: true })).toHaveValue("E2E Guest");
     await expect(page.getByRole("radio", { name: /^Pickup/ })).toBeChecked();

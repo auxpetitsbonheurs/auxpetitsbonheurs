@@ -65,6 +65,26 @@ describe("basket store", () => {
     expect(jar.read()).not.toContain(BASKET_COOKIE);
   });
 
+  test("Undo after Remove puts the same line back where it was (UX audit M3)", () => {
+    const jar = fakeJar();
+    const store = createBasketStore(jar, ids);
+    store.add({ productId: CAKE, options: [], cakeMessage: "Happy birthday", quantity: 3 });
+    store.add({ productId: TART, options: [], quantity: 1 });
+    const [cake] = store.lines();
+    const listener = vi.fn();
+    store.subscribe(listener);
+
+    store.remove(cake!.lineId);
+    store.restore(cake!, 0);
+
+    expect(store.lines()[0]).toEqual(cake);
+    expect(store.lines()).toHaveLength(2);
+    expect(listener).toHaveBeenCalledTimes(2);
+    // A second Undo (or a line already back from another tab) changes nothing.
+    store.restore(cake!, 0);
+    expect(store.lines()).toHaveLength(2);
+  });
+
   test("an 11th line is BASKET_FULL and nothing is written", () => {
     const jar = fakeJar();
     const store = createBasketStore(jar, ids);

@@ -29,8 +29,12 @@ export interface PlaceOrderContext {
   basket: BasketLine[];
 }
 
-/** A placed order; `replayed` when the key already belonged to it (nothing new was written). */
-export type PlacedOrder = PlacedOrderRef & { ok: true; orderNumber: string; replayed: boolean };
+/**
+ * A placed order; `replayed` when the key already belonged to it (nothing new was written).
+ * `leftOut`: product ids of the sold-out, hidden or deleted lines left out of a new order
+ * (UX audit H1), so the confirmation page can name them; empty for a replay.
+ */
+export type PlacedOrder = PlacedOrderRef & { ok: true; orderNumber: string; replayed: boolean; leftOut: string[] };
 
 export type PlaceOrderResult =
   | PlacedOrder
@@ -63,11 +67,12 @@ function validate(form: Record<string, unknown>, basket: BasketLine[], settings:
 
 export async function placeOrder(form: Record<string, unknown>, ctx: PlaceOrderContext): Promise<PlaceOrderResult> {
   const settings = await getCheckoutSettings(ctx.db);
-  const placed = (ref: PlacedOrderRef, replayed: boolean): PlacedOrder => ({
+  const placed = (ref: PlacedOrderRef, replayed: boolean, leftOut: string[] = []): PlacedOrder => ({
     ok: true,
     ...ref,
     orderNumber: formatOrderNumber(settings.orderNumberPrefix, ref.number),
     replayed,
+    leftOut,
   });
   // Step 2 runs on the key and email alone, before the rest is validated: a replay after
   // success posts with an emptied basket (cookie cleared) or a changed payload, and the
@@ -93,7 +98,8 @@ export async function placeOrder(form: Record<string, unknown>, ctx: PlaceOrderC
   if (input.displayedTotalRs !== totals.totalRs) return { ok: false, code: "PRICE_CHANGED", lines, ...totals };
 
   try {
-    return placed(await insertOrder(ctx, { input, window, lines: orderable, totals, products }), false);
+    const leftOut = [...new Set(lines.filter((l) => l.problem !== null).map((l) => l.productId))];
+    return placed(await insertOrder(ctx, { input, window, lines: orderable, totals, products }), false, leftOut);
   } catch (error) {
     // Lost race: both requests passed the lookup; ours rolled back (no number consumed).
     if (!isUniqueViolation(error, "orders_idempotency_key_unique")) throw error;

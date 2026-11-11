@@ -105,6 +105,18 @@ describe("revalidation", () => {
     expect(store.state().goneNames.get(TART)).toEqual({ en: "P2", fr: null });
   });
 
+  test("names the server found for hidden basket products are kept, so the header count can leave them out (UX audit M1)", () => {
+    const store = createMenuStore(io());
+    const listener = vi.fn();
+    store.subscribe(listener);
+
+    store.rememberGone({ [TART]: { en: "Old tart", fr: null } });
+    store.rememberGone({ [TART]: { en: "Old tart", fr: null } });
+
+    expect(store.state().goneNames.get(TART)).toEqual({ en: "Old tart", fr: null });
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
   test("offline or a bad answer keeps the copy", async () => {
     const failing = io({ fetch: vi.fn(async () => { throw new TypeError("offline"); }) as unknown as typeof fetch });
     const store = createMenuStore(failing);

@@ -83,6 +83,17 @@ export function priceBasket(lines: readonly BasketLine[], menu: Menu): PricedLin
   return priceLines(lines, pricingProducts(menu));
 }
 
+/**
+ * Items that will be ordered (header count, UX audit M1): lines whose product the menu has
+ * as sold out, or that are known to have left the menu (`gone`), are not counted. A product
+ * the menu does not know yet still counts, so a fresh Add never looks lost.
+ */
+export function orderableItemCount(lines: readonly BasketLine[], menu: Menu | null, gone: ReadonlySet<string>): number {
+  const status = new Map(menu?.products.map((p) => [p.id, p.status]) ?? []);
+  const leftOut = (id: string) => status.get(id) === "sold_out" || (gone.has(id) && !status.has(id));
+  return lines.reduce((sum, line) => (leftOut(line.productId) ? sum : sum + line.quantity), 0);
+}
+
 /** Products whose price differs between two menus (products in both). */
 export function priceChanges(previous: Menu, next: Menu): Map<string, PriceNote> {
   const before = new Map(previous.products.map((p) => [p.id, p.basePriceRs]));

@@ -65,7 +65,20 @@ export function removeLine(lines: readonly BasketLine[], lineId: string): Basket
   return lines.filter((line) => line.lineId !== lineId);
 }
 
-/** Items in the basket (sum of quantities), as the header count shows. */
+/**
+ * Puts a removed line back (Undo, UX audit M3) at `index`, or at the end when the basket is
+ * shorter now. A line id already present changes nothing; a full basket is BASKET_FULL.
+ */
+export function restoreLine(lines: readonly BasketLine[], line: BasketLine, index: number): BasketLine[] {
+  if (lines.some((existing) => existing.lineId === line.lineId)) return lines as BasketLine[];
+  if (lines.length >= BASKET_MAX_LINES) {
+    throw new DomainError("BASKET_FULL", `A basket holds at most ${BASKET_MAX_LINES} lines`);
+  }
+  const at = Math.min(Math.max(index, 0), lines.length);
+  return [...lines.slice(0, at), line, ...lines.slice(at)];
+}
+
+/** Items in the basket (sum of quantities). */
 export function basketItemCount(lines: readonly BasketLine[]): number {
   return lines.reduce((sum, line) => sum + line.quantity, 0);
 }
