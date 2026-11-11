@@ -155,16 +155,13 @@ function parseCsv(text: string): CpuSample[] {
 
 /**
  * CPU samples from a CSV (`path,phase,cpu_ms`, typed from the dashboard) or from JSON
- * (one object per line, or an array) as printed by `wrangler tail --format json` or a
+ * (one object per line, pretty-printed objects one after another, or an array) as printed by `wrangler tail --format json` or a
  * Workers Logs export. Requests that are not tagged hot paths are skipped.
  */
 export function parseCpuSamples(text: string): CpuSample[] {
   const trimmed = text.trim();
   if (trimmed.startsWith("path,")) return parseCsv(trimmed);
-  const records: LogRecord[] = trimmed.startsWith("[")
-    ? (JSON.parse(trimmed) as LogRecord[])
-    : trimmed.split("\n").filter((line) => line.trim().startsWith("{")).map((line) => JSON.parse(line) as LogRecord);
-  return records.map(sampleFromRecord).filter((s): s is CpuSample => s !== null);
+  return (parseJsonStream(trimmed) as LogRecord[]).map(sampleFromRecord).filter((s): s is CpuSample => s !== null);
 }
 
 /** Groups parsed samples into report input rows. */
@@ -179,4 +176,182 @@ export function groupSamples(samples: readonly CpuSample[]): HotPathResult[] {
 /** Samples as `path,phase,cpu_ms` CSV: the evidence that is committed (raw logs carry URLs). */
 export function samplesCsv(samples: readonly CpuSample[]): string {
   return ["path,phase,cpu_ms", ...samples.map((s) => `${s.path},${s.phase},${s.cpuMs}`)].join("\n") + "\n";
+}
+
+/** End index (exclusive) of the JSON object or array that opens at `start`, or -1 if unbalanced. */
+function balancedEnd(text: string, start: number): number {
+  let depth = 0;
+  let inString = false;
+  for (let i = start; i < text.length; i += 1) {
+    const ch = text[i];
+    if (inString) {
+      if (ch === "\\") i += 1;
+      else if (ch === '"') inString = false;
+    } else if (ch === '"') inString = true;
+    else if (ch === "{" || ch === "[") depth += 1;
+    else if (ch === "}" || ch === "]") {
+      depth -= 1;
+      if (depth === 0) return i + 1;
+    }
+  }
+  return -1;
+}
+
+/** Parses the balanced value at `start` into `values`; returns where scanning resumes. */
+function pushParsed(text: string, start: number, values: unknown[]): number {
+  const end = balancedEnd(text, start);
+  if (end < 0) return start + 1;
+  try {
+    const value: unknown = JSON.parse(text.slice(start, end));
+    values.push(...(Array.isArray(value) ? value : [value]));
+    return end;
+  } catch {
+    return start + 1;
+  }
+}
+
+/**
+ * Every JSON object in `text`: newline-delimited, pretty-printed one after another (as
+ * `wrangler tail --format json` prints them), or inside a top-level array. Banner lines and
+ * malformed or truncated objects (a tail killed mid-write) are skipped.
+ */
+export function parseJsonStream(text: string): unknown[] {
+  const values: unknown[] = [];
+  let i = text.search(/[{[]/);
+  while (i >= 0 && i < text.length) {
+    i = pushParsed(text, i, values);
+    const next = text.slice(i).search(/[{[]/);
+    i = next < 0 ? -1 : i + next;
+  }
+  return values.filter((v) => typeof v === "object" && v !== null);
+}
+
+// ---- Job summary for the cpu-measure workflow (S-019): CPU per route from `wrangler tail`. ----
+
+/** Same rule as workers/log-redact.ts (kept import-free so Node runs this file directly). */
+const TOKEN_PATH = /^((?:\/fr)?\/(?:t|order)\/)[^/]+/i;
+
+/** `METHOD /path` with bearer tokens redacted and no query string or host, or null. */
+export function routeName(method: string | undefined, url: string | undefined): string | null {
+  if (!url) return null;
+  let pathname: string;
+  try {
+    pathname = new URL(url).pathname;
+  } catch {
+    return null;
+  }
+  return `${(method ?? "GET").toUpperCase()} ${pathname.replace(TOKEN_PATH, "$1[redacted]")}`;
+}
+
+/** Text safe to print from wrangler's own messages: URLs lose their query and token. */
+export function redactText(text: string): string {
+  return text
+    .replace(/(\/(?:t|order)\/)[^/\s?#"']+/gi, "$1[redacted]")
+    .replace(/\?[^\s"']*/g, "")
+    .replace(/\b(token|authorization|bearer)([=:\s]+)(?:bearer\s+)?[^\s;,]+/gi, "$1$2[redacted]");
+}
+
+export interface RouteCpu {
+  route: string;
+  hotPath: HotPathId | null;
+  cpuMs: number[];
+  /** Invocations Cloudflare stopped for exceeding the CPU limit (`outcome: exceededCpu`). */
+  exceeded: number;
+}
+
+interface TailEvent {
+  cpuTime?: unknown;
+  outcome?: unknown;
+  event?: { request?: { method?: string; url?: string } };
+}
+
+const HOT_ROUTE: Record<HotPathId, string> = {
+  "checkout-submit": "POST /basket",
+  basket: "GET /basket",
+  tracking: "GET /t/[redacted]",
+};
+
+/** Groups tail events by route; tagged (`?cpu=`) hot-path requests are kept apart from other traffic. */
+export function cpuByRoute(text: string): RouteCpu[] {
+  const rows = new Map<string, RouteCpu>(HOT_PATHS.map(({ id }) => [id, { route: HOT_ROUTE[id], hotPath: id, cpuMs: [], exceeded: 0 }]));
+  for (const record of parseJsonStream(text) as TailEvent[]) {
+    const request = record.event?.request;
+    const route = routeName(request?.method, request?.url);
+    if (!route || typeof record.cpuTime !== "number") continue;
+    const hot = classifyHotPath(request?.method ?? "GET", request!.url!)?.path ?? null;
+    const key = hot ?? `other ${route}`;
+    const row = rows.get(key) ?? { route, hotPath: null, cpuMs: [], exceeded: 0 };
+    row.cpuMs.push(record.cpuTime);
+    if (record.outcome === "exceededCpu") row.exceeded += 1;
+    rows.set(key, row);
+  }
+  return [...rows.values()];
+}
+
+export interface RouteSummary {
+  route: string;
+  hotPath: HotPathId | null;
+  count: number;
+  p50: number | null;
+  p95: number | null;
+  p99: number | null;
+  max: number | null;
+  exceeded: number;
+  verdict: Verdict | "no samples" | "info";
+}
+
+export function summarizeRoute({ route, hotPath, cpuMs, exceeded }: RouteCpu): RouteSummary {
+  if (cpuMs.length === 0) return { route, hotPath, count: 0, p50: null, p95: null, p99: null, max: null, exceeded, verdict: hotPath ? "no samples" : "info" };
+  const sorted = [...cpuMs].sort((a, b) => a - b);
+  const p99 = round(nearestRank(sorted, 99));
+  const failed = p99 >= CPU_LIMIT_MS || exceeded > 0;
+  return {
+    route,
+    hotPath,
+    count: sorted.length,
+    p50: round(nearestRank(sorted, 50)),
+    p95: round(nearestRank(sorted, 95)),
+    p99,
+    max: round(sorted.at(-1)!),
+    exceeded,
+    verdict: hotPath ? (failed ? "fail" : "pass") : "info",
+  };
+}
+
+/** 1 when a hot path fails or has no samples (nothing proves it fits), else 0. */
+export function measureExitCode(summaries: readonly RouteSummary[]): 0 | 1 {
+  return summaries.some((s) => s.hotPath && (s.verdict === "fail" || s.verdict === "no samples")) ? 1 : 0;
+}
+
+export interface JobSummaryInput {
+  summaries: readonly RouteSummary[];
+  phase: Phase;
+  rounds: number;
+  host: string;
+}
+
+const cell = (n: number | null) => (n === null ? "-" : String(n));
+const VERDICT_CELL = { pass: "pass", fail: "**FAIL**", "no samples": "**no samples**", info: "(not a hot path)" } as const;
+
+/** Markdown for `$GITHUB_STEP_SUMMARY`: route names only, never URLs, queries or tokens. */
+export function renderJobSummary({ summaries, phase, rounds, host }: JobSummaryInput): string {
+  const failed = measureExitCode(summaries) === 1;
+  const rows = summaries.map(
+    (s) => `| \`${s.route}\` | ${s.count} | ${cell(s.p50)} | ${cell(s.p95)} | ${cell(s.p99)} | ${cell(s.max)} | ${s.exceeded} | ${VERDICT_CELL[s.verdict]} |`,
+  );
+  return [
+    "## Worker CPU per route (S-019, risk T3)",
+    "",
+    `${host}, phase ${phase}, ${rounds} rounds. CPU time per invocation from \`wrangler tail\`; nearest-rank percentiles in ms.`,
+    `A hot path fails when p99 is at or above ${CPU_LIMIT_MS} ms (free Workers plan) or any invocation exceeded the CPU limit.`,
+    "",
+    "| Route | Count | p50 | p95 | p99 | Max | Exceeded CPU | Verdict |",
+    "|---|---|---|---|---|---|---|---|",
+    ...rows,
+    "",
+    failed
+      ? "**Result: FAIL.** A hot path is over the limit or has no samples. If over: the Owner decides (reduce the work, or Workers Paid at $5/month, which breaks NFR-009)."
+      : "**Result: PASS.** Every hot path's p99 is under the limit.",
+    "",
+  ].join("\n");
 }

@@ -11,6 +11,22 @@ other site) and tags every measured request with `?cpu=cold` or `?cpu=warm`;
 Each request also writes one structured log line (request id, route with tokens redacted,
 status, duration).
 
+## Easiest: run it from GitHub Actions
+
+Actions → **cpu-measure** → Run workflow (staging only; `.github/workflows/cpu-measure.yml`).
+Inputs: `phase` (`warm`, or `cold` with `count` 1 after 10+ idle minutes), `count` (rounds,
+default 50) and an optional order `date`. It needs the `CLOUDFLARE_API_TOKEN` (with
+"Workers Tail: Read") and `CLOUDFLARE_ACCOUNT_ID` secrets, and the sample cake on staging
+(the staging deploy seeds it). The job summary shows p50/p95/p99/max CPU ms per route (route
+names only) and the job fails when a hot path's p99 is at or above 10 ms. The artifact
+`worker-cpu-<phase>-<run>` holds `samples.csv` (path, phase, CPU) and a `cpu-measurements.md`
+for that run: for the evidence, combine a warm and the cold runs' CSVs into
+`production/audits/worker-cpu-<date>/samples.csv` and run step 6 below on it. Its orders are
+named "CPU test — ignore N" with fake contact details. If the summary says no samples arrived
+and shows `Authentication error`, the token lacks the Workers Tail permission.
+
+The manual steps below do the same from your computer.
+
 ## Before you start
 
 - Staging is deployed and healthy (`docs/runbooks/deploy-keys.md`), and the sample product
@@ -52,4 +68,5 @@ status, duration).
 9. Commit `docs/architecture/cpu-measurements.md` and `production/audits/worker-cpu-$RUN/samples.csv` (path, phase, CPU only), then tick S-019 AC3
    (and AC2 with the measured tables) in `production/stories/E-01/S-019-worker-cpu-measurement.md`.
 
-The test orders stay on staging as sample data (emails `cpu-test+<run>-<n>@example.com`).
+The test orders stay on staging as test data: name "CPU test — ignore N", emails
+`cpu-test+<run>-<n>@example.com`, phone 50000000, and a note saying it is not a real order.

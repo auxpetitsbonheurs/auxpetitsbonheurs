@@ -23,6 +23,7 @@ assertMeasurableTarget(base);
 const phase = values.phase as Phase;
 if (phase !== "cold" && phase !== "warm") throw new Error("--phase must be cold or warm");
 const count = Number(values.count);
+if (!Number.isInteger(count) || count < 1 || count > 200) throw new Error("--count must be a whole number from 1 to 200");
 // Default: a week ahead, past any notice rule (override with --date if that day is blocked).
 const date = values.date ?? new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
 const runId = Date.now().toString(36);

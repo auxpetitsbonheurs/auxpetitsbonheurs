@@ -38,7 +38,15 @@ export interface OrderFormInput {
   index: number;
 }
 
-/** A pickup order as the no-JS form posts it; each submit has its own idempotency key and email. */
+/** Marks every order the measurement creates as test data the Owner can ignore. */
+export const TEST_ORDER_NAME = "CPU test — ignore";
+/** A well-formed but unassigned-looking Mauritian mobile number: never a real customer. */
+export const TEST_ORDER_PHONE = "50000000";
+
+/**
+ * A pickup order as the no-JS form posts it; each submit has its own idempotency key and email.
+ * Contact details are fake (example.com, a placeholder phone) and the name and note say it is a test.
+ */
 export function orderForm({ basketHtml, date, runId, index }: OrderFormInput): URLSearchParams {
   const fields: Record<string, string | undefined> = {
     intent: "placeOrder",
@@ -47,9 +55,10 @@ export function orderForm({ basketHtml, date, runId, index }: OrderFormInput): U
     date,
     "windowId.pickup": inputValue(basketHtml, "windowId.pickup", "radio"),
     "displayedTotalRs.pickup": inputValue(basketHtml, "displayedTotalRs.pickup"),
-    "contact.name": `CPU test ${index + 1}`,
-    "contact.phone": "57123456",
+    "contact.name": `${TEST_ORDER_NAME} ${index + 1}`,
+    "contact.phone": TEST_ORDER_PHONE,
     "contact.email": `cpu-test+${runId}-${index + 1}@example.com`,
+    "contact.note": `Automated CPU measurement (S-019), run ${runId}. Not a real order.`,
     acceptPolicies: "on",
   };
   const missing = Object.entries(fields).filter(([, value]) => !value).map(([name]) => name);

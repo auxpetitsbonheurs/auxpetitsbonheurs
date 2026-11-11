@@ -1,0 +1,129 @@
+name: cpu-measure
+
+# S-019 (risk T3, NFR-009): does the free Workers plan's 10 ms CPU limit hold on the hot paths?
+# Actions → cpu-measure → Run workflow. Staging only. While `wrangler tail` captures every
+# invocation's cpuTime, the S-019 load script (scripts/cpu-load.ts) adds the sample cake, opens
+# /basket (price calculation), submits the order and opens its tracking page, `count` times.
+# scripts/cpu-measure.ts then writes p50/p95/p99/max CPU ms per route to the job summary and
+# fails the job when a hot path's p99 is at or above 10 ms (the table is printed first).
+# Orders it creates are test data: name "CPU test — ignore N", cpu-test+…@example.com, phone
+# 50000000. Raw tail output holds URLs with tracking tokens: it stays in $RUNNER_TEMP, is never
+# printed and is deleted; only route names and the samples CSV (path, phase, CPU) leave the job.
+# The Cloudflare API token needs "Workers Tail: Read" (the "Edit Cloudflare Workers" template has it).
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: warm (many rounds back to back) or cold (1 round after 10+ idle minutes)
+        type: choice
+        options: [warm, cold]
+        default: warm
+        required: true
+      count:
+        description: Rounds (each round = basket, submit, tracking; at least 50 for warm)
+        type: string
+        default: "50"
+        required: true
+      date:
+        description: Order date YYYY-MM-DD (optional; default a week ahead; set one if that day is closed)
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cpu-measure-staging
+  cancel-in-progress: false
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: staging
+    defaults:
+      run:
+        working-directory: src
+    env:
+      STAGING_URL: ${{ vars.STAGING_URL || 'https://auxpetitsbonheurs-staging.kshana-auxpetitsbonheurs.workers.dev' }}
+      PHASE: ${{ inputs.phase }}
+      COUNT: ${{ inputs.count }}
+      ORDER_DATE: ${{ inputs.date }}
+      RAW: ${{ runner.temp }}/cpu-raw
+      OUT: ${{ runner.temp }}/cpu-out
+      WRANGLER_HIDE_BANNER: "true"
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+      - run: npm ci
+      - name: Check inputs and keys
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          scripts/check-keys.sh --require CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID
+          if ! [[ "$COUNT" =~ ^[0-9]+$ ]] || [ "$COUNT" -lt 1 ] || [ "$COUNT" -gt 200 ]; then
+            echo "::error::count must be a whole number from 1 to 200"; exit 1
+          fi
+          if [ -n "$ORDER_DATE" ] && ! [[ "$ORDER_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            echo "::error::date must be YYYY-MM-DD"; exit 1
+          fi
+      - name: Capture CPU with wrangler tail while the load runs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          mkdir -p "$RAW"
+          npx wrangler tail auxpetitsbonheurs-staging --format json > "$RAW/tail.json" 2> "$RAW/tail.log" &
+          tail_pid=$!
+          # Ready once a probe request shows up as a tail event (wrangler's messages vary by version).
+          ready=no
+          for _ in $(seq 1 45); do
+            if ! kill -0 "$tail_pid" 2>/dev/null; then echo "::error::wrangler tail stopped before connecting (see the summary step)"; break; fi
+            curl -s -o /dev/null "$STAGING_URL/healthz" || :
+            if grep -q '"eventTimestamp"' "$RAW/tail.json"; then ready=yes; break; fi
+            sleep 2
+          done
+          load=0
+          if [ "$ready" = yes ]; then
+            date_args=()
+            if [ -n "$ORDER_DATE" ]; then date_args=(--date "$ORDER_DATE"); fi
+            npm run cpu:load -- --url "$STAGING_URL" --phase "$PHASE" --count "$COUNT" "${date_args[@]}" || load=$?
+            sleep 15 # let the last events reach the tail
+          else
+            echo "::error::No tail events arrived, so no load was sent."
+          fi
+          # SIGTERM (background jobs ignore SIGINT); wrangler forwards it and closes the tail.
+          kill "$tail_pid" 2>/dev/null || :
+          for _ in $(seq 1 10); do kill -0 "$tail_pid" 2>/dev/null || break; sleep 1; done
+          kill -9 "$tail_pid" 2>/dev/null || :
+          if [ "$load" -ne 0 ]; then echo "::error::cpu:load failed (exit $load); the summary shows what was measured."; fi
+          echo "load=$load" >> "$GITHUB_ENV"
+      - name: CPU per route (job summary)
+        if: always()
+        run: |
+          mkdir -p "$OUT"
+          node scripts/cpu-measure.ts --tail "$RAW/tail.json" --tail-log "$RAW/tail.log" \
+            --phase "$PHASE" --rounds "$COUNT" --host "${STAGING_URL#https://}" \
+            --samples-out "$OUT/samples.csv" --report-out "$OUT/cpu-measurements.md"
+          if [ "${load:-1}" -ne 0 ]; then exit 1; fi
+      - name: Keep the samples (path, phase, CPU only) and the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: worker-cpu-${{ inputs.phase }}-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/cpu-out/samples.csv
+            ${{ runner.temp }}/cpu-out/cpu-measurements.md
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Delete the raw tail capture (holds tracking tokens)
+        if: always()
+        run: rm -rf "$RAW"
