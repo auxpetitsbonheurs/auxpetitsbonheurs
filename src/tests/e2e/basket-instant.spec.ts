@@ -95,7 +95,9 @@ test.describe("ADR-0004 instant Add to basket", () => {
     await expect(page.getByRole("status").filter({ hasText: "1 item in basket" })).toBeAttached();
     const cookie = (await page.context().cookies()).find((c) => c.name === "apb_basket");
     expect(cookie).toMatchObject({ httpOnly: false, sameSite: "Lax", secure: true });
-    expect(decodeURIComponent(cookie!.value)).not.toMatch(/price|Rs/i);
+    // Exactly the line fields, never a price (checked on the keys: a random line id may contain "rs").
+    const lines = JSON.parse(decodeURIComponent(cookie!.value)) as Record<string, unknown>[];
+    expect(lines.map((line) => Object.keys(line).sort())).toEqual([["lineId", "options", "productId", "quantity"]]);
   });
 
   test("a double tap adds once and keeps focus on the button", async ({ page }) => {

@@ -29,7 +29,7 @@ describe("basket cookie (S-011 AC4)", () => {
     expect(header).toContain("Path=/");
     const stored = JSON.parse(decodeURIComponent(valueOf(header))) as Record<string, unknown>[];
     expect(stored).toEqual([{ lineId: "abc", productId: PRODUCT_A, options: [], quantity: 1 }]);
-    expect(JSON.stringify(stored)).not.toMatch(/price|Rs/i);
+    expect(stored.map((line) => Object.keys(line).sort())).toEqual([["lineId", "options", "productId", "quantity"]]);
   });
 
   test("round-trips through a request, and the header count is the sum of quantities", () => {
