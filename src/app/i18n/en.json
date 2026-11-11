@@ -331,10 +331,40 @@
       "backToToday": "Back to Today",
       "notYetTitle": "Not available yet",
       "notYetBody": "This part of the app is coming soon. Everything else works as usual.",
-      "retry": "Try again"
+      "retry": "Try again",
+      "close": "Close",
+      "dismiss": "Dismiss"
     },
     "more": {
       "ownerSection": "For Owners"
+    },
+    "menu": {
+      "addProduct": "Add product",
+      "fromPrice": "from {{price}}",
+      "actionsFor": "Actions for {{name}}",
+      "edit": "Edit",
+      "loading": "Loading the menu…",
+      "loadFailedTitle": "The menu did not load",
+      "loadFailedBody": "Check your connection and try again. Nothing was changed.",
+      "group": {
+        "cake": "Cakes",
+        "cupcake_box": "Cupcake boxes",
+        "dessert": "Desserts",
+        "seasonal": "Seasonal"
+      },
+      "empty": {
+        "cake": "No cakes yet.",
+        "cupcake_box": "No cupcake boxes yet.",
+        "dessert": "No desserts yet.",
+        "seasonal": "No seasonal products yet."
+      },
+      "tag": {
+        "hidden": "Hidden",
+        "sold_out": "Sold out",
+        "seasonal_current": "Seasonal",
+        "seasonal_scheduled": "Scheduled seasonal",
+        "seasonal_ended": "Season over"
+      }
     }
   }
 }

@@ -12,8 +12,7 @@ import { routeArgs } from "~/server/testing/route-context";
 import * as calendar from "./calendar";
 import * as customers from "./customers";
 import * as gallery from "./gallery";
-import { loader as layoutLoader } from "./layout";
-import * as menu from "./menu";
+import { clientLoader as layoutClientLoader, loader as layoutLoader } from "./layout";
 import { loader as moreLoader } from "./more";
 import * as profile from "./profile";
 import * as sales from "./sales";
@@ -95,7 +94,6 @@ describe("destinations not built yet (AC7)", () => {
     ["customers", customers, "Customers"],
     ["sales", sales, "Sales summary"],
     ["gallery", gallery, "Gallery"],
-    ["menu", menu, "Menu"],
     ["profile", profile, "My profile"],
   ] as const)("/admin/%s loads its placeholder for an Admin, with its title", async (name, module, title) => {
     const args = await as("admin");
@@ -122,6 +120,30 @@ function render(element: React.ReactElement, locale: "en" | "fr" = "en") {
     </I18nProvider>,
   );
 }
+
+describe("frame fallback when a navigation's data fails (S-041 AC3)", () => {
+  const frame = { me: { id: "a", name: "Sarah", role: "owner" as const, locale: "en" as const }, nav: { ownerItems: true }, vapidPublicKey: null };
+  const call = (serverLoader: () => Promise<unknown>) => layoutClientLoader({ serverLoader } as never);
+
+  test("a network failure keeps the last frame, so the page's own error shows inside it", async () => {
+    await call(async () => frame);
+
+    expect(await call(() => Promise.reject(new TypeError("Failed to fetch")))).toEqual(frame);
+  });
+
+  test("a 5xx keeps the last frame too", async () => {
+    await call(async () => frame);
+
+    expect(await call(() => Promise.reject(new Response(null, { status: 503 })))).toEqual(frame);
+  });
+
+  test("a redirect (signed out) is never hidden", async () => {
+    await call(async () => frame);
+    const signIn = new Response(null, { status: 302, headers: { Location: "/admin/login" } });
+
+    await expect(call(() => Promise.reject(signIn))).rejects.toBe(signIn);
+  });
+});
 
 describe("header (AC6)", () => {
   test("shows the page title and the role as text", () => {

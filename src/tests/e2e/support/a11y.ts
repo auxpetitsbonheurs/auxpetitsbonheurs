@@ -165,9 +165,12 @@ async function tabStop(page: Page) {
   }, INTERACTIVE);
 }
 
-/** Keyboard reaches every control once, in DOM order, each with a visible focus indicator. */
-export async function expectKeyboardOperable(page: Page) {
-  const { stops, total } = await tabThrough(page);
+/**
+ * Keyboard reaches every control once, in DOM order, each with a visible focus indicator.
+ * `limit` caps the Tab presses (raise it for long lists that other specs keep adding to).
+ */
+export async function expectKeyboardOperable(page: Page, limit = 60) {
+  const { stops, total } = await tabThrough(page, limit);
   expect(stops.map((s) => s.index), "focus order follows the page order").toEqual([...Array(total).keys()]);
   const invisible = stops.filter((s) => !s.visibleFocus).map((s) => s.name);
   expect(invisible, "controls without a visible focus indicator").toEqual([]);

@@ -34,9 +34,14 @@ const isAdminPath = (pathname: string) => pathname === "/admin" || pathname.star
 /**
  * ADR-0004: customer navigations within one language need nothing new from the root (locale
  * and messages are per language; hreflang follows the URL), so they make no request for it.
+ * Admin pages likewise: the admin's language only changes through an action (sign-in,
+ * sign-out, profile), so a plain navigation between admin pages keeps the root data. That
+ * also keeps the frame's text when a page's data fails to load (S-041 AC3).
  */
-export function shouldRevalidate({ currentUrl, nextUrl, defaultShouldRevalidate }: ShouldRevalidateFunctionArgs) {
-  if (isAdminPath(currentUrl.pathname) || isAdminPath(nextUrl.pathname)) return defaultShouldRevalidate;
+export function shouldRevalidate({ currentUrl, nextUrl, formMethod, defaultShouldRevalidate }: ShouldRevalidateFunctionArgs) {
+  const [fromAdmin, toAdmin] = [isAdminPath(currentUrl.pathname), isAdminPath(nextUrl.pathname)];
+  if (fromAdmin && toAdmin && !formMethod) return false;
+  if (fromAdmin || toAdmin) return defaultShouldRevalidate;
   if (localeFromPathname(currentUrl.pathname) !== localeFromPathname(nextUrl.pathname)) return defaultShouldRevalidate;
   return false;
 }

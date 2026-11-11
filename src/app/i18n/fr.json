@@ -331,10 +331,40 @@
       "backToToday": "Retour à Aujourd'hui",
       "notYetTitle": "Pas encore disponible",
       "notYetBody": "Cette partie de l'application arrive bientôt. Tout le reste fonctionne normalement.",
-      "retry": "Réessayer"
+      "retry": "Réessayer",
+      "close": "Fermer",
+      "dismiss": "Masquer le message"
     },
     "more": {
       "ownerSection": "Pour les propriétaires"
+    },
+    "menu": {
+      "addProduct": "Ajouter un produit",
+      "fromPrice": "à partir de {{price}}",
+      "actionsFor": "Actions pour {{name}}",
+      "edit": "Modifier",
+      "loading": "Chargement de la carte…",
+      "loadFailedTitle": "La carte ne s'est pas chargée",
+      "loadFailedBody": "Vérifiez votre connexion et réessayez. Rien n'a été modifié.",
+      "group": {
+        "cake": "Gâteaux",
+        "cupcake_box": "Boîtes de cupcakes",
+        "dessert": "Desserts",
+        "seasonal": "Saisonniers"
+      },
+      "empty": {
+        "cake": "Aucun gâteau pour l'instant.",
+        "cupcake_box": "Aucune boîte de cupcakes pour l'instant.",
+        "dessert": "Aucun dessert pour l'instant.",
+        "seasonal": "Aucun produit saisonnier pour l'instant."
+      },
+      "tag": {
+        "hidden": "Masqué",
+        "sold_out": "Épuisé",
+        "seasonal_current": "Saisonnier",
+        "seasonal_scheduled": "Saisonnier programmé",
+        "seasonal_ended": "Saison terminée"
+      }
     }
   }
 }

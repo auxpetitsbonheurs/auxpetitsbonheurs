@@ -1,7 +1,11 @@
-import { Outlet, useMatches } from "react-router";
+import { type ReactNode, useEffect, useState } from "react";
+import { Outlet, isRouteErrorResponse, useLocation, useMatches, useNavigation } from "react-router";
 import { AdminHeader } from "~/components/admin/admin-header";
 import { AdminBottomBar } from "~/components/admin/bottom-bar";
+import { MenuSkeleton } from "~/components/admin/menu-skeleton";
+import { NavProgress } from "~/components/shell/nav-progress";
 import { SkipLink } from "~/components/shell/skip-link";
+import { Toaster } from "~/components/ui/toaster";
 import { useI18n } from "~/i18n/react";
 import { adminMiddleware } from "~/server/admin-page.server";
 import { requireAdmin } from "~/server/auth.server";
@@ -24,6 +28,37 @@ export async function loader(args: Route.LoaderArgs) {
   };
 }
 
+type LayoutData = Awaited<ReturnType<typeof loader>>;
+/** The frame's last good data in this tab, kept for a failed reload (below). */
+let lastFrame: LayoutData | undefined;
+
+/**
+ * The frame stays when the network or server fails during a navigation: the frame's data
+ * falls back to what this tab last had, so the page's own boundary shows its error with
+ * Retry inside the frame (S-041 AC3). Redirects and 4xx refusals (sign-in, 403) still apply.
+ */
+export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs): Promise<LayoutData> {
+  try {
+    lastFrame = await serverLoader();
+    return lastFrame;
+  } catch (error) {
+    if (!lastFrame || !isServerOrNetworkFailure(error)) throw error;
+    return lastFrame;
+  }
+}
+
+/** No response, or a 5xx one; never a redirect or a 4xx refusal (sign-in, 403, 404). */
+function isServerOrNetworkFailure(error: unknown): boolean {
+  if (error instanceof Response) return error.status >= 500;
+  if (isRouteErrorResponse(error)) return error.status >= 500;
+  return true;
+}
+
+/** The server-rendered first page seeds the fallback too. */
+function rememberFrame(data: LayoutData): void {
+  lastFrame = data;
+}
+
 /** The deepest page's `handle.titleKey` (each admin page names itself for the header). */
 function usePageTitleKey(): string | undefined {
   const matches = useMatches();
@@ -34,12 +69,36 @@ function usePageTitleKey(): string | undefined {
   return undefined;
 }
 
+/** Skeletons stand in for a page only when its data takes longer than this (design-system "Loading"). */
+export const SKELETON_DELAY_MS = 300;
+
+/** Pages with a skeleton of their own: shown while a navigation to them is slow (S-041 AC3). */
+const SKELETONS: Record<string, () => ReactNode> = { "/admin/menu": () => <MenuSkeleton /> };
+
+/** The skeleton of the page being opened, once its data has taken longer than 300 ms; else null. */
+function usePendingSkeleton(): ReactNode {
+  const navigation = useNavigation();
+  const { pathname } = useLocation();
+  const target = navigation.state === "loading" && !navigation.formMethod ? navigation.location?.pathname : undefined;
+  const pending = target && target !== pathname && SKELETONS[target] ? target : undefined;
+  const [late, setLate] = useState<string | undefined>();
+  useEffect(() => {
+    if (!pending) return;
+    const timer = setTimeout(() => setLate(pending), SKELETON_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [pending]);
+  return pending && late === pending ? SKELETONS[pending]!() : null;
+}
+
 export default function AdminLayout({ loaderData }: Route.ComponentProps) {
   const { t } = useI18n();
   const titleKey = usePageTitleKey();
+  const skeleton = usePendingSkeleton();
+  useEffect(() => rememberFrame(loaderData), [loaderData]);
   return (
     <div data-admin-frame="" className="flex min-h-dvh flex-col">
       <SkipLink />
+      <NavProgress />
       <AdminHeader me={loaderData.me} title={titleKey ? t(titleKey) : undefined} />
       {/* Before main in the DOM so the skip link jumps past it; fixed to the bottom on phones. */}
       <AdminBottomBar />
@@ -49,8 +108,9 @@ export default function AdminLayout({ loaderData }: Route.ComponentProps) {
         tabIndex={-1}
         className="mx-auto w-full max-w-content flex-1 px-4 pt-6 pb-6 outline-none min-[20rem]:pb-[calc(5rem+env(safe-area-inset-bottom))] md:px-6"
       >
-        <Outlet />
+        {skeleton ?? <Outlet />}
       </main>
+      <Toaster />
     </div>
   );
 }
