@@ -8,6 +8,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { createContext } from "react-router";
 import * as schema from "~/db/schema";
+import { withUnknownStringParams } from "./pg-params.server";
 
 /**
  * Every wait is bounded so a stuck pooler connection fails fast instead of hanging the
@@ -49,7 +50,8 @@ export function createRequestDb(url: string, connect: Connect = postgres): Reque
     get db() {
       if (!db) {
         client = connect(url, CONNECTION_OPTIONS);
-        db = drizzle({ client, schema });
+        // One round trip per query: no describe step for string parameters (pg-params.server.ts).
+        db = drizzle({ client: withUnknownStringParams(client), schema });
       }
       return db;
     },

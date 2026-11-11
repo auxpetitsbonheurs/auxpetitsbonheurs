@@ -37,7 +37,9 @@ describe("per-request database client (AC4)", () => {
     expect(calls).toEqual([{ url: URL, options: CONNECTION_OPTIONS }]);
     expect(clients[0]?.options.max).toBe(1);
     expect(clients[0]?.options.prepare).toBe(false);
-    expect(db.$client).toBe(clients[0]);
+    // Drizzle gets the same client behind the unknown-typed-strings wrapper (pg-params.server.ts).
+    expect(db.$client).not.toBe(clients[0]);
+    expect(db.$client.options).toBe(clients[0]!.options);
   });
 
   test("connects lazily, once per request", () => {
