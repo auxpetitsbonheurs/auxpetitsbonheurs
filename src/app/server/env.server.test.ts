@@ -37,6 +37,39 @@ function errorOf(run: () => unknown): EnvError {
   throw new Error("expected parseEnv to throw");
 }
 
+describe("Hyperdrive binding (ADR-0003)", () => {
+  const HYPERDRIVE = { connectionString: `postgresql://user:${SECRET}@abc123.hyperdrive.local:5432/postgres` };
+
+  test("the binding's connection string wins over DATABASE_URL", () => {
+    const env = parseEnv(bindings({ HYPERDRIVE }));
+
+    expect(env.DATABASE_URL).toBe(HYPERDRIVE.connectionString);
+  });
+
+  test("with the binding, DATABASE_URL is not required", () => {
+    const env = parseEnv(bindings({ HYPERDRIVE, DATABASE_URL: undefined }));
+
+    expect(env.DATABASE_URL).toBe(HYPERDRIVE.connectionString);
+  });
+
+  test("without the binding, DATABASE_URL is still required", () => {
+    expect(errorOf(() => parseEnv(bindings({ DATABASE_URL: undefined }))).variables).toEqual(["DATABASE_URL"]);
+  });
+
+  test("a malformed binding is refused by name, never by value", () => {
+    const error = errorOf(() => parseEnv(bindings({ HYPERDRIVE: { connectionString: "" } })));
+
+    expect(error.variables).toEqual(["HYPERDRIVE"]);
+    expect(error.message).not.toContain(SECRET);
+  });
+
+  test("TEST_CLOCK never runs against a Hyperdrive (shared) database", () => {
+    const error = errorOf(() => parseEnv(bindings({ APP_ENV: "development", TEST_CLOCK: "on", HYPERDRIVE })));
+
+    expect(error.variables).toEqual(["DATABASE_URL"]);
+  });
+});
+
 describe("parseEnv (AC1: fail loudly, never leak values)", () => {
   test("returns typed settings for valid bindings", () => {
     const env = parseEnv(bindings());

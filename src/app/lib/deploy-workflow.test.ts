@@ -92,6 +92,19 @@ describe("deploy workflow steps (AC2)", () => {
     expect(step).toContain("CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}");
   });
 
+  test.each([
+    ["staging", "STAGING_HYPERDRIVE_ID"],
+    ["production", "PRODUCTION_HYPERDRIVE_ID"],
+  ])("%s: the Hyperdrive id (a plain variable, optional) reaches only the deploy step", (name, variable) => {
+    const steps = job(name);
+    const deploy = steps.indexOf(`run: npm run deploy:${name}`);
+    const step = steps.slice(steps.lastIndexOf("- name:", deploy), deploy);
+    expect(step).toContain(`HYPERDRIVE_ID: \${{ vars.${variable} }}`);
+    expect(steps.match(/^\s+HYPERDRIVE_ID:/gm)).toHaveLength(1);
+    expect(workflow).not.toMatch(/secrets\.[A-Z_]*HYPERDRIVE/);
+    expect(job(`${name}-preflight`)).not.toContain("HYPERDRIVE");
+  });
+
   test("each deploy job waits for its preflight and runs only when keys are configured", () => {
     for (const name of ["staging", "production"]) {
       expect(job(name)).toMatch(new RegExp(`needs:\\s*${name}-preflight`));

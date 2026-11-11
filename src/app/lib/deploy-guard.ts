@@ -10,6 +10,8 @@ export interface BuiltWorkerConfig {
   /** Set by the Cloudflare Vite plugin from CLOUDFLARE_ENV at build time; absent for a top-level build. */
   targetEnvironment?: string;
   vars?: Record<string, unknown>;
+  /** Added at deploy time by scripts/inject-hyperdrive.ts when the Hyperdrive id variable is set. */
+  hyperdrive?: { binding: string; id: string }[];
 }
 
 /** Plain (non-secret) vars a deployed Worker may carry; every other binding is a `wrangler secret`. */
@@ -38,6 +40,22 @@ export function deployProblems(config: BuiltWorkerConfig, target: DeployTarget):
     if (typeof value === "string" && LOCAL_HOST.test(value)) problems.push(`${name} points at a local address`);
   }
   return problems;
+}
+
+export type HyperdriveBinding = { skip: true } | { skip: false; binding: { binding: "HYPERDRIVE"; id: string } };
+
+/**
+ * The Hyperdrive id arrives from a GitHub variable (not a secret). Empty means "not created
+ * yet": skip. A malformed value is refused without echoing it (a pasted connection string
+ * would carry a password).
+ */
+export function hyperdriveBinding(id: string | undefined): HyperdriveBinding {
+  const value = (id ?? "").trim();
+  if (value === "") return { skip: true };
+  if (!/^[0-9a-f]{32}$/i.test(value)) {
+    throw new Error("The Hyperdrive id must be 32 hex characters (Cloudflare dashboard > Hyperdrive > the configuration's ID)");
+  }
+  return { skip: false, binding: { binding: "HYPERDRIVE", id: value } };
 }
 
 /** Parses JSON with comments (wrangler.jsonc): drops // and /* *\/ comments outside strings. */

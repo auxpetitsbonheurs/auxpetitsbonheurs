@@ -16,8 +16,13 @@ const coreSchema = z.object({
   SUPABASE_URL: url,
   SUPABASE_ANON_KEY: required,
   SUPABASE_SERVICE_ROLE_KEY: required,
-  /** Supavisor transaction pooler (port 6543). */
-  DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+  /**
+   * Fallback database URL (Supavisor transaction pooler, port 6543): used when there is no
+   * Hyperdrive binding (local dev, e2e, a deploy before the Hyperdrive id exists).
+   */
+  DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }).optional(),
+  /** Cloudflare Hyperdrive binding (ADR-0003); present only when the deploy injected its id. */
+  HYPERDRIVE: z.object({ connectionString: z.url({ protocol: /^postgres(ql)?$/ }) }).optional(),
 });
 
 /**
@@ -49,10 +54,11 @@ const deployedSchema = coreSchema
   .extend(integrationSchema.partial().shape)
   .extend({ SUPABASE_URL: z.url({ protocol: /^https$/ }), TEST_CLOCK: z.never().optional() });
 
-export type ServerEnv = z.infer<typeof developmentSchema>;
+/** `DATABASE_URL` is always set here: the Hyperdrive connection string when bound, else the secret. */
+export type ServerEnv = Omit<z.infer<typeof developmentSchema>, "DATABASE_URL" | "HYPERDRIVE"> & { DATABASE_URL: string };
 
-/** Every deployable variable (listed in .dev.vars.example); test-only switches excluded. */
-export const ENV_KEYS: readonly string[] = Object.keys(coreSchema.extend(integrationSchema.shape).shape);
+/** Every deployable variable (listed in .dev.vars.example); test-only switches and bindings excluded. */
+export const ENV_KEYS: readonly string[] = Object.keys(coreSchema.extend(integrationSchema.shape).shape).filter((key) => key !== "HYPERDRIVE");
 
 export class EnvError extends Error {
   readonly variables: string[];
@@ -76,10 +82,11 @@ export function parseEnv(bindings: Record<string, unknown>): ServerEnv {
   const schema = appEnv.success && appEnv.data === "development" ? developmentSchema : deployedSchema;
   const result = schema.safeParse(bindings, { reportInput: false });
   if (result.success) {
-    if (result.data.TEST_CLOCK === "on" && !isLocalDatabase(result.data.DATABASE_URL)) {
-      throw new EnvError(["DATABASE_URL"]);
-    }
-    return result.data;
+    const { HYPERDRIVE, DATABASE_URL: fallback, ...rest } = result.data;
+    const DATABASE_URL = HYPERDRIVE?.connectionString ?? fallback;
+    if (!DATABASE_URL) throw new EnvError(["DATABASE_URL"]);
+    if (rest.TEST_CLOCK === "on" && !isLocalDatabase(DATABASE_URL)) throw new EnvError(["DATABASE_URL"]);
+    return { ...rest, DATABASE_URL };
   }
   // Only the names leave this function: zod issues are dropped, not attached as `cause`.
   const names = result.error.issues.map((issue) => String(issue.path[0]));

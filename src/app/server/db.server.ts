@@ -1,6 +1,8 @@
 // One database client per request (architecture.md#data, NFR-005, NFR-013):
-// postgres.js over the Supavisor transaction pooler, one connection, no prepared
-// statements (the pooler cannot keep them), closed via ctx.waitUntil after the response.
+// postgres.js, one connection, no prepared statements, closed via ctx.waitUntil after the
+// response. The URL is the Hyperdrive binding's connection string when bound (ADR-0003, the
+// recommended per-request client with max 1), else DATABASE_URL (Supavisor transaction
+// pooler, which cannot keep prepared statements; we keep them off on both paths).
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";

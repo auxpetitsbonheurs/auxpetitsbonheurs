@@ -18,8 +18,8 @@ Legend: **Secret** = hidden once saved. **Plain** = visible, not sensitive.
 | Supabase projects | supabase.com, bakery email, MFA on | Create two projects, `apb-staging` and `apb-production`, region closest to Mauritius (Mumbai, `ap-south-1`). Save each **database password** in the password manager |
 | Resend, Sentry, GitHub | bakery email, MFA on | Fill the README "Services and accounts" table as you go |
 
-Not needed now: **Hyperdrive** (only if pages are slow, risk T2) and **Smart Placement**
-(decided after the CPU measurement, `docs/runbooks/worker-cpu.md`). Leave both off.
+**Smart Placement** is decided after the CPU measurement (`docs/runbooks/worker-cpu.md`);
+leave it off. **Hyperdrive** is optional, see section 6 (ADR-0003).
 
 ## 1. GitHub: repository → Settings → Secrets and variables → Actions
 
@@ -164,3 +164,20 @@ Until all eight required secrets exist, the Sunday run fails and says which are 
 
 Then GitHub → Actions → **backup** → Run workflow once, and check that an
 `apb-backup-<date>.tar.age` file appears in the Drive folder.
+
+## 6. Hyperdrive (optional, speeds up database access; ADR-0003)
+
+Per environment, staging first:
+
+1. Supabase project -> **Connect** -> **Direct connection** -> URI with the database password.
+   If Cloudflare cannot connect (Supabase direct is IPv6 only), use **Session pooler**
+   (port 5432) instead. Not the Transaction pooler.
+2. Cloudflare -> Storage & Databases -> **Hyperdrive** -> Create configuration: name
+   `apb-staging` (or `apb-production`), paste that URI. Check the free-plan limits shown there.
+3. Copy the configuration's **ID** (not a secret). GitHub -> Settings -> Secrets and variables
+   -> Actions -> **Variables** -> `STAGING_HYPERDRIVE_ID` (later `PRODUCTION_HYPERDRIVE_ID`).
+4. Re-run the **deploy** workflow. With the variable set the Worker is bound to Hyperdrive;
+   empty, the deploy prints a notice and the Worker keeps using `DATABASE_URL`. Keep
+   `DATABASE_URL` set as the fallback.
+
+Rollback: delete the variable's value and redeploy.

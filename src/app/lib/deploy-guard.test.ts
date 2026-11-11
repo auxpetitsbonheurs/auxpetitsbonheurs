@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
-import { deployProblems, parseDeployTarget, readJsonc } from "./deploy-guard";
+import { deployProblems, hyperdriveBinding, parseDeployTarget, readJsonc } from "./deploy-guard";
 
 const built = (overrides: Record<string, unknown> = {}) => ({
   name: "auxpetitsbonheurs-staging",
@@ -61,6 +61,27 @@ describe("deployProblems (built Worker config vs deploy target)", () => {
   });
 });
 
+describe("hyperdriveBinding (ADR-0003)", () => {
+  const ID = "0123456789abcdef0123456789abcdef";
+
+  test("an empty or missing id adds nothing and says to skip", () => {
+    for (const empty of [undefined, "", "  "]) expect(hyperdriveBinding(empty)).toEqual({ skip: true });
+  });
+
+  test("a valid id yields the HYPERDRIVE binding", () => {
+    expect(hyperdriveBinding(` ${ID}\n`)).toEqual({ skip: false, binding: { binding: "HYPERDRIVE", id: ID } });
+  });
+
+  test("a malformed id is an error that does not echo the value", () => {
+    expect(() => hyperdriveBinding("postgresql://user:pw@host/db")).toThrow(/Hyperdrive/);
+    expect(() => hyperdriveBinding("postgresql://user:pw@host/db")).not.toThrow(/pw@host/);
+  });
+
+  test("a build carrying the binding still passes the deploy guard", () => {
+    expect(deployProblems(built({ hyperdrive: [{ binding: "HYPERDRIVE", id: ID }] }), "staging")).toEqual([]);
+  });
+});
+
 describe("readJsonc", () => {
   test("drops comments but keeps // inside strings", () => {
     expect(readJsonc('{\n // note\n "a": "https://x/y", /* b */ "c": 1\n}')).toEqual({ a: "https://x/y", c: 1 });
@@ -109,6 +130,23 @@ describe("package.json deploy scripts", () => {
     expect(build).toBeGreaterThanOrEqual(0);
     expect(guard).toBeGreaterThan(build);
     expect(deploy).toBeGreaterThan(guard);
+  });
+
+  test.each([
+    ["deploy:staging", "staging"],
+    ["deploy:production", "production"],
+  ])("%s injects the Hyperdrive binding after the guard and before wrangler deploy", (name, env) => {
+    const script = scripts[name] ?? "";
+    const guard = script.indexOf(`node scripts/check-deploy.ts ${env}`);
+    const inject = script.indexOf(`node scripts/inject-hyperdrive.ts ${env}`);
+    const deploy = script.indexOf(`wrangler deploy --env ${env}`);
+
+    expect(inject).toBeGreaterThan(guard);
+    expect(deploy).toBeGreaterThan(inject);
+  });
+
+  test("wrangler.jsonc declares no hyperdrive binding (the id is injected at deploy time)", () => {
+    expect(readFileSync(fileURLToPath(new URL("../../wrangler.jsonc", import.meta.url)), "utf8")).not.toMatch(/"hyperdrive"\s*:/);
   });
 
   test("there is no bare `deploy` script that could ship the top-level build", () => {
