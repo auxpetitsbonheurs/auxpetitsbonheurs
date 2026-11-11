@@ -209,6 +209,7 @@ function useBasketModel(data: LoaderData, t: T, locale: Locale): BasketModel {
       unitPrice: formatRupees(line.unitPriceRs),
       lineTotal: formatRupees(line.lineTotalRs),
       unavailable: line.problem !== null,
+      nameUnknown: !name,
       priceNote: note ? t("basket.priceUpdated", { old: formatRupees(note.fromRs), new: formatRupees(note.toRs) }) : null,
     };
   });

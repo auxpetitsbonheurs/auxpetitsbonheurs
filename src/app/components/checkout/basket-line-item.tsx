@@ -16,6 +16,8 @@ export interface BasketLineView {
   lineTotal: string;
   /** Sold out, hidden or deleted: shown dimmed with "No longer available", left out of the total. */
   unavailable: boolean;
+  /** The product's name is unknown (deleted): `name` already says it is no longer available. */
+  nameUnknown?: boolean;
   /** "Price updated from Rs X to Rs Y" when the menu price changed since it was shown, else null. */
   priceNote: string | null;
 }
@@ -127,7 +129,7 @@ export function BasketLineItem({ line }: { line: BasketLineView }) {
       <div className="min-w-0 flex-1 basis-40">
         <p className={cn("font-semibold", line.unavailable && "text-muted-foreground")}>{line.name}</p>
         {!line.unavailable && <p className="text-sm text-muted-foreground">{t("basket.eachPrice", { price: line.unitPrice })}</p>}
-        {line.unavailable && <p className="mt-1 font-semibold">{t("basket.noLongerAvailable")}</p>}
+        {line.unavailable && !line.nameUnknown && <p className="mt-1 font-semibold">{t("basket.noLongerAvailable")}</p>}
         <p aria-live="polite" className="text-sm">
           {line.priceNote && !line.unavailable && <span className="mt-1 inline-block">{line.priceNote}</span>}
         </p>
@@ -139,7 +141,7 @@ export function BasketLineItem({ line }: { line: BasketLineView }) {
         </p>
       )}
       <div className="flex w-full flex-wrap items-start justify-between gap-3">
-        {line.unavailable ? <span /> : <QuantityStepper line={line} />}
+        {!line.unavailable && <QuantityStepper line={line} />}
         <RemoveButton line={line} />
       </div>
     </li>
