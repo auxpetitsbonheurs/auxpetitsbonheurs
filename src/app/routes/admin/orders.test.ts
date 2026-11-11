@@ -104,7 +104,7 @@ describe("orders to review (S-017 AC1)", () => {
 });
 
 describe("who may see and approve (S-017 AC7)", () => {
-  test("an anonymous visitor and a customer are redirected to login with no order data", async () => {
+  test("an anonymous visitor and a customer get no order data; approve redirects them or is FORBIDDEN (S-021 AC3)", async () => {
     const { token } = await placeTestOrder(database);
     const id = await idOf(token);
     const session = await signedInAdmin(database);
@@ -115,10 +115,17 @@ describe("who may see and approve (S-017 AC7)", () => {
       const list = await caught(() => loader(routeArgs(database, { path: "/admin/orders?tab=review", auth: session.auth, cookie }) as never));
       expect(list.headers.get("Location")).toBe("/admin/login?next=%2Fadmin%2Forders%3Ftab%3Dreview");
       expect(await list.text()).toBe("");
-      const post = await caught(() =>
-        orderAction(routeArgs(database, { path: `/admin/orders/${id}`, params: { id }, auth: session.auth, cookie, form: { intent: "approve", version: "1" } }) as never),
-      );
-      expect(post.headers.get("Location")).toBe(`/admin/login?next=${encodeURIComponent(`/admin/orders/${id}`)}`);
+      let post: unknown;
+      try {
+        await orderAction(routeArgs(database, { path: `/admin/orders/${id}`, params: { id }, auth: session.auth, cookie, form: { intent: "approve", version: "1" } }) as never);
+      } catch (error) {
+        post = error;
+      }
+      if (cookie) {
+        expect((post as { init: { status: number } }).init.status).toBe(403);
+      } else {
+        expect((post as Response).headers.get("Location")).toBe(`/admin/login?next=${encodeURIComponent(`/admin/orders/${id}`)}`);
+      }
     }
     expect((await database.client.query("select status from orders where id = $1", [id])).rows).toEqual([{ status: "pending_approval" }]);
   });

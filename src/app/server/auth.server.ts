@@ -3,7 +3,10 @@
 // alone: valid claims -> admin row -> active -> session age <= 30 days from the amr
 // sign-in time. Full Owner/Admin role enforcement arrives with E-02 (S-021, S-022).
 import { type RouterContextProvider, redirect } from "react-router";
+import { readCookie } from "~/lib/cookies";
 import type { Locale } from "~/lib/locale";
+import { LOCALE_COOKIE } from "~/lib/locale-detect";
+import { actionError } from "~/server/action-result.server";
 import { type AuthGateway, authContext } from "~/server/auth-gateway.server";
 import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
@@ -76,15 +79,24 @@ function withCookies(gateway: AuthGateway): { headers: Headers } {
   return { headers };
 }
 
+const isMutation = (request: Request) => !["GET", "HEAD", "OPTIONS"].includes(request.method.toUpperCase());
+
+/** The visitor's language when there is no admin to ask (remembered cookie, else the browser's). */
+function visitorLocale(request: Request): Locale {
+  return adminLocale({ cookie: readCookie(request, LOCALE_COOKIE), acceptLanguage: request.headers.get("accept-language") });
+}
+
 /**
- * The guard. Returns the active admin, or throws: 403 for a cross-site mutation, else a
- * redirect to the login page with `next` (no admin data in the body). An ended admin
- * session is signed out; a customer's session is left as it is.
+ * The guard. Returns the active admin, or throws: 403 for a cross-site mutation; 403
+ * FORBIDDEN (envelope, no admin data) when a signed-in customer posts an admin action
+ * (FR-039, S-021 AC3); else a redirect to the login page with `next` (empty body). An
+ * ended admin session is signed out; a customer's session is left as it is.
  */
 export async function requireAdmin(args: GuardArgs): Promise<AdminUser> {
   assertSameOrigin(args.request);
   const session = await adminSession(args);
   if (session.status === "admin") return session.admin;
+  if (session.status === "not_admin" && isMutation(args.request)) throw actionError("FORBIDDEN", visitorLocale(args.request));
   const gateway = args.context.get(authContext);
   if (session.status === "ended") await gateway.signOut();
   throw redirect(loginRedirectPath(args.url), withCookies(gateway));
