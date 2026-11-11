@@ -10,3 +10,15 @@ Raw product info and photos supplied by the Owner, used to seed the real menu (E
 ## Cake flavours (Owner, 2026-11-11)
 Chocolate · Red velvet · Vanilla · Pistachio · Génoise aux pêches · Black forest
 (Sizes/prices and photos to come.)
+
+## Cakes (Owner, 2026-11-11; prices are placeholders until the Owner sends them)
+Photos cropped from the Owner's catalogue screenshots (lower resolution than originals; replace with originals when available).
+
+| Product | Description (EN) | Price | Photo |
+|---|---|---|---|
+| Signature Red Velvet Cake ❤️ | Soft red velvet cake with cream cheese and raspberry coulis | Rs [price] | photos/red-velvet-cake.jpg |
+| Black Forest Cake 🍒 | Soft chocolate génoise with cherries and cream | Rs [price] | photos/black-forest-cake.jpg |
+| Génoise aux pêches 🍑 | Light and airy génoise layered with whipped cream and peaches | Rs [price] | photos/genoise-aux-peches.jpg |
+| Chocolate Cake 🍫 | Moist chocolate sponge with Lindt chocolate ganache and SMBC frosting | Rs [price] | photos/chocolate-cake.jpg |
+
+Still missing: Vanilla and Pistachio (description + photo); sizes and prices for all cakes; French descriptions (to be drafted by copywriter, Owner to approve).
