@@ -1,5 +1,6 @@
 import { Outlet, redirect } from "react-router";
 import { LanguageSwitch } from "~/components/shell/language-switch";
+import { NavProgress } from "~/components/shell/nav-progress";
 import { SiteFooter } from "~/components/shell/site-footer";
 import { SiteHeader } from "~/components/shell/site-header";
 import { SkipLink } from "~/components/shell/skip-link";
@@ -10,7 +11,8 @@ import { LOCALE_COOKIE, decideLocale, localeCookie, twinPath } from "~/lib/local
 import { readBasketCount } from "~/server/basket.server";
 import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
-import { getFooterContacts } from "~/server/repos/settings.server";
+import { getSiteSettings } from "~/server/repos/settings.server";
+import { timed } from "~/server/server-timing.server";
 import type { Route } from "./+types/layout";
 
 /**
@@ -38,7 +40,8 @@ export const middleware: Route.MiddlewareFunction[] = [
 export async function loader({ request, url, context }: Route.LoaderArgs) {
   // `url` is normalised: client data requests (`/basket.data`) must not leak into links.
   const other = localeFromPathname(url.pathname) === "fr" ? "en" : "fr";
-  const contacts = await getFooterContacts(context.get(requestDbContext).db);
+  // Cached per isolate: most page loads make no database round trip for the frame.
+  const { footer: contacts } = await timed(context, "settings", () => getSiteSettings(context.get(requestDbContext).db));
   return {
     switchHref: twinPath(url.pathname, url.search, other),
     basketCount: readBasketCount(request),
@@ -50,6 +53,7 @@ export async function loader({ request, url, context }: Route.LoaderArgs) {
 export default function SiteLayout({ loaderData }: Route.ComponentProps) {
   return (
     <div className="flex min-h-dvh flex-col">
+      <NavProgress />
       <SkipLink />
       <SiteHeader
         basketCount={loaderData.basketCount}

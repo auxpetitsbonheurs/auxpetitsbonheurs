@@ -12,6 +12,7 @@ import { t as translate } from "~/i18n/catalog.server";
 import { localized } from "~/i18n/localized";
 import { useI18n } from "~/i18n/react";
 import { publicImageUrl } from "~/lib/images";
+import { isPendingIntent } from "~/lib/pending";
 import { type Locale, formatRupees, localeFromPathname, localePath } from "~/lib/locale";
 import { type ActionErrorBody, actionError } from "~/server/action-result.server";
 import { basketCookie, clearBasketCookie, readBasket } from "~/server/basket.server";
@@ -22,7 +23,8 @@ import { requestDbContext } from "~/server/db.server";
 import { noStore } from "~/server/response-headers.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { findProductsByIds } from "~/server/repos/catalogue.server";
-import { getCheckoutSettings } from "~/server/repos/settings.server";
+import { getSiteSettings } from "~/server/repos/settings.server";
+import { timed } from "~/server/server-timing.server";
 import { type PlaceOrderResult, placeOrder } from "~/server/services/place-order.server";
 import type { Route } from "./+types/basket";
 
@@ -34,8 +36,9 @@ export async function loader({ request, url, context }: Route.LoaderArgs) {
   const db = context.get(requestDbContext).db;
   const locale = localeFromPathname(url.pathname);
   const basket = readBasket(request);
-  const products = await findProductsByIds(db, basket.map((l) => l.productId));
-  const settings = await getCheckoutSettings(db);
+  // Display only: Settings come from the isolate cache; placeOrder re-reads them fresh.
+  const settings = (await timed(context, "settings", () => getSiteSettings(db))).checkout;
+  const products = await timed(context, "products", () => findProductsByIds(db, basket.map((l) => l.productId)));
   const { supabaseUrl } = context.get(publicConfigContext);
   const lines = priceLines(basket, products).map((line) => {
     const photo = products.get(line.productId)?.photos[0];
@@ -117,12 +120,12 @@ function refusal(result: Exclude<PlaceOrderResult, { ok: true }>, values: Record
 
 async function submitOrder(form: Record<string, unknown>, args: Route.ActionArgs, locale: Locale) {
   const { request, context } = args;
-  const result = await placeOrder(form, {
+  const result = await timed(context, "place-order", () => placeOrder(form, {
     db: context.get(requestDbContext).db,
     now: context.get(clockContext).now(),
     locale,
     basket: readBasket(request),
-  });
+  }));
   if (!result.ok) return refusal(result, echo(form), locale);
   // The order's own locale: a replay from either language returns the original redirect (S-014 AC2).
   return redirect(localePath(result.locale, `/order/${result.trackingToken}/confirmed`), { headers: { "Set-Cookie": clearBasketCookie() } });
@@ -237,7 +240,8 @@ function CheckoutForm({ data, refused }: { data: LoaderData; refused: OrderRefus
   const summaryRef = useFocusOnRefusal(refused);
   const errors = refused?.error.fields ?? {};
   const totalRs = data.itemsTotalRs + deliveryFeeFor(fulfilment, data.deliveryFeeRs);
-  const submitting = navigation.state === "submitting" && navigation.formData?.get("intent") === "placeOrder";
+  // Busy from the tap until the confirmation page has loaded (the redirect's loading phase too).
+  const submitting = isPendingIntent(navigation, "placeOrder");
   const label = refused?.error.code === "PRICE_CHANGED" ? t("checkout.placeOrderAt", { total: formatRupees(totalRs) }) : t("checkout.placeOrder");
   const items = data.lines.filter((l) => l.problem === null).map((l) => ({ lineId: l.lineId, name: localized(l.name, locale), quantity: l.quantity, lineTotalRs: l.lineTotalRs }));
   return (

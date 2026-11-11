@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
-import { getFooterContacts } from "./settings.server";
+import { getCheckoutSettings, getFooterContacts, getSiteSettings, siteSettingsCache } from "./settings.server";
 
 let database: TestDatabase;
 
@@ -33,5 +33,21 @@ describe("getFooterContacts (S-007 footer from Settings)", () => {
       email: "hello@example.com",
       pickupAddress: "Beau Bassin",
     });
+  });
+});
+
+describe("getSiteSettings (cached for display)", () => {
+  test("footer and checkout values from one query, then from the isolate cache", async () => {
+    siteSettingsCache.clear();
+    const query = vi.spyOn(database.client, "query");
+
+    const first = await getSiteSettings(database.db);
+    const second = await getSiteSettings(database.db);
+
+    expect(query).toHaveBeenCalledTimes(1);
+    expect(second).toBe(first);
+    expect(first.footer).toEqual(await getFooterContacts(database.db));
+    expect(first.checkout).toEqual(await getCheckoutSettings(database.db));
+    siteSettingsCache.clear();
   });
 });

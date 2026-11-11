@@ -63,3 +63,38 @@ Production still follows `PRODUCTION_HYPERDRIVE_ID`: leave that variable empty.
 Revisit by a ticked manual deploy plus cpu-measure after a driver change (e.g. postgres.js
 typed parameters or node-postgres) or a Hyperdrive change; the smoke check and cpu-measure
 print the failing query's cause from `wrangler tail`.
+
+## Amendment 2026-11-11 (2): Smart Placement on staging; fewer round trips per page
+Appended. Trigger: the Owner's phone report (Add to basket "unclickable", no feedback, page
+lags; language switch and Place order about 5 s each). Hyperdrive stays off (amendment above).
+
+Before, staging (main ece4ab0), Pixel 7 emulation from a cloud machine, median of 5:
+product page TTFB 1.70 s; add-to-basket POST 1.52 s, then the client fetched `/basket.data`
+(1.89 s) before anything changed on screen (feedback 4.1 s after the tap); language switch
+1.9 s (full page load); Place order POST 4.5 s, confirmation shown 6.5 s after the tap; 4-7
+`/__manifest` requests per visit. The Worker runs at the visitor's edge and Supabase is one
+region (docs: Mumbai `ap-south-1`); every query is a full round trip and every request opens
+a new TLS connection through Supavisor, so a page with connect + 3 sequential queries paid
+that distance 6-8 times. Parallel loaders do not help: one connection, `max_pipeline: 1`.
+
+Decision:
+- **Smart Placement** (`"placement": { "mode": "smart" }`) on the staging Worker. It is
+  offered on every plan, Free included; it moves the Worker next to the backend it talks to
+  once Cloudflare has seen enough traffic (a `cf-placement` response header reports
+  `remote-…` or `local-…`). Static assets keep coming from the nearest edge. Production gets
+  the same line in a release after staging confirms the gain (no production change now).
+- **Fewer round trips:** product and photos in one query (json aggregate); the Settings row
+  cached per isolate for 60 s for display (footer, basket page), never for money:
+  `placeOrder` still reads it fresh, so an edited fee or window applies at once (a stale page
+  gets PRICE_CHANGED). After an inline add only the layout revalidates (cookie + cached
+  Settings: usually no query).
+- **No `/__manifest` requests:** `routeDiscovery: { mode: "initial" }` ships the route manifest
+  with the first page.
+- **Server-Timing** on every Worker response: `db-connect`, each `db-query`, named reads
+  (`product`, `products`, `settings`, `place-order`) and `app`, from postgres.js diagnostics
+  channels scoped per request (AsyncLocalStorage). Durations only: no SQL, parameters or PII.
+- Front end: Add to basket and Place order show a pending state from tap to result (see the
+  catalogue and checkout specs); the language switch and basket link navigate client-side.
+
+Revisit when: `cf-placement` stays `local-…` on staging after a day of traffic (then try a
+placement `hint` for the Supabase region), or before promoting placement to production.

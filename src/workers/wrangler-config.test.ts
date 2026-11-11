@@ -7,7 +7,7 @@ import { readJsonc } from "~/lib/deploy-guard";
 import { ENV_KEYS } from "~/server/env.server";
 
 const source = readFileSync(fileURLToPath(new URL("../wrangler.jsonc", import.meta.url)), "utf8");
-type Section = { name: string; vars?: Record<string, string>; triggers?: { crons: string[] } };
+type Section = { name: string; vars?: Record<string, string>; triggers?: { crons: string[] }; placement?: { mode: string } };
 const config = readJsonc(source) as Section & { env: Record<string, Section> };
 const staging = config.env.staging!;
 const production = config.env.production!;
@@ -24,6 +24,10 @@ describe("wrangler.jsonc environments (S-002 AC1)", () => {
     ["production", production],
   ])("%s has one hourly cron trigger", (_name, env) => {
     expect(env.triggers?.crons).toEqual(["0 * * * *"]);
+  });
+
+  test("staging runs with Smart Placement, near the database (ADR-0003 amendment 2026-11-11)", () => {
+    expect(staging.placement).toEqual({ mode: "smart" });
   });
 
   test("holds no secret and no account id", () => {

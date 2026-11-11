@@ -33,6 +33,10 @@
 			"name": "auxpetitsbonheurs-staging",
 			"workers_dev": true,
 			"preview_urls": false,
+			// Smart Placement (ADR-0003 amendment 2026-11-11, all plans incl. Free): run the Worker
+			// near Supabase instead of near the visitor, since a page makes several database round
+			// trips and the visitor only one. Static assets are still served from the nearest edge.
+			"placement": { "mode": "smart" },
 			"vars": {
 				"APP_ENV": "staging",
 				"APP_TIME_ZONE": "Indian/Mauritius"

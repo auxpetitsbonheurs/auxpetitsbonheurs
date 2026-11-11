@@ -1,6 +1,6 @@
 // Catalogue reads for the customer site (S-011). Status rules (hidden = 404, sold out
 // = shown but not addable) are applied by callers via domain/pricing productProblem.
-import { asc, eq, inArray } from "drizzle-orm";
+import { eq, getTableName, inArray, sql } from "drizzle-orm";
 import { product, productPhoto } from "~/db/schema";
 import type { Database } from "~/server/db.server";
 
@@ -30,6 +30,17 @@ export interface ProductRecord {
   photos: PhotoRecord[];
 }
 
+/**
+ * The product's photos in slot order, aggregated in the same statement: every query is a
+ * full round trip from the Worker to Supabase, so rows and photos come back together.
+ */
+// Columns are written table-qualified: drizzle would print bare names, and a bare "id"
+// inside the subquery would mean product_photo.id.
+const photosJson = sql<PhotoRecord[] | string>`coalesce((
+  select json_agg(json_build_object('storagePath', pp.storage_path, 'width', pp.width, 'height', pp.height) order by pp.sort_order)
+  from ${productPhoto} pp where pp.product_id = ${sql.raw(`"${getTableName(product)}"."id"`)}
+), '[]'::json)`;
+
 const columns = {
   id: product.id,
   slug: product.slug,
@@ -42,24 +53,16 @@ const columns = {
   allergens: product.allergens,
   basePriceRs: product.basePriceRs,
   minQuantity: product.minQuantity,
+  photos: photosJson,
 };
 
 const selectProducts = (db: Database) => db.select(columns).from(product);
 type Row = Awaited<ReturnType<typeof selectProducts>>[number];
 
-async function photosFor(db: Database, ids: string[]): Promise<Map<string, PhotoRecord[]>> {
-  const map = new Map<string, PhotoRecord[]>();
-  if (ids.length === 0) return map;
-  const rows = await db
-    .select({ productId: productPhoto.productId, storagePath: productPhoto.storagePath, width: productPhoto.width, height: productPhoto.height })
-    .from(productPhoto)
-    .where(inArray(productPhoto.productId, ids))
-    .orderBy(asc(productPhoto.sortOrder));
-  for (const { productId, ...photo } of rows) map.set(productId, [...(map.get(productId) ?? []), photo]);
-  return map;
-}
+/** Drivers differ: postgres.js parses json, others may hand back the text. */
+const parsePhotos = (value: Row["photos"]): PhotoRecord[] => (typeof value === "string" ? (JSON.parse(value) as PhotoRecord[]) : value);
 
-function toRecord(row: Row, photos: PhotoRecord[]): ProductRecord {
+function toRecord(row: Row): ProductRecord {
   return {
     id: row.id,
     slug: row.slug,
@@ -70,15 +73,14 @@ function toRecord(row: Row, photos: PhotoRecord[]): ProductRecord {
     allergens: row.allergens,
     basePriceRs: row.basePriceRs,
     minQuantity: row.minQuantity,
-    photos,
+    photos: parsePhotos(row.photos),
   };
 }
 
 /** The product with this current slug, whatever its status. */
 export async function findProductBySlug(db: Database, slug: string): Promise<ProductRecord | undefined> {
   const [row] = await selectProducts(db).where(eq(product.slug, slug));
-  if (!row) return undefined;
-  return toRecord(row, (await photosFor(db, [row.id])).get(row.id) ?? []);
+  return row ? toRecord(row) : undefined;
 }
 
 /** Products by id (any status); ids that do not exist are absent from the map. */
@@ -86,6 +88,5 @@ export async function findProductsByIds(db: Database, ids: readonly string[]): P
   const unique = [...new Set(ids)];
   if (unique.length === 0) return new Map();
   const rows = await selectProducts(db).where(inArray(product.id, unique));
-  const photos = await photosFor(db, rows.map((r) => r.id));
-  return new Map(rows.map((row) => [row.id, toRecord(row, photos.get(row.id) ?? [])]));
+  return new Map(rows.map((row) => [row.id, toRecord(row)]));
 }

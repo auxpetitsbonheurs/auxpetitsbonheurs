@@ -1,6 +1,6 @@
 // S-002 AC7 (NFR-010): staging is never indexed; production is.
 import { describe, expect, test } from "vitest";
-import { withEnvironmentHeaders } from "./headers";
+import { withEnvironmentHeaders, withServerTiming } from "./headers";
 
 describe("withEnvironmentHeaders", () => {
   test("staging responses carry X-Robots-Tag: noindex, nofollow", () => {
@@ -28,5 +28,19 @@ describe("withEnvironmentHeaders", () => {
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("https://example.com/fr");
     expect(response.headers.get("X-Robots-Tag")).toBe("noindex, nofollow");
+  });
+});
+
+describe("withServerTiming", () => {
+  test("adds the Server-Timing header, even on an immutable redirect", () => {
+    const response = withServerTiming(Response.redirect("https://example.com/basket", 302), "db-connect;dur=5, app;dur=9");
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Server-Timing")).toBe("db-connect;dur=5, app;dur=9");
+  });
+
+  test("no header value, response untouched", () => {
+    const original = new Response("x");
+    expect(withServerTiming(original, null)).toBe(original);
   });
 });
