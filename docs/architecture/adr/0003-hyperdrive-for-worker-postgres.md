@@ -98,3 +98,27 @@ Decision:
 
 Revisit when: `cf-placement` stays `local-…` on staging after a day of traffic (then try a
 placement `hint` for the Supabase region), or before promoting placement to production.
+
+Result, staging, same method (median of 5; deploys 43086611698 and 43090537052):
+
+| Step | Before (ece4ab0) | After (ea69b16) |
+|---|---|---|
+| Product page TTFB | 1.70 s | 1.08 s |
+| Add to basket POST | 1.52 s | 1.00 s |
+| `/basket.data` | 1.89 s | 1.04 s |
+| Tap to visible feedback (Add) | 4.1 s, none before | spinner at once; confirmation 1.14 s |
+| Language switch (tap to French page) | 1.9 s, full reload | 1.32 s, client-side |
+| Place order POST | 4.5 s | 2.8 s |
+| Tap to confirmation page (Place order) | 6.5 s | 4.4 s (busy state throughout) |
+| `/__manifest` requests per visit | 4-7 | 0 |
+
+Server-Timing showed a further cause, fixed in ea69b16: with `prepare: false` postgres.js 4
+describes every query that has a string parameter before running it (two round trips instead
+of one). Strings are now sent as PostgreSQL `unknown` (oid 705), typed by the server like a
+quoted literal; every query is one round trip (~180 ms from the US test machine).
+
+Still open: `cf-placement` reported `local-ATL` / `local-YYZ` for the whole session, so Smart
+Placement had not moved the Worker yet (it needs traffic to decide). Each request still pays
+a new pooler connection (~0.7-0.8 s, about four round trips) plus ~180 ms per query from the
+US; from Mauritius the edge is closer to the database. If placement stays local, add
+`"hint"` with the Supabase region once confirmed from the project settings (not from secrets).
