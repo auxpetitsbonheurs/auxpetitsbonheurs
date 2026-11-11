@@ -41,12 +41,18 @@ function routeOf(url: string): string {
 async function call(url: string, init: RequestInit = {}): Promise<Response> {
   const label = `${init.method ?? "GET"} ${routeOf(url)}`;
   const startedAt = Date.now();
+  // One JSON line per failed request (route name only, no query or token) for cpu-measure's
+  // diagnostics: a timeout has no status, a non-2xx/3xx answer records its status.
+  const record = (status?: number) => {
+    if (values["timeouts-out"]) appendFileSync(values["timeouts-out"], `${JSON.stringify({ route: label, startedAt, endedAt: Date.now(), status })}\n`);
+  };
   try {
-    return await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS), ...init });
+    const response = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS), ...init });
+    if (response.status < 200 || response.status >= 400) record(response.status);
+    return response;
   } catch (error) {
     if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
-      // One JSON line per timeout (route name only, no query or token) for cpu-measure's diagnostics.
-      if (values["timeouts-out"]) appendFileSync(values["timeouts-out"], `${JSON.stringify({ route: label, startedAt, endedAt: Date.now() })}\n`);
+      record();
       throw new Error(`${label} got no response within ${REQUEST_TIMEOUT_MS / 1000} s`, { cause: error });
     }
     throw new Error(`${label} failed: ${error instanceof Error ? error.message : String(error)}`, { cause: error });

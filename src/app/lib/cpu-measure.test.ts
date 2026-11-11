@@ -234,4 +234,24 @@ describe("timed-out routes are explained by the matching tail event", () => {
   test("nothing to print without timeouts", () => {
     expect(timeoutDiagnostics("", [])).toBe("");
   });
+
+  test("a non-2xx/3xx answer is explained too: status, exceptions, console error and warn lines", () => {
+    const tail = event("/menu/chocolate-cake", stamp + 50, {
+      outcome: "ok",
+      event: { request: { url: `${BASE}/menu/chocolate-cake`, method: "POST" }, response: { status: 500 } },
+      exceptions: [],
+      logs: [
+        { level: "error", message: ["PostgresError: connection to postgres://apb:hunter2@db.example.co:6543/postgres?sslmode=require failed for cake@example.com, +230 5123 4567"] },
+        { level: "warn", message: ["retrying"] },
+      ],
+    });
+
+    const text = timeoutDiagnostics(tail, [{ route: "POST /menu/chocolate-cake", startedAt: stamp, endedAt: stamp + 300, status: 500 }]);
+
+    expect(text).toContain("`POST /menu/chocolate-cake` answered 500");
+    expect(text).toContain("response 500");
+    expect(text).toContain("PostgresError");
+    expect(text).toContain("retrying");
+    expect(text).not.toMatch(/hunter2|apb:|db\.example\.co|cake@example\.com|5123 4567/);
+  });
 });

@@ -357,40 +357,63 @@ export function renderJobSummary({ summaries, phase, rounds, host }: JobSummaryI
 }
 
 /** A request the load script gave up on (epoch ms), written by scripts/cpu-load.ts. */
+/** A request that timed out (no `status`) or answered outside 2xx/3xx (`status` set). */
 export interface TimedOutRequest {
   route: string;
   startedAt: number;
   endedAt: number;
+  status?: number;
 }
 
 interface DiagnosticEvent extends TailEvent {
   eventTimestamp?: unknown;
+  event?: TailEvent["event"] & { response?: { status?: unknown } };
   exceptions?: { name?: unknown; message?: unknown }[];
   logs?: { level?: unknown; message?: unknown[] }[];
 }
 
+/** redactText plus connection strings, emails and phone numbers (error messages may carry them). */
+export function redactDiagnostic(text: string): string {
+  return redactText(
+    text
+      .replace(/\b[a-z][a-z0-9+.-]*:\/\/[^\s"'@/]*@[^\s"']+/gi, "[redacted-url]")
+      .replace(/\b(host|user|password)=\S+/gi, "$1=[redacted]")
+      .replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, "[redacted-email]")
+      .replace(/\+?\d[\d ()-]{6,}\d/g, "[redacted-number]"),
+  );
+}
+
 /**
- * For each timed-out request: the tail events of the same route inside its window, with
- * outcome, exception names/messages and error-level log lines (all redacted). Empty when
- * nothing timed out; says so when no event matches, so a recurrence is diagnosable.
+ * For each failed request (timed out, or answered outside 2xx/3xx): the tail events of the same
+ * route inside its window, with outcome, response status, exception names/messages and
+ * error/warn log lines (all redacted). Empty when nothing failed; says so when no event
+ * matches, so a recurrence is diagnosable.
  */
 export function timeoutDiagnostics(tailText: string, timeouts: readonly TimedOutRequest[]): string {
   if (timeouts.length === 0) return "";
   const events = (parseJsonStream(tailText) as DiagnosticEvent[]).filter((e) => typeof e.eventTimestamp === "number");
-  const lines = ["## Timed-out requests: matching tail events", ""];
+  const lines = ["## Failed requests: matching tail events", ""];
   for (const t of timeouts) {
-    lines.push(`- \`${t.route}\` gave no response within ${Math.round((t.endedAt - t.startedAt) / 1000)} s`);
+    lines.push(t.status === undefined
+      ? `- \`${t.route}\` gave no response within ${Math.round((t.endedAt - t.startedAt) / 1000)} s`
+      : `- \`${t.route}\` answered ${t.status}`);
     const matches = events.filter((e) => {
       const at = e.eventTimestamp as number;
       return routeName(e.event?.request?.method, e.event?.request?.url) === t.route && at >= t.startedAt - 2_000 && at <= t.endedAt + 30_000;
     });
     if (matches.length === 0) lines.push("  - no matching tail event");
-    for (const e of matches) {
-      const cpu = typeof e.cpuTime === "number" ? `, cpu ${e.cpuTime} ms` : "";
-      lines.push(`  - outcome ${redactText(String(e.outcome ?? "unknown"))}${cpu}`);
-      for (const x of e.exceptions ?? []) lines.push(`    - exception ${redactText(`${String(x.name ?? "")}: ${String(x.message ?? "")}`).slice(0, 300)}`);
-      for (const l of e.logs ?? []) if (l.level === "error") lines.push(`    - log ${redactText((l.message ?? []).map(String).join(" ")).slice(0, 300)}`);
-    }
+    for (const e of matches) lines.push(...describeEvent(e));
   }
   return `${lines.join("\n")}\n`;
+}
+
+function describeEvent(e: DiagnosticEvent): string[] {
+  const cpu = typeof e.cpuTime === "number" ? `, cpu ${e.cpuTime} ms` : "";
+  const status = typeof e.event?.response?.status === "number" ? `, response ${e.event.response.status}` : "";
+  const lines = [`  - outcome ${redactText(String(e.outcome ?? "unknown"))}${status}${cpu}`];
+  for (const x of e.exceptions ?? []) lines.push(`    - exception ${redactDiagnostic(`${String(x.name ?? "")}: ${String(x.message ?? "")}`).slice(0, 400)}`);
+  for (const l of e.logs ?? []) {
+    if (l.level === "error" || l.level === "warn") lines.push(`    - ${l.level} ${redactDiagnostic((l.message ?? []).map(String).join(" ")).slice(0, 400)}`);
+  }
+  return lines;
 }

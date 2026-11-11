@@ -99,10 +99,21 @@ describe("deploy workflow steps (AC2)", () => {
     const steps = job(name);
     const deploy = steps.indexOf(`run: npm run deploy:${name}`);
     const step = steps.slice(steps.lastIndexOf("- name:", deploy), deploy);
-    expect(step).toContain(`HYPERDRIVE_ID: \${{ vars.${variable} }}`);
+    expect(step).toMatch(new RegExp(`HYPERDRIVE_ID: \\$\\{\\{.*vars\\.${variable}.*\\}\\}`));
     expect(steps.match(/^\s+HYPERDRIVE_ID:/gm)).toHaveLength(1);
     expect(workflow).not.toMatch(/secrets\.[A-Z_]*HYPERDRIVE/);
     expect(job(`${name}-preflight`)).not.toContain("HYPERDRIVE");
+  });
+
+  test("a manual staging deploy can leave Hyperdrive out (input hyperdrive, default true); production ignores it", () => {
+    expect(workflow).toMatch(/workflow_dispatch:\s*\n\s+inputs:\s*\n\s+hyperdrive:\s*\n(?:\s+[a-z]+:.*\n)*?\s+type:\s*boolean/);
+    expect(workflow).toMatch(/hyperdrive:\s*\n(?:\s+[a-z]+:.*\n)*?\s+default:\s*true/);
+    // Automatic (workflow_run) deploys have no inputs: they keep the binding when the variable is set.
+    expect(job("staging")).toContain(
+      "HYPERDRIVE_ID: ${{ (github.event_name != 'workflow_dispatch' || inputs.hyperdrive) && vars.STAGING_HYPERDRIVE_ID || '' }}",
+    );
+    expect(job("production")).not.toContain("inputs.hyperdrive");
+    expect(job("production")).toContain("HYPERDRIVE_ID: ${{ vars.PRODUCTION_HYPERDRIVE_ID }}");
   });
 
   test("each deploy job waits for its preflight and runs only when keys are configured", () => {
