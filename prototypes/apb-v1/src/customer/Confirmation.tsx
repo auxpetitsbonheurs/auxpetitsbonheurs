@@ -14,7 +14,7 @@ export function Confirmation() {
   if (!order) {
     return (
       <div className="py-12 text-center">
-        <h1 className="mb-2 text-3xl font-semibold">{t('t.notFound')}</h1>
+        <h1 className="mb-2 text-3xl">{t('t.notFound')}</h1>
         <Link to="/" className={btn()}>{t('c.home')}</Link>
       </div>
     )
@@ -22,17 +22,17 @@ export function Confirmation() {
   const url = trackingUrl(order)
   return (
     <div className="space-y-5 py-4 text-center">
-      <h1 className="text-3xl font-semibold text-rose-700">{t('c.title')}</h1>
+      <h1 className="text-3xl text-honey-700">{t('c.title')}</h1>
       <div className={card}>
         <p className="text-sm text-ink-soft">{t('c.number')}</p>
-        <p className="font-serif text-4xl font-bold">{order.number}</p>
+        <p className="font-serif text-4xl font-semibold">{order.number}</p>
       </div>
-      <p className="rounded-2xl bg-amber-100 p-3 font-semibold text-amber-900">
+      <p className="rounded-card bg-amber-100 p-3 font-semibold text-amber-900">
         {order.source === 'custom' ? t('c.requestNote') : t('c.notConfirmed')}
       </p>
       <div className={`${card} text-left`}>
         <p className="mb-1 text-sm font-semibold">{t('c.link')}</p>
-        <p className="break-all rounded-xl bg-rose-50 p-2 text-xs">{url}</p>
+        <p className="break-all rounded-xl bg-honey-100 p-2 text-xs">{url}</p>
         <button
           type="button"
           className={btn('outline', 'mt-2')}

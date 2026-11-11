@@ -1,25 +1,26 @@
 import { cloneElement, isValidElement, useId, type ReactElement, type ReactNode } from 'react'
 
+// D4 Honey & cream: flat buttons, radius 12px, min-height 48px; no gradients, no heavy shadows.
 type Variant = 'primary' | 'outline' | 'ghost' | 'danger'
 const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-rose-600 text-white hover:bg-rose-700 disabled:bg-rose-200 disabled:text-white',
-  outline: 'border border-rose-300 bg-white text-rose-700 hover:bg-rose-50 disabled:opacity-50',
-  ghost: 'text-rose-700 hover:bg-rose-50 disabled:opacity-50',
-  danger: 'border border-red-300 bg-white text-red-700 hover:bg-red-50 disabled:opacity-50',
+  primary: 'bg-honey-600 text-paper hover:bg-honey-800 disabled:opacity-50',
+  outline: 'border border-honey-600 bg-paper text-honey-700 hover:bg-honey-100 disabled:opacity-50',
+  ghost: 'text-honey-700 hover:bg-honey-100 disabled:opacity-50',
+  danger: 'border border-red-700 bg-paper text-red-700 hover:bg-red-50 disabled:opacity-50',
 }
 export const btn = (v: Variant = 'primary', extra = ''): string =>
-  `inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition ${VARIANTS[v]} ${extra}`
+  `inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-6 py-2 text-center text-base font-semibold transition-colors ${VARIANTS[v]} ${extra}`
 
+// Input border ink-line (#8C7862) keeps >= 3:1 against cream and paper (WCAG 1.4.11).
 export const inputCls =
-  'min-h-11 w-full rounded-xl border border-rose-200 bg-white px-3 text-base text-ink placeholder:text-ink-soft/60 focus:border-rose-500'
+  'min-h-11 w-full rounded-xl border border-ink-line bg-paper px-3 text-base text-ink placeholder:text-ink-soft focus:border-honey-600'
 
-export const card = 'rounded-2xl bg-white p-4 shadow-soft'
+export const card = 'rounded-card border border-honey-200 bg-paper p-4'
 
 export function Field({ label, hint, error, children }: { label: string; hint?: string; error?: string; children: ReactNode }) {
   const id = useId()
-  const child = isValidElement(children)
-    ? cloneElement(children as ReactElement<{ id?: string; 'aria-label'?: string }>, { id, 'aria-label': label })
-    : children
+  // The <label htmlFor> names the control: no copied aria-label on the child.
+  const child = isValidElement(children) ? cloneElement(children as ReactElement<{ id?: string }>, { id }) : children
   return (
     <div className="block">
       <label htmlFor={id} className="mb-1 block text-sm font-semibold">{label}</label>
@@ -36,8 +37,8 @@ export function Chip({ active, onClick, children }: { active?: boolean; onClick?
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-semibold transition ${
-        active ? 'border-rose-600 bg-rose-600 text-white' : 'border-rose-200 bg-white text-ink hover:bg-rose-50'
+      className={`min-h-11 shrink-0 rounded-xl border px-4 text-sm font-semibold transition-colors ${
+        active ? 'border-honey-600 bg-honey-600 text-paper' : 'border-ink-line bg-paper text-ink hover:bg-honey-100'
       }`}
     >
       {children}
@@ -45,9 +46,9 @@ export function Chip({ active, onClick, children }: { active?: boolean; onClick?
   )
 }
 
-export function Badge({ children, tone = 'rose' }: { children: ReactNode; tone?: 'rose' | 'green' | 'amber' | 'grey' | 'red' }) {
+export function Badge({ children, tone = 'honey' }: { children: ReactNode; tone?: 'honey' | 'green' | 'amber' | 'grey' | 'red' }) {
   const tones = {
-    rose: 'bg-rose-100 text-rose-700', green: 'bg-emerald-100 text-emerald-800', amber: 'bg-amber-100 text-amber-800',
+    honey: 'bg-honey-200 text-honey-700', green: 'bg-emerald-100 text-emerald-800', amber: 'bg-amber-100 text-amber-800',
     grey: 'bg-stone-200 text-stone-700', red: 'bg-red-100 text-red-800',
   }
   return <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${tones[tone]}`}>{children}</span>
@@ -56,10 +57,10 @@ export function Badge({ children, tone = 'rose' }: { children: ReactNode; tone?:
 export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 sm:items-center" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-cream p-5 sm:rounded-3xl">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-band bg-cream p-5 sm:rounded-band">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">{title}</h2>
-          <button type="button" onClick={onClose} className="min-h-11 min-w-11 rounded-full text-2xl leading-none hover:bg-rose-50" aria-label="Close">
+          <h2 className="text-2xl">{title}</h2>
+          <button type="button" onClick={onClose} className="min-h-11 min-w-11 rounded-xl text-2xl leading-none hover:bg-honey-100" aria-label="Close">
             &times;
           </button>
         </div>
@@ -69,11 +70,21 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
   )
 }
 
-export function Stepper({ value, min, max, onChange, label }: { value: number; min: number; max: number; onChange: (n: number) => void; label: string }) {
+type QtyTranslate = (key: 'qty.of' | 'qty.inc' | 'qty.dec', vars: { name: string }) => string
+/** Distinct accessible names for a product's quantity stepper. */
+export const qtyLabels = (t: QtyTranslate, name: string) => ({
+  label: t('qty.of', { name }), incLabel: t('qty.inc', { name }), decLabel: t('qty.dec', { name }),
+})
+
+/** Quantity stepper: the group and field are named by `label`, each button by its own name. */
+export function Stepper({ value, min, max, onChange, label, decLabel, incLabel }: {
+  value: number; min: number; max: number; onChange: (n: number) => void; label: string; decLabel: string; incLabel: string
+}) {
   const clamp = (n: number) => Math.min(max, Math.max(min, n))
+  const step = 'min-h-11 min-w-11 rounded-xl text-xl text-honey-700 hover:bg-honey-100 disabled:text-ink-line disabled:hover:bg-transparent'
   return (
-    <div className="inline-flex items-center rounded-full border border-rose-200 bg-white" role="group" aria-label={label}>
-      <button type="button" className="min-h-11 min-w-11 text-xl" onClick={() => onChange(clamp(value - 1))} disabled={value <= min} aria-label="-">&minus;</button>
+    <div className="inline-flex items-center rounded-xl border border-ink-line bg-paper" role="group" aria-label={label}>
+      <button type="button" className={step} onClick={() => onChange(clamp(value - 1))} disabled={value <= min} aria-label={decLabel}>&minus;</button>
       <input
         inputMode="numeric"
         aria-label={label}
@@ -84,7 +95,7 @@ export function Stepper({ value, min, max, onChange, label }: { value: number; m
           onChange(Number.isNaN(n) ? min : clamp(n))
         }}
       />
-      <button type="button" className="min-h-11 min-w-11 text-xl" onClick={() => onChange(clamp(value + 1))} disabled={value >= max} aria-label="+">+</button>
+      <button type="button" className={step} onClick={() => onChange(clamp(value + 1))} disabled={value >= max} aria-label={incLabel}>+</button>
     </div>
   )
 }

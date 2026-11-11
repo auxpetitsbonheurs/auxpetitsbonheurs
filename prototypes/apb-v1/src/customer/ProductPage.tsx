@@ -10,7 +10,7 @@ import { useI18n } from '../i18n'
 import { todayMU, useDb, useNow } from '../mocks/store'
 import { Photo } from '../ui/Art'
 import { OptionPicker } from '../ui/OptionPicker'
-import { btn, Stepper } from '../ui/ui'
+import { btn, qtyLabels, Stepper } from '../ui/ui'
 import { addLine, newLineId, replaceLine, useBasket } from './basketStore'
 
 export function ProductPage() {
@@ -72,7 +72,7 @@ export function ProductPage() {
     <article className="pb-24">
       <div className="-mx-4 sm:mx-0">
         <div
-          className="snap-x-row flex sm:rounded-3xl"
+          className="snap-x-row flex sm:rounded-band"
           onScroll={(e) => setPhoto(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}
         >
           {product.photos.map((src, i) => (
@@ -81,15 +81,15 @@ export function ProductPage() {
         </div>
         {product.photos.length > 1 && (
           <div className="mt-2 flex justify-center gap-1.5" aria-hidden="true">
-            {product.photos.map((_, i) => <span key={i} className={`h-2 w-2 rounded-full ${i === photo ? 'bg-rose-600' : 'bg-rose-200'}`} />)}
+            {product.photos.map((_, i) => <span key={i} className={`h-2 w-2 rounded-full ${i === photo ? 'bg-honey-600' : 'bg-honey-200'}`} />)}
           </div>
         )}
       </div>
 
-      <h1 className="mt-4 text-3xl font-semibold">{tl(product.name)}</h1>
+      <h1 className="mt-4 text-3xl">{tl(product.name)}</h1>
       <p className="mt-1 text-lg">
         {best.price < best.original && <span className="mr-2 text-ink-soft line-through">{formatRs(best.original)}</span>}
-        <span className="font-bold text-rose-700">{formatRs(best.price)}</span>
+        <span className="font-semibold text-honey-700">{formatRs(best.price)}</span>
       </p>
       <p className="mt-2 text-ink-soft">{tl(product.desc)}</p>
       {product.allergens.length > 0 && (
@@ -100,16 +100,16 @@ export function ProductPage() {
       <p className="mt-1 text-xs text-ink-soft">{t('p.kitchenNote')}</p>
 
       {!orderable ? (
-        <p className="mt-6 rounded-2xl bg-stone-200 p-4 text-center font-semibold">{t('p.soldOutNote')}</p>
+        <p className="mt-6 rounded-card bg-stone-200 p-4 text-center font-semibold">{t('p.soldOutNote')}</p>
       ) : (
         <div className="mt-5 space-y-5">
           <OptionPicker product={product} sel={current} onChange={setSel} lang={lang} missing={sel ? missingIds : []} />
           <div>
             <p className="mb-1 text-sm font-semibold">{qGroup ? tl(qGroup.name) : t('p.qty')}</p>
-            <Stepper label={t('p.qty')} value={current.qty} min={bounds.min} max={bounds.max} onChange={(qty) => setSel({ ...current, qty })} />
+            <Stepper {...qtyLabels(t, tl(product.name))} value={current.qty} min={bounds.min} max={bounds.max} onChange={(qty) => setSel({ ...current, qty })} />
             {qGroup && <p className="mt-1 text-xs text-ink-soft">{t('p.qtyRange', bounds)}</p>}
           </div>
-          <p className="rounded-xl bg-rose-50 p-3 text-sm font-semibold">
+          <p className="rounded-xl bg-honey-100 p-3 text-sm font-semibold">
             {t('p.earliest', { date: date(earliest, true) })}
             {notice > db.settings.defaultNotice && <span className="font-normal text-ink-soft"> ({t('p.notice', { n: notice })})</span>}
           </p>
@@ -117,7 +117,7 @@ export function ProductPage() {
       )}
 
       {orderable && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-rose-100 bg-cream/95 p-3 backdrop-blur">
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-honey-200 bg-cream/95 p-3 backdrop-blur">
           <div className="mx-auto max-w-5xl">
             {added ? (
               <div className="flex gap-2">

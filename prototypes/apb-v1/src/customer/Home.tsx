@@ -19,30 +19,28 @@ export function Home() {
   ] as const
   return (
     <div className="space-y-10">
-      <section className="relative overflow-hidden rounded-3xl bg-rose-100 p-6 pt-8">
-        <div className="relative z-10 max-w-[60%] sm:max-w-md">
-          <h1 className="text-3xl font-semibold leading-tight text-rose-700 sm:text-4xl">{t('home.hero')}</h1>
-          <p className="mt-2 text-sm text-ink-soft">{tl(db.settings.tagline)}</p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Link to="/menu" className={btn('primary')}>{t('home.orderNow')}</Link>
-            <Link to="/custom" className={btn('outline')}>{t('home.customCake')}</Link>
-          </div>
+      <section className="flex flex-col items-center gap-3.5 pt-4 text-center">
+        <p className="font-subhead text-base italic text-honey-700">{tl(db.settings.tagline)}</p>
+        <h1 className="max-w-md text-[2.625rem] leading-[1.08] sm:text-[3.5rem]">{t('home.hero')}</h1>
+        <div className="mt-1 flex flex-wrap justify-center gap-2">
+          <Link to="/menu" className={btn('primary')}>{t('home.orderNow')}</Link>
+          <Link to="/custom" className={btn('outline')}>{t('home.customCake')}</Link>
         </div>
-        <Art id="art:cake:0" className="absolute -right-8 bottom-0 h-52 w-52 rounded-full opacity-90 sm:right-8 sm:h-72 sm:w-72" />
+        <Art id="art:cake:0" className="mt-3 h-[250px] w-full overflow-hidden rounded-band sm:h-80" />
       </section>
 
       {cards.length > 0 && (
         <section aria-labelledby="offers">
-          <h2 id="offers" className="mb-3 text-2xl font-semibold">{t('home.offers')}</h2>
+          <h2 id="offers" className="mb-3 text-center text-[1.75rem]">{t('home.offers')}</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             {cards.map((p) => (
               <Link
                 key={p.id}
                 to={p.link.kind === 'product' ? `/product/${p.link.ref}` : p.link.kind === 'custom' ? '/custom' : '/menu'}
-                className="block rounded-2xl border border-rose-200 bg-white p-4 shadow-soft"
+                className="block rounded-band bg-cream-dark p-5"
               >
-                <p className="font-serif text-lg font-semibold text-rose-700">{tl(p.title)}</p>
-                <p className="mt-1 text-sm text-ink-soft">{tl(p.text)}</p>
+                <p className="font-subhead text-xl">{tl(p.title)}</p>
+                <p className="mt-1 text-[15px] text-ink-soft">{tl(p.text)}</p>
               </Link>
             ))}
           </div>
@@ -51,22 +49,22 @@ export function Home() {
 
       {seasonal.length > 0 && (
         <section aria-labelledby="seasonal">
-          <h2 id="seasonal" className="mb-3 text-2xl font-semibold">{t('home.seasonal')}</h2>
+          <h2 id="seasonal" className="mb-3 text-center text-[1.75rem]">{t('home.seasonal')}</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{seasonal.map((p) => <ProductCard key={p.id} product={p} />)}</div>
         </section>
       )}
 
       <section aria-labelledby="featured">
-        <h2 id="featured" className="mb-3 text-2xl font-semibold">{t('home.featured')}</h2>
+        <h2 id="featured" className="mb-3 text-center text-[1.75rem]">{t('home.featured')}</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{featured.map((p) => <ProductCard key={p.id} product={p} />)}</div>
       </section>
 
       <section aria-labelledby="how">
-        <h2 id="how" className="mb-3 text-2xl font-semibold">{t('home.how')}</h2>
+        <h2 id="how" className="mb-3 text-center text-[1.75rem]">{t('home.how')}</h2>
         <ol className="grid gap-3 sm:grid-cols-3">
           {steps.map(([title, desc], i) => (
-            <li key={title} className="rounded-2xl bg-white p-4 shadow-soft">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-rose-100 font-serif font-bold text-rose-700">{i + 1}</span>
+            <li key={title} className="rounded-card border border-honey-200 bg-paper p-4">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-honey-200 font-serif text-lg text-honey-700">{i + 1}</span>
               <p className="mt-2 font-semibold">{t(title)}</p>
               <p className="text-sm text-ink-soft">{t(desc)}</p>
             </li>
@@ -76,11 +74,11 @@ export function Home() {
 
       <section aria-labelledby="gal">
         <div className="mb-3 flex items-end justify-between">
-          <h2 id="gal" className="text-2xl font-semibold">{t('home.gallery')}</h2>
-          <Link to="/gallery" className="flex min-h-11 items-center text-sm font-semibold text-rose-700">{t('common.seeAll')}</Link>
+          <h2 id="gal" className="text-[1.75rem]">{t('home.gallery')}</h2>
+          <Link to="/gallery" className="flex min-h-11 items-center text-sm font-semibold text-honey-700 underline underline-offset-4">{t('common.seeAll')}</Link>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          {GALLERY.slice(0, 6).map((g) => <Photo key={g.id} src={g.art} alt={tl(g.caption)} className="aspect-square overflow-hidden rounded-xl" />)}
+          {GALLERY.slice(0, 6).map((g) => <Photo key={g.id} src={g.art} alt={tl(g.caption)} className="aspect-square overflow-hidden rounded-photo" />)}
         </div>
       </section>
     </div>

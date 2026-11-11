@@ -64,9 +64,9 @@ export function CustomRequest() {
 
   return (
     <form onSubmit={submit} className="space-y-4 pb-8">
-      <h1 className="text-3xl font-semibold">{t('cu.title')}</h1>
+      <h1 className="text-3xl">{t('cu.title')}</h1>
       <p className="text-ink-soft">{t('cu.intro')}</p>
-      {err && <p role="alert" className="rounded-2xl bg-red-100 p-3 text-sm font-semibold text-red-800">{err}</p>}
+      {err && <p role="alert" className="rounded-card bg-red-100 p-3 text-sm font-semibold text-red-800">{err}</p>}
 
       <Field label={t('cu.occasion')}>
         <select required className={inputCls} value={f.occasion} onChange={(e) => set('occasion')(e.target.value)}>
@@ -85,11 +85,11 @@ export function CustomRequest() {
           {photos.map((p, i) => (
             <div key={i} className="relative">
               <Photo src={p} alt={`${t('cu.photos')} ${i + 1}`} className="h-20 w-20 overflow-hidden rounded-xl" />
-              <button type="button" aria-label={t('common.remove')} className="absolute -right-2 -top-2 h-7 w-7 rounded-full bg-ink text-white" onClick={() => setPhotos(photos.filter((_, j) => j !== i))}>&times;</button>
+              <button type="button" aria-label={t('common.remove')} className="absolute -right-3 -top-3 h-11 w-11 rounded-full border-2 border-cream bg-ink text-paper" onClick={() => setPhotos(photos.filter((_, j) => j !== i))}>&times;</button>
             </div>
           ))}
           {photos.length < MAX_PHOTOS && (
-            <label className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-rose-300 text-center text-xs font-semibold text-rose-700">
+            <label className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-ink-line text-center text-xs font-semibold text-honey-700">
               {t('cu.addPhoto')}
               <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => { void addPhotos(e.target.files); e.target.value = '' }} />
             </label>
@@ -105,7 +105,7 @@ export function CustomRequest() {
         <p className="mb-1 text-sm font-semibold">{t('b.how')}</p>
         <div className="grid grid-cols-2 gap-2">
           {(['delivery', 'pickup'] as Fulfilment[]).map((x) => (
-            <button key={x} type="button" aria-pressed={fulfilment === x} onClick={() => setFulfilment(x)} className={`min-h-11 rounded-2xl border font-semibold ${fulfilment === x ? 'border-rose-600 bg-rose-50' : 'border-rose-200 bg-white'}`}>{t(`b.${x}`)}</button>
+            <button key={x} type="button" aria-pressed={fulfilment === x} onClick={() => setFulfilment(x)} className={`min-h-11 rounded-card border font-semibold ${fulfilment === x ? 'border-honey-600 bg-honey-100' : 'border-honey-200 bg-paper'}`}>{t(`b.${x}`)}</button>
           ))}
         </div>
       </div>

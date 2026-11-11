@@ -21,7 +21,7 @@ export function Tracking() {
   if (!o) {
     return (
       <div className="py-12 text-center">
-        <h1 className="mb-2 text-3xl font-semibold">{t('t.notFound')}</h1>
+        <h1 className="mb-2 text-3xl">{t('t.notFound')}</h1>
         <p className="mb-4 text-ink-soft">{t('t.notFoundText')}</p>
         <Link to="/" className={btn()}>{t('c.home')}</Link>
       </div>
@@ -44,34 +44,34 @@ export function Tracking() {
   return (
     <div className="space-y-4 pb-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-semibold">{o.number}</h1>
-        <Badge tone={closed ? 'grey' : 'rose'}>{t(`st.${o.status}` as Key)}</Badge>
+        <h1 className="text-3xl">{o.number}</h1>
+        <Badge tone={closed ? 'grey' : 'honey'}>{t(`st.${o.status}` as Key)}</Badge>
       </div>
 
       {closed ? (
-        <p className="rounded-2xl bg-stone-200 p-3 font-semibold">{t(`st.${o.status}` as Key)}{o.declineReason ? ` - ${t('t.reason')}: ${o.declineReason}` : ''}</p>
+        <p className="rounded-card bg-stone-200 p-3 font-semibold">{t(`st.${o.status}` as Key)}{o.declineReason ? ` - ${t('t.reason')}: ${o.declineReason}` : ''}</p>
       ) : (
         <ol className="flex" aria-label={t('t.title')}>
           {steps.map((st, i) => (
             <li key={st.key} className="flex-1 text-center" aria-current={i === idx ? 'step' : undefined}>
               <div className="flex items-center">
-                <span className={`h-1 flex-1 ${i === 0 ? 'bg-transparent' : i <= idx ? 'bg-rose-500' : 'bg-rose-100'}`} />
-                <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${i <= idx ? 'bg-rose-600 text-white' : 'bg-rose-100 text-ink-soft'}`}>{i < idx ? '✓' : i + 1}</span>
-                <span className={`h-1 flex-1 ${i === steps.length - 1 ? 'bg-transparent' : i < idx ? 'bg-rose-500' : 'bg-rose-100'}`} />
+                <span className={`h-1 flex-1 ${i === 0 ? 'bg-transparent' : i <= idx ? 'bg-honey-600' : 'bg-honey-200'}`} />
+                <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${i <= idx ? 'bg-honey-600 text-paper' : 'bg-honey-200 text-ink-soft'}`}>{i < idx ? '✓' : i + 1}</span>
+                <span className={`h-1 flex-1 ${i === steps.length - 1 ? 'bg-transparent' : i < idx ? 'bg-honey-600' : 'bg-honey-200'}`} />
               </div>
-              <p className={`mt-1 px-0.5 text-[11px] leading-tight ${i === idx ? 'font-bold text-rose-700' : 'text-ink-soft'}`}>{t(st.label as Key)}</p>
+              <p className={`mt-1 px-0.5 text-[11px] leading-tight ${i === idx ? 'font-semibold text-honey-700' : 'text-ink-soft'}`}>{t(st.label as Key)}</p>
             </li>
           ))}
         </ol>
       )}
 
-      {o.status === 'pending' && <p className="rounded-2xl bg-amber-100 p-3 text-sm font-semibold text-amber-900">{t('c.notConfirmed')}</p>}
-      {error && <p role="alert" className="rounded-2xl bg-red-100 p-3 text-sm font-semibold text-red-800">{error === 'quote_expired' ? t('t.expired') : error}</p>}
+      {o.status === 'pending' && <p className="rounded-card bg-amber-100 p-3 text-sm font-semibold text-amber-900">{t('c.notConfirmed')}</p>}
+      {error && <p role="alert" className="rounded-card bg-red-100 p-3 text-sm font-semibold text-red-800">{error === 'quote_expired' ? t('t.expired') : error}</p>}
 
       {o.quote && (o.status === 'quote_sent' || o.status === 'approved' || o.status === 'closed') && (
-        <section className={`${card} border-2 border-rose-200`} aria-labelledby="quote">
-          <h2 id="quote" className="text-xl font-semibold">{t('t.quote')}</h2>
-          <p className="mt-1 text-2xl font-bold text-rose-700">{formatRs(o.quote.amount)}</p>
+        <section className={`${card} border-2 border-honey-200`} aria-labelledby="quote">
+          <h2 id="quote" className="text-xl">{t('t.quote')}</h2>
+          <p className="mt-1 text-2xl font-semibold text-honey-700">{formatRs(o.quote.amount)}</p>
           {o.quote.note && <p className="text-sm"><strong>{t('t.quoteNote')}:</strong> {o.quote.note}</p>}
           <p className={`text-sm ${expired ? 'font-semibold text-red-700' : 'text-ink-soft'}`}>{t('t.expires', { date: date(o.quote.expiry, true) })}</p>
           {o.status === 'quote_sent' && (expired ? (
@@ -89,9 +89,9 @@ export function Tracking() {
       )}
 
       <section className={card} aria-labelledby="details">
-        <h2 id="details" className="mb-2 text-xl font-semibold">{o.custom ? t('t.request') : t('t.items')}</h2>
+        <h2 id="details" className="mb-2 text-xl">{o.custom ? t('t.request') : t('t.items')}</h2>
         {o.items.map((it) => (
-          <div key={it.id} className="flex justify-between gap-3 border-b border-rose-50 py-2 text-sm last:border-0">
+          <div key={it.id} className="flex justify-between gap-3 border-b border-honey-100 py-2 text-sm last:border-0">
             <div>
               <p className="font-semibold">{it.qty} x {tl(it.name)}</p>
               <p className="text-xs text-ink-soft">{[...it.options.map((x) => tl(x.choice)), it.message ? `"${it.message}"` : ''].filter(Boolean).join(' · ')}</p>
@@ -115,7 +115,7 @@ export function Tracking() {
           <div className="flex justify-between"><dt>{t('t.date')}</dt><dd className="font-semibold">{date(o.date, true)}</dd></div>
           {win && <div className="flex justify-between"><dt>{t('t.window')}</dt><dd className="font-semibold">{tl(win.name)} {win.from}-{win.to}</dd></div>}
           <div className="flex justify-between"><dt>{t('t.method')}</dt><dd className="text-right font-semibold">{o.fulfilment === 'delivery' ? `${t('b.delivery')}: ${o.address}` : `${t('b.pickup')}: ${s.pickupAddress}`}</dd></div>
-          {o.total > 0 && <div className="flex justify-between border-t border-rose-100 pt-2 text-lg font-bold"><dt>{t('t.total')}</dt><dd>{formatRs(o.total)}</dd></div>}
+          {o.total > 0 && <div className="flex justify-between border-t border-honey-200 pt-2 text-lg font-semibold"><dt>{t('t.total')}</dt><dd>{formatRs(o.total)}</dd></div>}
           {o.total > 0 && <div className="flex justify-between"><dt /><dd><Badge tone={o.paid ? 'green' : 'amber'}>{o.paid ? t('t.paid') : t('t.unpaid')}</Badge></dd></div>}
         </dl>
       </section>

@@ -26,7 +26,7 @@ export function Today() {
 
   const section = (title: string, d: string) => (
     <section className="space-y-2" aria-label={title}>
-      <h2 className="text-xl font-semibold">{title} <span className="text-sm font-normal text-ink-soft">{fmtDate(d, 'en')}</span></h2>
+      <h2 className="text-xl">{title} <span className="text-sm font-normal text-ink-soft">{fmtDate(d, 'en')}</span></h2>
       {day(d).length === 0 && <p className="text-sm text-ink-soft">Nothing scheduled.</p>}
       {day(d).map((o) => {
         const label = nextLabel(o)
@@ -42,11 +42,11 @@ export function Today() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-semibold">Today</h1>
+      <h1 className="text-3xl">Today</h1>
       <div className="grid grid-cols-3 gap-2">
         {counts.map(([label, n, to]) => (
-          <Link key={label} to={to} className="rounded-2xl bg-white p-3 text-center shadow-soft">
-            <p className="font-serif text-3xl font-bold text-rose-700">{n}</p>
+          <Link key={label} to={to} className="rounded-card border border-honey-200 bg-paper p-3 text-center">
+            <p className="font-serif text-3xl font-semibold text-honey-700">{n}</p>
             <p className="text-xs font-semibold text-ink-soft">{label}</p>
           </Link>
         ))}

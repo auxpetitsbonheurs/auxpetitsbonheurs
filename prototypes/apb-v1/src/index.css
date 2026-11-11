@@ -3,13 +3,19 @@
 @tailwind utilities;
 
 html, body { overflow-x: hidden; }
-body { @apply bg-cream text-ink font-sans antialiased; }
-h1, h2, h3, .font-serif { font-family: "Fraunces Variable", Georgia, serif; font-variation-settings: "SOFT" 100; }
+body { @apply bg-cream text-ink font-sans antialiased; line-height: 1.55; }
+/* Libre Caslon Display for h1/h2 and the wordmark, Libre Caslon Text for h3 and subheads. One weight only. */
+h1, h2, .font-serif { font-family: "Libre Caslon Display", ui-serif, Georgia, serif; font-weight: 400; text-wrap: balance; }
+h3, .font-subhead { font-family: "Libre Caslon Text", ui-serif, Georgia, serif; font-weight: 400; }
 a, button, input, select, textarea { -webkit-tap-highlight-color: transparent; }
-:focus-visible { outline: 2px solid #B94762; outline-offset: 2px; }
+:focus-visible { outline: 2px solid #8C5A1E; outline-offset: 2px; }
 .snap-x-row { scroll-snap-type: x mandatory; overflow-x: auto; scrollbar-width: none; }
 .snap-x-row::-webkit-scrollbar { display: none; }
 .snap-x-row > * { scroll-snap-align: center; flex: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after { animation: none !important; transition-duration: 0ms !important; }
+}
 
 @media print {
   body * { visibility: hidden; }

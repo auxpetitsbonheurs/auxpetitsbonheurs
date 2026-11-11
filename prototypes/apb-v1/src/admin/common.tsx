@@ -15,8 +15,8 @@ export function useActor(): Actor {
 
 export const statusLabel = (s: Status): string => tEn(`st.${s}` as Key)
 
-const TONES: Record<Status, 'rose' | 'green' | 'amber' | 'grey' | 'red'> = {
-  pending: 'amber', quote_needed: 'amber', quote_sent: 'rose', approved: 'green', preparing: 'green',
+const TONES: Record<Status, 'honey' | 'green' | 'amber' | 'grey' | 'red'> = {
+  pending: 'amber', quote_needed: 'amber', quote_sent: 'honey', approved: 'green', preparing: 'green',
   ready: 'green', out: 'green', completed: 'grey', declined: 'red', cancelled: 'red', closed: 'grey',
 }
 export const StatusBadge = ({ status }: { status: Status }) => <Badge tone={TONES[status]}>{statusLabel(status)}</Badge>
@@ -42,7 +42,7 @@ export const nextLabel = (o: Order): string | null => {
 
 export function OrderRow({ o, settings, action }: { o: Order; settings: Settings; action?: React.ReactNode }) {
   return (
-    <div className="rounded-2xl bg-white p-3 shadow-soft">
+    <div className="rounded-card border border-honey-200 bg-paper p-3">
       <Link to={`/admin/orders/${o.id}`} className="block">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -52,7 +52,7 @@ export function OrderRow({ o, settings, action }: { o: Order; settings: Settings
           <StatusBadge status={o.status} />
         </div>
         <p className="mt-1 text-sm">
-          <span className={`font-semibold ${o.fulfilment === 'delivery' ? 'text-rose-700' : 'text-teal-700'}`}>{o.fulfilment === 'delivery' ? 'Delivery' : 'Pickup'}</span>
+          <span className={`font-semibold ${o.fulfilment === 'delivery' ? 'text-honey-700' : 'text-teal-700'}`}>{o.fulfilment === 'delivery' ? 'Delivery' : 'Pickup'}</span>
           {' · '}{fmtDate(o.date, 'en')} · {windowLabel(settings, o.window)}
           {' · '}{o.total > 0 ? formatRs(o.total) : 'No quote yet'}
           {o.total > 0 && ` · ${o.paid ? 'Paid' : 'Unpaid'}`}

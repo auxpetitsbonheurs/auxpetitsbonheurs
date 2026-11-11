@@ -24,7 +24,7 @@ export function Menu() {
 
   return (
     <div>
-      <h1 className="mb-3 text-3xl font-semibold">{t('menu.title')}</h1>
+      <h1 className="mb-3 text-3xl">{t('menu.title')}</h1>
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2" role="group" aria-label={t('menu.title')}>
         <Chip active={type === 'all'} onClick={() => setType('all')}>{t('menu.all')}</Chip>
         {TYPES.map((k) => <Chip key={k} active={type === k} onClick={() => setType(k)}>{t(`type.${k}`)}</Chip>)}

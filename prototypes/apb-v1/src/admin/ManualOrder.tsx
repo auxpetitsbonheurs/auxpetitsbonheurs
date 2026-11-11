@@ -7,7 +7,8 @@ import type { Fulfilment, OrderItem, Product, Selection } from '../domain/types'
 import { findCustomer, placeManualOrder } from '../mocks/orderActions'
 import { todayMU, useDb, useNow } from '../mocks/store'
 import { OptionPicker } from '../ui/OptionPicker'
-import { btn, Field, inputCls, Sheet, Stepper } from '../ui/ui'
+import { tEn } from '../i18n'
+import { btn, Field, inputCls, qtyLabels, Sheet, Stepper } from '../ui/ui'
 import { quantityBounds } from '../domain/pricing'
 import { useActor } from './common'
 
@@ -55,12 +56,12 @@ export function ManualOrder() {
 
   return (
     <div className="space-y-4 pb-6">
-      <Link to="/admin/orders" className="inline-flex min-h-11 items-center text-sm font-semibold text-rose-700">&lsaquo; Orders</Link>
-      <h1 className="text-3xl font-semibold">Add order</h1>
+      <Link to="/admin/orders" className="inline-flex min-h-11 items-center text-sm font-semibold text-honey-700">&lsaquo; Orders</Link>
+      <h1 className="text-3xl">Add order</h1>
       <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Items</h2>
+        <h2 className="text-lg">Items</h2>
         {lines.map((l, i) => (
-          <div key={i} className="flex items-center justify-between rounded-xl bg-white p-2 text-sm shadow-soft">
+          <div key={i} className="flex items-center justify-between rounded-xl border border-honey-200 bg-paper p-2 text-sm">
             <span>{l.qty} x {l.name.en} {l.options.length ? `(${l.options.map((o) => o.choice.en).join(', ')})` : ''}</span>
             <span>{formatRs(l.lineTotal)} <button className="ml-2 min-h-11 text-red-700" onClick={() => setLines(lines.filter((_, j) => j !== i))}>Remove</button></span>
           </div>
@@ -78,7 +79,7 @@ export function ManualOrder() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Customer</h2>
+        <h2 className="text-lg">Customer</h2>
         <Field label="Phone"><input className={inputCls} type="tel" value={c.phone} onChange={(e) => setC({ ...c, phone: e.target.value })} /></Field>
         <Field label="Email (optional)"><input className={inputCls} type="email" value={c.email} onChange={(e) => setC({ ...c, email: e.target.value })} /></Field>
         {found && <button className={btn('outline')} onClick={() => setC({ name: found.name, phone: found.phone, email: found.email })}>Use existing customer: {found.name}</button>}
@@ -86,7 +87,7 @@ export function ManualOrder() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Delivery</h2>
+        <h2 className="text-lg">Delivery</h2>
         <Field label="Date"><input className={inputCls} type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></Field>
         {problem && <p className="rounded-xl bg-amber-100 p-2 text-sm">Warning: this date is {problem === 'notice' ? 'too soon' : problem}. You can still save it.</p>}
         <Field label="Window"><select className={inputCls} value={f.window} onChange={(e) => setF({ ...f, window: e.target.value })}>{db.settings.windows.map((w) => <option key={w.id} value={w.id}>{w.name.en}</option>)}</select></Field>
@@ -96,7 +97,7 @@ export function ManualOrder() {
           <Field label="Landmark"><input className={inputCls} value={f.landmark} onChange={(e) => setF({ ...f, landmark: e.target.value })} /></Field>
           <Field label="Delivery fee (Rs)"><input className={inputCls} inputMode="numeric" value={f.fee} onChange={(e) => setF({ ...f, fee: e.target.value.replace(/\D/g, '') })} /></Field>
         </>}
-        <label className="flex min-h-11 items-center gap-3"><input type="checkbox" className="h-5 w-5 accent-rose-600" checked={f.paid} onChange={(e) => setF({ ...f, paid: e.target.checked })} />Already paid</label>
+        <label className="flex min-h-11 items-center gap-3"><input type="checkbox" className="h-5 w-5 accent-honey-600" checked={f.paid} onChange={(e) => setF({ ...f, paid: e.target.checked })} />Already paid</label>
         <Field label="Private note"><input className={inputCls} value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} /></Field>
       </section>
       {err && <p role="alert" className="text-sm font-semibold text-red-700">{err}</p>}
@@ -105,7 +106,7 @@ export function ManualOrder() {
       {pick && sel && (
         <Sheet title={pick.name.en} onClose={() => setPick(null)}>
           <OptionPicker product={pick} sel={sel} onChange={setSel} lang="en" />
-          <div className="my-3"><Stepper label="Quantity" value={sel.qty} min={quantityBounds(pick).min} max={quantityBounds(pick).max} onChange={(qty) => setSel({ ...sel, qty })} /></div>
+          <div className="my-3"><Stepper {...qtyLabels(tEn, pick.name.en)} value={sel.qty} min={quantityBounds(pick).min} max={quantityBounds(pick).max} onChange={(qty) => setSel({ ...sel, qty })} /></div>
           <button className={btn('primary', 'w-full')} disabled={selectionProblems(pick, sel).length > 0} onClick={addProduct}>Add &middot; {formatRs(priceLine(pick, sel, db.promotions, now).lineTotal)}</button>
         </Sheet>
       )}

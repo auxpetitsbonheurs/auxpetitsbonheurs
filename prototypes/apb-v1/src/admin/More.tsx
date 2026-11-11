@@ -16,8 +16,8 @@ export function More() {
   ]
   return (
     <div className="space-y-2">
-      <h1 className="mb-2 text-3xl font-semibold">More</h1>
-      {items.filter((i) => i[2]).map(([to, label]) => <Link key={to} to={to} className="flex min-h-14 items-center rounded-2xl bg-white px-4 font-semibold shadow-soft">{label}</Link>)}
+      <h1 className="mb-2 text-3xl">More</h1>
+      {items.filter((i) => i[2]).map(([to, label]) => <Link key={to} to={to} className="flex min-h-14 items-center rounded-card border border-honey-200 bg-paper px-4 font-semibold">{label}</Link>)}
     </div>
   )
 }
@@ -34,12 +34,12 @@ export function Customers() {
   }
   return (
     <div className="space-y-3">
-      <h1 className="text-3xl font-semibold">Customers</h1>
+      <h1 className="text-3xl">Customers</h1>
       <input className={inputCls} type="search" aria-label="Search customers" placeholder="Search" value={q} onChange={(e) => setQ(e.target.value)} />
       {list.map((c) => {
         const { os, spent } = stats(c.phone)
         return (
-          <div key={c.id} className="rounded-2xl bg-white p-3 shadow-soft">
+          <div key={c.id} className="rounded-card border border-honey-200 bg-paper p-3">
             <button className="w-full text-left" onClick={() => setOpen(open === c.id ? null : c.id)}>
               <p className="font-semibold">{c.name}</p><p className="text-sm text-ink-soft">{c.phone} · {os.length} orders · {formatRs(spent)} completed</p>
             </button>
@@ -62,11 +62,11 @@ export function Profile() {
   const patch = (p: Partial<typeof admin>) => updateDb((d) => ({ ...d, admins: d.admins.map((a) => (a.id === admin.id ? { ...a, ...p } : a)) }))
   return (
     <div className="space-y-3">
-      <h1 className="text-3xl font-semibold">My profile</h1>
+      <h1 className="text-3xl">My profile</h1>
       <Field label="Name"><input className={inputCls} value={admin.name} onChange={(e) => patch({ name: e.target.value })} /></Field>
       <Field label="Language"><select className={inputCls} value={admin.lang} onChange={(e) => patch({ lang: e.target.value as 'en' | 'fr' })}><option value="en">English</option><option value="fr">Français</option></select></Field>
-      <label className="flex min-h-11 items-center gap-3"><input type="checkbox" className="h-5 w-5 accent-rose-600" checked={admin.alerts.push} onChange={(e) => patch({ alerts: { ...admin.alerts, push: e.target.checked } })} />Push alerts</label>
-      <label className="flex min-h-11 items-center gap-3"><input type="checkbox" className="h-5 w-5 accent-rose-600" checked={admin.alerts.email} onChange={(e) => patch({ alerts: { ...admin.alerts, email: e.target.checked } })} />Email alerts</label>
+      <label className="flex min-h-11 items-center gap-3"><input type="checkbox" className="h-5 w-5 accent-honey-600" checked={admin.alerts.push} onChange={(e) => patch({ alerts: { ...admin.alerts, push: e.target.checked } })} />Push alerts</label>
+      <label className="flex min-h-11 items-center gap-3"><input type="checkbox" className="h-5 w-5 accent-honey-600" checked={admin.alerts.email} onChange={(e) => patch({ alerts: { ...admin.alerts, email: e.target.checked } })} />Email alerts</label>
       <p className="text-sm text-ink-soft">Password change is faked in this prototype.</p>
     </div>
   )
@@ -80,10 +80,10 @@ export function Team() {
   const act = (r: { ok: boolean; error?: string }) => setMsg(r.ok ? '' : (r as { error: string }).error)
   return (
     <div className="space-y-3">
-      <h1 className="text-3xl font-semibold">Team</h1>
-      {msg && <p role="alert" className="rounded-2xl bg-red-100 p-3 text-sm font-semibold text-red-800">{msg}</p>}
+      <h1 className="text-3xl">Team</h1>
+      {msg && <p role="alert" className="rounded-card bg-red-100 p-3 text-sm font-semibold text-red-800">{msg}</p>}
       {db.admins.map((a) => (
-        <div key={a.id} className="rounded-2xl bg-white p-3 text-sm shadow-soft">
+        <div key={a.id} className="rounded-card border border-honey-200 bg-paper p-3 text-sm">
           <p className="font-semibold">{a.name} {a.id === me?.id && '(you)'} <Badge tone={a.invited ? 'amber' : a.active ? 'green' : 'grey'}>{a.invited ? 'invited' : a.active ? 'active' : 'deactivated'}</Badge></p>
           <p className="text-ink-soft">{a.email} · last sign-in {a.lastSignIn ? fmtStamp(a.lastSignIn) : 'never'}</p>
           <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -93,8 +93,8 @@ export function Team() {
           </div>
         </div>
       ))}
-      <section className="space-y-2 rounded-2xl border border-rose-200 p-3">
-        <h2 className="text-lg font-semibold">Invite</h2>
+      <section className="space-y-2 rounded-card border border-honey-200 p-3">
+        <h2 className="text-lg">Invite</h2>
         <Field label="Name"><input className={inputCls} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
         <Field label="Email"><input className={inputCls} type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>
         <Field label="Role"><select className={inputCls} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value as Role })}><option value="admin">Admin</option><option value="owner">Owner</option></select></Field>
@@ -115,17 +115,17 @@ export function SettingsScreen() {
   const [blk, setBlk] = useState({ from: '', to: '', reason: '' })
   return (
     <div className="space-y-4 pb-8">
-      <h1 className="text-3xl font-semibold">Availability & Settings</h1>
+      <h1 className="text-3xl">Availability & Settings</h1>
       <Field label="Default notice (days)"><input className={inputCls} inputMode="numeric" value={s.defaultNotice} onChange={(e) => set({ defaultNotice: num(e.target.value) })} /></Field>
       <div>
         <p className="mb-1 text-sm font-semibold">Weekly closed days</p>
         <div className="flex flex-wrap gap-1">{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((n, i) => (
-          <button key={n} aria-pressed={s.closedDays.includes(i)} className={`min-h-11 min-w-11 rounded-full border px-3 text-sm font-semibold ${s.closedDays.includes(i) ? 'border-rose-600 bg-rose-600 text-white' : 'border-rose-200 bg-white'}`}
+          <button key={n} aria-pressed={s.closedDays.includes(i)} className={`min-h-11 min-w-11 rounded-xl border px-3 text-sm font-semibold ${s.closedDays.includes(i) ? 'border-honey-600 bg-honey-600 text-paper' : 'border-honey-200 bg-paper'}`}
             onClick={() => set({ closedDays: s.closedDays.includes(i) ? s.closedDays.filter((x) => x !== i) : [...s.closedDays, i] })}>{n}</button>))}</div>
       </div>
       <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Blocked dates</h2>
-        {db.blocked.map((b) => <div key={b.id} className="flex items-center justify-between rounded-xl bg-white p-2 text-sm">{b.from}{b.to !== b.from && ` to ${b.to}`} {b.reason && `(${b.reason})`}<button className="min-h-11 text-red-700" onClick={() => updateDb((d) => ({ ...d, blocked: d.blocked.filter((x) => x.id !== b.id) }))}>Remove</button></div>)}
+        <h2 className="text-lg">Blocked dates</h2>
+        {db.blocked.map((b) => <div key={b.id} className="flex items-center justify-between rounded-xl bg-paper p-2 text-sm">{b.from}{b.to !== b.from && ` to ${b.to}`} {b.reason && `(${b.reason})`}<button className="min-h-11 text-red-700" onClick={() => updateDb((d) => ({ ...d, blocked: d.blocked.filter((x) => x.id !== b.id) }))}>Remove</button></div>)}
         <div className="grid grid-cols-2 gap-2"><input className={inputCls} type="date" aria-label="From" value={blk.from} onChange={(e) => setBlk({ ...blk, from: e.target.value })} /><input className={inputCls} type="date" aria-label="To" value={blk.to} onChange={(e) => setBlk({ ...blk, to: e.target.value })} /></div>
         <input className={inputCls} placeholder="Reason (private)" value={blk.reason} onChange={(e) => setBlk({ ...blk, reason: e.target.value })} />
         <button className={btn('outline')} disabled={!blk.from} onClick={() => { updateDb((d) => ({ ...d, blocked: [...d.blocked, { id: `blk-${Date.now()}`, from: blk.from, to: blk.to || blk.from, reason: blk.reason, by: 'Owner' }] })); setBlk({ from: '', to: '', reason: '' }) }}>Block range</button>
@@ -137,7 +137,7 @@ export function SettingsScreen() {
       <Field label="Map link"><input className={inputCls} value={s.mapLink} onChange={(e) => set({ mapLink: e.target.value })} /></Field>
       <Field label="WhatsApp / phone"><input className={inputCls} value={s.whatsapp} onChange={(e) => set({ whatsapp: e.target.value, phone: e.target.value })} /></Field>
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">WhatsApp templates</h2>
+        <h2 className="text-lg">WhatsApp templates</h2>
         <p className="text-xs text-ink-soft">Placeholders: {'{name} {order_number} {date} {window} {total} {juice_number} {pickup_address} {tracking_link}'}</p>
         {TEMPLATE_NAMES.map(([k, label]) => (['en', 'fr'] as const).map((l) => (
           <Field key={k + l} label={`${label} (${l.toUpperCase()})`}>

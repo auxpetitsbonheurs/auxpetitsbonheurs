@@ -29,7 +29,7 @@ export function OptionPicker({ product, sel, onChange, lang, missing = [] }: Pro
       {product.groups.filter((g) => g.kind !== 'quantity').map((g) => {
         const bad = missing.includes(g.id)
         return (
-          <fieldset key={g.id} className={`rounded-2xl border p-3 ${bad ? 'border-red-400 bg-red-50' : 'border-rose-100 bg-white'}`}>
+          <fieldset key={g.id} className={`rounded-card border p-3 ${bad ? 'border-red-400 bg-red-50' : 'border-honey-200 bg-paper'}`}>
             <legend className="px-1 text-sm font-semibold">
               {pick(g.name, lang)}{' '}
               <span className="font-normal text-ink-soft">
@@ -57,14 +57,14 @@ export function OptionPicker({ product, sel, onChange, lang, missing = [] }: Pro
                 {g.choices.map((c) => {
                   const checked = (sel.choices[g.id] ?? []).includes(c.id)
                   return (
-                    <label key={c.id} className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-2 ${checked ? 'bg-rose-50' : ''}`}>
+                    <label key={c.id} className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-2 ${checked ? 'bg-honey-100' : ''}`}>
                       <input
                         type={g.kind === 'one' ? 'radio' : 'checkbox'}
                         name={g.id}
                         aria-label={`${pick(g.name, lang)}: ${pick(c.name, lang)}`}
                         checked={checked}
                         onChange={() => toggle(g, c.id)}
-                        className="h-5 w-5 accent-rose-600"
+                        className="h-5 w-5 accent-honey-600"
                       />
                       <span className="flex-1 text-sm">{pick(c.name, lang)}</span>
                       <span className="text-sm text-ink-soft">{priceTag(c.price)}</span>

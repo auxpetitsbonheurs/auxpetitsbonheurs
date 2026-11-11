@@ -70,3 +70,4 @@ Seeded tracking links: `/order/pending-demo-7k2m9xq4` (pending), `/order/quote-d
 ## Version log
 
 - v1: first build of all five journeys.
+- v1.1 (2026-11-11): D4 · Honey & cream look (cream, honey buttons, Libre Caslon + Source Sans 3 self-hosted via @fontsource, centred header and hero); stepper buttons get distinct names, no copied aria-labels, 44 px remove-photo buttons. No flow changes.

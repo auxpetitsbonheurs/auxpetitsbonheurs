@@ -34,7 +34,7 @@ export function Orders() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-semibold">Orders</h1>
+        <h1 className="text-3xl">Orders</h1>
         <Link to="/admin/orders/new" className={btn('primary')}>+ Add order</Link>
       </div>
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4">

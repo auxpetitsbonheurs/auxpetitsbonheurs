@@ -141,7 +141,7 @@ export function seedDb(now: number): Db {
       id: `o-${s.n}`, number, source: s.source ?? 'website', status: s.status,
       customer: { name: s.name, phone: s.phone, email: s.email },
       fulfilment: s.fulfilment,
-      address: delivery ? 'Royal Road, Rose-Hill' : '',
+      address: delivery ? 'Royal Road, Beau Bassin' : '',
       landmark: delivery ? 'Blue gate next to the pharmacy' : '',
       date: addDays(today, s.day), window: s.window, items, deliveryFee,
       total: items.reduce((t, i) => t + i.lineTotal, 0) + deliveryFee,
@@ -174,7 +174,7 @@ export function seedDb(now: number): Db {
   orders[orders.length - 1].events.push({ at: now - 55 * HOUR, by: { kind: 'customer', name: 'Marie Laval' }, what: 'cancelled' })
 
   add({ n: 11, source: 'custom', status: 'quote_needed', fulfilment: 'pickup', day: 10, window: 'afternoon', name: 'Aisha Khodabux', phone: '+230 5909 8080', email: 'aisha@example.com', token: 'quote-demo-4h8d1qw2', hoursAgo: 2, items: [],
-    extra: { custom: { occasion: 'wedding', servings: '60', flavours: 'Vanilla and raspberry', theme: 'Soft pink and gold, small flowers', text: 'A & S', budget: 8000, photos: ['art:cake:4', 'art:cake:0'], details: 'Three tiers if possible. Some guests are nut-allergic.' } } })
+    extra: { custom: { occasion: 'wedding', servings: '60', flavours: 'Vanilla and raspberry', theme: 'Ivory and gold, small flowers', text: 'A & S', budget: 8000, photos: ['art:cake:4', 'art:cake:0'], details: 'Three tiers if possible. Some guests are nut-allergic.' } } })
   add({ n: 12, source: 'custom', status: 'quote_sent', fulfilment: 'delivery', day: 9, window: 'morning', name: 'Rajiv Mooneea', phone: '+230 5888 2121', email: 'rajiv@example.com', token: 'quotesent-demo-3n6b5wy1', hoursAgo: 30, items: [],
     log: [['Sabera', 'quote sent', 'Rs 4,500']],
     extra: {

@@ -8,7 +8,7 @@ import { useI18n } from '../i18n'
 import { placeOrder } from '../mocks/orderActions'
 import { todayMU, useDb, useNow } from '../mocks/store'
 import { Photo } from '../ui/Art'
-import { btn, card, Field, inputCls, Stepper } from '../ui/ui'
+import { btn, card, Field, inputCls, qtyLabels, Stepper } from '../ui/ui'
 import { clearBasket, patchDraft, patchLine, removeLine, useBasket } from './basketStore'
 import { DatePicker } from './DatePicker'
 
@@ -38,7 +38,7 @@ export function Basket() {
   if (lines.length === 0) {
     return (
       <div className="py-12 text-center">
-        <h1 className="mb-2 text-3xl font-semibold">{t('b.title')}</h1>
+        <h1 className="mb-2 text-3xl">{t('b.title')}</h1>
         <p className="mb-4 text-ink-soft">{t('b.empty')}</p>
         <Link to="/menu" className={btn()}>{t('b.goMenu')}</Link>
       </div>
@@ -100,11 +100,11 @@ export function Basket() {
 
   return (
     <div className="space-y-6 pb-8">
-      <h1 className="text-3xl font-semibold">{t('b.title')}</h1>
-      {banner && <p role="alert" className="rounded-2xl bg-amber-100 p-3 text-sm font-semibold text-amber-900">{banner}</p>}
+      <h1 className="text-3xl">{t('b.title')}</h1>
+      {banner && <p role="alert" className="rounded-card bg-amber-100 p-3 text-sm font-semibold text-amber-900">{banner}</p>}
 
       <section aria-labelledby="items" className="space-y-3">
-        <h2 id="items" className="text-xl font-semibold">{t('b.items')}</h2>
+        <h2 id="items" className="text-xl">{t('b.items')}</h2>
         {rows.map(({ l, product, priced, unavailable, changed }) => (
           <div key={l.id} className={`${card} flex gap-3 ${unavailable ? 'opacity-60' : ''}`}>
             {product && <Photo src={product.photos[0] ?? 'art:cake:0'} alt={tl(product.name)} className="h-20 w-20 shrink-0 overflow-hidden rounded-xl" />}
@@ -120,15 +120,15 @@ export function Basket() {
                 <p className="mt-1 text-sm">
                   {priced.originalBase > priced.basePrice && <span className="mr-1 text-ink-soft line-through">{formatRs(priced.originalBase)}</span>}
                   <strong>{formatRs(priced.lineTotal)}</strong>
-                  {changed && <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-900">{t('b.newPrice', { price: formatRs(priced.unit) })}</span>}
+                  {changed && <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">{t('b.newPrice', { price: formatRs(priced.unit) })}</span>}
                 </p>
               )}
               <div className="mt-2 flex flex-wrap items-center gap-1">
                 {product && !unavailable && (() => {
                   const b = quantityBounds(product)
-                  return <Stepper label={t('p.qty')} value={l.selection.qty} min={b.min} max={b.max} onChange={(qty) => patchLine(l.id, { selection: { ...l.selection, qty } })} />
+                  return <Stepper {...qtyLabels(t, tl(product.name))} value={l.selection.qty} min={b.min} max={b.max} onChange={(qty) => patchLine(l.id, { selection: { ...l.selection, qty } })} />
                 })()}
-                {product && !unavailable && <Link to={`/product/${product.id}?edit=${l.id}`} className="flex min-h-11 items-center px-2 text-sm font-semibold text-rose-700">{t('common.edit')}</Link>}
+                {product && !unavailable && <Link to={`/product/${product.id}?edit=${l.id}`} className="flex min-h-11 items-center px-2 text-sm font-semibold text-honey-700">{t('common.edit')}</Link>}
                 <button type="button" className="min-h-11 px-2 text-sm font-semibold text-red-700" onClick={() => removeLine(l.id)}>{t('common.remove')}</button>
               </div>
             </div>
@@ -137,10 +137,10 @@ export function Basket() {
       </section>
 
       <section aria-labelledby="how" className="space-y-3">
-        <h2 id="how" className="text-xl font-semibold">{t('b.how')}</h2>
+        <h2 id="how" className="text-xl">{t('b.how')}</h2>
         <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('b.how')}>
           {(['delivery', 'pickup'] as Fulfilment[]).map((f) => (
-            <label key={f} className={`flex min-h-11 cursor-pointer flex-col items-center justify-center rounded-2xl border p-3 text-center font-semibold ${fulfilment === f ? 'border-rose-600 bg-rose-50' : 'border-rose-200 bg-white'}`}>
+            <label key={f} className={`flex min-h-11 cursor-pointer flex-col items-center justify-center rounded-card border p-3 text-center font-semibold ${fulfilment === f ? 'border-honey-600 bg-honey-100' : 'border-honey-200 bg-paper'}`}>
               <input type="radio" name="fulfilment" aria-label={t(`b.${f}`)} className="sr-only" checked={fulfilment === f} onChange={() => patchDraft({ fulfilment: f })} />
               {t(`b.${f}`)}
               <span className="text-xs font-normal text-ink-soft">{f === 'delivery' ? `+ ${formatRs(s.deliveryFee)}` : t('common.free')}</span>
@@ -160,13 +160,13 @@ export function Basket() {
           <div className={card}>
             <p className="text-sm font-semibold">{t('b.pickupAt')}</p>
             <p className="text-sm">{s.pickupAddress}</p>
-            <a className="flex min-h-11 items-center text-sm font-semibold text-rose-700" href={s.mapLink} target="_blank" rel="noreferrer">{t('b.map')}</a>
+            <a className="flex min-h-11 items-center text-sm font-semibold text-honey-700" href={s.mapLink} target="_blank" rel="noreferrer">{t('b.map')}</a>
           </div>
         )}
       </section>
 
       <section aria-labelledby="date" className="space-y-3">
-        <h2 id="date" className="text-xl font-semibold">{t('b.date')}</h2>
+        <h2 id="date" className="text-xl">{t('b.date')}</h2>
         <p className="text-sm text-ink-soft">{t('b.dateHelp')} {t('b.earliest', { date: date(earliest, true) })}</p>
         <DatePicker value={draft.date} ctx={ctx} onChange={(d) => patchDraft({ date: d })} />
         <p className="text-sm font-semibold" aria-live="polite">{dateOk ? t('b.selected', { date: date(draft.date, true) }) : t('b.noDate')}</p>
@@ -175,8 +175,8 @@ export function Basket() {
           <legend className="mb-1 text-sm font-semibold">{t('b.window')}</legend>
           <div className="space-y-1">
             {s.windows.map((w) => (
-              <label key={w.id} className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border px-3 ${draft.window === w.id ? 'border-rose-600 bg-rose-50' : 'border-rose-200 bg-white'}`}>
-                <input type="radio" name="window" aria-label={`${tl(w.name)} ${w.from}-${w.to}`} className="h-5 w-5 accent-rose-600" checked={draft.window === w.id} onChange={() => patchDraft({ window: w.id })} />
+              <label key={w.id} className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border px-3 ${draft.window === w.id ? 'border-honey-600 bg-honey-100' : 'border-honey-200 bg-paper'}`}>
+                <input type="radio" name="window" aria-label={`${tl(w.name)} ${w.from}-${w.to}`} className="h-5 w-5 accent-honey-600" checked={draft.window === w.id} onChange={() => patchDraft({ window: w.id })} />
                 <span className="text-sm font-semibold">{tl(w.name)}</span>
                 <span className="text-sm text-ink-soft">{w.from}-{w.to}</span>
               </label>
@@ -187,7 +187,7 @@ export function Basket() {
       </section>
 
       <section aria-labelledby="details" className="space-y-3">
-        <h2 id="details" className="text-xl font-semibold">{t('b.details')}</h2>
+        <h2 id="details" className="text-xl">{t('b.details')}</h2>
         <Field label={t('b.name')} error={errors.name}><input className={inputCls} autoComplete="name" value={draft.name} onChange={(e) => patchDraft({ name: e.target.value })} /></Field>
         <Field label={t('b.phone')} error={errors.phone}><input className={inputCls} type="tel" inputMode="tel" autoComplete="tel" value={draft.phone} onChange={(e) => patchDraft({ phone: e.target.value })} /></Field>
         <Field label={t('b.email')} error={errors.email}><input className={inputCls} type="email" inputMode="email" autoComplete="email" value={draft.email} onChange={(e) => patchDraft({ email: e.target.value })} /></Field>
@@ -196,20 +196,20 @@ export function Basket() {
 
       <section className="space-y-2">
         <label className="flex min-h-11 items-start gap-3">
-          <input type="checkbox" aria-label={t('b.policies')} className="mt-2 h-5 w-5 accent-rose-600" checked={draft.policies} onChange={(e) => patchDraft({ policies: e.target.checked })} />
+          <input type="checkbox" aria-label={t('b.policies')} className="mt-2 h-5 w-5 accent-honey-600" checked={draft.policies} onChange={(e) => patchDraft({ policies: e.target.checked })} />
           <span className="pt-2 text-sm">{t('b.policies')}</span>
         </label>
-        <button type="button" className="min-h-11 text-sm font-semibold text-rose-700" onClick={() => setPoliciesOpen(!policiesOpen)}>{t('b.readPolicies')}</button>
-        {policiesOpen && <p className="whitespace-pre-line rounded-2xl bg-white p-3 text-sm">{tl(s.policies)}</p>}
+        <button type="button" className="min-h-11 text-sm font-semibold text-honey-700" onClick={() => setPoliciesOpen(!policiesOpen)}>{t('b.readPolicies')}</button>
+        {policiesOpen && <p className="whitespace-pre-line rounded-card bg-paper p-3 text-sm">{tl(s.policies)}</p>}
         {errors.policies && <p role="alert" className="text-xs font-semibold text-red-700">{errors.policies}</p>}
       </section>
 
       <section className={card} aria-labelledby="sum">
-        <h2 id="sum" className="mb-2 text-xl font-semibold">{t('b.summary')}</h2>
+        <h2 id="sum" className="mb-2 text-xl">{t('b.summary')}</h2>
         <dl className="space-y-1 text-sm">
           <div className="flex justify-between"><dt>{t('b.subtotal')}</dt><dd>{formatRs(total - (delivery ? s.deliveryFee : 0))}</dd></div>
           {delivery && <div className="flex justify-between"><dt>{t('b.deliveryFee')}</dt><dd>{formatRs(s.deliveryFee)}</dd></div>}
-          <div className="flex justify-between border-t border-rose-100 pt-2 text-lg font-bold"><dt>{t('b.total')}</dt><dd>{formatRs(total)}</dd></div>
+          <div className="flex justify-between border-t border-honey-200 pt-2 text-lg font-semibold"><dt>{t('b.total')}</dt><dd>{formatRs(total)}</dd></div>
         </dl>
         <p className="mt-2 text-xs text-ink-soft">{t('b.payNote')}</p>
         <button type="button" className={btn('primary', 'mt-3 w-full')} disabled={busy} onClick={send}>{busy ? t('b.sending') : t('b.send')}</button>

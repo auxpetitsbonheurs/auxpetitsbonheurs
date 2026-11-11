@@ -32,13 +32,13 @@ export function Calendar() {
 
   return (
     <div className="space-y-3">
-      <h1 className="text-3xl font-semibold">Calendar</h1>
+      <h1 className="text-3xl">Calendar</h1>
       <div className="flex items-center justify-between">
         <button className="min-h-11 min-w-11 text-2xl" aria-label="Previous month" onClick={() => setMonth(addMonths(month, -1))}>&lsaquo;</button>
         <p className="font-serif text-lg font-semibold capitalize">{fmtMonth(month, 'en')}</p>
         <button className="min-h-11 min-w-11 text-2xl" aria-label="Next month" onClick={() => setMonth(addMonths(month, 1))}>&rsaquo;</button>
       </div>
-      <p className="text-xs text-ink-soft"><span className="font-bold text-rose-700">Rose</span> = delivery · <span className="font-bold text-teal-700">Teal</span> = pickup · grey = blocked</p>
+      <p className="text-xs text-ink-soft"><span className="font-semibold text-honey-700">Honey</span> = delivery · <span className="font-semibold text-teal-700">Teal</span> = pickup · grey = blocked</p>
       <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-ink-soft">{['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((n, i) => <span key={i}>{n}</span>)}</div>
       <div className="grid grid-cols-7 gap-1">
         {cells.map((d, i) => {
@@ -48,10 +48,10 @@ export function Calendar() {
           const pk = os.length - del
           return (
             <button key={d} onClick={() => { setDay(d); setPrep(false) }} aria-label={`${fmtDate(d, 'en')}: ${os.length} orders${isBlocked(d) ? ', blocked' : ''}`}
-              className={`min-h-14 rounded-xl p-1 text-sm ${isBlocked(d) ? 'bg-stone-300 text-stone-500' : 'bg-white shadow-soft'} ${d === today ? 'ring-2 ring-rose-500' : ''} ${d === day ? 'outline outline-2 outline-ink' : ''}`}>
+              className={`min-h-14 rounded-xl p-1 text-sm ${isBlocked(d) ? 'bg-stone-300 text-stone-500' : 'border border-honey-200 bg-paper'} ${d === today ? 'ring-2 ring-honey-600' : ''} ${d === day ? 'outline outline-2 outline-ink' : ''}`}>
               <span className="block font-semibold">{Number(d.slice(8))}</span>
-              <span className="flex justify-center gap-1 text-xs font-bold">
-                {del > 0 && <span className="text-rose-700">{del}</span>}{pk > 0 && <span className="text-teal-700">{pk}</span>}
+              <span className="flex justify-center gap-1 text-xs font-semibold">
+                {del > 0 && <span className="text-honey-700">{del}</span>}{pk > 0 && <span className="text-teal-700">{pk}</span>}
               </span>
             </button>
           )
@@ -60,7 +60,7 @@ export function Calendar() {
 
       {day && (
         <section className="space-y-2 pt-2" aria-label="Selected day">
-          <h2 className="text-xl font-semibold">{fmtDate(day, 'en', true)}</h2>
+          <h2 className="text-xl">{fmtDate(day, 'en', true)}</h2>
           <div className="flex flex-wrap gap-2">
             <button className={btn(isBlocked(day) ? 'primary' : 'outline')} onClick={() => toggleBlock(day)}>{isBlocked(day) ? 'Unblock this day' : 'Block this day'}</button>
             <button className={btn('outline')} onClick={() => setPrep(!prep)}>{prep ? 'Show orders' : 'Prep list'}</button>
@@ -83,12 +83,12 @@ function Prep({ day }: { day: string }) {
   const list = prepList(db.orders, day)
   return (
     <div>
-      <div className="print-area rounded-2xl bg-white p-4 text-sm shadow-soft">
-        <h3 className="font-serif text-lg font-semibold">Prep list - {fmtDate(day, 'en', true)}</h3>
+      <div className="print-area rounded-card border border-honey-200 bg-paper p-4 text-sm">
+        <h3 className="font-serif text-lg">Prep list - {fmtDate(day, 'en', true)}</h3>
         {list.length === 0 && <p>Nothing to prepare.</p>}
         {list.map((g) => (
           <div key={g.product} className="mt-2">
-            <p className="font-bold">{g.product} (total {g.qty})</p>
+            <p className="font-semibold">{g.product} (total {g.qty})</p>
             <ul className="ml-4 list-disc">
               {g.variants.map((v) => (
                 <li key={v.label}>{v.qty} x {v.label}
