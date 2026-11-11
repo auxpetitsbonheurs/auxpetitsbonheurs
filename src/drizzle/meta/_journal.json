@@ -15,6 +15,13 @@
       "when": 1794312564381,
       "tag": "0001_launch_seed",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794437202338,
+      "tag": "0002_product_updated_by",
+      "breakpoints": true
     }
   ]
 }

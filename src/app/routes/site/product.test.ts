@@ -6,6 +6,8 @@ import { insertProduct } from "~/db/testing/catalogue";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { TEST_SUPABASE_URL, cookieFrom, routeArgs } from "~/server/testing/route-context";
 import { BASKET_COOKIE } from "~/server/basket.server";
+import { signedInAdmin } from "~/server/testing/admin-session";
+import { action as saveInEditor } from "../admin/product";
 import { action, loader, productView, shouldRevalidate } from "./product";
 
 let database: TestDatabase;
@@ -171,6 +173,24 @@ describe("page language (S-011 AC7)", () => {
     expect(productView(fallback.product, "fr").name).toBe("Chocolate cake");
   });
 });
+
+describe("a product saved in the editor with English only (S-046 AC2)", () => {
+  test("its French page shows the English name and description", async () => {
+    const admin = await signedInAdmin(database);
+    const form = { intent: "save", "name.en": "Lemon tart", "description.en": "Sharp and sweet.", basePriceRs: "450", type: "dessert", status: "hidden" };
+    const saved = (await saveInEditor(routeArgs(database, { path: "/admin/menu/new", auth: admin.auth, cookie: admin.cookie, form }) as never)) as { id: string };
+    await insertPhotoAndShow(saved.id);
+
+    const fr = await view("/fr/menu/lemon-tart", "lemon-tart");
+
+    expect(productView(fr.product, "fr")).toMatchObject({ name: "Lemon tart", description: "Sharp and sweet." });
+  });
+});
+
+async function insertPhotoAndShow(id: string) {
+  await database.client.query("insert into product_photo (product_id, storage_path, width, height, sort_order) values ($1, '/images/sample/chocolate-cake.svg', 800, 600, 0)", [id]);
+  await database.client.query("update product set status = 'available' where id = $1", [id]);
+}
 
 describe("revalidation after Add (staging latency)", () => {
   const args = (intent: string, ok: boolean) =>

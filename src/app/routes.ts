@@ -31,6 +31,8 @@ const adminPages = [
     // Bottom bar and More (S-033); "Not available yet" placeholders until later epics build them.
     route("calendar", "routes/admin/calendar.tsx"),
     route("menu", "routes/admin/menu.tsx"),
+    route("menu/new", "routes/admin/product.tsx", { id: "admin-product-new" }),
+    route("menu/:id", "routes/admin/product.tsx", { id: "admin-product" }),
     route("more", "routes/admin/more.tsx"),
     route("gallery", "routes/admin/gallery.tsx"),
     route("customers", "routes/admin/customers.tsx"),

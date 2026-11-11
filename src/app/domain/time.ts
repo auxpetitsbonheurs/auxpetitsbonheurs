@@ -63,6 +63,11 @@ export function formatLogTime(instant: Date, _locale: Locale): string {
   return `${LOG_DAY.format(instant)} ${LOG_TIME.format(instant)}`;
 }
 
+/** "14:05" in Mauritius time, 24 h in both languages ("Updated by Sarah at 14:05"). */
+export function formatClockTime(instant: Date): string {
+  return LOG_TIME.format(instant);
+}
+
 const DAY_LABEL: Record<Locale, Intl.DateTimeFormat> = {
   en: new Intl.DateTimeFormat(INTL_LOCALE.en, { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }),
   fr: new Intl.DateTimeFormat(INTL_LOCALE.fr, { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }),

@@ -1,0 +1,2 @@
+ALTER TABLE "product" ADD COLUMN "updated_by" uuid;--> statement-breakpoint
+ALTER TABLE "product" ADD CONSTRAINT "product_updated_by_admin_id_fk" FOREIGN KEY ("updated_by") REFERENCES "public"."admin"("id") ON DELETE set null ON UPDATE no action;

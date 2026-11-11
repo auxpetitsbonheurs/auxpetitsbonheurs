@@ -182,6 +182,20 @@ html[data-sheet-open] [data-bottom-bar] {
   }
 }
 
+/*
+ * Product editor Save bar (S-046 AC9): focused or scrolled-to controls stop above it and the
+ * bottom bar; on phone widths it leaves the bottom while a text field has focus (keyboard up).
+ */
+html:has([data-editor-bar]) {
+  scroll-padding-bottom: 10rem;
+}
+@media (max-width: 47.99rem) {
+  [data-admin-frame]:has(:is(input:not([type="checkbox"], [type="radio"], [type="hidden"]), textarea):focus) [data-editor-bar] {
+    position: static;
+    box-shadow: none;
+  }
+}
+
 /* Reduced motion: no movement, no bump; state changes are still announced. */
 @media (prefers-reduced-motion: reduce) {
   :root {

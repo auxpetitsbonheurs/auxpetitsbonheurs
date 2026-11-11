@@ -47,6 +47,8 @@ export const product = pgTable(
     seasonalEndsOn: date("seasonal_ends_on"),
     createdAt: timestamp("created_at", tz).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", tz).notNull().defaultNow(),
+    /** Who saved it last ("Updated by Sarah at 14:05" in the editor, S-046 AC7); last write wins. */
+    updatedBy: uuid("updated_by").references(() => admin.id, { onDelete: "set null" }),
   },
   (t) => [
     index("product_menu_idx").on(t.status, t.type, t.sortOrder),

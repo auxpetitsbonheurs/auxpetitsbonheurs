@@ -119,7 +119,8 @@
       "FORBIDDEN": "You cannot do this.",
       "ORDER_CHANGED": "This order changed. Reload",
       "INVALID_TRANSITION": "This order can no longer be changed this way. Reload.",
-      "RATE_LIMITED": "Too many attempts, wait a few minutes."
+      "RATE_LIMITED": "Too many attempts, wait a few minutes.",
+      "SLUG_TAKEN": "This web address is already used by another product. Please choose another."
     }
   },
   "product": {
@@ -383,6 +384,68 @@
         "seasonal_current": "Seasonal",
         "seasonal_scheduled": "Scheduled seasonal",
         "seasonal_ended": "Season over"
+      }
+    },
+    "product": {
+      "newTitle": "New product",
+      "editTitle": "Edit product",
+      "back": "Back to the menu",
+      "updatedBy": "Updated by {{name}} at {{time}}",
+      "optional": "(optional)",
+      "namesSection": "Names and descriptions",
+      "nameEn": "Name (English)",
+      "nameFr": "Name (French)",
+      "descriptionEn": "Description (English)",
+      "descriptionFr": "Description (French)",
+      "frenchMissing": "French missing, English will show",
+      "price": "Base price (Rs)",
+      "notice": "Notice days",
+      "noticeHint": "Leave blank to use the default from Settings.",
+      "noticeDefault": "Use default ({{days}})",
+      "allergens": "Allergens",
+      "allergen": {
+        "eggless": "Eggless",
+        "nut_free": "Nut-free",
+        "gluten_free": "Gluten-free",
+        "dairy_free": "Dairy-free"
+      },
+      "type": "Type",
+      "category": "Category",
+      "categoryHint": "A short label such as Birthday or Wedding.",
+      "status": "Status",
+      "statusHint": "A product needs a photo before customers can see it.",
+      "statusName": {
+        "available": "Available",
+        "sold_out": "Sold out",
+        "hidden": "Hidden"
+      },
+      "slug": "Web address",
+      "slugHint": "Lowercase letters, numbers and dashes. Leave blank to make it from the English name.",
+      "save": "Save",
+      "saving": "Saving the product…",
+      "savingLabel": "Saving…",
+      "saved": "Saved",
+      "errorSummaryTitle": "Please check the product",
+      "leaveTitle": "Leave without saving?",
+      "leaveBody": "Your changes to this product are not saved yet.",
+      "stay": "Keep editing",
+      "leave": "Leave without saving",
+      "errors": {
+        "name_en_missing": "Enter the English name.",
+        "name_en_invalid": "Keep the English name to 120 characters or fewer.",
+        "name_fr_invalid": "Keep the French name to 120 characters or fewer.",
+        "description_en_invalid": "Keep the English description to 2000 characters or fewer.",
+        "description_fr_invalid": "Keep the French description to 2000 characters or fewer.",
+        "basePriceRs_invalid": "Enter the price in whole rupees, for example 850.",
+        "noticeDays_invalid": "Enter a number of days from 0 to 60, or leave it blank.",
+        "type_invalid": "Choose a type.",
+        "category_invalid": "Keep the category to 60 characters or fewer.",
+        "status_invalid": "Choose a status.",
+        "status_photo": "Add a photo first. You can keep the product hidden until then.",
+        "slug_invalid": "Use lowercase letters, numbers and dashes only.",
+        "slug_taken": "This web address is already used. Choose another.",
+        "allergens_invalid": "Choose allergens from the list.",
+        "id_invalid": "This product could not be found. Go back to the menu."
       }
     }
   }

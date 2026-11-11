@@ -20,6 +20,7 @@ export const ADMIN_MODULE_POLICY = {
   more: "admin",
   calendar: "admin",
   menu: "admin",
+  product: "admin",
   promotions: "admin",
   gallery: "admin",
   customers: "admin",

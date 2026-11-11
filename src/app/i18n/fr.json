@@ -119,7 +119,8 @@
       "FORBIDDEN": "Vous ne pouvez pas faire cela.",
       "ORDER_CHANGED": "Cette commande a changé. Rechargez",
       "INVALID_TRANSITION": "Cette commande ne peut plus être modifiée ainsi. Rechargez.",
-      "RATE_LIMITED": "Trop de tentatives, patientez quelques minutes."
+      "RATE_LIMITED": "Trop de tentatives, patientez quelques minutes.",
+      "SLUG_TAKEN": "Cette adresse web est déjà utilisée par un autre produit. Choisissez-en une autre."
     }
   },
   "product": {
@@ -383,6 +384,68 @@
         "seasonal_current": "Saisonnier",
         "seasonal_scheduled": "Saisonnier programmé",
         "seasonal_ended": "Saison terminée"
+      }
+    },
+    "product": {
+      "newTitle": "Nouveau produit",
+      "editTitle": "Modifier le produit",
+      "back": "Retour à la carte",
+      "updatedBy": "Modifié par {{name}} à {{time}}",
+      "optional": "(facultatif)",
+      "namesSection": "Noms et descriptions",
+      "nameEn": "Nom (anglais)",
+      "nameFr": "Nom (français)",
+      "descriptionEn": "Description (anglais)",
+      "descriptionFr": "Description (français)",
+      "frenchMissing": "Français manquant, l'anglais s'affichera",
+      "price": "Prix de base (Rs)",
+      "notice": "Jours de délai",
+      "noticeHint": "Laissez vide pour utiliser la valeur par défaut des Réglages.",
+      "noticeDefault": "Par défaut ({{days}})",
+      "allergens": "Allergènes",
+      "allergen": {
+        "eggless": "Sans œufs",
+        "nut_free": "Sans fruits à coque",
+        "gluten_free": "Sans gluten",
+        "dairy_free": "Sans lactose"
+      },
+      "type": "Type",
+      "category": "Catégorie",
+      "categoryHint": "Un court libellé comme Anniversaire ou Mariage.",
+      "status": "Statut",
+      "statusHint": "Un produit a besoin d'une photo avant que les clients puissent le voir.",
+      "statusName": {
+        "available": "Disponible",
+        "sold_out": "Épuisé",
+        "hidden": "Masqué"
+      },
+      "slug": "Adresse web",
+      "slugHint": "Lettres minuscules, chiffres et tirets. Laissez vide pour la créer à partir du nom anglais.",
+      "save": "Enregistrer",
+      "saving": "Enregistrement du produit…",
+      "savingLabel": "Enregistrement…",
+      "saved": "Enregistré",
+      "errorSummaryTitle": "Veuillez vérifier le produit",
+      "leaveTitle": "Quitter sans enregistrer ?",
+      "leaveBody": "Vos modifications de ce produit ne sont pas encore enregistrées.",
+      "stay": "Continuer à modifier",
+      "leave": "Quitter sans enregistrer",
+      "errors": {
+        "name_en_missing": "Saisissez le nom en anglais.",
+        "name_en_invalid": "Le nom anglais doit faire 120 caractères au plus.",
+        "name_fr_invalid": "Le nom français doit faire 120 caractères au plus.",
+        "description_en_invalid": "La description anglaise doit faire 2000 caractères au plus.",
+        "description_fr_invalid": "La description française doit faire 2000 caractères au plus.",
+        "basePriceRs_invalid": "Saisissez le prix en roupies entières, par exemple 850.",
+        "noticeDays_invalid": "Saisissez un nombre de jours de 0 à 60, ou laissez vide.",
+        "type_invalid": "Choisissez un type.",
+        "category_invalid": "La catégorie doit faire 60 caractères au plus.",
+        "status_invalid": "Choisissez un statut.",
+        "status_photo": "Ajoutez d'abord une photo. Vous pouvez garder le produit masqué d'ici là.",
+        "slug_invalid": "Utilisez seulement des lettres minuscules, des chiffres et des tirets.",
+        "slug_taken": "Cette adresse web est déjà utilisée. Choisissez-en une autre.",
+        "allergens_invalid": "Choisissez les allergènes dans la liste.",
+        "id_invalid": "Ce produit est introuvable. Revenez à la carte."
       }
     }
   }
