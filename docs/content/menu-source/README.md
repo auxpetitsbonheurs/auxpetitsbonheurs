@@ -6,3 +6,7 @@ Raw product info and photos supplied by the Owner, used to seed the real menu (E
 - Description (EN): Freshly baked soft cookies
 - Options: Box of 6 — Rs 420 · Box of 12 — Rs 780 · Box of 18 — Rs 1080
 - Photo: photos/chocolate-chip-cookies.jpg (box with the "Merci" sticker)
+
+## Cake flavours (Owner, 2026-11-11)
+Chocolate · Red velvet · Vanilla · Pistachio · Génoise aux pêches · Black forest
+(Sizes/prices and photos to come.)
