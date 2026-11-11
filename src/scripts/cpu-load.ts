@@ -42,9 +42,9 @@ async function call(url: string, init: RequestInit = {}): Promise<Response> {
     return await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS), ...init });
   } catch (error) {
     if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
-      throw new Error(`${label} got no response within ${REQUEST_TIMEOUT_MS / 1000} s`);
+      throw new Error(`${label} got no response within ${REQUEST_TIMEOUT_MS / 1000} s`, { cause: error });
     }
-    throw new Error(`${label} failed: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(`${label} failed: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
   }
 }
 

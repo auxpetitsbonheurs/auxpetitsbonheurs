@@ -90,6 +90,8 @@ describe("per-request database client (AC4)", () => {
     expect(CONNECTION_OPTIONS.connect_timeout).toBeLessThanOrEqual(10);
     expect(CONNECTION_OPTIONS.query_timeout).toBeLessThanOrEqual(15);
     expect(CONNECTION_OPTIONS.max_pipeline).toBe(1);
+    // No type-lookup round trip per request; drizzle decodes text[] itself (checked below).
+    expect(CONNECTION_OPTIONS.fetch_types).toBe(false);
   });
 
   test("a handler that never answers becomes a 503 after the deadline, and the client still closes", async () => {

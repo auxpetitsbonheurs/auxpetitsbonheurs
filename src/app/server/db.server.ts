@@ -14,7 +14,7 @@ import * as schema from "~/db/schema";
  * connection, and the transaction pooler cannot be trusted with interleaved extended-protocol
  * messages.
  */
-export const CONNECTION_OPTIONS = { max: 1, prepare: false, connect_timeout: 5, query_timeout: 10, max_pipeline: 1 } as const;
+export const CONNECTION_OPTIONS = { max: 1, prepare: false, fetch_types: false, connect_timeout: 5, query_timeout: 10, max_pipeline: 1 } as const;
 
 /** Last-resort ceiling for one request's work; above the query timeouts, well below the platform's. */
 export const REQUEST_DEADLINE_MS = 25_000;
