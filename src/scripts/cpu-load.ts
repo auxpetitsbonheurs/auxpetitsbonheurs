@@ -5,6 +5,7 @@
 // Usage: npm run cpu:load -- --url https://auxpetitsbonheurs-staging.<subdomain>.workers.dev \
 //          --phase warm --count 50 [--date YYYY-MM-DD] [--product chocolate-cake]
 // Runs with Node's built-in TypeScript type stripping (Node >= 22.18).
+import { appendFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { type Phase, assertMeasurableTarget, cookiePair, inputValue, orderForm, tagged, tokenFromLocation } from "../app/lib/cpu-load.ts";
 
@@ -15,6 +16,7 @@ const { values } = parseArgs({
     count: { type: "string", default: "50" },
     date: { type: "string" },
     product: { type: "string", default: "chocolate-cake" },
+    "timeouts-out": { type: "string" },
   },
 });
 const base = values.url ?? process.env.STAGING_URL;
@@ -38,10 +40,13 @@ function routeOf(url: string): string {
 
 async function call(url: string, init: RequestInit = {}): Promise<Response> {
   const label = `${init.method ?? "GET"} ${routeOf(url)}`;
+  const startedAt = Date.now();
   try {
     return await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS), ...init });
   } catch (error) {
     if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
+      // One JSON line per timeout (route name only, no query or token) for cpu-measure's diagnostics.
+      if (values["timeouts-out"]) appendFileSync(values["timeouts-out"], `${JSON.stringify({ route: label, startedAt, endedAt: Date.now() })}\n`);
       throw new Error(`${label} got no response within ${REQUEST_TIMEOUT_MS / 1000} s`, { cause: error });
     }
     throw new Error(`${label} failed: ${error instanceof Error ? error.message : String(error)}`, { cause: error });

@@ -10,6 +10,7 @@ import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs
 import { parseArgs } from "node:util";
 import {
   type Phase,
+  type TimedOutRequest,
   cpuByRoute,
   groupSamples,
   measureExitCode,
@@ -19,12 +20,14 @@ import {
   renderJobSummary,
   samplesCsv,
   summarizeRoute,
+  timeoutDiagnostics,
 } from "../app/lib/cpu-report.ts";
 
 const { values } = parseArgs({
   options: {
     tail: { type: "string" },
     "tail-log": { type: "string" },
+    timeouts: { type: "string" },
     phase: { type: "string", default: "warm" },
     rounds: { type: "string", default: "0" },
     host: { type: "string", default: "staging" },
@@ -42,6 +45,15 @@ const summaries = cpuByRoute(raw).map(summarizeRoute);
 const markdown = renderJobSummary({ summaries, phase, rounds: Number(values.rounds), host: values.host });
 console.log(markdown);
 if (values.summary) appendFileSync(values.summary, `${markdown}\n`);
+
+const timeouts: TimedOutRequest[] = values.timeouts && existsSync(values.timeouts)
+  ? readFileSync(values.timeouts, "utf8").split("\n").filter(Boolean).map((line) => JSON.parse(line))
+  : [];
+const diagnostics = timeoutDiagnostics(raw, timeouts);
+if (diagnostics) {
+  console.log(diagnostics);
+  if (values.summary) appendFileSync(values.summary, `${diagnostics}\n`);
+}
 
 if (summaries.every((s) => s.count === 0)) {
   console.log("::error::No CPU samples arrived from wrangler tail. Its messages (redacted):");

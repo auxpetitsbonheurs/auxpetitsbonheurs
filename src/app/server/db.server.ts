@@ -88,7 +88,9 @@ async function attemptWithin(requestDb: RequestDb, handle: (db: RequestDb) => Pr
   try {
     const outcome = await Promise.race([work, stalled]);
     // An abandoned attempt that answers later must not leave its body open.
-    if (outcome.kind === "stalled") void work.then((late) => late.kind === "response" && late.response.body?.cancel().catch(() => {}));
+    if (outcome.kind === "stalled") void work.then((late) => {
+      if (late.kind === "response") void late.response.body?.cancel().catch(() => {});
+    });
     return outcome;
   } finally {
     clearTimeout(timer);

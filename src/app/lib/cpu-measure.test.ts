@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
 import { redactPath } from "../../workers/log-redact";
-import { cpuByRoute, measureExitCode, parseJsonStream, redactText, renderJobSummary, routeName, summarizeRoute } from "./cpu-report";
+import { cpuByRoute, measureExitCode, timeoutDiagnostics, parseJsonStream, redactText, renderJobSummary, routeName, summarizeRoute } from "./cpu-report";
 
 const TOKEN = "Tok_SECRET-abc123";
 const BASE = "https://auxpetitsbonheurs-staging.example.workers.dev";
@@ -197,5 +197,41 @@ describe("cpu-measure workflow", () => {
     expect(workflow).not.toMatch(/\bcat\b[^\n]*tail\.(json|log)|tail -[nf][^\n]*tail\.(json|log)|echo[^\n]*\$CLOUDFLARE/);
     expect(workflow).not.toMatch(/path:[^\n]*(tail|cpu-raw)/);
     expect(workflow).not.toMatch(/continue-on-error:\s*true/);
+  });
+});
+
+describe("timed-out routes are explained by the matching tail event", () => {
+  const stamp = 1_731_000_000_000;
+  const event = (path: string, at: number, extra: Record<string, unknown>) =>
+    JSON.stringify({ outcome: "canceled", eventTimestamp: at, exceptions: [], logs: [], event: { request: { url: `${BASE}${path}`, method: "GET" } }, ...extra });
+
+  test("prints outcome, exceptions and error log lines, redacted, for the timed-out route only", () => {
+    const tail = [
+      event("/menu/chocolate-cake", stamp + 100, {
+        outcome: "canceled",
+        exceptions: [{ name: "Error", message: `failed for ${BASE}/t/${TOKEN}?x=1 token=${TOKEN}` }],
+        logs: [{ level: "error", message: ['{"event":"request_attempt_failed","reason":"stalled"}'] }, { level: "log", message: ["noise"] }],
+      }),
+      event("/healthz", stamp + 120, { outcome: "ok" }),
+      event("/menu/chocolate-cake", stamp - 600_000, { outcome: "ok" }),
+    ].join("\n");
+
+    const text = timeoutDiagnostics(tail, [{ route: "GET /menu/chocolate-cake", startedAt: stamp, endedAt: stamp + 15_000 }]);
+
+    expect(text).toContain("GET /menu/chocolate-cake");
+    expect(text).toContain("outcome canceled");
+    expect(text).toContain("request_attempt_failed");
+    expect(text).not.toContain("noise");
+    expect(text).not.toContain("healthz");
+    expect(text).not.toContain(TOKEN);
+    expect(text).not.toContain("x=1");
+  });
+
+  test("says so when no tail event matches (the request never reached the Worker, or the tail missed it)", () => {
+    expect(timeoutDiagnostics("", [{ route: "GET /menu/chocolate-cake", startedAt: stamp, endedAt: stamp + 15_000 }])).toContain("no matching tail event");
+  });
+
+  test("nothing to print without timeouts", () => {
+    expect(timeoutDiagnostics("", [])).toBe("");
   });
 });
