@@ -21,6 +21,9 @@ function itemsPreview(items: AdminOrderItem[] = [], locale: Locale): string[] {
   return items.length > 2 ? [...shown, translate("admin.orders.moreItems", locale, { count: items.length - 2 })] : shown;
 }
 
+/** Names the page in the admin header (S-033 AC6). */
+export const handle = { titleKey: "admin.nav.orders" };
+
 /**
  * `admin/orders` loader, minimal slice: tab `review` only (pending_approval, quote_needed),
  * oldest first (a queue: the longest wait is served first), 30 per page with a cursor. Search, filters, counts and the other tabs are E-06.

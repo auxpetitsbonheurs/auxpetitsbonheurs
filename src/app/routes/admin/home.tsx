@@ -4,6 +4,9 @@ import { adminPageLocale } from "~/server/admin-page.server";
 import { requireAdmin } from "~/server/auth.server";
 import type { Route } from "./+types/home";
 
+/** Names the page in the admin header (S-033 AC6). */
+export const handle = { titleKey: "admin.nav.today" };
+
 /** `/admin` until Today arrives (E-02/E-06): a greeting and the way to the review list. */
 export async function loader(args: Route.LoaderArgs) {
   const me = await requireAdmin(args);

@@ -28,6 +28,14 @@ const adminPages = [
     index("routes/admin/home.tsx"),
     route("orders", "routes/admin/orders.tsx"),
     route("orders/:id", "routes/admin/order.tsx"),
+    // Bottom bar and More (S-033); "Not available yet" placeholders until later epics build them.
+    route("calendar", "routes/admin/calendar.tsx"),
+    route("menu", "routes/admin/menu.tsx"),
+    route("more", "routes/admin/more.tsx"),
+    route("gallery", "routes/admin/gallery.tsx"),
+    route("customers", "routes/admin/customers.tsx"),
+    route("sales", "routes/admin/sales.tsx"),
+    route("profile", "routes/admin/profile.tsx"),
     // Owner-only (S-022); placeholders until E-02/E-03 build the screens.
     route("availability", "routes/admin/availability.tsx"),
     route("settings", "routes/admin/settings.tsx"),

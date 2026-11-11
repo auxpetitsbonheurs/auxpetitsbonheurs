@@ -165,6 +165,23 @@
   }
 }
 
+/*
+ * Admin bottom bar (S-033 AC5): hidden while a full-screen sheet is open, and on phone
+ * widths while a text field has focus (the on-screen keyboard is up), so it never covers
+ * the field being typed in. It comes back as soon as the field loses focus.
+ */
+html[data-sheet-open] [data-bottom-bar] {
+  display: none;
+}
+@media (max-width: 47.99rem) {
+  [data-admin-frame]:has(
+      :is(input:not([type="checkbox"], [type="radio"], [type="button"], [type="submit"], [type="reset"], [type="hidden"]), textarea, select, [contenteditable="true"]):focus
+    )
+    [data-bottom-bar] {
+    display: none;
+  }
+}
+
 /* Reduced motion: no movement, no bump; state changes are still announced. */
 @media (prefers-reduced-motion: reduce) {
   :root {

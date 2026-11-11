@@ -212,7 +212,8 @@
       "role": {
         "owner": "Propriétaire",
         "admin": "Administrateur"
-      }
+      },
+      "signingOut": "Déconnexion en cours…"
     },
     "login": {
       "metaTitle": "Connexion",
@@ -319,7 +320,8 @@
       "profile": "Mon profil",
       "availability": "Disponibilités",
       "settings": "Réglages",
-      "team": "Équipe"
+      "team": "Équipe",
+      "label": "Admin"
     },
     "states": {
       "ownerOnlyTitle": "Réservé aux propriétaires",
@@ -328,6 +330,9 @@
       "notYetTitle": "Pas encore disponible",
       "notYetBody": "Cette partie de l'application arrive bientôt. Tout le reste fonctionne normalement.",
       "retry": "Réessayer"
+    },
+    "more": {
+      "ownerSection": "Pour les propriétaires"
     }
   }
 }

@@ -33,6 +33,9 @@ function eventLine(event: OrderEventView, locale: Locale): string {
 
 const mapsSearch = (address: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 
+/** Names the page in the admin header (S-033 AC6). */
+export const handle = { titleKey: "admin.nav.orders" };
+
 /**
  * `admin/order` loader, minimal slice: the full order, customer contact, Call and Maps
  * links and `allowed` (approve only). WhatsApp, notes, photos and the other actions are E-06.

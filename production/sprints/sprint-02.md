@@ -18,7 +18,7 @@ Milestone: MVP (E-02 Admin access and team, E-03 Menu and content management) ·
 | S-030 | Resend or revoke an invitation | 2 | auth-specialist, ui-engineer | ready |
 | S-031 | Change an admin's role without losing the last Owner | 5 | auth-specialist, postgres-specialist, api-engineer, ui-engineer | ready |
 | S-032 | Deactivate and reactivate an admin | 5 | auth-specialist, postgres-specialist, api-engineer, ui-engineer | ready |
-| S-033 | Admin app frame with one-handed bottom bar | 3 | ui-engineer, tailwind-shadcn-specialist, accessibility-specialist, remix-specialist | ready |
+| S-033 | Admin app frame with one-handed bottom bar | 3 | ui-engineer, tailwind-shadcn-specialist, accessibility-specialist, remix-specialist | review |
 | S-034 | Orders badge showing how many need review | 2 | ui-engineer, remix-specialist | ready (contract resolved 2026-11-11) |
 | S-035 | Install the admin app on the home screen | 3 | remix-specialist, ui-engineer, hosting-platform-specialist | ready |
 | S-036 | My profile with name, language, password and alert switches | 3 | remix-specialist, ui-engineer, auth-specialist | ready |

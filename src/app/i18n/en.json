@@ -212,7 +212,8 @@
       "role": {
         "owner": "Owner",
         "admin": "Admin"
-      }
+      },
+      "signingOut": "Signing you out…"
     },
     "login": {
       "metaTitle": "Sign in",
@@ -319,7 +320,8 @@
       "profile": "My profile",
       "availability": "Availability",
       "settings": "Settings",
-      "team": "Team"
+      "team": "Team",
+      "label": "Admin"
     },
     "states": {
       "ownerOnlyTitle": "Owner only",
@@ -328,6 +330,9 @@
       "notYetTitle": "Not available yet",
       "notYetBody": "This part of the app is coming soon. Everything else works as usual.",
       "retry": "Try again"
+    },
+    "more": {
+      "ownerSection": "For Owners"
     }
   }
 }
