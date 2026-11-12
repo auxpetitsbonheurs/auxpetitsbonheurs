@@ -382,7 +382,7 @@ describe("transactions on real Postgres (AC5, in-process PGlite)", () => {
 
   beforeAll(async () => {
     await client.exec(`create table counter (name text primary key, value integer not null default 0)`);
-  });
+  }, 60_000); // waits for this PGlite's initdb, slow when every core runs a test file
   afterAll(async () => {
     await client.close();
   });
