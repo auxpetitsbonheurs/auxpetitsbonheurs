@@ -7,7 +7,7 @@ import { and, eq } from "drizzle-orm";
 import { emailOutbox } from "~/db/schema";
 import type { AdminRole } from "~/domain/admin-account";
 import type { Executor } from "~/server/db.server";
-import { INVITATION_TEMPLATE } from "~/server/repos/invitations.server";
+import { INVITATION_TEMPLATE, findInvitationById, isOpen, retireInvitationEmails } from "~/server/repos/invitations.server";
 import { EMAIL_TIMEOUT_MS, EmailSendError, type Mailer, sendWithTimeout } from "./sender.server";
 import { invitationEmail } from "./templates.server";
 
@@ -17,6 +17,7 @@ export const RETRY_AFTER_MS = 15 * 60 * 1000;
 export type DeliveryResult = "sent" | "failed" | "not_configured" | "skipped";
 
 interface InvitationPayload {
+  invitationId: string;
   inviterName: string;
   role: AdminRole;
   expiresOn: string;
@@ -45,6 +46,12 @@ export async function deliverInvitation(
   // Written by insertInvitation in this codebase only, so the shape is known.
   const payload = row?.payload as unknown as InvitationPayload | undefined;
   if (!row || row.status !== "pending" || row.template !== INVITATION_TEMPLATE || !payload?.link) return "skipped";
+  // A link that no longer works is never sent (expired before a retry, or used meanwhile).
+  const invitation = await findInvitationById(db, payload.invitationId);
+  if (!invitation || !isOpen(invitation, options.now)) {
+    await retireInvitationEmails(db, [payload.invitationId], "expired");
+    return "skipped";
+  }
   if (!mailer) {
     await recordFailure(db, row.id, row.attempts, "not_configured", options.now);
     return "not_configured";

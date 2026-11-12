@@ -67,6 +67,20 @@ describe("after commit (AC2)", () => {
   });
 });
 
+describe("only live links go out (review)", () => {
+  test("an invitation that expired before its email went out is never sent; its link is dropped", async () => {
+    let calls = 0;
+    const mailer: Mailer = { send: async () => (calls++, { id: "re-1" }) };
+
+    expect(await deliverInvitation(db, mailer, outboxId, { now: new Date("2026-11-19T06:00:01Z") })).toBe("skipped");
+
+    expect(calls).toBe(0);
+    const after = await row();
+    expect(after.status).toBe("dead");
+    expect(after.payload.link).toBeUndefined();
+  });
+});
+
 describe("failure (AC3)", () => {
   test("a provider failure keeps the invitation and the pending row, with the kind only", async () => {
     const mailer: Mailer = { send: async () => Promise.reject(new Error("401 key re_secret invalid")) };
