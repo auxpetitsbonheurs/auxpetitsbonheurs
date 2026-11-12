@@ -105,12 +105,12 @@ describe("deploy workflow steps (AC2)", () => {
     expect(job(`${name}-preflight`)).not.toContain("HYPERDRIVE");
   });
 
-  test("staging deploys without Hyperdrive unless a manual run asks for it (ADR-0003 amendments 1 and 3); production ignores the input", () => {
+  test("staging deploys with Hyperdrive unless a manual run unticks it (ADR-0003 amendment 4); production ignores the input", () => {
     expect(workflow).toMatch(/workflow_dispatch:\s*\n\s+inputs:\s*\n\s+hyperdrive:\s*\n(?:\s+[a-z]+:.*\n)*?\s+type:\s*boolean/);
-    expect(workflow).toMatch(/hyperdrive:\s*\n(?:\s+[a-z]+:.*\n)*?\s+default:\s*false/);
-    // Automatic (workflow_run) deploys have no inputs, so they never get the binding.
+    expect(workflow).toMatch(/hyperdrive:\s*\n(?:\s+[a-z]+:.*\n)*?\s+default:\s*true/);
+    // Automatic (workflow_run) deploys have no inputs, so they always get the binding.
     expect(job("staging")).toContain(
-      "HYPERDRIVE_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.hyperdrive && vars.STAGING_HYPERDRIVE_ID || '' }}",
+      "HYPERDRIVE_ID: ${{ (github.event_name != 'workflow_dispatch' || inputs.hyperdrive) && vars.STAGING_HYPERDRIVE_ID || '' }}",
     );
     expect(job("production")).not.toContain("inputs.hyperdrive");
     expect(job("production")).toContain("HYPERDRIVE_ID: ${{ vars.PRODUCTION_HYPERDRIVE_ID }}");
