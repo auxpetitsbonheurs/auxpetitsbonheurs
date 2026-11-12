@@ -23,19 +23,17 @@ export async function expectNoHorizontalScroll(page: Page) {
 /**
  * Lets running CSS transitions finish first (e.g. button colours fading right after a
  * light/dark switch), so axe reads the settled colours, not a mid-fade blend of both
- * themes. Capped at 1 s; looping animations (spinners) are not transitions and are ignored.
+ * themes. Transitions always end (finished, or cancelled, which also settles here); looping
+ * animations (spinners) are not transitions and are ignored. No fixed sleep.
  */
 async function settleTransitions(page: Page) {
   await page.evaluate(() =>
-    Promise.race([
-      Promise.all(
-        document
-          .getAnimations()
-          .filter((animation) => animation instanceof CSSTransition)
-          .map((animation) => animation.finished.catch(() => undefined)),
-      ),
-      new Promise((resolve) => setTimeout(resolve, 1000)),
-    ]),
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => animation instanceof CSSTransition)
+        .map((animation) => animation.finished.catch(() => undefined)),
+    ),
   );
 }
 
