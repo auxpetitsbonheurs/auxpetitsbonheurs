@@ -101,8 +101,8 @@ describe("the policy table (S-022 AC4)", () => {
     expect([...OWNER_ONLY_MODULES].sort()).toEqual(["availability", "settings", "team"]);
   });
 
-  test("Menu, Promotions, Gallery, Customers, Sales summary, Orders, Calendar and Profile are open to Admins", () => {
-    for (const name of ["menu", "promotions", "gallery", "customers", "sales", "orders", "order", "calendar", "profile"] as const) {
+  test("Menu, Promotions, Gallery, Customers, Sales summary, Orders, Calendar, Profile and Pages (E-13 S-246 AC6) are open to Admins", () => {
+    for (const name of ["menu", "promotions", "gallery", "customers", "sales", "orders", "order", "calendar", "profile", "pages", "page-editor"] as const) {
       expect(ADMIN_MODULE_POLICY[name], name).toBe("admin");
     }
   });

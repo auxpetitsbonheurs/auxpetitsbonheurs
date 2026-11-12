@@ -44,7 +44,8 @@ export async function action(args: Route.ActionArgs) {
   }
   const request = parseUploadRequest(await args.request.formData());
   if (!request) return asJson(actionError("VALIDATION_FAILED", me.locale));
-  // Site images belong to Owner-only Settings (S-059 AC8): an Admin gets FORBIDDEN.
+  // Site images belong to Owner-only Settings (S-059 AC8): an Admin gets FORBIDDEN. Brand page
+  // photos (`page:<key>`, E-13 S-247) are page content: Admins and Owners alike.
   if (request.scope === "site" && me.role !== "owner") return asJson(actionError("FORBIDDEN", me.locale));
   const result = await requestUploadUrls(args.context.get(uploadContext), me.id, request);
   if (!result.ok) return asJson(actionError(result.code, me.locale));

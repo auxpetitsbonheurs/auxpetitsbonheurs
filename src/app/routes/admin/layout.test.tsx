@@ -112,6 +112,7 @@ describe("Orders badge (S-034)", () => {
 
 describe("More (AC3, AC4)", () => {
   const everyone = [
+    { key: "pages", href: "/admin/pages", label: "Pages" },
     { key: "gallery", href: "/admin/gallery", label: "Gallery" },
     { key: "customers", href: "/admin/customers", label: "Customers" },
     { key: "sales", href: "/admin/sales", label: "Sales summary" },
@@ -145,7 +146,7 @@ describe("More (AC3, AC4)", () => {
 
     const data = await moreLoader(args("/admin/more"));
 
-    expect(data.items.map((i) => i.label)).toEqual(["Galerie", "Clients", "Résumé des ventes", "Mon profil"]);
+    expect(data.items.map((i) => i.label)).toEqual(["Pages", "Galerie", "Clients", "Résumé des ventes", "Mon profil"]);
     expect(data.title).toBe("Plus");
   });
 });

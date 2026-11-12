@@ -6,6 +6,10 @@ describe("contact links (S-007 footer)", () => {
     expect(whatsappHref("+230 5000 0000")).toBe("https://wa.me/23050000000");
   });
 
+  test("a pre-filled message is URL-encoded in ?text= (E-13 S-249 AC3)", () => {
+    expect(whatsappHref("+230 5000 0000", "Hello, workshops & more?")).toBe("https://wa.me/23050000000?text=Hello%2C%20workshops%20%26%20more%3F");
+  });
+
   test("phone links keep the leading plus and drop spaces", () => {
     expect(telHref("+230 5000 0000")).toBe("tel:+23050000000");
   });

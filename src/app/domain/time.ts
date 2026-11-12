@@ -77,3 +77,9 @@ const DAY_LABEL: Record<Locale, Intl.DateTimeFormat> = {
 export function formatDayLabel(date: string, locale: Locale): string {
   return DAY_LABEL[locale].format(parseDate(date));
 }
+
+/** A calendar date as "Sunday 14 February 2027" (EN) or "dimanche 14 février 2027" (FR). */
+export function formatLongDate(date: string, locale: Locale): string {
+  // Built on call (server pages only), so client bundles importing this module carry no new formatter.
+  return new Intl.DateTimeFormat(INTL_LOCALE[locale], { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(parseDate(date));
+}

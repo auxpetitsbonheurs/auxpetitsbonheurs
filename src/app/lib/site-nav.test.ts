@@ -1,6 +1,6 @@
 // S-242 AC1, AC3; S-244 AC9: the nav items, their order and the current-page rule.
 import { describe, expect, test } from "vitest";
-import { PLACEHOLDER_PAGES, SITE_NAV_ITEMS, currentNavKey } from "./site-nav";
+import { SITE_NAV_ITEMS, currentNavKey } from "./site-nav";
 
 describe("siteNavItems (S-242 AC1)", () => {
   test("seven items in the Owner's order with their routes", () => {
@@ -13,11 +13,6 @@ describe("siteNavItems (S-242 AC1)", () => {
       ["gallery", "/gallery"],
       ["contact", "/contact"],
     ]);
-  });
-
-  test("every page not built yet has a placeholder", () => {
-    // Contact us (S-251) and Custom order (S-252) have their own pages.
-    expect([...PLACEHOLDER_PAGES]).toEqual(["ourStory", "workshops", "gallery"]);
   });
 });
 

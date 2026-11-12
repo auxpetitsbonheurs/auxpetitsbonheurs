@@ -1,4 +1,4 @@
-import { CalendarCog, ChartColumn, ChevronRight, Images, type LucideIcon, Settings, UserRound, Users, UsersRound } from "lucide-react";
+import { CalendarCog, ChartColumn, ChevronRight, FileText, Images, type LucideIcon, Settings, UserRound, Users, UsersRound } from "lucide-react";
 import { Form, Link, useNavigation } from "react-router";
 import { AdminErrorBoundary } from "~/components/admin/admin-states";
 import { SubmitButton } from "~/components/ui/submit-button";
@@ -10,7 +10,7 @@ import type { Route } from "./+types/more";
 /** `admin/more` (FR-047): the places that do not fit in the bottom bar. */
 export const handle = { titleKey: "admin.nav.more" };
 
-const EVERYONE = ["gallery", "customers", "sales", "profile"] as const;
+const EVERYONE = ["pages", "gallery", "customers", "sales", "profile"] as const;
 const OWNER_ONLY = ["availability", "settings", "team"] as const;
 type MoreKey = (typeof EVERYONE)[number] | (typeof OWNER_ONLY)[number];
 
@@ -32,6 +32,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
 export const ErrorBoundary = AdminErrorBoundary;
 
 const ICONS: Record<MoreKey, LucideIcon> = {
+  pages: FileText,
   gallery: Images,
   customers: Users,
   sales: ChartColumn,

@@ -126,7 +126,8 @@
       "EMAIL_IN_USE": "Cette adresse e-mail a déjà un compte.",
       "INVITE_INVALID": "Cette invitation a expiré ou a déjà été utilisée. Demandez-en une nouvelle à la propriétaire.",
       "LAST_OWNER": "Il doit toujours y avoir une Propriétaire active. Nommez d'abord quelqu'un d'autre Propriétaire.",
-      "SETTINGS_CHANGED": "Quelqu'un a modifié ceci. Rechargez."
+      "SETTINGS_CHANGED": "Quelqu'un a modifié ceci. Rechargez.",
+      "PAGE_CHANGED": "Quelqu'un a modifié cette page. Rechargez."
     }
   },
   "product": {
@@ -351,7 +352,8 @@
       "settings": "Réglages",
       "team": "Équipe",
       "label": "Admin",
-      "toReview": "{{count}} à valider"
+      "toReview": "{{count}} à valider",
+      "pages": "Pages"
     },
     "states": {
       "ownerOnlyTitle": "Réservé aux propriétaires",
@@ -1109,6 +1111,103 @@
           "tooLong": "Le motif est trop long (200 caractères au plus)."
         }
       }
+    },
+    "pages": {
+      "title": "Pages",
+      "intro": "Modifiez les textes et les photos des pages du site. Les changements apparaissent sur le site en moins d'une minute.",
+      "listLabel": "Pages du site",
+      "names": {
+        "our_story": "Notre histoire",
+        "workshops": "Ateliers",
+        "gallery": "Galerie",
+        "contact": "Contact",
+        "custom_order": "Gâteau sur mesure"
+      },
+      "sample": "Texte d'exemple",
+      "edited": "Modifié {{when}} par {{name}}",
+      "editedNoName": "Modifié {{when}}",
+      "neverEdited": "Pas encore modifié",
+      "back": "Toutes les pages",
+      "viewPage": "Voir la page sur le site",
+      "notBuiltYet": "Cette page n'est pas encore sur le site. Ce que vous enregistrez ici s'affichera dès qu'elle y sera.",
+      "sampleTitle": "Encore du texte d'exemple",
+      "sampleBody": "Cette page affiche un texte d'exemple et les moteurs de recherche ne la référencent pas encore. Écrivez votre propre texte et enregistrez pour la publier.",
+      "fields": {
+        "intro": {
+          "label": "Introduction",
+          "hint": "Une ou deux phrases en haut de la page."
+        },
+        "body": {
+          "label": "Texte principal",
+          "hint": "Laissez une ligne vide entre les paragraphes. Texte simple uniquement."
+        },
+        "hours": {
+          "label": "Horaires d'ouverture",
+          "hint": "Par exemple une ligne par jour. Texte simple uniquement."
+        },
+        "pickup_note": {
+          "label": "Note sur le retrait",
+          "hint": "Comment et où les clients récupèrent leur commande."
+        }
+      },
+      "frEmpty": "Le français est vide : l'anglais s'affichera en français.",
+      "save": "Enregistrer la page",
+      "saving": "Enregistrement…",
+      "saved": "Enregistré",
+      "waitingPhoto": "En attente des photos…",
+      "changedBody": "Un autre admin a enregistré cette page après que vous l'avez ouverte, donc rien n'a été enregistré. Votre texte est toujours à l'écran : copiez ce dont vous avez besoin, puis rechargez pour voir sa version.",
+      "reload": "Recharger la page",
+      "errorSummaryTitle": "Vérifiez ces champs",
+      "contactSettings": {
+        "owner": "Le WhatsApp, le téléphone, l'adresse de retrait et le lien de carte se modifient dans Réglages.",
+        "ownerLink": "Ouvrir Réglages",
+        "admin": "Le WhatsApp, le téléphone, l'adresse de retrait et le lien de carte se modifient dans Réglages, par un Owner."
+      },
+      "galleryNote": "Les photos de la galerie se gèrent dans Galerie.",
+      "photos": {
+        "legend": "Photos",
+        "hint": "Jusqu'à {{max}}. Elles s'affichent dans cet ordre sur la page. Les photos sont réduites sur votre téléphone avant l'envoi.",
+        "listLabel": "Photos de la page, dans l'ordre",
+        "full": "Cette page a {{max}} photos, le maximum. Retirez-en une pour en ajouter une autre.",
+        "rejectedFull": "{{name}} n'a pas été ajoutée : cette page a au plus {{max}} photos.",
+        "alt": "Photo {{n}} : ce qu'elle montre",
+        "altHint": "Décrivez ce que montre la photo. Les clients qui ne la voient pas entendent ce texte.",
+        "removeTitle": "Retirer la photo {{n}} ?",
+        "removeBody": "Elle quitte la page quand vous enregistrez.",
+        "remove": "Retirer la photo",
+        "keep": "La garder",
+        "announceRemoved": "Photo {{n}} retirée. Il en reste {{count}}."
+      },
+      "event": {
+        "legend": "Prochain atelier",
+        "hint": "Facultatif. Remplissez-le quand un atelier est prévu. Laissez tout vide sinon : la page indique alors qu'aucun atelier n'est prévu. Il quitte aussi la page le lendemain de sa date.",
+        "title": "Titre de l'atelier",
+        "date": "Date",
+        "seats": "Places",
+        "seatsHint": "Combien de personnes peuvent participer, par exemple 10.",
+        "text": "Courte description",
+        "photo": "Photo de l'atelier",
+        "photoHint": "Facultative, une photo.",
+        "clear": "Effacer le prochain atelier",
+        "cleared": "Prochain atelier effacé. Enregistrez pour mettre la page à jour."
+      },
+      "errors": {
+        "tooLong": "{{field}} ({{language}}) : trop long. Raccourcissez à {{max}} caractères au plus.",
+        "missingEn": "{{field}} : écrivez d'abord le texte anglais. Le français seul n'est pas enregistré.",
+        "altRequired": "Photo {{n}} : décrivez ce que montre la photo (anglais).",
+        "altTooLong": "Photo {{n}} : la description est trop longue ({{max}} caractères au plus).",
+        "photosTooMany": "Trop de photos : cette page peut en avoir {{max}}. Retirez-en une.",
+        "photoRejected": "La photo {{n}} n'a pas pu être enregistrée. Retirez-la et ajoutez-la de nouveau.",
+        "photosRejected": "Une photo n'a pas pu être enregistrée. Retirez-la et ajoutez-la de nouveau.",
+        "eventTitleRequired": "Prochain atelier : ajoutez un titre, ou effacez le prochain atelier.",
+        "eventDateRequired": "Prochain atelier : choisissez la date.",
+        "eventDateInvalid": "Prochain atelier : choisissez une date valide.",
+        "eventSeats": "Prochain atelier : le nombre de places doit être un nombre entier de 1 à 500.",
+        "eventPhotoAlt": "Photo de l'atelier : décrivez ce que montre la photo (anglais).",
+        "eventPhotoRejected": "La photo de l'atelier n'a pas pu être enregistrée. Retirez-la et ajoutez-la de nouveau.",
+        "invalid": "Un élément du formulaire n'était pas correct. Rechargez la page et réessayez."
+      },
+      "textTitle": "Textes"
     }
   },
   "email": {
@@ -1146,11 +1245,6 @@
     "closeMenu": "Fermer le menu",
     "account": "Mon compte",
     "menuLinksTitle": "Toutes les pages"
-  },
-  "comingSoon": {
-    "body": "Nous préparons cette page. Elle arrive bientôt.",
-    "hint": "En attendant, découvrez notre collection et commandez en ligne.",
-    "collectionLink": "Voir notre collection"
   },
   "collection": {
     "title": "Notre collection",
@@ -1214,5 +1308,43 @@
     "cta": "Nous contacter sur WhatsApp",
     "greeting": "Bonjour, je voudrais un gâteau sur mesure.",
     "contactLink": "Voir tous les moyens de nous contacter"
+  },
+  "sitePages": {
+    "error": {
+      "title": "Cette page ne s'est pas chargée",
+      "body": "Vérifiez votre connexion et réessayez. Vous pouvez aussi nous écrire.",
+      "retry": "Réessayer",
+      "whatsapp": "Nous écrire sur WhatsApp"
+    },
+    "opensWhatsapp": "(ouvre WhatsApp)",
+    "ourStory": {
+      "title": "Notre histoire",
+      "metaDescription": "L'histoire d'Aux petits bonheurs, pâtisserie artisanale à Beau Bassin, Maurice.",
+      "collectionLink": "Voir notre collection"
+    },
+    "workshops": {
+      "title": "Ateliers",
+      "metaDescription": "Ateliers de décoration de gâteaux chez Aux petits bonheurs à Beau Bassin, Maurice : renseignez-vous sur le prochain.",
+      "nextTitle": "Prochain atelier",
+      "seats_one": "{{count}} place",
+      "seats_other": "{{count}} places",
+      "noneTitle": "Aucun atelier prévu pour le moment",
+      "noneBody": "Suivez-nous ou écrivez-nous pour connaître le prochain.",
+      "ask": "Poser une question sur les ateliers sur WhatsApp",
+      "whatsappMessage": "Bonjour, j'aimerais en savoir plus sur vos ateliers.",
+      "call": "Nous appeler au sujet des ateliers : {{phone}}",
+      "contactLink": "Nous contacter"
+    },
+    "gallery": {
+      "title": "Galerie",
+      "metaDescription": "Photos de gâteaux et desserts faits par Aux petits bonheurs, pâtisserie artisanale à Beau Bassin, Maurice.",
+      "empty": "Photos bientôt disponibles.",
+      "emptyBody": "En attendant, découvrez tout ce que nous préparons dans notre collection.",
+      "collectionLink": "Voir notre collection",
+      "whatsapp": "Nous écrire sur WhatsApp",
+      "showMore": "Voir plus de photos",
+      "listLabel": "Photos",
+      "photoAlt": "Un gâteau d'Aux petits bonheurs"
+    }
   }
 }
