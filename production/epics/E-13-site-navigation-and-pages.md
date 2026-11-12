@@ -104,3 +104,6 @@ Rationale: page content is like the menu and gallery (Admin allowed); contact de
 6. Contact hours are free text per language. The map link shows only when Settings has one.
 7. Overlaps accepted as proposed (S-064, S-070, S-069). Gallery ships with its empty state; S-054/S-055 are not pulled forward.
 8. Pages that still hold placeholder text are noindex and stay out of the sitemap until edited.
+
+## Workshops: what they are (Owner, 2026-11-12)
+Occasional event workshops, run when there's an occasion. Example: for Valentine's Day the bakery prepares 10 cakes and invites 10 couples to come and decorate their own cake together. Limited seats, a set date, held at the bakery. The booking format (form, WhatsApp or paid tickets) is still to be decided. For now S-249 is an info page that explains the concept, shows the next event when there is one (otherwise "No workshop planned right now, follow us or message us to hear about the next one"), and has a WhatsApp call to action. A future epic may add events with dates, seats and booking.

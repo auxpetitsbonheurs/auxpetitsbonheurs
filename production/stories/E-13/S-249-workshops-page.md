@@ -26,3 +26,6 @@ As a customer, I want to learn what baking workshops the bakery offers, so that 
 - Information page only, by Owner decision. If booking arrives later it is a new story (request form or paid tickets).
 - Use the existing WhatsApp link builder used by the footer (S-061); do not hand-build URLs.
 - Depends on: S-245, S-248 (`SitePageView`).
+
+## Owner clarification (2026-11-12)
+Workshops are occasional event workshops, for example a Valentine's Day session with 10 couples decorating 10 pre-baked cakes together, each with a date and limited seats. The page explains the concept and has an optional "next workshop" block (title, date, seats, short text, photo) that the client edits in admin, with a calm empty state when nothing is planned. The call to action is WhatsApp. Online booking is out of scope here (future epic).
