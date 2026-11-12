@@ -395,7 +395,15 @@
         "sold_out": "{{name}} is marked sold out.",
         "hidden": "{{name}} is hidden from customers."
       },
-      "statusFailed": "{{name}} was not changed. {{reason}}"
+      "statusFailed": "{{name}} was not changed. {{reason}}",
+      "delete": "Delete…",
+      "deleteTitle": "Delete {{name}}?",
+      "deleteBody": "It leaves the menu for good. Past orders keep its name, options and prices.",
+      "deleteRecommend": "To take it off the menu for now, hide it instead: you can show it again any time.",
+      "hideInstead": "Hide instead",
+      "deleteConfirm": "Delete for good",
+      "deleted": "{{name}} deleted.",
+      "deleteFailed": "The product was not deleted. {{reason}}"
     },
     "product": {
       "newTitle": "New product",

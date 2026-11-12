@@ -51,6 +51,6 @@ describe("dispatch (AC4)", () => {
   });
 
   test("keepAlive, the missing-integrations check and the rate-limit purge run on every hourly tick", () => {
-    expect(JOBS.map((job) => job.name)).toEqual(["keepAlive", "integrations", "purgeRateLimits"]);
+    expect(JOBS.map((job) => job.name)).toEqual(["keepAlive", "integrations", "purgeRateLimits", "purgeStorage"]);
   });
 });

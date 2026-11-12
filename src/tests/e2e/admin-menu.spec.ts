@@ -335,3 +335,80 @@ test.describe("S-043 hide or mark sold out", () => {
     });
   }
 });
+
+async function openDelete(page: Page, name: string) {
+  await (await openActions(page, name)).getByRole("button", { name: "Delete…" }).click();
+  const dialog = page.getByRole("dialog", { name: `Delete ${name}?` });
+  await expect(dialog).toBeVisible();
+  return dialog;
+}
+
+test.describe("S-045 delete a product", () => {
+  test("AC2: the dialog names the product and recommends Hide instead; Delete needs its own press", async ({ page, db }) => {
+    const product = await createProduct(db);
+    await signIn(page, E2E_ACCOUNTS.helper, "/admin/menu");
+    await hydrated(page);
+
+    const dialog = await openDelete(page, product.name);
+    await expect(dialog).toContainText("hide it instead");
+    await expect(dialog.getByRole("button", { name: "Hide instead" })).toBeVisible();
+    await expect(rowOf(page, product.name)).toHaveCount(1); // nothing deleted by the first press
+
+    await dialog.getByRole("button", { name: "Delete for good" }).click();
+
+    await expect(page.getByRole("status").filter({ hasText: `${product.name} deleted.` })).toBeVisible();
+    await expect(page.getByRole("link", { name: product.name })).toHaveCount(0);
+    await expect(page.locator("#main")).toBeFocused(); // its row (the trigger) is gone
+    await page.reload();
+    await expect(page.getByRole("link", { name: product.name })).toHaveCount(0);
+    expect((await page.request.get(`/menu/${product.slug}`)).status()).toBe(404);
+  });
+
+  test("AC2: Hide instead hides it and keeps it", async ({ page, db }) => {
+    const product = await createProduct(db);
+    await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu");
+    await hydrated(page);
+
+    await (await openDelete(page, product.name)).getByRole("button", { name: "Hide instead" }).click();
+
+    await expect(rowOf(page, product.name)).toContainText("Hidden");
+    await expect(page.getByRole("status").filter({ hasText: "is hidden from customers" })).toBeVisible();
+  });
+
+  test("AC7: focus is trapped in the dialog, Esc closes it and focus returns; 44 px targets at 100% and 200%; destructive button has words and an icon", async ({ page, db }) => {
+    const product = await createProduct(db);
+    await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu");
+    await hydrated(page);
+    const dialog = await openDelete(page, product.name);
+    for (let i = 0; i < 6; i += 1) {
+      await page.keyboard.press("Tab");
+      expect(await dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true);
+    }
+    for (const zoom of [1, 2]) {
+      await withZoom(page, zoom, async () => {
+        await expectNoHorizontalScroll(page);
+        await expectTapTargets(page);
+      });
+    }
+    const destructive = dialog.getByRole("button", { name: "Delete for good" });
+    await expect(destructive.locator("svg")).toHaveCount(1);
+
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(page.getByRole("link", { name: product.name })).toBeVisible();
+    // The sheet that opened the dialog has closed, so focus returns to the page (not lost on a removed node).
+    expect(await page.evaluate(() => document.activeElement && document.activeElement !== document.body)).toBe(true);
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`AC7: the dialog has no serious or critical axe violations in ${colorScheme} mode, at 100% and 200%`, async ({ page, db }) => {
+      const product = await createProduct(db);
+      await page.emulateMedia({ colorScheme });
+      await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu");
+      await hydrated(page);
+      await openDelete(page, product.name);
+      await expectNoA11yViolations(page);
+      await expectNoA11yViolations(page, { zoom: 2 });
+    });
+  }
+});

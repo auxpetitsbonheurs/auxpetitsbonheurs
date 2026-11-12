@@ -395,7 +395,15 @@
         "sold_out": "{{name}} est marqué épuisé.",
         "hidden": "{{name}} est masqué pour les clients."
       },
-      "statusFailed": "{{name}} n'a pas été modifié. {{reason}}"
+      "statusFailed": "{{name}} n'a pas été modifié. {{reason}}",
+      "delete": "Supprimer…",
+      "deleteTitle": "Supprimer {{name}} ?",
+      "deleteBody": "Il quitte la carte définitivement. Les commandes passées gardent son nom, ses options et ses prix.",
+      "deleteRecommend": "Pour le retirer de la carte pour l'instant, masquez-le plutôt : vous pourrez l'afficher à nouveau à tout moment.",
+      "hideInstead": "Masquer plutôt",
+      "deleteConfirm": "Supprimer définitivement",
+      "deleted": "{{name}} supprimé.",
+      "deleteFailed": "Le produit n'a pas été supprimé. {{reason}}"
     },
     "product": {
       "newTitle": "Nouveau produit",

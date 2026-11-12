@@ -269,3 +269,56 @@ describe("who may change a status (S-043 AC7)", () => {
     expect(await statusOf(id)).toBe("available");
   });
 });
+
+// ----- S-045: delete -----
+
+describe("delete (S-045 AC5)", () => {
+  test("answers { ok, id } and the product is gone from the list", async () => {
+    const id = await insertProduct(database.db);
+
+    expect(await post({ intent: "delete", id })).toEqual({ ok: true, id });
+    expect((await load()).byType.cake).toEqual([]);
+  });
+
+  test("an unknown id is NOT_FOUND and nothing changes", async () => {
+    const id = await insertProduct(database.db);
+
+    const refused = (await post({ intent: "delete", id: "7d1f0c9e-1111-4222-8333-944455566677" })) as Refusal;
+
+    expect(refused.init.status).toBe(404);
+    expect(refused.data.error.code).toBe("NOT_FOUND");
+    expect(await statusOf(id)).toBe("available");
+  });
+
+  test("an anonymous caller is redirected to sign in; nothing is deleted", async () => {
+    const id = await insertProduct(database.db);
+
+    const refused = await caught(() => post({ intent: "delete", id }, { auth: new FakeAuth() }));
+
+    expect(refused.headers.get("Location")).toBe("/admin/login?next=%2Fadmin%2Fmenu");
+    expect(await statusOf(id)).toBe("available");
+  });
+
+  test("a customer session is refused with 403; nothing is deleted", async () => {
+    const id = await insertProduct(database.db);
+    const auth = new FakeAuth();
+    const customer = await insertCustomerAccount(database, auth);
+    const cookie = auth.sessionCookie(customer.id, new Date("2026-11-09T08:00:00Z"));
+
+    const refused = (await caught(() => post({ intent: "delete", id }, { auth, cookie }))) as Response & { init?: { status: number } };
+
+    expect(refused.init?.status ?? refused.status).toBe(403);
+    expect(await statusOf(id)).toBe("available");
+  });
+
+  test("a Storage failure still deletes and queues the photo files (S-045 AC6)", async () => {
+    const id = await insertProduct(database.db);
+    await database.client.query("update product_photo set storage_path = 'products/x/a.webp' where product_id = $1", [id]);
+    const failing = { remove: async () => Promise.reject(new Error("storage remove answered 503")) };
+
+    const result = await action(routeArgs(database, { path: "/admin/menu", auth: session.auth, cookie: session.cookie, form: { intent: "delete", id }, storage: failing }) as never);
+
+    expect(result).toEqual({ ok: true, id });
+    expect((await database.client.query("select path from storage_purge")).rows).toEqual([{ path: "products/x/a.webp" }]);
+  });
+});

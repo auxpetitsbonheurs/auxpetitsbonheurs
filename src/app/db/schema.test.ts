@@ -22,8 +22,14 @@ describe("schema invariants (docs/architecture/data-model.md)", () => {
     expect(withoutRls.map((c) => c.name)).toEqual([]);
   });
 
-  test("the schema has exactly 24 tables (S-004: product_slug_history included before 0000)", () => {
-    expect(tables).toHaveLength(24);
+  test("the schema has exactly 25 tables (24 in 0000, incl. product_slug_history; storage_purge added by 0003, S-045)", () => {
+    expect(tables).toHaveLength(25);
+  });
+
+  test("storage_purge queues objects by bucket and path, with RLS (S-045 AC6)", () => {
+    const queue = config("storage_purge");
+    expect(queue.primaryKeys[0]?.columns.map((c) => c.name)).toEqual(["bucket", "path"]);
+    expect(queue.enableRLS).toBe(true);
   });
 
   test("product_slug_history keeps old slugs, cascades with the product and has RLS", () => {

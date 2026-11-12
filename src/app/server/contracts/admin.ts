@@ -71,6 +71,7 @@ export function decodeCursor(raw: string | null): number | null {
 /** `admin/menu` row actions (S-043 setStatus, S-045 delete). */
 export const MenuActionInput = z.discriminatedUnion("intent", [
   z.object({ intent: z.literal("setStatus"), id: Uuid, status: z.enum(PRODUCT_STATUSES) }),
+  z.object({ intent: z.literal("delete"), id: Uuid }),
 ]);
 
 // ---------------------------------------------------------------------------

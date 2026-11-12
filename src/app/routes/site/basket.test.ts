@@ -88,6 +88,20 @@ describe("basket page (S-012 AC1)", () => {
     expect(data.itemsTotalRs).toBe(0);
   });
 
+  test("a product the admin then deletes shows as unavailable (no name to show) and leaves the total (S-045 AC4)", async () => {
+    const cake = await insertProduct(database.db);
+    const other = await insertProduct(database.db, { slug: "lemon", nameEn: "Lemon cake" });
+    const admin = await signedInAdmin(database);
+    const cookie = cookieWith([{ lineId: "a", productId: cake, quantity: 1 }, { lineId: "b", productId: other, quantity: 1 }]);
+
+    await adminMenuAction(routeArgs(database, { path: "/admin/menu", auth: admin.auth, cookie: admin.cookie, form: { intent: "delete", id: cake } }) as never);
+
+    const data = await load(cookie);
+    expect(data.lines.map((l) => [l.lineId, l.problem])).toEqual([["a", "hidden"], ["b", null]]);
+    expect(data.goneNames[cake]).toBeUndefined();
+    expect(data.itemsTotalRs).toBe(850);
+  });
+
   test("an empty basket has no lines", async () => {
     const data = await load();
 

@@ -1,4 +1,4 @@
-import { CakeSlice, Ellipsis, LoaderCircle, Plus } from "lucide-react";
+import { CakeSlice, Ellipsis, EyeOff, LoaderCircle, Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, isRouteErrorResponse, useFetcher, useRevalidator, useRouteError } from "react-router";
 import { AdminErrorBoundary } from "~/components/admin/admin-states";
@@ -21,7 +21,9 @@ import { requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { type AdminMenuRow, listAdminMenu } from "~/server/repos/admin-menu.server";
 import { timed } from "~/server/server-timing.server";
+import { deleteProduct } from "~/server/services/delete-product.server";
 import { setProductStatus } from "~/server/services/product-status.server";
+import { storageContext } from "~/server/storage.server";
 import type { Route } from "./+types/menu";
 
 /** `admin/menu` (FR-061): every product by type, with its row actions. */
@@ -42,14 +44,20 @@ export async function loader(args: Route.LoaderArgs) {
 
 /**
  * `admin/menu` actions (contracts.md): `setStatus { id, status }` → `{ ok, id, status }`
- * (S-043). Unknown id NOT_FOUND; bad input VALIDATION_FAILED; offering a product with no
- * photo VALIDATION_FAILED `fields.status`.
+ * (S-043); `delete { id }` → `{ ok, id }` (S-045). Unknown id NOT_FOUND; bad input
+ * VALIDATION_FAILED; offering a product with no photo VALIDATION_FAILED `fields.status`.
  */
 export async function action(args: Route.ActionArgs) {
   const me = await requireAdmin(args);
   const input = MenuActionInput.safeParse(Object.fromEntries(await args.request.formData()));
   if (!input.success) return actionError("VALIDATION_FAILED", me.locale);
   const db = args.context.get(requestDbContext).db;
+  if (input.data.intent === "delete") {
+    const deleted = await deleteProduct(db, args.context.get(storageContext), input.data.id);
+    if (!deleted.ok) return actionError(deleted.code, me.locale);
+    console.log(JSON.stringify({ level: "info", event: "product_deleted", id: deleted.id, photosQueued: deleted.photosQueued, actorRole: me.role }));
+    return { ok: true as const, id: deleted.id };
+  }
   const context = { adminId: me.id, now: args.context.get(clockContext).now() };
   const result = await setProductStatus(db, input.data, context);
   if (!result.ok) {
@@ -228,7 +236,7 @@ function StatusButtons({ row, onDone }: { row: AdminMenuRow; onDone: () => void 
   ));
 }
 
-function RowActions({ row, onClose }: { row: AdminMenuRow | null; onClose: () => void }) {
+function RowActions({ row, onClose, onDelete }: { row: AdminMenuRow | null; onClose: () => void; onDelete: (row: AdminMenuRow) => void }) {
   const { t, locale } = useI18n();
   const name = row ? localized(row.name, locale) : "";
   return (
@@ -241,15 +249,112 @@ function RowActions({ row, onClose }: { row: AdminMenuRow | null; onClose: () =>
             </Button>
           </li>
           <StatusButtons row={row} onDone={onClose} />
+          <li className="mt-4">
+            {/* Destructive in the sheet: outline in danger with an icon (filled only in the confirm dialog). */}
+            <Button type="button" variant="outline" className="w-full border-destructive text-destructive" onClick={() => onDelete(row)}>
+              <Trash2 aria-hidden="true" />
+              {t("admin.menu.delete")}
+            </Button>
+          </li>
         </ul>
       )}
     </Modal>
   );
 }
 
+/**
+ * Delete confirmation (S-045 AC2): names the product, recommends Hide instead, and deletes
+ * only on its own explicit button (the second press after the sheet's Delete).
+ */
+function DeleteDialog({ row, onClose, onConfirm }: { row: AdminMenuRow | null; onClose: () => void; onConfirm: (row: AdminMenuRow) => void }) {
+  const { t, locale } = useI18n();
+  // After a confirmed delete the trigger's row is leaving: focus goes to the page instead.
+  const confirmed = useRef(false);
+  const hider = useFetcher<StatusResult>({ key: statusKey(row?.id ?? "none") });
+  const name = row ? localized(row.name, locale) : "";
+  return (
+    <Modal
+      open={row !== null}
+      onClose={onClose}
+      title={t("admin.menu.deleteTitle", { name })}
+      closeLabel={t("admin.states.close")}
+      variant="dialog"
+      returnFocusTo={() => {
+        const deleted = confirmed.current;
+        confirmed.current = false;
+        return deleted ? "main" : null;
+      }}
+    >
+      {row && (
+        <>
+          <p>{t("admin.menu.deleteBody")}</p>
+          <p className="mt-2 font-semibold">{t("admin.menu.deleteRecommend")}</p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            {row.status !== "hidden" && (
+              <Button
+                type="button"
+                onClick={() => {
+                  void hider.submit({ intent: "setStatus", id: row.id, status: "hidden" }, { method: "post", action: "/admin/menu" });
+                  onClose();
+                }}
+              >
+                <EyeOff aria-hidden="true" />
+                {t("admin.menu.hideInstead")}
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                confirmed.current = true;
+                onConfirm(row);
+              }}
+            >
+              <Trash2 aria-hidden="true" />
+              {t("admin.menu.deleteConfirm")}
+            </Button>
+          </div>
+        </>
+      )}
+    </Modal>
+  );
+}
+
+type DeleteResult = { ok: true; id: string } | { ok: false; error: { message: string } };
+
+/**
+ * One delete at a time. The row leaves at once (optimistic) and a toast confirms; a refusal
+ * brings the row back and says so in a toast that stays.
+ */
+function useDelete() {
+  const { t, locale } = useI18n();
+  const fetcher = useFetcher<DeleteResult>({ key: "menu-delete" });
+  const names = useRef(new Map<string, string>());
+  const handled = useRef<unknown>(null);
+  useEffect(() => {
+    const result = fetcher.data;
+    if (fetcher.state !== "idle" || !result || handled.current === result) return;
+    handled.current = result;
+    if (result.ok) showToast(t("admin.menu.deleted", { name: names.current.get(result.id) ?? "" }));
+    else showToast(t("admin.menu.deleteFailed", { reason: result.error.message }), "error");
+  });
+  const pending = fetcher.state !== "idle" ? String(fetcher.formData?.get("id") ?? "") : null;
+  const done = fetcher.state === "idle" && fetcher.data?.ok ? fetcher.data.id : null;
+  return {
+    goneId: pending ?? done,
+    remove: (row: AdminMenuRow) => {
+      // Kept for the toast: once deleted, the row is no longer in the loader data.
+      names.current.set(row.id, localized(row.name, locale));
+      void fetcher.submit({ intent: "delete", id: row.id }, { method: "post", action: "/admin/menu" });
+    },
+  };
+}
+
 export default function AdminMenu({ loaderData }: Route.ComponentProps) {
   const { t } = useI18n();
   const [selected, setSelected] = useState<AdminMenuRow | null>(null);
+  const [toDelete, setToDelete] = useState<AdminMenuRow | null>(null);
+  const { goneId, remove } = useDelete();
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -262,9 +367,24 @@ export default function AdminMenu({ loaderData }: Route.ComponentProps) {
         </Button>
       </div>
       {PRODUCT_TYPES.map((type) => (
-        <TypeGroup key={type} type={type} rows={loaderData.byType[type]} onActions={setSelected} />
+        <TypeGroup key={type} type={type} rows={loaderData.byType[type].filter((row) => row.id !== goneId)} onActions={setSelected} />
       ))}
-      <RowActions row={selected} onClose={() => setSelected(null)} />
+      <RowActions
+        row={selected}
+        onClose={() => setSelected(null)}
+        onDelete={(row) => {
+          setSelected(null);
+          setToDelete(row);
+        }}
+      />
+      <DeleteDialog
+        row={toDelete}
+        onClose={() => setToDelete(null)}
+        onConfirm={(row) => {
+          setToDelete(null);
+          remove(row);
+        }}
+      />
     </>
   );
 }

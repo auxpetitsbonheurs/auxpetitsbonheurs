@@ -154,6 +154,7 @@ Every outbound `fetch` uses `AbortSignal.timeout` (Resend 8 s, push 5 s, Turnsti
 | `expireQuotes` | every tick | `quote_sent` with `quote_expires_on < today(MU)` → `closed` (versioned update), event, "Quote closed" email, push to admins | FR-032 |
 | `pendingAlerts` | every tick | website orders `pending_approval` created > 24 h ago with `pending_alert_sent_at` NULL → set marker, push once | FR-075 |
 | `eveningReminder` | first tick from the `settings.evening_reminder_at` hour until 21:00, `job_run(evening_reminder, date)` | push tomorrow's *confirmed* count (approved..completed, as the prep list) + prep-list link; skipped when 0 | FR-072 |
+| `purgeStorage` | every tick | retries Storage removals queued in `storage_purge` (photos of deleted products) | FR-061 (S-045) |
 | `purge` | 03:00 | rate-limit buckets, sent outbox > 90 d, orphan uploads > 24 h, request photos past retention | data-model retention |
 Promotions need no job: "live" is computed at read time (FR-016). Cloudflare free cron cannot be paused per job, so the dispatcher logs each job's outcome to Workers Logs and Sentry Cron Monitors (free tier) watches `keepAlive`.
 

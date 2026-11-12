@@ -79,6 +79,23 @@ export const rateLimitBucket = pgTable(
   (t) => [primaryKey({ columns: [t.key, t.windowStart] })],
 ).enableRLS();
 
+/**
+ * Storage objects whose removal failed (S-045 AC6: a deleted product's photos). The hourly
+ * `purgeStorage` job retries them; a row goes once its object is gone. No foreign keys:
+ * the rows that referenced these objects no longer exist.
+ */
+export const storagePurge = pgTable(
+  "storage_purge",
+  {
+    bucket: text("bucket").notNull(),
+    path: text("path").notNull(),
+    attempts: smallint("attempts").notNull().default(0),
+    lastError: text("last_error"),
+    createdAt: timestamp("created_at", tz).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.bucket, t.path] })],
+).enableRLS();
+
 /** Once-only guard for cron jobs: INSERT ... ON CONFLICT DO NOTHING. */
 export const jobRun = pgTable(
   "job_run",

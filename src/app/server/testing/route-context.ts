@@ -7,6 +7,7 @@ import type { TestDatabase } from "~/db/testing/pglite";
 import { clockContext } from "~/server/clock.server";
 import { type RequestDb, requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
+import { type StorageGateway, storageContext } from "~/server/storage.server";
 import { FakeAuth } from "./fake-auth";
 
 export const TEST_SUPABASE_URL = "https://storage.test";
@@ -21,7 +22,11 @@ export interface RouteArgsOptions {
   /** The POST's Origin header; defaults to the site's own, `null` leaves it out. */
   origin?: string | null;
   headers?: Record<string, string>;
+  /** Storage double; defaults to one that accepts every removal. */
+  storage?: StorageGateway | null;
 }
+
+const acceptingStorage: StorageGateway = { remove: async () => {} };
 
 export function routeArgs(database: TestDatabase, options: RouteArgsOptions) {
   const url = new URL(options.path, "http://localhost");
@@ -37,6 +42,7 @@ export function routeArgs(database: TestDatabase, options: RouteArgsOptions) {
   context.set(clockContext, { now: () => now });
   context.set(authContext, (options.auth ?? new FakeAuth()).gateway(request, () => now));
   context.set(publicConfigContext, { supabaseUrl: TEST_SUPABASE_URL, supabaseAnonKey: "test-anon-key" });
+  context.set(storageContext, options.storage === undefined ? acceptingStorage : options.storage);
   return { request, url, params: options.params ?? {}, context, pattern: "" };
 }
 
