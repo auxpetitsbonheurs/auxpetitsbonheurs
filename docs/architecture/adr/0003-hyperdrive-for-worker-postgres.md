@@ -250,3 +250,8 @@ UX review (ux-lead): same content, focus and URL; refresh and Back behave as bef
 left-out notice (AC41) comes from the signed names first and from `apb_left_out` after.
 
 Rollback: revert the commit; cookies already set are ignored and expire within 10 minutes.
+
+## Amendment 4 (2026-11-12): Hyperdrive on for staging
+The Owner pointed the staging Hyperdrive config at the Supabase **session pooler (port 5432)** and turned **query caching off**. Deploy 43250574974 confirmed it ("Hyperdrive origin: Supabase session pooler, port 5432; query caching off"). With the node-postgres driver (amendment 3), probes of /api/menu, a product page and /healthz all returned 200 with no hangs.
+Decision: staging deploys use Hyperdrive by default, both the automatic deploys after CI and manual runs, where untick `hyperdrive` to fall back to DATABASE_URL. Production stays off (PRODUCTION_HYPERDRIVE_ID empty) until staging has run cleanly through a sprint. Production must then use the same origin type and caching off.
+Rejected: the transaction pooler (6543) as origin (it caused the earlier hangs), and Hyperdrive caching (it could show order and tracking data up to a minute old).
