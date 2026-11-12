@@ -70,3 +70,6 @@
 - Code check done: supabase-js 2.119 and @supabase/ssr 0.12 accept the new keys, and nothing verifies JWTs with the legacy JWT secret. `storage.server.ts` sends the key as both `apikey` and `Authorization: Bearer`, which the gateway accepts when the two match. Confirm with the first seed-menu run on staging that uses an `sb_secret_` key.
 - Production must start on the new keys.
 - 2026-11-12: Owner swapped the staging Cloudflare keys to the new format; GitHub STAGING_SUPABASE_SERVICE_ROLE_KEY uses sb_secret_ (seed-menu green).
+
+## Order-dependent unit tests (added 2026-11-12)
+- `db.server.test.ts` ("a transaction that throws midway") and `supabase-auth.server.test.ts` ("…memoised") pass only in file order; they fail with `--sequence.shuffle --sequence.seed=4242`, on main too. Make each test set up its own state. Found by the CI speed-up work.
