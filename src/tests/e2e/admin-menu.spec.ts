@@ -80,9 +80,12 @@ test.describe("S-041 menu list", () => {
     // Tabs through the whole shared menu twice; it grows with every spec's products (timed out
     // once at 30 s under the full parallel suite), so it gets the slow-test budget.
     test.slow();
-    await createProduct(db, { name: "A cake with a rather long name to wrap on small phones", status: "sold_out" });
+    const long = await createProduct(db, { name: "A cake with a rather long name to wrap on small phones", status: "sold_out" });
     await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu");
     await hydrated(page);
+    // Sign-in lands by a client navigation: the URL changes before the (long) list has
+    // rendered, and Tab presses during that render lost focus on CI. Wait for the list.
+    await expect(page.getByRole("link", { name: long.name })).toBeVisible();
     for (const zoom of [1, 2]) {
       await withZoom(page, zoom, async () => {
         await expectNoHorizontalScroll(page);
@@ -1157,6 +1160,7 @@ test.describe("S-051 preview as a customer", () => {
     const product = await createProduct(db, { name: "A preview cake with a rather long name to wrap", status: "hidden" });
     await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}/preview`);
     await hydrated(page);
+    await expect(page.getByRole("heading", { level: 1, name: product.name })).toBeVisible();
     for (const zoom of [1, 2]) {
       await withZoom(page, zoom, async () => {
         await expectNoHorizontalScroll(page);
