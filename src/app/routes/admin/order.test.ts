@@ -141,6 +141,17 @@ describe("approve intent", () => {
 });
 
 describe("activity log (S-018 AC1, AC2, AC5)", () => {
+  /**
+   * The created event is stamped by the database clock (real time), the approval by the test
+   * clock (12 Nov 10:05 UTC): pin the created event before it, so the order does not depend
+   * on what time the suite runs.
+   */
+  async function placedBeforeApproval() {
+    const id = await placed();
+    await database.client.query("update order_event set created_at = '2026-11-12T09:00:00Z' where order_id = $1", [id]);
+    return id;
+  }
+
   test("a new order shows the one created line (AC5)", async () => {
     const id = await placed();
 
@@ -152,7 +163,7 @@ describe("activity log (S-018 AC1, AC2, AC5)", () => {
   });
 
   test("created by the customer, then approved by Sarah on 12 Nov at 14:05 Mauritius time, oldest first (AC1)", async () => {
-    const id = await placed();
+    const id = await placedBeforeApproval();
     await action(
       routeArgs(database, { path: `/admin/orders/${id}`, params: { id }, auth: session.auth, cookie: session.cookie, form: { intent: "approve", version: "1" }, now: "2026-11-12T10:05:00Z" }) as never,
     );
@@ -165,7 +176,7 @@ describe("activity log (S-018 AC1, AC2, AC5)", () => {
 
   test("in French the labels are French and the time is still Mauritius time (AC2)", async () => {
     const french = await signedInAdmin(database, { name: "Amélie", locale: "fr" });
-    const id = await placed();
+    const id = await placedBeforeApproval();
     await action(
       routeArgs(database, { path: `/admin/orders/${id}`, params: { id }, auth: french.auth, cookie: french.cookie, form: { intent: "approve", version: "1" }, now: "2026-11-12T10:05:00Z" }) as never,
     );
