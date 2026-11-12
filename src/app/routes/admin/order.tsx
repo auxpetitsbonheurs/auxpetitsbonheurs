@@ -18,7 +18,7 @@ import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
 import { findAdminOrder } from "~/server/repos/admin-orders.server";
 import { type OrderEventView, listOrderEvents } from "~/server/repos/order-events.server";
-import { getCheckoutSettings } from "~/server/repos/settings.server";
+import { getSiteSettings } from "~/server/repos/settings.server";
 import { approveOrder } from "~/server/services/approve-order.server";
 import type { Route } from "./+types/order";
 
@@ -47,7 +47,8 @@ export async function loader(args: Route.LoaderArgs) {
   const db = args.context.get(requestDbContext).db;
   const order = await findAdminOrder(db, id.data);
   if (!order) throw data(null, { status: 404 });
-  const { orderNumberPrefix } = await getCheckoutSettings(db);
+  // Display only: the prefix comes from the per-isolate Settings cache (usually no query).
+  const { orderNumberPrefix } = (await getSiteSettings(db)).checkout;
   const number = formatOrderNumber(orderNumberPrefix, order.number);
   const { contactName, contactPhone, contactEmail, createdAt, ...rest } = order;
   return {

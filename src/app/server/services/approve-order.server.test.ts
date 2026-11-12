@@ -114,3 +114,16 @@ describe("one transaction (S-018 AC4)", () => {
     expect(await rows("select id from order_event where order_id = $1 and type = 'approved'")).toHaveLength(1);
   });
 });
+
+describe("one database round trip (ADR-0003 amendment 3)", () => {
+  test("an approval and a refusal each cost exactly one statement", async () => {
+    let queries = 0;
+    const query = database.client.query.bind(database.client);
+    database.client.query = (async (...args: Parameters<typeof query>) => (queries++, query(...args))) as typeof database.client.query;
+
+    expect(await approve(1)).toMatchObject({ ok: true });
+    expect(queries).toBe(1);
+    expect(await approve(1)).toEqual({ ok: false, code: "ORDER_CHANGED" });
+    expect(queries).toBe(2);
+  });
+});

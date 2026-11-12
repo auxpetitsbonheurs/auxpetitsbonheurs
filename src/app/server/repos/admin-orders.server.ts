@@ -1,8 +1,8 @@
 // Order reads for the admin app (contracts.md `admin/orders`, `admin/order`). Lists are
 // keyset-paginated on the gap-free order number (oldest first for the review queue), which is unique and
 // increases with creation, so a cursor never skips or repeats a row.
-import { and, asc, eq, gt, inArray } from "drizzle-orm";
-import { type LocalizedText, type TimeWindow, orderItem, orders } from "~/db/schema";
+import { and, asc, eq, getTableName, gt, inArray, sql } from "drizzle-orm";
+import { type LocalizedText, type OrderItemOption, type TimeWindow, orderItem, orders } from "~/db/schema";
 import type { OrderStatus } from "~/domain/status";
 import type { Locale } from "~/lib/locale";
 import type { Executor } from "~/server/db.server";
@@ -105,9 +105,18 @@ export interface AdminOrder extends AdminOrderRow {
   items: AdminOrderItem[];
 }
 
-/** The full order for the admin order screen. */
+type ItemJson = { nameEn: string; nameFr: string | null; quantity: number; unitPriceRs: number; lineTotalRs: number; options: OrderItemOption[]; cakeMessage: string | null };
+
+/** The order's items in their order, aggregated in the same statement (one round trip, ADR-0003 amendment 3). */
+const itemsJson = sql<ItemJson[] | string>`coalesce((
+  select json_agg(json_build_object('nameEn', i.name_en, 'nameFr', i.name_fr, 'quantity', i.quantity, 'unitPriceRs', i.unit_base_price_rs,
+    'lineTotalRs', i.line_total_rs, 'options', i.options, 'cakeMessage', i.cake_message) order by i.sort_order)
+  from ${orderItem} i where i.order_id = ${sql.raw(`"${getTableName(orders)}"."id"`)}
+), '[]'::json)`;
+
+/** The full order for the admin order screen, with its items, in one query. */
 export async function findAdminOrder(db: Executor, id: string): Promise<AdminOrder | undefined> {
-  const [order] = await db
+  const [row] = await db
     .select({
       ...summaryColumns,
       contactPhone: orders.contactPhone,
@@ -119,11 +128,23 @@ export async function findAdminOrder(db: Executor, id: string): Promise<AdminOrd
       customerNote: orders.customerNote,
       locale: orders.locale,
       createdAt: orders.createdAt,
+      items: itemsJson,
     })
     .from(orders)
     .where(eq(orders.id, id))
     .limit(1);
-  if (!order) return undefined;
-  const items = (await itemsOfOrders(db, [id])).get(id) ?? [];
-  return { ...order, items };
+  if (!row) return undefined;
+  const { items, ...order } = row;
+  const parsed = typeof items === "string" ? (JSON.parse(items) as ItemJson[]) : items;
+  return {
+    ...order,
+    items: parsed.map((item) => ({
+      name: item.nameFr ? { en: item.nameEn, fr: item.nameFr } : { en: item.nameEn },
+      quantity: item.quantity,
+      unitPriceRs: item.unitPriceRs,
+      lineTotalRs: item.lineTotalRs,
+      options: item.options.flatMap((option) => (option.choice ? [{ label: option.choice }] : [])),
+      cakeMessage: item.cakeMessage,
+    })),
+  };
 }
