@@ -93,7 +93,8 @@ describe("wrong, unknown and malformed tokens (S-016 AC3)", () => {
     const selects = vi.fn();
     const db = new Proxy(database.db, {
       get(target, key, receiver) {
-        if (key === "select") selects();
+        // One statement per lookup, whether built with select or written as SQL (ADR-0003 amendment 3).
+        if (key === "select" || key === "execute") selects();
         return Reflect.get(target, key, receiver);
       },
     });

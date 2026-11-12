@@ -9,13 +9,10 @@ import { t as translate } from "~/i18n/catalog.server";
 import { useI18n } from "~/i18n/react";
 import { localeFromPathname, localePath } from "~/lib/locale";
 import { localized } from "~/i18n/localized";
-import { type Locale } from "~/lib/locale";
 import { nameList } from "~/lib/left-out";
-import { type Database, requestDbContext } from "~/server/db.server";
+import { requestDbContext } from "~/server/db.server";
 import { readLeftOut } from "~/server/left-out.server";
-import { findProductsByIds } from "~/server/repos/catalogue.server";
-import { findOrderRefByToken } from "~/server/repos/orders.server";
-import { getCheckoutSettings } from "~/server/repos/settings.server";
+import { findOrderConfirmation } from "~/server/repos/orders.server";
 import { isTrackingToken, orderLanguageRedirect, tokenPageHeaders } from "~/server/token-page.server";
 import type { Route } from "./+types/order-confirmed";
 
@@ -29,34 +26,27 @@ export const middleware: Route.MiddlewareFunction[] = [tokenPageHeaders];
  */
 export async function loader({ request, url, params, context }: Route.LoaderArgs) {
   if (!isTrackingToken(params.token)) throw data(null, { status: 404 });
-  const db = context.get(requestDbContext).db;
-  const order = await findOrderRefByToken(db, params.token);
-  if (!order) throw data(null, { status: 404 });
+  // One query: the order, the number prefix and the left-out names (ADR-0003 amendment 3).
+  // Left out (UX audit H1, AC41): product ids from the `apb_left_out` cookie the basket
+  // action set for this page only (never personal data), named in the cookie's order.
+  const leftOutIds = readLeftOut(request);
+  const found = await findOrderConfirmation(context.get(requestDbContext).db, params.token, leftOutIds);
+  if (!found) throw data(null, { status: 404 });
+  const { ref: order, orderNumberPrefix } = found;
   const moveTo = orderLanguageRedirect(request, url, order.locale);
   if (moveTo) throw redirect(moveTo);
   const locale = localeFromPathname(url.pathname);
-  const { orderNumberPrefix } = await getCheckoutSettings(db);
+  const names = new Map(found.leftOut.map((p) => [p.id, p.name]));
   return {
     title: translate("order.confirmed.metaTitle", locale),
     number: formatOrderNumber(orderNumberPrefix, order.number),
     trackingUrl: `${url.origin}${localePath(order.locale, `/t/${order.trackingToken}`)}`,
     offerSaveDetails: false,
-    leftOut: await leftOutNamesFor(db, request, locale),
+    leftOut: leftOutIds.flatMap((id) => {
+      const name = names.get(id);
+      return name ? [localized(name, locale)] : [];
+    }),
   };
-}
-
-/**
- * Names of the products the order left out (UX audit H1, AC41), from the `apb_left_out`
- * cookie the basket action set for this page only (product ids, never personal data).
- */
-async function leftOutNamesFor(db: Database, request: Request, locale: Locale): Promise<string[]> {
-  const ids = readLeftOut(request);
-  if (ids.length === 0) return [];
-  const products = await findProductsByIds(db, ids);
-  return ids.flatMap((id) => {
-    const found = products.get(id);
-    return found ? [localized(found.name, locale)] : [];
-  });
 }
 
 export function meta({ loaderData }: Route.MetaArgs) {

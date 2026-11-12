@@ -12,7 +12,6 @@ import { useI18n } from "~/i18n/react";
 import { formatRupees, localeFromPathname } from "~/lib/locale";
 import { requestDbContext } from "~/server/db.server";
 import { findTrackedOrder } from "~/server/repos/orders.server";
-import { getCheckoutSettings } from "~/server/repos/settings.server";
 import { isTrackingToken, orderLanguageRedirect, tokenPageHeaders } from "~/server/token-page.server";
 import type { Route } from "./+types/tracking";
 
@@ -32,12 +31,12 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
   const moveTo = orderLanguageRedirect(request, url, order.locale);
   if (moveTo) throw redirect(moveTo);
   const locale = localeFromPathname(url.pathname);
-  const settings = await getCheckoutSettings(db);
-  const { id: _id, locale: _orderLocale, number, ...shown } = order;
+  // One query: the order, its items and the Settings it is shown with (ADR-0003 amendment 3).
+  const { id: _id, locale: _orderLocale, number, orderNumberPrefix, juiceNumber, ...shown } = order;
   return {
     title: translate("order.tracking.metaTitle", locale),
-    order: { ...shown, number: formatOrderNumber(settings.orderNumberPrefix, number), dateLabel: formatDayLabel(order.fulfilOn, locale) },
-    payment: settings.payment,
+    order: { ...shown, number: formatOrderNumber(orderNumberPrefix, number), dateLabel: formatDayLabel(order.fulfilOn, locale) },
+    payment: { juiceNumber: juiceNumber?.trim() ? juiceNumber.trim() : null },
     progress: customerProgress(order.status, order.fulfilment),
   };
 }

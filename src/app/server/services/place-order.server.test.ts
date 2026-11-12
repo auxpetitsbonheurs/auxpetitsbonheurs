@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { BasketLine } from "~/domain/basket";
 import { insertProduct } from "~/db/testing/catalogue";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
@@ -332,24 +332,6 @@ describe("availability (S-013 AC9)", () => {
   });
 });
 
-/** Runs `run` with a database whose transactions start only once `parties` callers have asked for one. */
-function withTransactionBarrier(parties: number) {
-  let waiting = 0;
-  let release!: () => void;
-  const allArrived = new Promise<void>((resolve) => (release = resolve));
-  const db = new Proxy(database.db, {
-    get(target, key, receiver) {
-      if (key !== "transaction") return Reflect.get(target, key, receiver);
-      return async (...args: Parameters<typeof target.transaction>) => {
-        waiting += 1;
-        if (waiting === parties) release();
-        await allArrived;
-        return target.transaction(...args);
-      };
-    },
-  });
-  return db;
-}
 
 describe("idempotent submit (S-014)", () => {
   test("AC1: two submits with the same key at the same time make one order, one outbox row and the same redirect", async () => {
@@ -390,26 +372,16 @@ describe("idempotent submit (S-014)", () => {
     expect(await counterValue()).toBe(1);
   });
 
-  test("AC3: when both requests pass the first lookup, the unique key rolls one back and it returns the winner (no consumed number)", async () => {
+  // The race itself (both calls pass the lookup, the unique key rolls the loser back with its
+  // customer row and number) needs two real connections: tests/e2e/support/place-order-race.spec.ts.
+  test("AC3: when the procedure lost the race it answers with the winner, returned as a replay", async () => {
     const form = deliveryForm();
-    const db = withTransactionBarrier(2);
-    // Same submitter (same email, G-21); the names differ so the payloads are not identical.
-    const raced = (contactName: string) =>
-      placeOrder({ ...form, "contact.name": contactName }, { db, now: NOW, locale: "en", basket: [line("a", cakeId)] });
+    const winner = { orderId: randomUUID(), number: 7, trackingToken: "t".repeat(43), locale: "en", contactEmail: "aisha@example.com", orderNumberPrefix: "APB-" };
 
-    const results = await Promise.all([raced("first"), raced("second")]);
-    for (const result of results) expectRefusedNever(result);
-    const [a, b] = results as Extract<PlaceOrderResult, { ok: true }>[];
+    const result = await placeOrder(form, { db: answering({ kind: "existing", existing: winner }), now: NOW, locale: "en", basket: [line("a", cakeId)] });
 
-    expect(a!.trackingToken).toBe(b!.trackingToken);
-    expect([a!.replayed, b!.replayed].sort()).toEqual([false, true]);
-    expect(await count("orders")).toBe(1);
-    // The loser's customer row and number were rolled back with its transaction.
-    expect(await count("customer")).toBe(1);
-    expect(await counterValue()).toBe(1);
-    const next = await place(deliveryForm());
-    expectRefusedNever(next);
-    expect(next.orderNumber).toBe("APB-0002");
+    expectRefusedNever(result);
+    expect(result).toMatchObject({ orderId: winner.orderId, orderNumber: "APB-0007", replayed: true, leftOut: [] });
   });
 
   test("AC5: two orders in sequence are consecutive; a rolled-back attempt consumes no number", async () => {
@@ -485,18 +457,63 @@ describe("idempotency replay is bound to the submitter (threat-model G-21, tech-
   });
 
   test("the loser of a race with another email is refused, not given the winner's link", async () => {
-    const form = deliveryForm();
-    const db = withTransactionBarrier(2);
-    const raced = (email: string) =>
-      placeOrder({ ...form, "contact.email": email }, { db, now: NOW, locale: "en", basket: [line("a", cakeId)] });
+    const winner = { orderId: randomUUID(), number: 3, trackingToken: "w".repeat(43), locale: "en", contactEmail: "first@example.com", orderNumberPrefix: "APB-" };
 
-    const results = await Promise.all([raced("first@example.com"), raced("second@example.com")]);
+    const result = await placeOrder(deliveryForm({ "contact.email": "second@example.com" }), {
+      db: answering({ kind: "existing", existing: winner }),
+      now: NOW,
+      locale: "en",
+      basket: [line("a", cakeId)],
+    });
 
-    const winners = results.filter((r) => r.ok);
-    const losers = results.filter((r) => !r.ok);
-    expect(winners).toHaveLength(1);
-    expect(losers).toEqual([{ ok: false, code: "VALIDATION_FAILED", fields: [], keyReused: true }]);
-    expect(await count("orders")).toBe(1);
-    expect(await counterValue()).toBe(1);
+    expect(result).toEqual({ ok: false, code: "VALIDATION_FAILED", fields: [], keyReused: true });
+    expect(JSON.stringify(result)).not.toContain(winner.trackingToken);
   });
 });
+
+describe("one database round trip (ADR-0003 amendment 3)", () => {
+  test("a placed order, a replay and every refusal each cost exactly one statement", async () => {
+    const statements: string[] = [];
+    const db = new Proxy(database.db, {
+      get(target, key, receiver) {
+        if (key !== "execute") return Reflect.get(target, key, receiver);
+        return (query: Parameters<typeof target.execute>[0]) => {
+          statements.push("execute");
+          return target.execute(query);
+        };
+      },
+    });
+    const run = (form: Record<string, string>, basket = [line("a", cakeId)]) => placeOrder(form, { db, now: NOW, locale: "en", basket });
+    const form = deliveryForm();
+    let queries = 0;
+    const counting = database.client.query.bind(database.client);
+    database.client.query = (async (...args: Parameters<typeof counting>) => (queries++, counting(...args))) as typeof database.client.query;
+
+    expectRefusedNever(await run(form));
+    expectRefusedNever(await run(form));
+    expectRefused(await run(deliveryForm({ displayedTotalRs: "1" })), "PRICE_CHANGED");
+    expectRefused(await run(deliveryForm({ date: "2026-11-01" })), "DATE_UNAVAILABLE");
+    expectRefused(await run(deliveryForm({ "windowId.delivery": "nope" })), "VALIDATION_FAILED");
+    expectRefused(await run(deliveryForm(), []), "VALIDATION_FAILED");
+
+    expect(statements).toHaveLength(6);
+    expect(queries).toBe(6);
+  });
+
+  test("a rule difference between the procedure and domain/pricing is logged and shown calmly as PRICE_CHANGED", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const settings = { deliveryFeeRs: 200, deliveryWindows: [{ id: "morning", start: "09:00", end: "12:00", label: { en: "Morning" } }], pickupWindows: [], orderNumberPrefix: "APB-" };
+    const products = [{ id: cakeId, status: "available", nameEn: "Cake", nameFr: null, basePriceRs: 850 }];
+
+    const result = await placeOrder(deliveryForm(), { db: answering({ kind: "checked", settings, products }), now: NOW, locale: "en", basket: [line("a", cakeId)] });
+
+    expect(expectRefused(result, "PRICE_CHANGED")).toMatchObject({ totalRs: 1050 });
+    expect(error.mock.calls.map((c) => String(c[0]))).toContain(JSON.stringify({ level: "error", event: "place_order_rule_drift", kind: "accepted_here_refused_there" }));
+    error.mockRestore();
+  });
+});
+
+/** A database whose only statement answers `result` (the procedure's reply), for paths PGlite cannot race. */
+function answering(result: unknown) {
+  return { execute: async () => ({ rows: [{ result }] }) } as unknown as typeof database.db;
+}
