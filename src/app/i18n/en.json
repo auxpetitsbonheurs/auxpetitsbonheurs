@@ -1122,5 +1122,49 @@
       "expiry": "This link is valid until {{date}} and works once.",
       "ignore": "If you were not expecting this, ignore this email: nothing happens without you."
     }
+  },
+  "nav": {
+    "items": {
+      "home": "Home",
+      "ourStory": "Our story",
+      "collection": "Our collection",
+      "customOrder": "Custom order",
+      "workshops": "Workshops",
+      "gallery": "Gallery",
+      "contact": "Contact us"
+    },
+    "menuButton": "Menu",
+    "menuTitle": "Menu",
+    "closeMenu": "Close menu",
+    "account": "My account",
+    "menuLinksTitle": "All pages"
+  },
+  "comingSoon": {
+    "body": "We are preparing this page. It will be here soon.",
+    "hint": "In the meantime, you can browse our collection and order online.",
+    "collectionLink": "See our collection",
+    "contactHint": "Our WhatsApp and phone number are at the bottom of every page."
+  },
+  "collection": {
+    "title": "Our collection",
+    "metaDescription": "Cakes, cupcakes and desserts made to order by Aux petits bonheurs, an artisan bakery in Beau Bassin, Mauritius.",
+    "intro": "Choose a cake to see its sizes and order it.",
+    "fromPrice": "from {{price}}",
+    "chooseOptions": "Choose options",
+    "view": "See details",
+    "soldOut": "Sold out",
+    "jumpTo": "Jump to a section",
+    "types": {
+      "cake": "Cakes",
+      "cupcake_box": "Cupcakes",
+      "dessert": "Cookies & desserts",
+      "seasonal": "Seasonal treats"
+    },
+    "empty": "Our collection is being prepared.",
+    "emptyHint": "Message us on WhatsApp to order in the meantime.",
+    "whatsapp": "WhatsApp us",
+    "errorTitle": "We could not load our collection.",
+    "errorBody": "Check your connection and try again, or message us on WhatsApp.",
+    "retry": "Try again"
   }
 }

@@ -1122,5 +1122,49 @@
       "expiry": "Ce lien est valable jusqu'au {{date}}, une seule fois.",
       "ignore": "Si vous ne vous y attendiez pas, ignorez cet e-mail : rien ne se passe sans vous."
     }
+  },
+  "nav": {
+    "items": {
+      "home": "Accueil",
+      "ourStory": "Notre histoire",
+      "collection": "Notre collection",
+      "customOrder": "Gâteau sur mesure",
+      "workshops": "Ateliers",
+      "gallery": "Galerie",
+      "contact": "Contact"
+    },
+    "menuButton": "Menu",
+    "menuTitle": "Menu",
+    "closeMenu": "Fermer le menu",
+    "account": "Mon compte",
+    "menuLinksTitle": "Toutes les pages"
+  },
+  "comingSoon": {
+    "body": "Nous préparons cette page. Elle arrive bientôt.",
+    "hint": "En attendant, découvrez notre collection et commandez en ligne.",
+    "collectionLink": "Voir notre collection",
+    "contactHint": "Notre WhatsApp et notre numéro de téléphone sont en bas de chaque page."
+  },
+  "collection": {
+    "title": "Notre collection",
+    "metaDescription": "Gâteaux, cupcakes et desserts faits sur commande par Aux petits bonheurs, pâtisserie artisanale à Beau Bassin, Maurice.",
+    "intro": "Choisissez un gâteau pour voir ses tailles et le commander.",
+    "fromPrice": "à partir de {{price}}",
+    "chooseOptions": "Choisir les options",
+    "view": "Voir le détail",
+    "soldOut": "Épuisé",
+    "jumpTo": "Aller à une section",
+    "types": {
+      "cake": "Gâteaux",
+      "cupcake_box": "Cupcakes",
+      "dessert": "Cookies et desserts",
+      "seasonal": "Douceurs de saison"
+    },
+    "empty": "Notre collection est en préparation.",
+    "emptyHint": "Écrivez-nous sur WhatsApp pour commander en attendant.",
+    "whatsapp": "Écrivez-nous sur WhatsApp",
+    "errorTitle": "Impossible d’afficher notre collection.",
+    "errorBody": "Vérifiez votre connexion et réessayez, ou écrivez-nous sur WhatsApp.",
+    "retry": "Réessayer"
   }
 }

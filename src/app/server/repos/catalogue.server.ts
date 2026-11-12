@@ -130,7 +130,11 @@ export interface OptionGroupRecord {
   choices: { id: string; name: Localized; priceDeltaRs: number }[];
 }
 
-export type MenuProductRecord = ProductRecord & { status: "available" | "sold_out"; optionGroups: OptionGroupRecord[] };
+export type MenuProductRecord = ProductRecord & {
+  status: "available" | "sold_out";
+  optionGroups: OptionGroupRecord[];
+  season: { startsOn: string; endsOn: string } | null;
+};
 
 const productIdColumn = sql.raw(`"${getTableName(product)}"."id"`);
 
@@ -155,13 +159,15 @@ export const parseJsonColumn = <T>(value: T | string): T => (typeof value === "s
  */
 export async function listMenuProducts(db: Database): Promise<MenuProductRecord[]> {
   const rows = await db
-    .select({ ...columns, optionGroups: optionGroupsJson })
+    .select({ ...columns, optionGroups: optionGroupsJson, seasonalStartsOn: product.seasonalStartsOn, seasonalEndsOn: product.seasonalEndsOn })
     .from(product)
     .where(ne(product.status, "hidden"))
     .orderBy(asc(product.sortOrder), asc(product.nameEn));
-  return rows.map((row) => ({
+  return rows.map(({ seasonalStartsOn, seasonalEndsOn, ...row }) => ({
     ...toRecord(row),
     status: row.status === "sold_out" ? ("sold_out" as const) : ("available" as const),
     optionGroups: parseJsonColumn(row.optionGroups),
+    // The table check keeps both dates set or both null.
+    season: seasonalStartsOn && seasonalEndsOn ? { startsOn: seasonalStartsOn, endsOn: seasonalEndsOn } : null,
   }));
 }

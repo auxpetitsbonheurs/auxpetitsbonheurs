@@ -6,6 +6,7 @@
 import type { LocalizedText, TimeWindow } from "~/db/tables/json-types";
 import type { BasketLine } from "./basket";
 import { type LocalizedName, type PricedLine, type PricingProduct, priceLines } from "./pricing";
+import type { SeasonWindow } from "./season";
 
 export interface MenuOptionGroup {
   id: string;
@@ -29,6 +30,11 @@ export interface MenuProduct {
   minQuantity: number | null;
   photos: { url: string; width: number; height: number }[];
   optionGroups: MenuOptionGroup[];
+  /**
+   * Seasonal window (S-049, Mauritius dates, ends included), null when not seasonal. Optional:
+   * a copy cached before S-244 has none, which reads as "not seasonal".
+   */
+  season?: SeasonWindow | null;
 }
 
 export interface MenuCheckout {

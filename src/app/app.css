@@ -282,6 +282,27 @@ html[data-sheet-open] [data-bottom-bar] {
 }
 
 /*
+ * Phone site menu (S-243): the page behind the open full-screen panel does not scroll (AC3),
+ * and the panel fades in briefly; under reduced motion it simply appears (AC9: no slide ever).
+ */
+html:has(dialog[data-site-menu][open]) {
+  overflow: hidden;
+}
+dialog[data-site-menu][open] {
+  animation: site-menu-fade var(--motion-fast) var(--ease-enter);
+}
+@keyframes site-menu-fade {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  dialog[data-site-menu][open] {
+    animation: none;
+  }
+}
+
+/*
  * Product editor Save bar (S-046 AC9): focused or scrolled-to controls stop above it and the
  * bottom bar; on phone widths it leaves the bottom while a text field has focus (keyboard up).
  */

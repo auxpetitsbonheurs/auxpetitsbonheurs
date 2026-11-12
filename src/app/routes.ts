@@ -1,5 +1,8 @@
 import { type RouteConfig, index, layout, route } from "@react-router/dev/routes";
 
+/** Placeholder nav pages (E-13): each later story points its path at its own module. */
+const comingSoonPages = ["our-story", "custom-cake", "workshops", "gallery", "contact"] as const;
+
 /**
  * Customer pages exist twice: English unprefixed and French under /fr (FR-001),
  * from the same route modules with locale-suffixed ids. An exact `fr` prefix (not
@@ -9,6 +12,11 @@ import { type RouteConfig, index, layout, route } from "@react-router/dev/routes
 function customerPages(locale: "en" | "fr") {
   return [
     index("routes/home.tsx", { id: `home-${locale}` }),
+    // Our collection (S-244) and the phone menu's no-JavaScript page (S-243 AC8).
+    route("menu", "routes/site/menu.tsx", { id: `menu-${locale}` }),
+    route("menu-links", "routes/site/menu-links.tsx", { id: `menu-links-${locale}` }),
+    // Nav pages later E-13 stories build (S-248..S-252): "coming soon" until then, never a 404.
+    ...comingSoonPages.map((path) => route(path, "routes/site/coming-soon.tsx", { id: `${path}-${locale}` })),
     route("menu/:slug", "routes/site/product.tsx", { id: `product-${locale}` }),
     route("basket", "routes/site/basket.tsx", { id: `basket-${locale}` }),
     route("order/:token/confirmed", "routes/site/order-confirmed.tsx", { id: `order-confirmed-${locale}` }),

@@ -37,6 +37,7 @@ export async function loadMenu({ db, supabaseUrl, now }: MenuSources): Promise<M
     minQuantity: r.minQuantity,
     photos: r.photos.map((p) => ({ url: publicImageUrl(p.storagePath, supabaseUrl), width: p.width, height: p.height })),
     optionGroups: r.optionGroups,
+    season: r.season,
   }));
   const body = { products, checkout, today: todayMU(now) };
   // Real time, not the (test) request clock: it only orders copies of the menu.
