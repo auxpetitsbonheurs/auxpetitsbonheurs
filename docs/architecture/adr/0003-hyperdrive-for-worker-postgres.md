@@ -123,7 +123,7 @@ a new pooler connection (~0.7-0.8 s, about four round trips) plus ~180 ms per qu
 US; from Mauritius the edge is closer to the database. If placement stays local, add
 `"hint"` with the Supabase region once confirmed from the project settings (not from secrets).
 
-## Amendment 2026-11-12 (3): node-postgres, Hyperdrive on for staging, one round trip per hot mutation
+## Amendment 2026-11-12 (3): node-postgres, Hyperdrive re-tested, one round trip per hot mutation
 Appended. Trigger: Place order on staging still took ~4.2 s (median, Pixel 7 emulation) and
 basket first visit ~1.2 s; the Owner approved three changes without a prior measurement.
 
@@ -138,17 +138,28 @@ Decision:
   4 s, `query_timeout` 5 s, no idle timer, ended in `ctx.waitUntil` with a 5 s cap. The bounded
   deadline, read retry and 503 behaviour of `handleWithDb` (3c626fb, 1d05168) are unchanged.
   Server-Timing `db-connect`/`db-query` now come from a timed `pg.Client` subclass.
+  On Workers the socket is pg-cloudflare's with `cork()`/`uncork()` added
+  (`app/server/pg-socket.server.ts`): node-postgres corks around a query's five messages, but
+  pg-cloudflare cannot, so each went out as its own small write and the later ones waited for
+  the first one's ACK. Staging measured ~400 ms per query instead of ~190 (two round trips)
+  until the five messages left in one write.
   `sslmode` keeps libpq's meaning (`uselibpqcompat=true`, `app/lib/pg-url.ts`): node-postgres
   would otherwise treat `require` as verify-full and refuse Supabase's own CA, both in the
   Worker fallback and in `drizzle-kit migrate` (which picks `pg` once it is installed).
-- **Hyperdrive on for staging by default.** Automatic staging deploys inject
-  `STAGING_HYPERDRIVE_ID`; a manual deploy with `hyperdrive` unticked is the rollback (the
-  Worker then uses `DATABASE_URL`). Production unchanged: `PRODUCTION_HYPERDRIVE_ID` stays
-  empty. The Hyperdrive origin must be Supabase's **Direct** connection or **Session pooler**
-  (port 5432), never the transaction pooler (6543), and query **caching must be off** (with it
-  on, reads such as the tracking status or the admin order could be up to a minute old). The
-  deploy prints the origin kind, port and caching state (no host, user or database) and a
-  warning with the Owner's fix when either is wrong (`scripts/inject-hyperdrive.ts`).
+- **Hyperdrive: tried on staging, back off by default (same day).** Deploy 43182355823 turned
+  it on by default. Cached reads answered in 2-6 ms (Hyperdrive's query cache is **on**), but
+  every uncached query, parameterised or a `CALL`, hung until the 5 s query timeout within
+  minutes (Place order 500, tracking 500 after two 5 s attempts), exactly as with postgres.js
+  in amendment 1. The driver is therefore not the cause; the Hyperdrive configuration's origin
+  is the suspect (a pooler whose small pool fills, or a direct host Hyperdrive cannot reach).
+  Staging was redeployed without the binding at once (manual run 43183422696, about 8 minutes
+  affected, staging only) and automatic staging deploys stay **without** Hyperdrive; a manual
+  deploy with `hyperdrive` ticked re-tests it. Production unchanged:
+  `PRODUCTION_HYPERDRIVE_ID` stays empty. Before the re-test the Owner sets the origin to
+  Supabase's **Direct connection** (or **Session pooler**, port 5432; never the transaction
+  pooler, 6543) and turns **caching off** (with it on, the tracking status or an approved order
+  can read up to a minute old). The deploy prints the origin kind, port and caching state (no
+  host, user or database) once the API token may read Hyperdrive (it got HTTP 403 today).
 - **One round trip for Place order.** A forward-only, additive migration
   (`drizzle/0004_place_order_procedure.sql`) adds the `place_order(jsonb, INOUT jsonb)`
   procedure (SECURITY INVOKER, not executable by `anon`/`authenticated`). One `CALL` does the
@@ -172,9 +183,9 @@ Decision:
   never reaches the customer. Storage clean-up after a product save or delete uses it now;
   Resend, web push and Sentry (E-10, E-12) must use it when they are built. Committing the
   order and its outbox row stays before the response.
-- CPU and size: `pg` adds about 0.1 MB to the server bundle (Worker limit 3 MB gzipped on
-  Free); the client bundle is unchanged (`check:js-budget`).
+- Size: `pg` replaces postgres.js in the Worker; the server bundle stays about 1.4 MB
+  gzipped (1,419 kB vs 1,428 kB before; Free limit 3 MB). The client bundle is unchanged
+  (`check:js-budget`).
 
-Rollback: untick `hyperdrive` on a manual staging deploy (driver change stays; it works on
-both paths), or revert the commits; the procedure can stay (nothing else calls it) and a later
-migration may drop it.
+Rollback: revert the commits (the driver works with and without Hyperdrive); the procedure
+can stay (nothing else calls it) and a later migration may drop it.
