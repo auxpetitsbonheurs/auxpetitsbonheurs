@@ -57,26 +57,42 @@ function Refused({ message }: { message: string | null }) {
 /** Focus returns to the person's Actions button once a dialog closes (the sheet is already closed). */
 const backToRow = (id: string) => () => (document.getElementById(`actions-admin-${id}`) ? `actions-admin-${id}` : "main");
 
+/** The refusal of a fetcher's last answer, once it is idle (shown next to its button). */
+function refusalOf(fetcher: { state: string; data?: PersonAnswer }): string | null {
+  return fetcher.state === "idle" && fetcher.data && !fetcher.data.ok ? fetcher.data.error.message : null;
+}
+
+/**
+ * Answers of the sheet's own actions (promote, reactivate) are handled here, in the sheet that
+ * stays mounted: the revalidated row changes under the buttons (reactivated → Deactivate shows),
+ * which would unmount a handler living in the button.
+ */
+function useSheetAnswers(personId: string | undefined, onClose: () => void) {
+  const { t } = useI18n();
+  const role = useFetcher<PersonAnswer>({ key: `team-role-${personId ?? "none"}` });
+  const reactivation = useFetcher<PersonAnswer>({ key: `team-reactivate-${personId ?? "none"}` });
+  const handle = (answer: PersonAnswer) => {
+    if (!answer.ok) return showToast(answer.error.message, "error");
+    onClose();
+    if (answer.intent === "changeRole") showToast(t("admin.team.roleChanged", { name: answer.name, role: t(`admin.shell.role.${answer.role}`) }));
+    if (answer.intent === "reactivate") showToast(t("admin.team.reactivated", { name: answer.name }));
+  };
+  useAnswer(role, handle);
+  useAnswer(reactivation, handle);
+}
+
 /** The role radios; promoting saves at once, making an Owner an Admin asks first (S-031 AC8). */
-function RoleForm({ person, onDemote, onDone }: { person: TeamAdminView; onDemote: () => void; onDone: () => void }) {
+function RoleForm({ person, onDemote }: { person: TeamAdminView; onDemote: () => void }) {
   const { t } = useI18n();
   const fetcher = useFetcher<PersonAnswer>({ key: `team-role-${person.id}` });
-  const [refused, setRefused] = useState<string | null>(null);
-  useAnswer(fetcher, (answer) => {
-    if (!answer.ok) {
-      setRefused(answer.error.message);
-      return showToast(answer.error.message, "error");
-    }
-    if (answer.intent !== "changeRole") return;
-    onDone();
-    showToast(t("admin.team.roleChanged", { name: answer.name, role: t(`admin.shell.role.${answer.role}`) }));
-  });
+  const [unchanged, setUnchanged] = useState<string | null>(null);
+  const refused = unchanged ?? refusalOf(fetcher);
   const submit = (event: FormEvent<HTMLFormElement>) => {
     const chosen = new FormData(event.currentTarget).get("role");
-    setRefused(null);
+    setUnchanged(null);
     if (chosen === person.role) {
       event.preventDefault();
-      setRefused(t("admin.team.roleUnchanged", { name: person.name, role: t(`admin.shell.role.${person.role}`) }));
+      setUnchanged(t("admin.team.roleUnchanged", { name: person.name, role: t(`admin.shell.role.${person.role}`) }));
     } else if (chosen === "admin") {
       event.preventDefault();
       onDemote();
@@ -111,18 +127,10 @@ function RoleForm({ person, onDemote, onDone }: { person: TeamAdminView; onDemot
 }
 
 /** Reactivate (S-032 AC6): no confirm needed, nothing is lost; the sheet closes on success. */
-function ReactivateButton({ person, onDone }: { person: TeamAdminView; onDone: () => void }) {
+function ReactivateButton({ person }: { person: TeamAdminView }) {
   const { t } = useI18n();
   const fetcher = useFetcher<PersonAnswer>({ key: `team-reactivate-${person.id}` });
-  const [refused, setRefused] = useState<string | null>(null);
-  useAnswer(fetcher, (answer) => {
-    if (!answer.ok) {
-      setRefused(answer.error.message);
-      return showToast(answer.error.message, "error");
-    }
-    onDone();
-    showToast(t("admin.team.reactivated", { name: answer.name }));
-  });
+  const refused = refusalOf(fetcher);
   return (
     <fetcher.Form method="post">
       <input type="hidden" name="intent" value="reactivate" />
@@ -147,6 +155,7 @@ export interface AdminSheetProps {
 /** The person's sheet: email, role and status as text, Change role, then Deactivate or Reactivate. */
 export function AdminSheet({ person, onClose, onDemote, onDeactivate }: AdminSheetProps) {
   const { t } = useI18n();
+  useSheetAnswers(person?.id, onClose);
   return (
     <Modal open={person !== null} onClose={onClose} title={person?.name ?? ""} closeLabel={t("admin.states.close")}>
       {person && (
@@ -156,7 +165,7 @@ export function AdminSheet({ person, onClose, onDemote, onDeactivate }: AdminShe
             {t(`admin.shell.role.${person.role}`)} · {t(person.active ? "admin.team.status.active" : "admin.team.status.deactivated")}
           </p>
           <div className="mt-4">
-            <RoleForm key={`${person.id}-${person.role}`} person={person} onDemote={() => onDemote(person)} onDone={onClose} />
+            <RoleForm key={person.id} person={person} onDemote={() => onDemote(person)} />
           </div>
           <section aria-labelledby={`access-${person.id}`} className="mt-6">
             <h3 id={`access-${person.id}`} className="font-semibold">
@@ -172,7 +181,7 @@ export function AdminSheet({ person, onClose, onDemote, onDeactivate }: AdminShe
                   <p className="mt-1 text-sm">{t("admin.team.deactivateHint")}</p>
                 </>
               ) : (
-                <ReactivateButton person={person} onDone={onClose} />
+                <ReactivateButton person={person} />
               )}
             </div>
           </section>

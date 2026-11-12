@@ -29,8 +29,8 @@ test.describe("S-033 admin frame", () => {
     await signIn(page, E2E_ACCOUNTS.owner, "/admin");
 
     const links = bar(page).getByRole("link");
-    // Orders may carry the review count (S-034) after its label.
-    await expect(links).toHaveText(["Today", /^Orders/, "Calendar", "Menu", "More"]);
+    // Orders may carry the review count (S-034): its dot number and "N to review".
+    await expect(links).toHaveText(["Today", /Orders/, "Calendar", "Menu", "More"]);
     await expect(bar(page).getByRole("link", { name: "Today" })).toHaveAttribute("aria-current", "page");
     await expect(bar(page).locator('[aria-current="page"]')).toHaveCount(1);
     for (const box of await links.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON() as DOMRect))) {
@@ -50,7 +50,7 @@ test.describe("S-033 admin frame", () => {
     await page.setViewportSize({ width: 320, height: 640 });
     await signIn(page, E2E_ACCOUNTS.french, "/admin");
 
-    await expect(bar(page).getByRole("link")).toHaveText(["Aujourd'hui", /^Commandes/, "Calendrier", "Carte", "Plus"]);
+    await expect(bar(page).getByRole("link")).toHaveText(["Aujourd'hui", /Commandes/, "Calendrier", "Carte", "Plus"]);
     await expectLabelsFit(page);
     await expectNoHorizontalScroll(page);
   });
@@ -169,7 +169,7 @@ test.describe("S-033 admin frame", () => {
     await signIn(page, E2E_ACCOUNTS.helper, "/admin/more");
     await hydrated(page);
 
-    const orders = bar(page).getByRole("link", { name: /^Orders, \d+ to review$/ });
+    const orders = bar(page).getByRole("link", { name: /^Orders\s*,\s*\d+ to review$/ });
     await expect(orders).toBeVisible();
     const dot = orders.locator("[data-review-dot]");
     await expect(dot).toHaveText(/^([1-9]|9\+)$/);

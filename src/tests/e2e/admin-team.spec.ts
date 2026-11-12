@@ -334,13 +334,15 @@ test.describe("S-032 deactivate and reactivate", () => {
     // AC2: the phone's very next page request lands on sign-in.
     await phonePage.getByRole("navigation", { name: "Admin" }).getByRole("link", { name: /^Orders/ }).click();
     await expect(phonePage).toHaveURL(/\/admin\/login/);
-    // AC2: an action from the other tab gets 401 and no data.
-    const posted = await tabPage.request.post("/admin/profile", {
-      form: { intent: "updateProfile", name: "Still here", locale: "en" },
-      headers: { origin: new URL(tabPage.url()).origin },
-      maxRedirects: 0,
-    });
-    expect(posted.status()).toBe(401);
+    // AC2: an action (fetcher) from the other tab gets 401, shows the signed-out state and changes nothing.
+    await hydrated(tabPage);
+    const answer = tabPage.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/admin/profile"));
+    const details = tabPage.getByRole("region", { name: "Name and language" });
+    await details.getByLabel("Name", { exact: true }).fill("Still here");
+    await details.getByRole("button", { name: "Save" }).click();
+    expect((await answer).status()).toBe(401);
+    await expect(tabPage.getByRole("heading", { level: 1, name: "You are signed out" })).toBeVisible();
+    await expect(tabPage.getByRole("link", { name: "Sign in" })).toBeVisible();
     expect((await db`select name from admin where id = ${helper.id}`)[0]!.name).toBe(name);
     // AC7 (generic refusal) while deactivated.
     await phonePage.getByRole("textbox", { name: "Email" }).fill(helper.email);
