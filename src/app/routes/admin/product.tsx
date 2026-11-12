@@ -33,6 +33,7 @@ import { requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { findAdminProduct, getProductDefaults, listCategories } from "~/server/repos/admin-menu.server";
 import { saveProduct } from "~/server/services/save-product.server";
+import { afterResponseContext } from "~/server/after-response.server";
 import { storageContext, uploadContext } from "~/server/storage.server";
 import type { Route } from "./+types/product";
 
@@ -114,6 +115,7 @@ export async function action(args: Route.ActionArgs) {
     now: args.context.get(clockContext).now(),
     uploads: args.context.get(uploadContext),
     storage: args.context.get(storageContext),
+    after: args.context.get(afterResponseContext),
   });
   if (!result.ok) {
     return actionError(result.code, me.locale, "fields" in result ? { fields: localizedProblems(result.fields, me.locale) } : {});

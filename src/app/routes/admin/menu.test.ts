@@ -316,9 +316,12 @@ describe("delete (S-045 AC5)", () => {
     await database.client.query("update product_photo set storage_path = 'products/x/a.webp' where product_id = $1", [id]);
     const failing = { remove: async () => Promise.reject(new Error("storage remove answered 503")) };
 
-    const result = await action(routeArgs(database, { path: "/admin/menu", auth: session.auth, cookie: session.cookie, form: { intent: "delete", id }, storage: failing }) as never);
+    const call = routeArgs(database, { path: "/admin/menu", auth: session.auth, cookie: session.cookie, form: { intent: "delete", id }, storage: failing });
+    const result = await action(call as never);
 
     expect(result).toEqual({ ok: true, id });
+    // The clean-up runs after the response (ADR-0003 amendment 3).
+    await call.afterResponse.settled();
     expect((await database.client.query("select path from storage_purge")).rows).toEqual([{ path: "products/x/a.webp" }]);
   });
 });

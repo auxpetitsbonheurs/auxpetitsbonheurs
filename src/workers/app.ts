@@ -1,5 +1,6 @@
 import { RouterContextProvider, createRequestHandler } from "react-router";
 import { dispatch } from "~/jobs/dispatch";
+import { afterResponseContext, createAfterResponse } from "~/server/after-response.server";
 import { authContext } from "~/server/auth-gateway.server";
 import { clockContext, createClock } from "~/server/clock.server";
 import { handleWithDb, requestDbContext } from "~/server/db.server";
@@ -25,9 +26,12 @@ async function respond(request: Request, settings: ServerEnv, ctx: ExecutionCont
   // CSRF: cross-site admin mutations stop here with 403, before any database or auth work.
   const refused = refuseCrossSiteAdminRequest(request);
   if (refused) return refused;
+  // Emails, push, error reports and Storage clean-up run after the response (ADR-0003 amendment 3).
+  const afterResponse = createAfterResponse((promise) => ctx.waitUntil(promise));
   return handleWithDb(settings.DATABASE_URL, ctx, (requestDb) => {
     const context = new RouterContextProvider();
     context.set(requestDbContext, requestDb);
+    context.set(afterResponseContext, afterResponse);
     context.set(serverTimingContext, timing);
     context.set(publicConfigContext, { supabaseUrl: settings.SUPABASE_URL, supabaseAnonKey: settings.SUPABASE_ANON_KEY });
     context.set(clockContext, createClock({ testClock: settings.TEST_CLOCK === "on" }, request));
@@ -47,7 +51,7 @@ async function respond(request: Request, settings: ServerEnv, ctx: ExecutionCont
     });
     context.set(backgroundContext, { waitUntil: (promise) => ctx.waitUntil(promise) });
     return requestHandler(request, context);
-  }, undefined, { idempotent: request.method === "GET" || request.method === "HEAD" });
+  }, undefined, { idempotent: request.method === "GET" || request.method === "HEAD", afterResponse });
 }
 
 export default {

@@ -5,6 +5,7 @@ import { insertProduct } from "~/db/testing/catalogue";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { loader as adminOrder } from "~/routes/admin/order";
 import { loader as productPage } from "~/routes/site/product";
+import { createAfterResponse } from "~/server/after-response.server";
 import type { Database } from "~/server/db.server";
 import type { StorageGateway } from "~/server/storage.server";
 import { signedInAdmin } from "~/server/testing/admin-session";
@@ -127,5 +128,19 @@ describe("photo files (S-045 AC6)", () => {
     await withPhotos(id, ["products/p1/a.webp"]);
 
     expect(await deleteProduct(db, null, id)).toMatchObject({ ok: true, photosQueued: 1 });
+  });
+
+  test("in a request, removal waits until the response is ready; a Storage failure still queues them (ADR-0003 amendment 3)", async () => {
+    const id = await insertProduct(database.db);
+    await withPhotos(id, ["products/p1/a.webp"]);
+    const pending: Promise<unknown>[] = [];
+    const after = createAfterResponse((p) => void pending.push(p));
+
+    expect(await deleteProduct(db, storage(true).gateway, id, after)).toEqual({ ok: true, id, photosQueued: null });
+    expect(await rows("select count(*)::int as n from storage_purge")).toEqual([{ n: 0 }]);
+
+    after.release();
+    await after.settled();
+    expect(await rows("select path from storage_purge")).toEqual([{ path: "products/p1/a.webp" }]);
   });
 });

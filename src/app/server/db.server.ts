@@ -1,23 +1,31 @@
-// One database client per request (architecture.md#data, NFR-005, NFR-013):
-// postgres.js, one connection, no prepared statements, closed via ctx.waitUntil after the
-// response. The URL is the Hyperdrive binding's connection string when bound (ADR-0003, the
-// recommended per-request client with max 1), else DATABASE_URL (Supavisor transaction
-// pooler, which cannot keep prepared statements; we keep them off on both paths).
+// One database client per request (architecture.md#data, NFR-005, NFR-013): node-postgres
+// (`pg`, ADR-0003 amendment 3), a pool of at most one connection opened on first use and
+// closed via ctx.waitUntil after the response and its deferred work. The URL is the Hyperdrive
+// binding's connection string when bound (Cloudflare's recommended driver for Hyperdrive), else
+// DATABASE_URL (Supavisor transaction pooler: local dev, e2e, CI and the fallback). node-postgres
+// sends each parameterised query as one Parse/Bind/Execute/Sync batch with unnamed statements:
+// one round trip, no describe wait (the postgres.js stall behind Hyperdrive), and safe on the
+// transaction pooler.
+import { drizzle } from "drizzle-orm/node-postgres";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import pg from "pg";
 import { createContext } from "react-router";
 import * as schema from "~/db/schema";
-import { withUnknownStringParams } from "./pg-params.server";
+import { withLibpqSslModes } from "~/lib/pg-url";
+import type { AfterResponseQueue } from "./after-response.server";
+import { type DbTimingName, startDbTiming } from "./db-timing.server";
 
 /**
- * Every wait is bounded so a stuck pooler connection fails fast instead of hanging the
- * customer (staging run 43021376002: a page request got no response for 5 minutes).
- * `max_pipeline: 1` sends one query at a time: loaders run in parallel on the single
- * connection, and the transaction pooler cannot be trusted with interleaved extended-protocol
- * messages.
+ * Every wait is bounded so a stuck connection fails fast instead of hanging the customer
+ * (staging run 43021376002: a page request got no response for 5 minutes). `max: 1`: loaders
+ * that run in parallel queue on the pool, and a transaction holds the only connection, so no
+ * other query can slip into it. `idleTimeoutMillis: 0`: no idle timer; the pool is ended
+ * explicitly at the end of the request.
  */
-export const CONNECTION_OPTIONS = { max: 1, prepare: false, fetch_types: false, connect_timeout: 4, query_timeout: 5, max_pipeline: 1 } as const;
+export const CONNECTION_OPTIONS = { max: 1, connectionTimeoutMillis: 4_000, query_timeout: 5_000, idleTimeoutMillis: 0 } as const;
+
+/** How long closing may take before it is abandoned (the runtime would cut it anyway). */
+export const CLOSE_TIMEOUT_MS = 5_000;
 
 /**
  * Ceiling for one whole request, response body included. Below the 15 s a visitor (and the
@@ -28,7 +36,53 @@ export const REQUEST_DEADLINE_MS = 14_000;
 /** A read (GET/HEAD) gets this long to produce its headers before it is retried once on a fresh connection. */
 export const ATTEMPT_MS = 6_000;
 
-export type Connect = (url: string, options: typeof CONNECTION_OPTIONS) => postgres.Sql;
+export type PoolConfig = pg.PoolConfig & typeof CONNECTION_OPTIONS & { connectionString: string };
+export type Connect = (config: PoolConfig) => pg.Pool;
+
+type Callback = (error: Error | null, result?: unknown) => void;
+
+/** Records `name` for the request in scope when a callback-style or promise call settles. */
+function timedCall(name: DbTimingName, args: unknown[], call: (args: unknown[]) => unknown): unknown {
+  const done = startDbTiming(name);
+  const last = args.at(-1);
+  if (typeof last === "function") {
+    const callback = last as Callback;
+    return call([...args.slice(0, -1), (error: Error | null, result?: unknown) => (done(), callback(error, result))]);
+  }
+  const result = call(args);
+  if (result instanceof Promise) return result.finally(done);
+  done();
+  return result;
+}
+
+const superConnect = pg.Client.prototype.connect as (...args: unknown[]) => unknown;
+const superQuery = pg.Client.prototype.query as (...args: unknown[]) => unknown;
+
+/** A pg Client that reports its connection and query times to Server-Timing (durations only). */
+class TimedClient extends pg.Client {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pg's overloads (callback and promise forms) pass through untouched
+  override connect(...args: any[]): any {
+    return timedCall("db-connect", args, (a) => superConnect.apply(this, a));
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- as above: pg-pool calls the callback form, drizzle the promise form
+  override query(...args: any[]): any {
+    return timedCall("db-query", args, (a) => superQuery.apply(this, a));
+  }
+}
+
+const logEvent = (event: string, fields: Record<string, unknown>) => console.error(JSON.stringify({ level: "error", event, ...fields }));
+
+export const connectPool: Connect = (config) => {
+  const pool = new pg.Pool({ ...config, Client: TimedClient as unknown as new () => pg.ClientBase });
+  // A connection that drops while idle emits "error"; unhandled, it would throw in the isolate.
+  // While the pool is ending, the Workers socket reports its own close as an error: not news.
+  pool.on("error", (error) => {
+    if (pool.ending) return;
+    logEvent("db_connection_error", { error: error.name, code: (error as { code?: string }).code });
+  });
+  return pool;
+};
 
 /** Driver-independent type so services also accept an in-process test database. */
 export type Database = PgDatabase<PgQueryResultHKT, typeof schema>;
@@ -39,24 +93,36 @@ export type Executor = Database | Transaction;
 
 export interface RequestDb {
   /** Created on first use; requests that never query open no connection. */
-  readonly db: ReturnType<typeof drizzle<typeof schema, postgres.Sql>>;
+  readonly db: ReturnType<typeof drizzle<typeof schema, pg.Pool>>;
   close(): Promise<void>;
 }
 
-export function createRequestDb(url: string, connect: Connect = postgres): RequestDb {
-  let client: postgres.Sql | undefined;
+export function poolConfig(url: string): PoolConfig {
+  return { connectionString: withLibpqSslModes(url), ...CONNECTION_OPTIONS };
+}
+
+export function createRequestDb(url: string, connect: Connect = connectPool): RequestDb {
+  let pool: pg.Pool | undefined;
   let db: RequestDb["db"] | undefined;
   return {
     get db() {
       if (!db) {
-        client = connect(url, CONNECTION_OPTIONS);
-        // One round trip per query: no describe step for string parameters (pg-params.server.ts).
-        db = drizzle({ client: withUnknownStringParams(client), schema });
+        pool = connect(poolConfig(url));
+        db = drizzle({ client: pool, schema });
       }
       return db;
     },
     async close() {
-      await client?.end({ timeout: 5 });
+      if (!pool) return;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const gaveUp = new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, CLOSE_TIMEOUT_MS);
+      });
+      try {
+        await Promise.race([pool.end().catch(() => undefined), gaveUp]);
+      } finally {
+        clearTimeout(timer);
+      }
     },
   };
 }
@@ -66,14 +132,14 @@ export interface HandleOptions {
   idempotent?: boolean;
   deadlineMs?: number;
   attemptMs?: number;
+  /** The request's deferred work: released once a response is chosen; clients close after it settles. */
+  afterResponse?: AfterResponseQueue;
 }
 
 type Attempt = { kind: "response"; response: Response } | { kind: "stalled" } | { kind: "threw"; name: string };
 
 const unavailable = () =>
   new Response("Service temporarily unavailable", { status: 503, headers: { "Retry-After": "5", "Cache-Control": "no-store" } });
-
-const logEvent = (event: string, fields: Record<string, unknown>) => console.error(JSON.stringify({ level: "error", event, ...fields }));
 
 /** Runs the handler until it has headers, `budgetMs` passes, or it throws; a late answer is discarded. */
 async function attemptWithin(requestDb: RequestDb, handle: (db: RequestDb) => Promise<Response>, budgetMs: number): Promise<Attempt> {
@@ -145,35 +211,42 @@ function boundBody(response: Response, budgetMs: number, onEnd: () => void): Res
 
 /**
  * Runs one request with its own database client. One deadline covers headers and body; the
- * client closes (ctx.waitUntil) only when the body is done. A read whose first attempt stalls
- * (a stuck first connection on a fresh isolate) or answers 500 is retried once on a new client;
- * a request that cannot be answered becomes a 503, never a hang.
+ * client closes (ctx.waitUntil) only when the body is done and the request's deferred work has
+ * settled. A read whose first attempt stalls (a stuck first connection on a fresh isolate) or
+ * answers 500 is retried once on a new client; a request that cannot be answered becomes a
+ * 503, never a hang. Deferred work starts once a response is chosen, never before.
  */
 export async function handleWithDb(
   url: string,
   ctx: Pick<ExecutionContext, "waitUntil">,
   handle: (requestDb: RequestDb) => Promise<Response>,
-  connect: Connect = postgres,
+  connect: Connect = connectPool,
   options: HandleOptions = {},
 ): Promise<Response> {
   const deadlineMs = options.deadlineMs ?? REQUEST_DEADLINE_MS;
   const attemptMs = options.attemptMs ?? ATTEMPT_MS;
+  const after = options.afterResponse;
   const startedAt = Date.now();
   const remaining = () => deadlineMs - (Date.now() - startedAt);
   const maxAttempts = options.idempotent ? 2 : 1;
   for (let attempt = 1; ; attempt += 1) {
     const requestDb = createRequestDb(url, connect);
-    const close = () => void ctx.waitUntil(requestDb.close());
+    const close = () => void ctx.waitUntil((after ? after.settled() : Promise.resolve()).then(() => requestDb.close()));
     const budget = options.idempotent ? Math.min(attemptMs, remaining()) : remaining();
     const outcome = await attemptWithin(requestDb, handle, budget);
     const last = attempt >= maxAttempts || remaining() < 1_000;
     if (outcome.kind === "response" && (outcome.response.status !== 500 || last)) {
+      after?.release();
       return boundBody(outcome.response, remaining(), close);
     }
     if (outcome.kind === "response") void outcome.response.body?.cancel().catch(() => {});
     logEvent("request_attempt_failed", { attempt, reason: outcome.kind === "response" ? "status_500" : outcome.kind, ...(outcome.kind === "threw" ? { error: outcome.name } : {}) });
+    if (last) {
+      after?.release();
+      close();
+      return unavailable();
+    }
     close();
-    if (last) return unavailable();
   }
 }
 

@@ -2,6 +2,7 @@
 // request context, a fixed clock, an in-process auth gateway (FakeAuth), optional
 // cookies, and the Origin header a browser sends with a POST.
 import { RouterContextProvider } from "react-router";
+import { afterResponseContext, createAfterResponse } from "~/server/after-response.server";
 import { authContext } from "~/server/auth-gateway.server";
 import type { TestDatabase } from "~/db/testing/pglite";
 import { clockContext } from "~/server/clock.server";
@@ -53,7 +54,11 @@ export function routeArgs(database: TestDatabase, options: RouteArgsOptions) {
   context.set(publicConfigContext, { supabaseUrl: TEST_SUPABASE_URL, supabaseAnonKey: "test-anon-key" });
   context.set(storageContext, options.storage === undefined ? acceptingStorage : options.storage);
   context.set(uploadContext, options.uploads ?? null);
-  return { request, url, params: options.params ?? {}, context, pattern: "" };
+  // Deferred work starts at once (the response is "ready"); tests await `afterResponse.settled()`.
+  const afterResponse = createAfterResponse(() => {});
+  afterResponse.release();
+  context.set(afterResponseContext, afterResponse);
+  return { request, url, params: options.params ?? {}, context, pattern: "", afterResponse };
 }
 
 /** The cookie value a Set-Cookie header stores, ready to send back as `name=value`. */

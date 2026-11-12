@@ -3,7 +3,8 @@
   "include": [
     "vite.config.ts",
     "vitest.config.ts",
-    "drizzle.config.ts"
+    "drizzle.config.ts",
+    "app/lib/pg-url.ts"
   ],
   "compilerOptions": {
     "composite": true,

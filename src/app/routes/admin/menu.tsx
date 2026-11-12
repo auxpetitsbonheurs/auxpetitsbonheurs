@@ -24,6 +24,7 @@ import { timed } from "~/server/server-timing.server";
 import { deleteProduct } from "~/server/services/delete-product.server";
 import { reorderProducts } from "~/server/services/reorder-products.server";
 import { setProductStatus } from "~/server/services/product-status.server";
+import { afterResponseContext } from "~/server/after-response.server";
 import { storageContext } from "~/server/storage.server";
 import { moveItem, useDragSort } from "~/lib/use-drag-sort";
 import type { Route } from "./+types/menu";
@@ -58,7 +59,8 @@ export async function action(args: Route.ActionArgs) {
   const input = MenuActionInput.safeParse(Object.fromEntries(form));
   if (!input.success) return actionError("VALIDATION_FAILED", me.locale);
   if (input.data.intent === "delete") {
-    const deleted = await deleteProduct(db, args.context.get(storageContext), input.data.id);
+    // Storage clean-up runs after the response (ADR-0003 amendment 3).
+    const deleted = await deleteProduct(db, args.context.get(storageContext), input.data.id, args.context.get(afterResponseContext));
     if (!deleted.ok) return actionError(deleted.code, me.locale);
     console.log(JSON.stringify({ level: "info", event: "product_deleted", id: deleted.id, photosQueued: deleted.photosQueued, actorRole: me.role }));
     return { ok: true as const, id: deleted.id };

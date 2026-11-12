@@ -9,6 +9,7 @@
 import { and, count, eq, max, ne } from "drizzle-orm";
 import { product, productPhoto, productSlugHistory } from "~/db/schema";
 import { slugFromName, statusNeedsPhoto } from "~/domain/product";
+import type { AfterResponse } from "~/server/after-response.server";
 import type { ProductField, ProductInput, ProductProblem } from "~/server/contracts/admin";
 import type { Database } from "~/server/db.server";
 import type { StorageGateway, UploadGateway } from "~/server/storage.server";
@@ -30,6 +31,8 @@ export interface SaveProductContext {
   uploads?: UploadGateway | null;
   /** Removes files of photos that left the list (queued when null or failing). */
   storage?: StorageGateway | null;
+  /** When given, removed photo files are cleaned up after the response (ADR-0003 amendment 3). */
+  after?: AfterResponse;
 }
 
 type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
@@ -153,6 +156,9 @@ export async function saveProduct(db: Database, input: ProductInput, context: Sa
     if (isUniqueViolation(error, "product_slug_unique") || isUniqueViolation(error, "product_slug_history_pkey")) return SLUG_TAKEN;
     throw error;
   }
-  await removePhotos(db, context.storage ?? null, saved.removed.filter(isStoragePath));
+  const removed = saved.removed.filter(isStoragePath);
+  const cleanUp = () => removePhotos(db, context.storage ?? null, removed);
+  if (context.after && removed.length > 0) context.after.defer("remove-photos", cleanUp);
+  else await cleanUp();
   return saved.result;
 }
