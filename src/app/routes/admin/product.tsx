@@ -67,7 +67,7 @@ export async function loader(args: Route.LoaderArgs) {
     newType: isProductType(type) ? type : "cake",
     categories,
     allergenTags: [...ALLERGEN_TAGS],
-    previewUrl: null,
+    previewUrl: product ? `/admin/menu/${product.id}/preview` : null,
     settingsDefaults,
   };
 }
@@ -500,6 +500,32 @@ function keepAboveSaveBar(event: FocusEvent<HTMLFormElement>) {
   if (overlap > 0 && box.top - overlap - 16 >= 0) window.scrollBy({ top: overlap + 16, behavior: "instant" });
 }
 
+/**
+ * Preview as a customer (S-051): the saved product's customer page. A new product has none
+ * yet: the button stays, says why and opens nothing (AC4).
+ */
+function PreviewLink({ url }: { url: string | null }) {
+  const { t } = useI18n();
+  const [explained, setExplained] = useState(false);
+  const style = "mt-3 inline-flex min-h-11 items-center rounded-md border border-border px-4 font-semibold";
+  return (
+    <div className="flex flex-wrap items-center gap-x-3">
+      {url ? (
+        <Link to={url} className={style}>
+          {t("admin.product.preview")}
+        </Link>
+      ) : (
+        <button type="button" aria-disabled="true" aria-describedby="preview-note" onClick={() => setExplained(true)} className={`${style} text-muted-foreground`}>
+          {t("admin.product.preview")}
+        </button>
+      )}
+      <p id="preview-note" role="status" className="mt-3 text-sm">
+        {!url && explained ? t("admin.product.previewSaveFirst") : ""}
+      </p>
+    </div>
+  );
+}
+
 export default function AdminProduct({ loaderData }: Route.ComponentProps) {
   // Keyed by product: a newly created product's page starts from what the server saved.
   return <ProductEditor key={loaderData.product?.id ?? "new"} loaderData={loaderData} />;
@@ -534,6 +560,7 @@ function ProductEditor({ loaderData }: { loaderData: LoaderData }) {
       </Link>
       <h1 className="mt-2">{loaderData.title}</h1>
       {product?.updated && <p className="mt-2 text-sm">{t("admin.product.updatedBy", { name: product.updated.name, time: formatClockTime(new Date(product.updated.at)) })}</p>}
+      <PreviewLink url={loaderData.previewUrl} />
       {refusal && <ErrorSummary ref={summary} message={refusal.message} fields={refusal.fields} anchors={anchorsFor(refusal.fields)} title={t("admin.product.errorSummaryTitle")} />}
       {region}
       <fetcher.Form ref={formRef} method="post" onChange={markDirty} onInput={markDirty} onSubmit={save.onSubmit} onFocus={keepAboveSaveBar} className="mt-6 grid gap-8" noValidate>

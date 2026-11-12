@@ -1,7 +1,7 @@
 // Catalogue reads for the customer site (S-011). Status rules (hidden = 404, sold out
 // = shown but not addable) are applied by callers via domain/pricing productProblem.
 import { asc, eq, getTableName, inArray, ne, sql } from "drizzle-orm";
-import { optionChoice, optionGroup, product, productPhoto } from "~/db/schema";
+import { optionChoice, optionGroup, product, productPhoto, productSlugHistory } from "~/db/schema";
 import type { Database } from "~/server/db.server";
 
 export type ProductStatus = (typeof product.$inferSelect)["status"];
@@ -81,6 +81,34 @@ function toRecord(row: Row): ProductRecord {
 export async function findProductBySlug(db: Database, slug: string): Promise<ProductRecord | undefined> {
   const [row] = await selectProducts(db).where(eq(product.slug, slug));
   return row ? toRecord(row) : undefined;
+}
+
+/**
+ * The current slug of the product that once had `slug` (S-050, owner Q19), or undefined.
+ * Callers try `findProductBySlug` first; a deleted product's history went with it (cascade).
+ */
+export async function findRenamedSlug(db: Database, slug: string): Promise<string | undefined> {
+  const [row] = await db
+    .select({ slug: product.slug })
+    .from(productSlugHistory)
+    .innerJoin(product, eq(product.id, productSlugHistory.productId))
+    .where(eq(productSlugHistory.slug, slug))
+    .limit(1);
+  return row?.slug;
+}
+
+/** One product by id for the admin preview (S-051): any status, with its season window. */
+export async function findProductPreview(
+  db: Database,
+  id: string,
+): Promise<{ record: ProductRecord; season: { seasonalStartsOn: string | null; seasonalEndsOn: string | null } } | undefined> {
+  const [row] = await db
+    .select({ ...columns, seasonalStartsOn: product.seasonalStartsOn, seasonalEndsOn: product.seasonalEndsOn })
+    .from(product)
+    .where(eq(product.id, id));
+  if (!row) return undefined;
+  const { seasonalStartsOn, seasonalEndsOn, ...rest } = row;
+  return { record: toRecord(rest), season: { seasonalStartsOn, seasonalEndsOn } };
 }
 
 /** Products by id (any status); ids that do not exist are absent from the map. */

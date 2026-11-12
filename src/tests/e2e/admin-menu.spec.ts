@@ -1,5 +1,5 @@
 // E-03 admin menu: list (S-041), reorder (S-042), editor (S-046), hide / sold out (S-043), delete (S-045),
-// photos (S-047), option groups (S-048), seasonal dates (S-049). Every spec makes its own products (unique names), so parallel projects
+// photos (S-047), option groups (S-048), seasonal dates (S-049), preview (S-051). Every spec makes its own products (unique names), so parallel projects
 // never share one.
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -1086,6 +1086,86 @@ test.describe("S-042 reorder within a type", () => {
       expect(await row.evaluate((el) => getComputedStyle(el).transitionDuration)).toBe("0s");
       await expectNoA11yViolations(page);
       await openActions(page, product.name);
+      await expectNoA11yViolations(page);
+    });
+  }
+});
+
+test.describe("S-051 preview as a customer", () => {
+  test("AC1, AC5: Preview opens the customer page of a hidden product with the banner first, no Add button, noindex and no-store", async ({ page, db }) => {
+    const product = await createProduct(db, { name: "Preview cake", status: "hidden" });
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+    await hydrated(page);
+
+    await page.getByRole("link", { name: "Preview" }).click();
+
+    await expect(page.getByRole("heading", { level: 1, name: product.name })).toBeVisible();
+    await expect(page.getByText("Preview, not live.")).toBeVisible();
+    await expect(page.getByText("Hidden: customers cannot see this product.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Add to basket" })).toHaveCount(0);
+    const response = await page.request.get(`/admin/menu/${product.id}/preview`);
+    expect(response.headers()["x-robots-tag"]).toContain("noindex");
+    expect(response.headers()["cache-control"]).toContain("no-store");
+    // The banner is read before the page and is not inside a landmark.
+    const order = await page.evaluate(() => {
+      const banner = [...document.querySelectorAll("p")].find((p) => p.textContent?.includes("Preview, not live."))!;
+      const following = banner.compareDocumentPosition(document.querySelector("h1")!) & Node.DOCUMENT_POSITION_FOLLOWING;
+      return { before: following !== 0, landmark: banner.closest("header, nav, aside, main, [role]") !== null };
+    });
+    expect(order).toEqual({ before: true, landmark: false });
+  });
+
+  test("AC3: the language toggle shows the product in French with English fallback", async ({ page, db }) => {
+    const product = await createProduct(db, { name: "Toggle cake", status: "sold_out" });
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}/preview`);
+    await hydrated(page);
+
+    await page.getByRole("link", { name: "Voir en français" }).click();
+
+    await expect(page).toHaveURL(/\?lang=fr$/);
+    await expect(page.getByRole("heading", { level: 1, name: product.name })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Show in English" })).toBeVisible();
+  });
+
+  test("AC4: on a new product Preview says to save first and opens nothing", async ({ page }) => {
+    await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu/new");
+    await hydrated(page);
+
+    await page.getByRole("button", { name: "Preview" }).click();
+
+    await expect(page.getByRole("status").filter({ hasText: "Cannot preview, save first." })).toBeVisible();
+    await expect(page).toHaveURL(/\/admin\/menu\/new$/);
+  });
+
+  test("AC5: an anonymous visitor is sent to sign in and sees no product data", async ({ page, db }) => {
+    const product = await createProduct(db, { name: "Secret preview", status: "hidden" });
+
+    await page.goto(`/admin/menu/${product.id}/preview`);
+
+    await expect(page).toHaveURL(/\/admin\/login/);
+    await expect(page.getByText(product.name)).toHaveCount(0);
+  });
+
+  test("AC7: keyboard, focus, 44 px targets, nothing clipped or sideways, at 100% and 200%", async ({ page, db }) => {
+    const product = await createProduct(db, { name: "A preview cake with a rather long name to wrap", status: "hidden" });
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}/preview`);
+    await hydrated(page);
+    for (const zoom of [1, 2]) {
+      await withZoom(page, zoom, async () => {
+        await expectNoHorizontalScroll(page);
+        await expectNothingClipped(page);
+        await expectTapTargets(page);
+        await expectKeyboardOperable(page);
+      });
+    }
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`AC7: no serious or critical axe violations in ${colorScheme} mode`, async ({ page, db }) => {
+      const product = await createProduct(db, { name: "Axe preview", status: "sold_out" });
+      await page.emulateMedia({ colorScheme });
+      await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}/preview`);
+      await hydrated(page);
       await expectNoA11yViolations(page);
     });
   }

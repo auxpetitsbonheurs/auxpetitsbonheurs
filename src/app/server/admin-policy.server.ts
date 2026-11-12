@@ -21,6 +21,7 @@ export const ADMIN_MODULE_POLICY = {
   calendar: "admin",
   menu: "admin",
   product: "admin",
+  "product-preview": "admin",
   uploads: "admin",
   promotions: "admin",
   gallery: "admin",

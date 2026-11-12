@@ -26,6 +26,8 @@ const adminPages = [
   route("admin/sign-out", "routes/admin/sign-out.tsx"),
   // Signed upload URLs as JSON (resource route, guarded like any admin module; S-047).
   route("admin/uploads", "routes/admin/uploads.tsx"),
+  // Customer view of any product (S-051): outside the frame so it looks like the live page.
+  route("admin/menu/:id/preview", "routes/admin/product-preview.tsx"),
   route("admin", "routes/admin/layout.tsx", [
     index("routes/admin/home.tsx"),
     route("orders", "routes/admin/orders.tsx"),

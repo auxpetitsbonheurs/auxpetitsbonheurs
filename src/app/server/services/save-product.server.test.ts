@@ -162,6 +162,54 @@ describe("slug (S-046 AC5)", () => {
     expect(history.rows).toEqual([{ slug: "pistachio-cake", product_id: created.id }]);
   });
 
+  test("S-050 AC1: the old slug is stored with the rename, in the same transaction", async () => {
+    const created = (await save(BASE)) as { id: string };
+    await database.client.exec(
+      `create function refuse_product_update() returns trigger language plpgsql as $$ begin raise exception 'boom'; end $$;
+       create trigger refuse_product_update before update on product for each row execute function refuse_product_update();`,
+    );
+
+    await expect(save({ ...BASE, id: created.id, slug: "pistachio-delight" })).rejects.toThrow();
+
+    expect((await database.client.query("select count(*)::int as n from product_slug_history")).rows[0]).toEqual({ n: 0 });
+  });
+
+  test("S-050 AC3: two renames keep both old slugs for the same product", async () => {
+    const created = (await save(BASE)) as { id: string };
+    await save({ ...BASE, id: created.id, slug: "b" });
+    await save({ ...BASE, id: created.id, slug: "c" });
+
+    const history = await database.client.query("select slug from product_slug_history where product_id = $1 order by slug", [created.id]);
+    expect(history.rows).toEqual([{ slug: "b" }, { slug: "pistachio-cake" }]);
+  });
+
+  test("S-050 AC5: a slug in another product's history is refused on edit too, and nothing is saved", async () => {
+    const other = (await save({ ...BASE, "name.en": "Other" })) as { id: string };
+    await save({ ...BASE, "name.en": "Other", id: other.id, slug: "other-renamed" });
+    const mine = (await save(BASE)) as { id: string };
+
+    expect(await save({ ...BASE, id: mine.id, slug: "other", basePriceRs: "999" })).toEqual({ ok: false, code: "SLUG_TAKEN", fields: { slug: "taken" } });
+    expect(await row(mine.id)).toMatchObject({ slug: "pistachio-cake", base_price_rs: 850 });
+  });
+
+  test("S-050 AC6: going back to a previous slug removes its history row", async () => {
+    const created = (await save(BASE)) as { id: string };
+    await save({ ...BASE, id: created.id, slug: "pistachio-delight" });
+
+    expect(await save({ ...BASE, id: created.id, slug: "pistachio-cake" })).toMatchObject({ ok: true, slug: "pistachio-cake" });
+
+    const history = await database.client.query("select slug from product_slug_history");
+    expect(history.rows).toEqual([{ slug: "pistachio-delight" }]);
+  });
+
+  test.each([
+    ["capital letters", "Pistachio"],
+    ["a space", "pistachio cake"],
+    ["over 80 characters", "a".repeat(81)],
+  ])("S-050 AC7: a slug with %s is VALIDATION_FAILED on slug", async (_label, slug) => {
+    expect(await save({ ...BASE, slug })).toEqual({ ok: false, code: "VALIDATION_FAILED", fields: { slug: "invalid" } });
+  });
+
   test("an unknown id is NOT_FOUND", async () => {
     expect(await save({ ...BASE, id: "7d1f0c9e-1111-4222-8333-944455566677" })).toEqual({ ok: false, code: "NOT_FOUND" });
   });

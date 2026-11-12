@@ -454,7 +454,7 @@
         "hidden": "Hidden"
       },
       "slug": "Web address",
-      "slugHint": "Lowercase letters, numbers and dashes. Leave blank to make it from the English name.",
+      "slugHint": "Lowercase letters, numbers and dashes. Leave blank to make it from the English name. Changing the link breaks nothing: the old link will forward.",
       "save": "Save",
       "saving": "Saving the product…",
       "savingLabel": "Saving…",
@@ -607,6 +607,20 @@
         "format": "Day, month and year, for example 01/12/2026.",
         "starts": "First day",
         "ends": "Last day"
+      },
+      "preview": "Preview",
+      "previewSaveFirst": "Cannot preview, save first."
+    },
+    "preview": {
+      "title": "Preview",
+      "banner": "Preview, not live.",
+      "hidden": "Hidden: customers cannot see this product.",
+      "soldOut": "Sold out: customers see it but cannot order it.",
+      "outOfSeason": "Out of season today: customers cannot order it.",
+      "back": "Back to the editor",
+      "showIn": {
+        "en": "Show in English",
+        "fr": "Voir en français"
       }
     }
   }

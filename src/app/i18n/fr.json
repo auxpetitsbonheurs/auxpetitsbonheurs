@@ -454,7 +454,7 @@
         "hidden": "Masqué"
       },
       "slug": "Adresse web",
-      "slugHint": "Lettres minuscules, chiffres et tirets. Laissez vide pour la créer à partir du nom anglais.",
+      "slugHint": "Lettres minuscules, chiffres et tirets. Laissez vide pour la créer à partir du nom anglais. Changer le lien ne casse rien : l'ancien lien redirige vers le nouveau.",
       "save": "Enregistrer",
       "saving": "Enregistrement du produit…",
       "savingLabel": "Enregistrement…",
@@ -607,6 +607,20 @@
         "format": "Jour, mois et année, par exemple 01/12/2026.",
         "starts": "Premier jour",
         "ends": "Dernier jour"
+      },
+      "preview": "Aperçu",
+      "previewSaveFirst": "Aperçu impossible : enregistrez d'abord."
+    },
+    "preview": {
+      "title": "Aperçu",
+      "banner": "Aperçu, pas en ligne.",
+      "hidden": "Masqué : les clients ne voient pas ce produit.",
+      "soldOut": "Épuisé : les clients le voient mais ne peuvent pas le commander.",
+      "outOfSeason": "Hors saison aujourd'hui : les clients ne peuvent pas le commander.",
+      "back": "Retour à l'éditeur",
+      "showIn": {
+        "en": "Show in English",
+        "fr": "Voir en français"
       }
     }
   }

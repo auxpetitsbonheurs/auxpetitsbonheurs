@@ -8,7 +8,7 @@ import { TEST_SUPABASE_URL, cookieFrom, routeArgs } from "~/server/testing/route
 import { BASKET_COOKIE } from "~/server/basket.server";
 import { signedInAdmin } from "~/server/testing/admin-session";
 import { action as saveInEditor } from "../admin/product";
-import { action, loader, productView, shouldRevalidate } from "./product";
+import { RENAMED_CACHE_CONTROL, action, loader, productView, shouldRevalidate } from "./product";
 
 let database: TestDatabase;
 
@@ -191,6 +191,88 @@ async function insertPhotoAndShow(id: string) {
   await database.client.query("insert into product_photo (product_id, storage_path, width, height, sort_order) values ($1, '/images/sample/chocolate-cake.svg', 800, 600, 0)", [id]);
   await database.client.query("update product set status = 'available' where id = $1", [id]);
 }
+
+describe("renamed product links (S-050)", () => {
+  async function renamed(from: string[], to: string, overrides: Parameters<typeof insertProduct>[1] = {}) {
+    const id = await insertProduct(database.db, { slug: to, ...overrides });
+    for (const slug of from) await database.client.query("insert into product_slug_history (slug, product_id) values ($1, $2)", [slug, id]);
+    return id;
+  }
+
+  /** The redirect the loader threw (a Response). */
+  async function thrownRedirect(path: string, slug: string): Promise<Response> {
+    try {
+      await view(path, slug);
+    } catch (error) {
+      if (error instanceof Response) return error;
+      throw error;
+    }
+    throw new Error("expected a redirect");
+  }
+
+  test("AC2: an old slug answers 301 to the current one; /fr keeps the language", async () => {
+    await renamed(["a"], "b");
+
+    const en = await thrownRedirect("/menu/a", "a");
+    expect(en.status).toBe(301);
+    expect(en.headers.get("location")).toBe("/menu/b");
+    // Cached an hour, not forever: the product may take the old slug back (AC6).
+    expect(en.headers.get("cache-control")).toBe(RENAMED_CACHE_CONTROL);
+    const fr = await thrownRedirect("/fr/menu/a", "a");
+    expect(fr.status).toBe(301);
+    expect(fr.headers.get("location")).toBe("/fr/menu/b");
+  });
+
+  test("AC2: a current slug is served directly, before any history lookup", async () => {
+    await renamed(["old"], "chocolate-cake");
+
+    expect((await view("/menu/chocolate-cake")).product.slug).toBe("chocolate-cake");
+  });
+
+  test("AC3: after two renames both old slugs go straight to the newest", async () => {
+    await renamed(["a", "b"], "c");
+
+    expect((await thrownRedirect("/menu/a", "a")).headers.get("location")).toBe("/menu/c");
+    expect((await thrownRedirect("/menu/b", "b")).headers.get("location")).toBe("/menu/c");
+  });
+
+  test("AC4: the target's own rules apply (hidden answers 404 there); a deleted product's old slug is 404", async () => {
+    const id = await renamed(["a"], "b", { status: "hidden" });
+
+    expect((await thrownRedirect("/menu/a", "a")).headers.get("location")).toBe("/menu/b");
+    expect(await thrownStatus(view("/menu/b", "b"))).toBe(404);
+
+    await database.client.query("delete from product where id = $1", [id]);
+    expect(await thrownStatus(view("/menu/a", "a"))).toBe(404);
+  });
+
+  test("AC6: a product back on an old slug is served there, without a redirect loop", async () => {
+    const admin = await signedInAdmin(database);
+    const fields = { intent: "save", "name.en": "Lemon tart", "description.en": "", basePriceRs: "400", type: "cake", status: "hidden" };
+    const created = (await saveInEditor(routeArgs(database, { path: "/admin/menu/new", auth: admin.auth, cookie: admin.cookie, form: fields }) as never)) as { id: string };
+    await insertPhotoAndShow(created.id);
+    const edit = (slug: string) =>
+      saveInEditor(
+        routeArgs(database, { path: `/admin/menu/${created.id}`, params: { id: created.id }, auth: admin.auth, cookie: admin.cookie, form: { ...fields, status: "available", slug } }) as never,
+      );
+
+    await edit("lemon-tart-2");
+    await edit("lemon-tart");
+
+    expect((await view("/menu/lemon-tart", "lemon-tart")).product.id).toBe(created.id);
+    expect((await thrownRedirect("/menu/lemon-tart-2", "lemon-tart-2")).headers.get("location")).toBe("/menu/lemon-tart");
+  });
+
+  test("AC8: Location is a same-site relative path built from the stored slug, never from the request", async () => {
+    await renamed(["a"], "b");
+
+    const location = (await thrownRedirect("/menu/a?next=https://evil.example", "a")).headers.get("location")!;
+
+    expect(location).toBe("/menu/b");
+    expect(location.startsWith("//")).toBe(false);
+    expect(/^[a-z]+:/i.test(location)).toBe(false);
+  });
+});
 
 describe("revalidation after Add (staging latency)", () => {
   const args = (intent: string, ok: boolean) =>
