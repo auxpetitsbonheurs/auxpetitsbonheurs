@@ -81,7 +81,7 @@ export function ProductPage() {
         </div>
         {product.photos.length > 1 && (
           <div className="mt-2 flex justify-center gap-1.5" aria-hidden="true">
-            {product.photos.map((_, i) => <span key={i} className={`h-2 w-2 rounded-full ${i === photo ? 'bg-honey-600' : 'bg-honey-200'}`} />)}
+            {product.photos.map((_, i) => <span key={i} className={`h-2 w-2 rounded-full ${i === photo ? 'bg-wine-600' : 'bg-wine-200'}`} />)}
           </div>
         )}
       </div>
@@ -89,7 +89,7 @@ export function ProductPage() {
       <h1 className="mt-4 text-3xl">{tl(product.name)}</h1>
       <p className="mt-1 text-lg">
         {best.price < best.original && <span className="mr-2 text-ink-soft line-through">{formatRs(best.original)}</span>}
-        <span className="font-semibold text-honey-700">{formatRs(best.price)}</span>
+        <span className="font-semibold text-wine-700">{formatRs(best.price)}</span>
       </p>
       <p className="mt-2 text-ink-soft">{tl(product.desc)}</p>
       {product.allergens.length > 0 && (
@@ -109,7 +109,7 @@ export function ProductPage() {
             <Stepper {...qtyLabels(t, tl(product.name))} value={current.qty} min={bounds.min} max={bounds.max} onChange={(qty) => setSel({ ...current, qty })} />
             {qGroup && <p className="mt-1 text-xs text-ink-soft">{t('p.qtyRange', bounds)}</p>}
           </div>
-          <p className="rounded-xl bg-honey-100 p-3 text-sm font-semibold">
+          <p className="rounded-xl bg-wine-100 p-3 text-sm font-semibold">
             {t('p.earliest', { date: date(earliest, true) })}
             {notice > db.settings.defaultNotice && <span className="font-normal text-ink-soft"> ({t('p.notice', { n: notice })})</span>}
           </p>
@@ -117,7 +117,7 @@ export function ProductPage() {
       )}
 
       {orderable && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-honey-200 bg-cream/95 p-3 backdrop-blur">
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-wine-200 bg-cream/95 p-3 backdrop-blur">
           <div className="mx-auto max-w-5xl">
             {added ? (
               <div className="flex gap-2">

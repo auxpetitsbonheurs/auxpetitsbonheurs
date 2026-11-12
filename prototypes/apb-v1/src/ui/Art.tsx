@@ -1,10 +1,10 @@
 /** Locally generated illustrations. Photo ids look like "art:cake:2" (kind : palette). */
 interface Palette { bg: string; a: string; b: string; c: string }
 
-// Warm honey & cream family only (brand D4).
+// Cream, wine and warm neutrals (brand v0.3): the first two echo the logo badges.
 const PALETTES: Palette[] = [
-  { bg: '#EFDDBD', a: '#F5DDB3', b: '#C99A5B', c: '#FFFDF8' }, // honey
-  { bg: '#F1E3C8', a: '#E2B26A', b: '#A8743A', c: '#FFFDF8' }, // caramel
+  { bg: '#EFDCC6', a: '#FCEAD8', b: '#660C0C', c: '#FFFBF5' }, // creme brulee & cherry
+  { bg: '#F6EAD8', a: '#E3C08A', b: '#7A2A22', c: '#FFFBF5' }, // wine & gold
   { bg: '#E4E3CC', a: '#CBCFA6', b: '#8C9466', c: '#FBFAF2' }, // pistachio
   { bg: '#EADBC8', a: '#C9A88A', b: '#8A6248', c: '#FFFAF3' }, // cocoa
   { bg: '#F4E9C6', a: '#EED79A', b: '#C9A44A', c: '#FFFCF0' }, // butter

@@ -40,7 +40,7 @@ export function OrderDetail() {
 
   return (
     <div className="space-y-4 pb-6">
-      <Link to="/admin/orders" className="inline-flex min-h-11 items-center text-sm font-semibold text-honey-700">&lsaquo; Orders</Link>
+      <Link to="/admin/orders" className="inline-flex min-h-11 items-center text-sm font-semibold text-wine-700">&lsaquo; Orders</Link>
       <div className="flex items-center justify-between">
         <h1 className="text-3xl">{o.number}</h1><StatusBadge status={o.status} />
       </div>
@@ -63,7 +63,7 @@ export function OrderDetail() {
         {admin.includes('cancelled') && <button className={btn('danger')} onClick={() => setPanel('cancel')}>Cancel order</button>}
       </div>
 
-      <section className="rounded-card border border-honey-200 bg-paper p-4 text-sm">
+      <section className="rounded-card border border-wine-200 bg-paper p-4 text-sm">
         <p className="font-semibold">{o.customer.name}</p>
         <div className="flex gap-2 py-1">
           <a className={btn('outline', 'min-h-11')} href={`tel:${o.customer.phone.replace(/\s/g, '')}`}>Call</a>
@@ -72,14 +72,14 @@ export function OrderDetail() {
         <p>{o.customer.phone}{o.customer.email && ` · ${o.customer.email}`} · {o.lang.toUpperCase()}</p>
         <p className="mt-2"><strong>{o.fulfilment === 'delivery' ? 'Delivery' : 'Pickup'}</strong> · {fmtDate(o.date, 'en', true)} · {windowLabel(s, o.window)}</p>
         {o.fulfilment === 'delivery' && (
-          <p>{o.address} ({o.landmark}) <a className="font-semibold text-honey-700" target="_blank" rel="noreferrer" href={`https://maps.google.com/?q=${encodeURIComponent(o.address)}`}>Open in Maps</a></p>
+          <p>{o.address} ({o.landmark}) <a className="font-semibold text-wine-700" target="_blank" rel="noreferrer" href={`https://maps.google.com/?q=${encodeURIComponent(o.address)}`}>Open in Maps</a></p>
         )}
         {o.customerNote && <p className="mt-1">Customer note: {o.customerNote}</p>}
         {o.declineReason && <p>Decline reason: {o.declineReason}</p>}
         <p className="mt-1 text-xs text-ink-soft">Source: {o.source} · Tracking: <a className="underline" href={trackingUrl(o)} target="_blank" rel="noreferrer">open</a></p>
       </section>
 
-      <section className="rounded-card border border-honey-200 bg-paper p-4 text-sm">
+      <section className="rounded-card border border-wine-200 bg-paper p-4 text-sm">
         <h2 className="mb-1 text-lg">Items</h2>
         {o.items.length === 0 && <p>{itemsText(o)}</p>}
         {o.items.map((it) => (
@@ -90,13 +90,13 @@ export function OrderDetail() {
           </div>
         ))}
         {o.deliveryFee > 0 && <div className="flex justify-between"><span>Delivery fee</span><span>{formatRs(o.deliveryFee)}</span></div>}
-        <div className="mt-1 flex justify-between border-t border-honey-200 pt-1 font-semibold"><span>Total</span><span>{o.total ? formatRs(o.total) : 'No quote yet'}</span></div>
+        <div className="mt-1 flex justify-between border-t border-wine-200 pt-1 font-semibold"><span>Total</span><span>{o.total ? formatRs(o.total) : 'No quote yet'}</span></div>
         <p>{o.paid ? 'Paid' : 'Unpaid'}</p>
         {o.quote && <p className="mt-1">Quote {formatRs(o.quote.amount)} · expires {fmtDate(o.quote.expiry, 'en')} · {o.quote.note}</p>}
       </section>
 
       {o.custom && (
-        <section className="rounded-card border border-honey-200 bg-paper p-4 text-sm">
+        <section className="rounded-card border border-wine-200 bg-paper p-4 text-sm">
           <h2 className="mb-1 text-lg">Custom request</h2>
           <p>Occasion: {o.custom.occasion} · Servings: {o.custom.servings}</p>
           <p>Flavours: {o.custom.flavours}</p><p>Theme: {o.custom.theme}</p><p>Text: {o.custom.text}</p>
@@ -110,7 +110,7 @@ export function OrderDetail() {
         <textarea className={inputCls} rows={2} defaultValue={o.adminNote} onBlur={(e) => { if (e.target.value !== o.adminNote) setAdminNote(o.id, e.target.value) }} />
       </Field>
 
-      <section className="rounded-card border border-honey-200 bg-paper p-4 text-sm">
+      <section className="rounded-card border border-wine-200 bg-paper p-4 text-sm">
         <h2 className="mb-1 text-lg">Activity</h2>
         <ul className="space-y-1">
           {[...o.events].reverse().map((e, i) => (

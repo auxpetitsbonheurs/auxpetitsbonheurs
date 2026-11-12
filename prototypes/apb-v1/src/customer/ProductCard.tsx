@@ -14,11 +14,11 @@ export function ProductCard({ product: p }: { product: Product }) {
   const onSale = best.price < best.original
   const soldOut = p.status === 'soldout'
   return (
-    <Link to={`/product/${p.id}`} className="flex flex-col gap-2 rounded-card border border-honey-200 bg-paper p-2 pb-3.5 transition-colors hover:border-honey-600">
+    <Link to={`/product/${p.id}`} className="flex flex-col gap-2 rounded-card border border-wine-200 bg-paper p-2 pb-3.5 transition-colors hover:border-wine-600">
       <div className="relative aspect-square overflow-hidden rounded-photo">
         <Photo src={p.photos[0] ?? 'art:cake:0'} alt={tl(p.name)} className={`h-full w-full ${soldOut ? 'opacity-50 grayscale' : ''}`} />
         {onSale && (
-          <span className="absolute left-2 top-2 rounded-lg bg-honey-600 px-2 py-0.5 text-xs font-semibold text-paper">
+          <span className="absolute left-2 top-2 rounded-lg bg-wine-600 px-2 py-0.5 text-xs font-semibold text-paper">
             -{Math.round((1 - best.price / best.original) * 100)}%
           </span>
         )}
@@ -34,7 +34,7 @@ export function ProductCard({ product: p }: { product: Product }) {
           {onSale ? (
             <>
               <span className="mr-2 text-ink-soft line-through">{formatRs(best.original)}</span>
-              <span className="font-semibold text-honey-700">{t('common.from', { price: formatRs(best.price) })}</span>
+              <span className="font-semibold text-wine-700">{t('common.from', { price: formatRs(best.price) })}</span>
             </>
           ) : (
             <span className="font-semibold">{t('common.from', { price: formatRs(best.price) })}</span>

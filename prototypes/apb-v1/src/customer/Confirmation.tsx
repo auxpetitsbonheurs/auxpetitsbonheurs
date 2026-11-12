@@ -22,7 +22,7 @@ export function Confirmation() {
   const url = trackingUrl(order)
   return (
     <div className="space-y-5 py-4 text-center">
-      <h1 className="text-3xl text-honey-700">{t('c.title')}</h1>
+      <h1 className="text-3xl text-wine-700">{t('c.title')}</h1>
       <div className={card}>
         <p className="text-sm text-ink-soft">{t('c.number')}</p>
         <p className="font-serif text-4xl font-semibold">{order.number}</p>
@@ -32,7 +32,7 @@ export function Confirmation() {
       </p>
       <div className={`${card} text-left`}>
         <p className="mb-1 text-sm font-semibold">{t('c.link')}</p>
-        <p className="break-all rounded-xl bg-honey-100 p-2 text-xs">{url}</p>
+        <p className="break-all rounded-xl bg-wine-100 p-2 text-xs">{url}</p>
         <button
           type="button"
           className={btn('outline', 'mt-2')}

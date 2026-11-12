@@ -17,7 +17,7 @@ export function More() {
   return (
     <div className="space-y-2">
       <h1 className="mb-2 text-3xl">More</h1>
-      {items.filter((i) => i[2]).map(([to, label]) => <Link key={to} to={to} className="flex min-h-14 items-center rounded-card border border-honey-200 bg-paper px-4 font-semibold">{label}</Link>)}
+      {items.filter((i) => i[2]).map(([to, label]) => <Link key={to} to={to} className="flex min-h-14 items-center rounded-card border border-wine-200 bg-paper px-4 font-semibold">{label}</Link>)}
     </div>
   )
 }
@@ -39,7 +39,7 @@ export function Customers() {
       {list.map((c) => {
         const { os, spent } = stats(c.phone)
         return (
-          <div key={c.id} className="rounded-card border border-honey-200 bg-paper p-3">
+          <div key={c.id} className="rounded-card border border-wine-200 bg-paper p-3">
             <button className="w-full text-left" onClick={() => setOpen(open === c.id ? null : c.id)}>
               <p className="font-semibold">{c.name}</p><p className="text-sm text-ink-soft">{c.phone} · {os.length} orders · {formatRs(spent)} completed</p>
             </button>
@@ -65,8 +65,8 @@ export function Profile() {
       <h1 className="text-3xl">My profile</h1>
       <Field label="Name"><input className={inputCls} value={admin.name} onChange={(e) => patch({ name: e.target.value })} /></Field>
       <Field label="Language"><select className={inputCls} value={admin.lang} onChange={(e) => patch({ lang: e.target.value as 'en' | 'fr' })}><option value="en">English</option><option value="fr">Français</option></select></Field>
-      <label className="flex min-h-11 items-center gap-3"><input type="checkbox" className="h-5 w-5 accent-honey-600" checked={admin.alerts.push} onChange={(e) => patch({ alerts: { ...admin.alerts, push: e.target.checked } })} />Push alerts</label>
-      <label className="flex min-h-11 items-center gap-3"><input type="checkbox" className="h-5 w-5 accent-honey-600" checked={admin.alerts.email} onChange={(e) => patch({ alerts: { ...admin.alerts, email: e.target.checked } })} />Email alerts</label>
+      <label className="flex min-h-11 items-center gap-3"><input type="checkbox" className="h-5 w-5 accent-wine-600" checked={admin.alerts.push} onChange={(e) => patch({ alerts: { ...admin.alerts, push: e.target.checked } })} />Push alerts</label>
+      <label className="flex min-h-11 items-center gap-3"><input type="checkbox" className="h-5 w-5 accent-wine-600" checked={admin.alerts.email} onChange={(e) => patch({ alerts: { ...admin.alerts, email: e.target.checked } })} />Email alerts</label>
       <p className="text-sm text-ink-soft">Password change is faked in this prototype.</p>
     </div>
   )
@@ -83,7 +83,7 @@ export function Team() {
       <h1 className="text-3xl">Team</h1>
       {msg && <p role="alert" className="rounded-card bg-red-100 p-3 text-sm font-semibold text-red-800">{msg}</p>}
       {db.admins.map((a) => (
-        <div key={a.id} className="rounded-card border border-honey-200 bg-paper p-3 text-sm">
+        <div key={a.id} className="rounded-card border border-wine-200 bg-paper p-3 text-sm">
           <p className="font-semibold">{a.name} {a.id === me?.id && '(you)'} <Badge tone={a.invited ? 'amber' : a.active ? 'green' : 'grey'}>{a.invited ? 'invited' : a.active ? 'active' : 'deactivated'}</Badge></p>
           <p className="text-ink-soft">{a.email} · last sign-in {a.lastSignIn ? fmtStamp(a.lastSignIn) : 'never'}</p>
           <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -93,7 +93,7 @@ export function Team() {
           </div>
         </div>
       ))}
-      <section className="space-y-2 rounded-card border border-honey-200 p-3">
+      <section className="space-y-2 rounded-card border border-wine-200 p-3">
         <h2 className="text-lg">Invite</h2>
         <Field label="Name"><input className={inputCls} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
         <Field label="Email"><input className={inputCls} type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>
@@ -120,7 +120,7 @@ export function SettingsScreen() {
       <div>
         <p className="mb-1 text-sm font-semibold">Weekly closed days</p>
         <div className="flex flex-wrap gap-1">{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((n, i) => (
-          <button key={n} aria-pressed={s.closedDays.includes(i)} className={`min-h-11 min-w-11 rounded-xl border px-3 text-sm font-semibold ${s.closedDays.includes(i) ? 'border-honey-600 bg-honey-600 text-paper' : 'border-honey-200 bg-paper'}`}
+          <button key={n} aria-pressed={s.closedDays.includes(i)} className={`min-h-11 min-w-11 rounded-xl border px-3 text-sm font-semibold ${s.closedDays.includes(i) ? 'border-wine-600 bg-wine-600 text-paper' : 'border-wine-200 bg-paper'}`}
             onClick={() => set({ closedDays: s.closedDays.includes(i) ? s.closedDays.filter((x) => x !== i) : [...s.closedDays, i] })}>{n}</button>))}</div>
       </div>
       <section className="space-y-2">

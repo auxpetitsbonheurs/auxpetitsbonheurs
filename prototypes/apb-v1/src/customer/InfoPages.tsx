@@ -67,7 +67,7 @@ export function Contact() {
       <div>
         <h2 className="text-xl">{t('ct.pickup')}</h2>
         <p>{s.pickupAddress}</p>
-        <a className="flex min-h-11 items-center font-semibold text-honey-700" href={s.mapLink} target="_blank" rel="noreferrer">{t('b.map')}</a>
+        <a className="flex min-h-11 items-center font-semibold text-wine-700" href={s.mapLink} target="_blank" rel="noreferrer">{t('b.map')}</a>
       </div>
       <div>
         <h2 className="text-xl">{t('ct.faq')}</h2>

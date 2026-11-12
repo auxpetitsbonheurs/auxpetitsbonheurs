@@ -20,8 +20,9 @@ export function Home() {
   return (
     <div className="space-y-10">
       <section className="flex flex-col items-center gap-3.5 pt-4 text-center">
-        <p className="font-subhead text-base italic text-honey-700">{tl(db.settings.tagline)}</p>
+        <p className="font-subhead text-lg text-wine-700">{tl(db.settings.tagline)}</p>
         <h1 className="max-w-md text-[2.625rem] leading-[1.08] sm:text-[3.5rem]">{t('home.hero')}</h1>
+        <span aria-hidden="true" className="h-px w-16 bg-gold" />
         <div className="mt-1 flex flex-wrap justify-center gap-2">
           <Link to="/menu" className={btn('primary')}>{t('home.orderNow')}</Link>
           <Link to="/custom" className={btn('outline')}>{t('home.customCake')}</Link>
@@ -31,7 +32,7 @@ export function Home() {
 
       {cards.length > 0 && (
         <section aria-labelledby="offers">
-          <h2 id="offers" className="mb-3 text-center text-[1.75rem]">{t('home.offers')}</h2>
+          <h2 id="offers" className="section-title mb-3 text-[1.75rem]">{t('home.offers')}</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             {cards.map((p) => (
               <Link
@@ -49,22 +50,22 @@ export function Home() {
 
       {seasonal.length > 0 && (
         <section aria-labelledby="seasonal">
-          <h2 id="seasonal" className="mb-3 text-center text-[1.75rem]">{t('home.seasonal')}</h2>
+          <h2 id="seasonal" className="section-title mb-3 text-[1.75rem]">{t('home.seasonal')}</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{seasonal.map((p) => <ProductCard key={p.id} product={p} />)}</div>
         </section>
       )}
 
       <section aria-labelledby="featured">
-        <h2 id="featured" className="mb-3 text-center text-[1.75rem]">{t('home.featured')}</h2>
+        <h2 id="featured" className="section-title mb-3 text-[1.75rem]">{t('home.featured')}</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{featured.map((p) => <ProductCard key={p.id} product={p} />)}</div>
       </section>
 
       <section aria-labelledby="how">
-        <h2 id="how" className="mb-3 text-center text-[1.75rem]">{t('home.how')}</h2>
+        <h2 id="how" className="section-title mb-3 text-[1.75rem]">{t('home.how')}</h2>
         <ol className="grid gap-3 sm:grid-cols-3">
           {steps.map(([title, desc], i) => (
-            <li key={title} className="rounded-card border border-honey-200 bg-paper p-4">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-honey-200 font-serif text-lg text-honey-700">{i + 1}</span>
+            <li key={title} className="rounded-card border border-wine-200 bg-paper p-4">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-wine-200 font-serif text-lg text-wine-700">{i + 1}</span>
               <p className="mt-2 font-semibold">{t(title)}</p>
               <p className="text-sm text-ink-soft">{t(desc)}</p>
             </li>
@@ -72,10 +73,17 @@ export function Home() {
         </ol>
       </section>
 
+      {/* Custom-cake call-out (brand v0.3): burgundy band, cream outline pill. */}
+      <section aria-labelledby="custom-band" className="band -mx-4 flex flex-col items-center gap-3 px-6 py-8 text-center sm:mx-0 sm:rounded-band">
+        <h2 id="custom-band" className="text-[1.75rem]">{t('home.customBand.t')}</h2>
+        <p className="max-w-sm text-cream-muted">{t('home.customBand.d')}</p>
+        <Link to="/custom" className={btn('onBand')}>{t('home.customBand.cta')}</Link>
+      </section>
+
       <section aria-labelledby="gal">
         <div className="mb-3 flex items-end justify-between">
           <h2 id="gal" className="text-[1.75rem]">{t('home.gallery')}</h2>
-          <Link to="/gallery" className="flex min-h-11 items-center text-sm font-semibold text-honey-700 underline underline-offset-4">{t('common.seeAll')}</Link>
+          <Link to="/gallery" className="flex min-h-11 items-center text-sm font-semibold text-wine-700 underline underline-offset-4">{t('common.seeAll')}</Link>
         </div>
         <div className="grid grid-cols-3 gap-2">
           {GALLERY.slice(0, 6).map((g) => <Photo key={g.id} src={g.art} alt={tl(g.caption)} className="aspect-square overflow-hidden rounded-photo" />)}

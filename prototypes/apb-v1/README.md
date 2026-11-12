@@ -71,3 +71,4 @@ Seeded tracking links: `/order/pending-demo-7k2m9xq4` (pending), `/order/quote-d
 
 - v1: first build of all five journeys.
 - v1.1 (2026-11-11): D4 · Honey & cream look (cream, honey buttons, Libre Caslon + Source Sans 3 self-hosted via @fontsource, centred header and hero); stepper buttons get distinct names, no copied aria-labels, 44 px remove-photo buttons. No flow changes.
+- v1.2 (2026-11-12): brand v0.3, burgundy (Cherry Tart), cream (Crème brûlée) and antique gold: burgundy header and footer bands with thin gold rules, the logo badges (SVG in `public/brand/`, copied from `src/public/brand/`) in the header, footer and admin header, gold-ruled section titles, a burgundy custom-cake band with a cream outline pill, Cormorant Garamond titles. No flow changes.

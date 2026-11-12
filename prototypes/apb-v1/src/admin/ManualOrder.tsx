@@ -56,12 +56,12 @@ export function ManualOrder() {
 
   return (
     <div className="space-y-4 pb-6">
-      <Link to="/admin/orders" className="inline-flex min-h-11 items-center text-sm font-semibold text-honey-700">&lsaquo; Orders</Link>
+      <Link to="/admin/orders" className="inline-flex min-h-11 items-center text-sm font-semibold text-wine-700">&lsaquo; Orders</Link>
       <h1 className="text-3xl">Add order</h1>
       <section className="space-y-2">
         <h2 className="text-lg">Items</h2>
         {lines.map((l, i) => (
-          <div key={i} className="flex items-center justify-between rounded-xl border border-honey-200 bg-paper p-2 text-sm">
+          <div key={i} className="flex items-center justify-between rounded-xl border border-wine-200 bg-paper p-2 text-sm">
             <span>{l.qty} x {l.name.en} {l.options.length ? `(${l.options.map((o) => o.choice.en).join(', ')})` : ''}</span>
             <span>{formatRs(l.lineTotal)} <button className="ml-2 min-h-11 text-red-700" onClick={() => setLines(lines.filter((_, j) => j !== i))}>Remove</button></span>
           </div>
@@ -97,7 +97,7 @@ export function ManualOrder() {
           <Field label="Landmark"><input className={inputCls} value={f.landmark} onChange={(e) => setF({ ...f, landmark: e.target.value })} /></Field>
           <Field label="Delivery fee (Rs)"><input className={inputCls} inputMode="numeric" value={f.fee} onChange={(e) => setF({ ...f, fee: e.target.value.replace(/\D/g, '') })} /></Field>
         </>}
-        <label className="flex min-h-11 items-center gap-3"><input type="checkbox" className="h-5 w-5 accent-honey-600" checked={f.paid} onChange={(e) => setF({ ...f, paid: e.target.checked })} />Already paid</label>
+        <label className="flex min-h-11 items-center gap-3"><input type="checkbox" className="h-5 w-5 accent-wine-600" checked={f.paid} onChange={(e) => setF({ ...f, paid: e.target.checked })} />Already paid</label>
         <Field label="Private note"><input className={inputCls} value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} /></Field>
       </section>
       {err && <p role="alert" className="text-sm font-semibold text-red-700">{err}</p>}

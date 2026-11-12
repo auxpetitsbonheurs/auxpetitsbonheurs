@@ -33,12 +33,12 @@ export function AdminMenu() {
       </div>
       <Link to="/admin/promotions" className={btn('outline', 'w-full')}>Promotions</Link>
       {[...db.products].sort((a, b) => a.sort - b.sort).map((p) => (
-        <div key={p.id} className="flex items-center gap-3 rounded-card border border-honey-200 bg-paper p-3">
+        <div key={p.id} className="flex items-center gap-3 rounded-card border border-wine-200 bg-paper p-3">
           <Photo src={p.photos[0] ?? 'art:cake:0'} alt={p.name.en} className="h-14 w-14 shrink-0 overflow-hidden rounded-xl" />
           <div className="min-w-0 flex-1">
             <Link to={`/admin/menu/${p.id}`} className="block truncate font-semibold">{p.name.en}</Link>
             <p className="text-xs text-ink-soft">{p.type} · {formatRs(p.basePrice)} <Badge tone={p.status === 'available' ? 'green' : p.status === 'soldout' ? 'amber' : 'grey'}>{p.status}</Badge></p>
-            <div className="flex flex-wrap gap-1 text-xs font-semibold text-honey-700">
+            <div className="flex flex-wrap gap-1 text-xs font-semibold text-wine-700">
               <button className="min-h-11 px-1" onClick={() => setStatus(p.id, p.status === 'soldout' ? 'available' : 'soldout')}>{p.status === 'soldout' ? 'Back in stock' : 'Sold out'}</button>
               <button className="min-h-11 px-1" onClick={() => setStatus(p.id, p.status === 'hidden' ? 'available' : 'hidden')}>{p.status === 'hidden' ? 'Show' : 'Hide'}</button>
               <button className="min-h-11 px-1" onClick={() => duplicate(p)}>Duplicate</button>
@@ -86,7 +86,7 @@ export function ProductEditor() {
   }
   return (
     <div className="space-y-4 pb-8">
-      <Link to="/admin/menu" className="inline-flex min-h-11 items-center text-sm font-semibold text-honey-700">&lsaquo; Menu</Link>
+      <Link to="/admin/menu" className="inline-flex min-h-11 items-center text-sm font-semibold text-wine-700">&lsaquo; Menu</Link>
       <h1 className="text-3xl">{existing ? 'Edit product' : 'New product'}</h1>
       <div className="flex flex-wrap gap-2">{TYPES.map((t) => <Chip key={t} active={p.type === t} onClick={() => up({ type: t })}>{t}</Chip>)}</div>
       {tl2('Name', 'name')}
@@ -125,7 +125,7 @@ export function ProductEditor() {
           <button className={btn('outline')} onClick={() => up({ groups: [...p.groups, group('quantity', 'Quantity', 'Quantité', true)] })}>+ Quantity</button>
         </div>
         {p.groups.map((g) => (
-          <div key={g.id} className="space-y-2 rounded-card border border-honey-200 bg-paper p-3">
+          <div key={g.id} className="space-y-2 rounded-card border border-wine-200 bg-paper p-3">
             <div className="grid grid-cols-2 gap-2">
               <input className={inputCls} aria-label="Group name EN" value={g.name.en} onChange={(e) => upGroup(g.id, { name: { ...g.name, en: e.target.value } })} />
               <input className={inputCls} aria-label="Group name FR" value={g.name.fr} onChange={(e) => upGroup(g.id, { name: { ...g.name, fr: e.target.value } })} />
@@ -134,7 +134,7 @@ export function ProductEditor() {
               <select className={`${inputCls} w-auto`} aria-label="Kind" value={g.kind} onChange={(e) => upGroup(g.id, { kind: e.target.value as OptionKind })}>
                 <option value="one">Pick one</option><option value="several">Pick several</option><option value="text">Text</option><option value="quantity">Quantity</option>
               </select>
-              <label className="flex min-h-11 items-center gap-2"><input type="checkbox" className="h-5 w-5 accent-honey-600" checked={g.required} onChange={(e) => upGroup(g.id, { required: e.target.checked })} />Required</label>
+              <label className="flex min-h-11 items-center gap-2"><input type="checkbox" className="h-5 w-5 accent-wine-600" checked={g.required} onChange={(e) => upGroup(g.id, { required: e.target.checked })} />Required</label>
               <button className="min-h-11 font-semibold text-red-700" onClick={() => up({ groups: p.groups.filter((x) => x.id !== g.id) })}>Delete group</button>
             </div>
             {g.kind === 'text' && <Field label="Character limit"><input className={inputCls} inputMode="numeric" value={g.charLimit ?? ''} onChange={(e) => upGroup(g.id, { charLimit: Number(e.target.value.replace(/\D/g, '')) || undefined })} /></Field>}

@@ -32,11 +32,11 @@ export function DatePicker({ value, onChange, ctx }: Props) {
   }
 
   return (
-    <div className="rounded-card border border-honey-200 bg-paper p-3">
+    <div className="rounded-card border border-wine-200 bg-paper p-3">
       <div className="mb-2 flex items-center justify-between">
-        <button type="button" className="min-h-11 min-w-11 rounded-xl text-xl hover:bg-honey-100 disabled:opacity-30" disabled={!canPrev} onClick={() => setMonth(addMonths(month, -1))} aria-label="Previous month">&lsaquo;</button>
+        <button type="button" className="min-h-11 min-w-11 rounded-xl text-xl hover:bg-wine-100 disabled:opacity-30" disabled={!canPrev} onClick={() => setMonth(addMonths(month, -1))} aria-label="Previous month">&lsaquo;</button>
         <p className="font-serif font-semibold capitalize">{fmtMonth(month, lang)}</p>
-        <button type="button" className="min-h-11 min-w-11 rounded-xl text-xl hover:bg-honey-100 disabled:opacity-30" disabled={!canNext} onClick={() => setMonth(addMonths(month, 1))} aria-label="Next month">&rsaquo;</button>
+        <button type="button" className="min-h-11 min-w-11 rounded-xl text-xl hover:bg-wine-100 disabled:opacity-30" disabled={!canNext} onClick={() => setMonth(addMonths(month, 1))} aria-label="Next month">&rsaquo;</button>
       </div>
       <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-ink-soft" aria-hidden="true">
         {names.map((n, i) => <span key={i}>{n}</span>)}
@@ -51,8 +51,8 @@ export function DatePicker({ value, onChange, ctx }: Props) {
               aria-pressed={d === value}
               aria-disabled={!!dateProblem(d, ctx)}
               className={`min-h-11 rounded-xl text-sm font-semibold ${
-                d === value ? 'bg-honey-600 text-paper'
-                  : dateProblem(d, ctx) ? 'bg-stone-100 text-stone-400' : 'bg-honey-100 text-ink hover:bg-honey-200'
+                d === value ? 'bg-wine-600 text-paper'
+                  : dateProblem(d, ctx) ? 'bg-stone-100 text-stone-400' : 'bg-wine-100 text-ink hover:bg-wine-200'
               }`}
             >
               {Number(d.slice(8))}

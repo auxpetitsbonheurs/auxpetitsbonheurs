@@ -24,14 +24,14 @@ export function AdminLayout() {
   }
   return (
     <div className="min-h-screen pb-36">
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-honey-200 bg-cream/95 px-4 py-2 backdrop-blur">
-        <p className="font-serif text-lg font-semibold text-honey-700">Admin</p>
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-wine-200 bg-cream/95 px-4 py-2 backdrop-blur">
+        <p className="flex items-center gap-2 font-serif text-lg font-semibold text-wine-700"><img src="/brand/logo-badge-cream.svg" alt="" width={32} height={32} className="h-8 w-8" />Admin</p>
         <p className="text-sm text-ink-soft">{admin?.name} · {admin?.role === 'owner' ? 'Owner' : 'Admin'}</p>
       </header>
       <main className="mx-auto max-w-3xl px-4 pt-4"><Outlet /></main>
-      <nav aria-label="Admin" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-honey-200 bg-paper pb-[env(safe-area-inset-bottom)]">
+      <nav aria-label="Admin" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-wine-200 bg-paper pb-[env(safe-area-inset-bottom)]">
         {TABS.map(([to, label, end]) => (
-          <NavLink key={to} to={to} end={end} className={({ isActive }) => `flex min-h-14 items-center justify-center text-xs font-semibold ${isActive ? 'text-honey-700' : 'text-ink-soft'}`}>
+          <NavLink key={to} to={to} end={end} className={({ isActive }) => `flex min-h-14 items-center justify-center text-xs font-semibold ${isActive ? 'text-wine-700' : 'text-ink-soft'}`}>
             {label}
           </NavLink>
         ))}

@@ -89,7 +89,7 @@ export function CustomRequest() {
             </div>
           ))}
           {photos.length < MAX_PHOTOS && (
-            <label className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-ink-line text-center text-xs font-semibold text-honey-700">
+            <label className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-ink-line text-center text-xs font-semibold text-wine-700">
               {t('cu.addPhoto')}
               <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => { void addPhotos(e.target.files); e.target.value = '' }} />
             </label>
@@ -105,7 +105,7 @@ export function CustomRequest() {
         <p className="mb-1 text-sm font-semibold">{t('b.how')}</p>
         <div className="grid grid-cols-2 gap-2">
           {(['delivery', 'pickup'] as Fulfilment[]).map((x) => (
-            <button key={x} type="button" aria-pressed={fulfilment === x} onClick={() => setFulfilment(x)} className={`min-h-11 rounded-card border font-semibold ${fulfilment === x ? 'border-honey-600 bg-honey-100' : 'border-honey-200 bg-paper'}`}>{t(`b.${x}`)}</button>
+            <button key={x} type="button" aria-pressed={fulfilment === x} onClick={() => setFulfilment(x)} className={`min-h-11 rounded-card border font-semibold ${fulfilment === x ? 'border-wine-600 bg-wine-100' : 'border-wine-200 bg-paper'}`}>{t(`b.${x}`)}</button>
           ))}
         </div>
       </div>

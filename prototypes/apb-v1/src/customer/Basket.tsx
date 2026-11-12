@@ -128,7 +128,7 @@ export function Basket() {
                   const b = quantityBounds(product)
                   return <Stepper {...qtyLabels(t, tl(product.name))} value={l.selection.qty} min={b.min} max={b.max} onChange={(qty) => patchLine(l.id, { selection: { ...l.selection, qty } })} />
                 })()}
-                {product && !unavailable && <Link to={`/product/${product.id}?edit=${l.id}`} className="flex min-h-11 items-center px-2 text-sm font-semibold text-honey-700">{t('common.edit')}</Link>}
+                {product && !unavailable && <Link to={`/product/${product.id}?edit=${l.id}`} className="flex min-h-11 items-center px-2 text-sm font-semibold text-wine-700">{t('common.edit')}</Link>}
                 <button type="button" className="min-h-11 px-2 text-sm font-semibold text-red-700" onClick={() => removeLine(l.id)}>{t('common.remove')}</button>
               </div>
             </div>
@@ -140,7 +140,7 @@ export function Basket() {
         <h2 id="how" className="text-xl">{t('b.how')}</h2>
         <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('b.how')}>
           {(['delivery', 'pickup'] as Fulfilment[]).map((f) => (
-            <label key={f} className={`flex min-h-11 cursor-pointer flex-col items-center justify-center rounded-card border p-3 text-center font-semibold ${fulfilment === f ? 'border-honey-600 bg-honey-100' : 'border-honey-200 bg-paper'}`}>
+            <label key={f} className={`flex min-h-11 cursor-pointer flex-col items-center justify-center rounded-card border p-3 text-center font-semibold ${fulfilment === f ? 'border-wine-600 bg-wine-100' : 'border-wine-200 bg-paper'}`}>
               <input type="radio" name="fulfilment" aria-label={t(`b.${f}`)} className="sr-only" checked={fulfilment === f} onChange={() => patchDraft({ fulfilment: f })} />
               {t(`b.${f}`)}
               <span className="text-xs font-normal text-ink-soft">{f === 'delivery' ? `+ ${formatRs(s.deliveryFee)}` : t('common.free')}</span>
@@ -160,7 +160,7 @@ export function Basket() {
           <div className={card}>
             <p className="text-sm font-semibold">{t('b.pickupAt')}</p>
             <p className="text-sm">{s.pickupAddress}</p>
-            <a className="flex min-h-11 items-center text-sm font-semibold text-honey-700" href={s.mapLink} target="_blank" rel="noreferrer">{t('b.map')}</a>
+            <a className="flex min-h-11 items-center text-sm font-semibold text-wine-700" href={s.mapLink} target="_blank" rel="noreferrer">{t('b.map')}</a>
           </div>
         )}
       </section>
@@ -175,8 +175,8 @@ export function Basket() {
           <legend className="mb-1 text-sm font-semibold">{t('b.window')}</legend>
           <div className="space-y-1">
             {s.windows.map((w) => (
-              <label key={w.id} className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border px-3 ${draft.window === w.id ? 'border-honey-600 bg-honey-100' : 'border-honey-200 bg-paper'}`}>
-                <input type="radio" name="window" aria-label={`${tl(w.name)} ${w.from}-${w.to}`} className="h-5 w-5 accent-honey-600" checked={draft.window === w.id} onChange={() => patchDraft({ window: w.id })} />
+              <label key={w.id} className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border px-3 ${draft.window === w.id ? 'border-wine-600 bg-wine-100' : 'border-wine-200 bg-paper'}`}>
+                <input type="radio" name="window" aria-label={`${tl(w.name)} ${w.from}-${w.to}`} className="h-5 w-5 accent-wine-600" checked={draft.window === w.id} onChange={() => patchDraft({ window: w.id })} />
                 <span className="text-sm font-semibold">{tl(w.name)}</span>
                 <span className="text-sm text-ink-soft">{w.from}-{w.to}</span>
               </label>
@@ -196,10 +196,10 @@ export function Basket() {
 
       <section className="space-y-2">
         <label className="flex min-h-11 items-start gap-3">
-          <input type="checkbox" aria-label={t('b.policies')} className="mt-2 h-5 w-5 accent-honey-600" checked={draft.policies} onChange={(e) => patchDraft({ policies: e.target.checked })} />
+          <input type="checkbox" aria-label={t('b.policies')} className="mt-2 h-5 w-5 accent-wine-600" checked={draft.policies} onChange={(e) => patchDraft({ policies: e.target.checked })} />
           <span className="pt-2 text-sm">{t('b.policies')}</span>
         </label>
-        <button type="button" className="min-h-11 text-sm font-semibold text-honey-700" onClick={() => setPoliciesOpen(!policiesOpen)}>{t('b.readPolicies')}</button>
+        <button type="button" className="min-h-11 text-sm font-semibold text-wine-700" onClick={() => setPoliciesOpen(!policiesOpen)}>{t('b.readPolicies')}</button>
         {policiesOpen && <p className="whitespace-pre-line rounded-card bg-paper p-3 text-sm">{tl(s.policies)}</p>}
         {errors.policies && <p role="alert" className="text-xs font-semibold text-red-700">{errors.policies}</p>}
       </section>
@@ -209,7 +209,7 @@ export function Basket() {
         <dl className="space-y-1 text-sm">
           <div className="flex justify-between"><dt>{t('b.subtotal')}</dt><dd>{formatRs(total - (delivery ? s.deliveryFee : 0))}</dd></div>
           {delivery && <div className="flex justify-between"><dt>{t('b.deliveryFee')}</dt><dd>{formatRs(s.deliveryFee)}</dd></div>}
-          <div className="flex justify-between border-t border-honey-200 pt-2 text-lg font-semibold"><dt>{t('b.total')}</dt><dd>{formatRs(total)}</dd></div>
+          <div className="flex justify-between border-t border-wine-200 pt-2 text-lg font-semibold"><dt>{t('b.total')}</dt><dd>{formatRs(total)}</dd></div>
         </dl>
         <p className="mt-2 text-xs text-ink-soft">{t('b.payNote')}</p>
         <button type="button" className={btn('primary', 'mt-3 w-full')} disabled={busy} onClick={send}>{busy ? t('b.sending') : t('b.send')}</button>

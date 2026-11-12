@@ -45,8 +45,8 @@ export function Today() {
       <h1 className="text-3xl">Today</h1>
       <div className="grid grid-cols-3 gap-2">
         {counts.map(([label, n, to]) => (
-          <Link key={label} to={to} className="rounded-card border border-honey-200 bg-paper p-3 text-center">
-            <p className="font-serif text-3xl font-semibold text-honey-700">{n}</p>
+          <Link key={label} to={to} className="rounded-card border border-wine-200 bg-paper p-3 text-center">
+            <p className="font-serif text-3xl font-semibold text-wine-700">{n}</p>
             <p className="text-xs font-semibold text-ink-soft">{label}</p>
           </Link>
         ))}
