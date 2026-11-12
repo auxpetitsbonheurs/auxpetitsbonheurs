@@ -15,7 +15,7 @@ import { sql } from "drizzle-orm";
 import type { TimeWindow } from "~/db/schema";
 import type { BasketLine } from "~/domain/basket";
 import { formatOrderNumber, newTrackingToken } from "~/domain/order-number";
-import { type CheckoutTotals, type PricedLine, type PricingProduct, checkoutTotals, priceLines } from "~/domain/pricing";
+import { type CheckoutTotals, type LocalizedName, type PricedLine, type PricingProduct, checkoutTotals, priceLines } from "~/domain/pricing";
 import { todayMU } from "~/domain/time";
 import type { Locale } from "~/lib/locale";
 import { type PlaceOrderInput, parsePlaceOrder } from "~/server/contracts/site";
@@ -35,8 +35,10 @@ export interface PlaceOrderContext {
  * A placed order; `replayed` when the key already belonged to it (nothing new was written).
  * `leftOut`: product ids of the sold-out, hidden or deleted lines left out of a new order
  * (UX audit H1), so the confirmation page can name them; empty for a replay.
+ * `leftOutNames`: the names of those that still exist (a deleted product has none), in the
+ * same order, so the confirmation can render without reading them back (checkout AC48).
  */
-export type PlacedOrder = PlacedOrderRef & { ok: true; orderNumber: string; replayed: boolean; leftOut: string[] };
+export type PlacedOrder = PlacedOrderRef & { ok: true; orderNumber: string; replayed: boolean; leftOut: string[]; leftOutNames: LocalizedName[] };
 
 export type PlaceOrderResult =
   | PlacedOrder
@@ -104,9 +106,21 @@ const normaliseEmail = (email: string) => email.trim().toLowerCase();
 
 const KEY_REUSED = { ok: false, code: "VALIDATION_FAILED", fields: [], keyReused: true } as const;
 
-function placedOrder(prefix: string, ref: PlacedOrderRef, replayed: boolean, leftOut: string[] = []): PlacedOrder {
+function placedOrder(prefix: string, ref: PlacedOrderRef, replayed: boolean, left: LeftOut = { ids: [], names: [] }): PlacedOrder {
   const { orderId, number, trackingToken, locale } = ref;
-  return { ok: true, orderId, number, trackingToken, locale, orderNumber: formatOrderNumber(prefix, number), replayed, leftOut };
+  return { ok: true, orderId, number, trackingToken, locale, orderNumber: formatOrderNumber(prefix, number), replayed, leftOut: left.ids, leftOutNames: left.names };
+}
+
+interface LeftOut {
+  ids: string[];
+  names: LocalizedName[];
+}
+
+/** The lines left out of a placed order: unique product ids in basket order, and the names of those the snapshot knows. */
+function leftOutOf(lines: PricedLine[], products: SnapshotProduct[]): LeftOut {
+  const ids = [...new Set(lines.filter((l) => l.problem !== null).map((l) => l.productId))];
+  const known = productMap(products);
+  return { ids, names: ids.flatMap((id) => (known.has(id) ? [known.get(id)!.name] : [])) };
 }
 
 /** The original order only when the posted email is the order's (normalised); else a neutral refusal. */
@@ -203,8 +217,7 @@ export async function placeOrder(form: Record<string, unknown>, ctx: PlaceOrderC
     // The order is committed. The procedure and domain/pricing must agree; a difference is a bug to fix, never the customer's problem.
     if ("ok" in decision || decision.totals.totalRs !== decision.input.displayedTotalRs) logDrift("placed_but_refused_here");
     const lines = "ok" in decision ? [] : decision.lines;
-    const leftOut = [...new Set(lines.filter((l) => l.problem !== null).map((l) => l.productId))];
-    return placedOrder(result.settings.orderNumberPrefix, result.placed, false, leftOut);
+    return placedOrder(result.settings.orderNumberPrefix, result.placed, false, leftOutOf(lines, result.products));
   }
   if ("ok" in decision) return decision;
   // Here everything passed but the procedure did not write: its rules and ours disagree. Ask

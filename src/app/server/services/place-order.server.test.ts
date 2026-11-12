@@ -283,7 +283,7 @@ describe("server prices (S-013 AC8)", () => {
 
 describe("availability (S-013 AC9)", () => {
   test.each(["sold_out", "hidden"])("a %s line is left out of the order and its total (ADR-0004)", async (status) => {
-    const tart = await insertProduct(database.db, { slug: "tart", nameEn: "Tart", status: status as "sold_out" | "hidden" });
+    const tart = await insertProduct(database.db, { slug: "tart", nameEn: "Tart", nameFr: "Tarte", status: status as "sold_out" | "hidden" });
 
     const result = await place(deliveryForm(), { basket: [line("a", cakeId), line("b", tart)] });
     expectRefusedNever(result);
@@ -293,6 +293,18 @@ describe("availability (S-013 AC9)", () => {
     expect(items.rows.map((r) => r.product_id)).toEqual([cakeId]);
     // UX audit H1: the caller names what was left out on the confirmation page.
     expect(result.leftOut).toEqual([tart]);
+    // AC48: and their names, so the confirmation can render without reading them back.
+    expect(result.leftOutNames).toEqual([{ en: "Tart", fr: "Tarte" }]);
+  });
+
+  test("a deleted product left out has no name to give; duplicates are named once (AC48)", async () => {
+    const tart = await insertProduct(database.db, { slug: "tart", nameEn: "Tart", nameFr: "Tarte", status: "sold_out" });
+    const gone = "00000000-0000-4000-8000-000000000000";
+
+    const result = await place(deliveryForm(), { basket: [line("a", cakeId), line("b", tart), line("c", gone), line("d", tart)] });
+    expectRefusedNever(result);
+    expect(result.leftOut).toEqual([tart, gone]);
+    expect(result.leftOutNames).toEqual([{ en: "Tart", fr: "Tarte" }]);
   });
 
   test("an order with nothing left out says so, and a replay names nothing (UX audit H1)", async () => {

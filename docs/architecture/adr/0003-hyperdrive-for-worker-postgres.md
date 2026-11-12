@@ -215,3 +215,38 @@ Smart Placement moving the Worker next to Supabase.
 CPU (cpu-measure 43196081265, warm, 50 rounds, no Hyperdrive): place order p50 9 ms (was
 24), basket 26 ms (was 38), tracking 20 ms (was 34); p99 30 / 73 / 47 ms, so still above the
 10 ms target; no request exceeded the limit (see `cpu-measurements.md`).
+
+## Amendment 2026-11-12 (4): the confirmation after Place order skips the database
+Appended. Trigger: amendment 3 left Place order at 2,106 ms (median), of which ~0.9 s was the
+confirmation page opening a second database connection (TLS + SCRAM to the pooler) for one
+query whose answer the Place order POST had just computed. Lead-approved.
+
+Decision (checkout spec AC48, contracts.md v0.31):
+- A new order's redirect also sets **`apb_confirmed`**: base64url JSON of the formatted
+  number, the order locale, the left-out names in that locale (at most 10) and an expiry, plus
+  an HMAC-SHA256 over `v1.<token>.<payload>`. `Max-Age=600; Path=/order/<token>` (or
+  `/fr/order/<token>`; covers the page and its `.data` request); `HttpOnly; SameSite=Lax;
+  Secure`. No contact data and no token in the value (the token is only in the path, as for
+  `apb_left_out`). A replay sets none.
+- `site/order-confirmed` renders from it when it verifies for that token, has not expired (the
+  signed expiry, not only the cookie's Max-Age) and its locale is the page's; otherwise it reads
+  the database exactly as before (refresh after 10 minutes, another device, a shared link, the
+  other language, a tampered or foreign cookie). The page data is the same either way.
+- Key: `HMAC(SUPABASE_SERVICE_ROLE_KEY, "apb confirmation cookie v1")`, derived once per
+  isolate (`app/server/confirmation-cookie.server.ts`); the secret itself never signs anything
+  and nothing new is configured. Rotating that secret (tech-debt: move to Supabase secret keys
+  before 2027) only makes outstanding cookies fall back to the database. Without a signer the
+  page always reads the database.
+- Rejected: rendering the confirmation from the action response (the URL would stay
+  `/basket` until a client-side `replace`, and a refresh or Back would re-post or show the form);
+  an unsigned cookie (a forged one could show any number on a token page).
+
+Security review (security-lead, self-review): tampering is caught by WebCrypto's
+constant-time `verify` over payload and token; a cookie copied to another order's path fails
+(token bound); the payload is schema-checked and length-capped before use; replaying a stolen
+cookie needs the token anyway and shows no more than the token already shows; no new secret,
+no personal data, no token in logs (the request log already redacts token paths).
+UX review (ux-lead): same content, focus and URL; refresh and Back behave as before; the
+left-out notice (AC41) comes from the signed names first and from `apb_left_out` after.
+
+Rollback: revert the commit; cookies already set are ignored and expire within 10 minutes.

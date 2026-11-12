@@ -24,6 +24,7 @@ import { type ActionErrorBody, actionError } from "~/server/action-result.server
 import { basketCookie, clearBasketCookie, readBasket } from "~/server/basket.server";
 import { leftOutCookie } from "~/server/left-out.server";
 import { clockContext } from "~/server/clock.server";
+import { confirmationContext } from "~/server/confirmation-cookie.server";
 import { Uuid } from "~/server/contracts/shared";
 import { RemoveLineInput, UpdateLineInput } from "~/server/contracts/site";
 import { requestDbContext } from "~/server/db.server";
@@ -162,7 +163,15 @@ async function submitOrder(form: Record<string, unknown>, args: Route.ActionArgs
   const headers = new Headers({ "Set-Cookie": clearBasketCookie() });
   // Lines left out are named on the confirmation page (UX audit H1): ids in a cookie for that order's pages only
   // (Path=/order/:token so the client data request `confirmed.data` gets it too).
-  if (result.leftOut.length > 0) headers.append("Set-Cookie", leftOutCookie(result.leftOut, localePath(result.locale, `/order/${result.trackingToken}`)));
+  const orderPath = localePath(result.locale, `/order/${result.trackingToken}`);
+  if (result.leftOut.length > 0) headers.append("Set-Cookie", leftOutCookie(result.leftOut, orderPath));
+  // AC48: the confirmation renders from this signed cookie, without a second database connection.
+  // A replay sets none: the first answer's cookie (with its left-out names) stays, or the page reads the database.
+  const signer = context.get(confirmationContext);
+  if (signer && !result.replayed) {
+    const snapshot = { number: result.orderNumber, locale: result.locale, leftOut: result.leftOutNames.map((name) => localized(name, result.locale)) };
+    headers.append("Set-Cookie", await signer.cookie(result.trackingToken, snapshot, orderPath, context.get(clockContext).now()));
+  }
   return redirect(confirmation, { headers });
 }
 

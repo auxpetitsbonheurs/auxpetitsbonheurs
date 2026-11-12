@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { insertProduct } from "~/db/testing/catalogue";
+import { confirmationContext } from "~/server/confirmation-cookie.server";
 import { requestDbContext } from "~/server/db.server";
 import { placeTestOrder } from "~/server/testing/orders";
 import { routeArgs } from "~/server/testing/route-context";
@@ -19,11 +20,17 @@ afterEach(async () => {
 
 const placeOrder = (basketPath = "/basket") => placeTestOrder(database, { basketPath });
 
-const load = (path: string, token: string, headers: Record<string, string> = {}) => {
-  const args = routeArgs(database, { path, params: { token } });
+const load = (path: string, token: string, headers: Record<string, string> = {}, options: { now?: string; noDatabase?: boolean } = {}) => {
+  const args = routeArgs(database, { path, params: { token }, now: options.now });
+  if (options.noDatabase) args.context.set(requestDbContext, { db: untouchable() as never, close: async () => {} });
   const request = new Request(args.request.url, { headers });
   return loader({ ...args, request } as never);
 };
+
+/** A database that fails the test if anything reads it. */
+function untouchable() {
+  return new Proxy({}, { get: () => { throw new Error("the database was used"); } });
+}
 
 async function expect404(promise: Promise<unknown>) {
   const thrown = await promise.then(
@@ -137,5 +144,53 @@ describe("language (S-015 AC5)", () => {
     // Chosen English stays English.
     const data = (await load(`/order/${token}/confirmed`, token, { cookie: "apb_locale=en" })) as { title: string };
     expect(data.title).toBe("Order received");
+  });
+});
+
+describe("right after Place order, no database (spec AC48, contracts.md v0.31)", () => {
+  test("the confirmation cookie renders the same page as the database would, without touching it", async () => {
+    const { path, token, confirmationCookie } = await placeOrder();
+    expect(confirmationCookie).toMatch(/^apb_confirmed=/);
+
+    const fromCookie = await load(path, token, { cookie: confirmationCookie }, { noDatabase: true });
+    expect(fromCookie).toEqual(await load(path, token));
+  });
+
+  test("in French, with left-out items named, as the database path would name them", async () => {
+    const tart = await insertProduct(database.db, { slug: "tart", nameEn: "Lemon tart", nameFr: "Tarte au citron", status: "sold_out" });
+    const { path, token, confirmationCookie } = await placeTestOrder(database, { basketPath: "/fr/basket", extraLines: [tart] });
+    const cookie = `${confirmationCookie}; apb_left_out=${tart}`;
+
+    const fromCookie = (await load(path, token, { cookie }, { noDatabase: true })) as { leftOut: string[]; title: string };
+    expect(fromCookie.leftOut).toEqual(["Tarte au citron"]);
+    expect(fromCookie.title).toBe("Commande reçue");
+    expect(fromCookie).toEqual(await load(path, token, { cookie: `apb_left_out=${tart}` }));
+  });
+
+  test("after 10 minutes, with a tampered cookie, or another order's cookie, the page reads the database", async () => {
+    const first = await placeOrder();
+    const second = await placeOrder();
+    const tampered = first.confirmationCookie.replace("apb_confirmed=e", "apb_confirmed=f");
+    expect(tampered).not.toBe(first.confirmationCookie);
+
+    await expect(load(first.path, first.token, { cookie: first.confirmationCookie }, { now: "2026-11-10T08:10:00Z", noDatabase: true })).rejects.toThrow("the database was used");
+    await expect(load(first.path, first.token, { cookie: tampered }, { noDatabase: true })).rejects.toThrow("the database was used");
+    await expect(load(first.path, first.token, { cookie: second.confirmationCookie }, { noDatabase: true })).rejects.toThrow("the database was used");
+    expect(await load(first.path, first.token, { cookie: tampered })).toMatchObject({ number: "APB-0001" });
+  });
+
+  test("the cookie is only trusted on its own language's path; the other language reads the database", async () => {
+    const { token, confirmationCookie } = await placeOrder("/fr/basket");
+
+    await expect(load(`/order/${token}/confirmed`, token, { cookie: `${confirmationCookie}; apb_locale=en` }, { noDatabase: true })).rejects.toThrow("the database was used");
+  });
+
+  test("without a signing secret every confirmation reads the database", async () => {
+    const { path, token, confirmationCookie } = await placeOrder();
+    const args = routeArgs(database, { path, params: { token } });
+    args.context.set(confirmationContext, null);
+    const request = new Request(args.request.url, { headers: { cookie: confirmationCookie } });
+
+    expect(await loader({ ...args, request } as never)).toMatchObject({ number: "APB-0001" });
   });
 });

@@ -7,7 +7,9 @@ import { buttonVariants } from "~/components/ui/button";
 import { formatOrderNumber } from "~/domain/order-number";
 import { t as translate } from "~/i18n/catalog.server";
 import { useI18n } from "~/i18n/react";
-import { localeFromPathname, localePath } from "~/lib/locale";
+import { type Locale, localeFromPathname, localePath } from "~/lib/locale";
+import { clockContext } from "~/server/clock.server";
+import { confirmationContext } from "~/server/confirmation-cookie.server";
 import { localized } from "~/i18n/localized";
 import { nameList } from "~/lib/left-out";
 import { requestDbContext } from "~/server/db.server";
@@ -26,6 +28,13 @@ export const middleware: Route.MiddlewareFunction[] = [tokenPageHeaders];
  */
 export async function loader({ request, url, params, context }: Route.LoaderArgs) {
   if (!isTrackingToken(params.token)) throw data(null, { status: 404 });
+  const locale = localeFromPathname(url.pathname);
+  // Right after Place order (AC48): the signed `apb_confirmed` cookie the basket action set for
+  // this order's path, so no database connection. Only in the order's own language (the
+  // cookie's path); anything that does not verify, has expired or is absent reads the database.
+  const signer = context.get(confirmationContext);
+  const fresh = signer ? await signer.read(request, params.token, context.get(clockContext).now()) : undefined;
+  if (fresh && fresh.locale === locale) return confirmation(url, params.token, fresh.locale, fresh.number, fresh.leftOut);
   // One query: the order, the number prefix and the left-out names (ADR-0003 amendment 3).
   // Left out (UX audit H1, AC41): product ids from the `apb_left_out` cookie the basket
   // action set for this page only (never personal data), named in the cookie's order.
@@ -35,17 +44,22 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
   const { ref: order, orderNumberPrefix } = found;
   const moveTo = orderLanguageRedirect(request, url, order.locale);
   if (moveTo) throw redirect(moveTo);
-  const locale = localeFromPathname(url.pathname);
   const names = new Map(found.leftOut.map((p) => [p.id, p.name]));
+  const leftOut = leftOutIds.flatMap((id) => {
+    const name = names.get(id);
+    return name ? [localized(name, locale)] : [];
+  });
+  return confirmation(url, order.trackingToken, order.locale, formatOrderNumber(orderNumberPrefix, order.number), leftOut);
+}
+
+/** The page data, the same whether it came from the cookie or the database. */
+function confirmation(url: URL, token: string, orderLocale: Locale, number: string, leftOut: string[]) {
   return {
-    title: translate("order.confirmed.metaTitle", locale),
-    number: formatOrderNumber(orderNumberPrefix, order.number),
-    trackingUrl: `${url.origin}${localePath(order.locale, `/t/${order.trackingToken}`)}`,
+    title: translate("order.confirmed.metaTitle", localeFromPathname(url.pathname)),
+    number,
+    trackingUrl: `${url.origin}${localePath(orderLocale, `/t/${token}`)}`,
     offerSaveDetails: false,
-    leftOut: leftOutIds.flatMap((id) => {
-      const name = names.get(id);
-      return name ? [localized(name, locale)] : [];
-    }),
+    leftOut,
   };
 }
 

@@ -3,6 +3,7 @@ import { dispatch } from "~/jobs/dispatch";
 import { afterResponseContext, createAfterResponse } from "~/server/after-response.server";
 import { authContext } from "~/server/auth-gateway.server";
 import { clockContext, createClock } from "~/server/clock.server";
+import { confirmationContext, confirmationSignerFor } from "~/server/confirmation-cookie.server";
 import { handleWithDb, requestDbContext } from "~/server/db.server";
 import { type ServerEnv, getEnv } from "~/server/env.server";
 import { EMAIL_TIMEOUT_MS, resendMailer } from "~/server/email/sender.server";
@@ -36,6 +37,8 @@ async function respond(request: Request, settings: ServerEnv, ctx: ExecutionCont
     context.set(serverTimingContext, timing);
     context.set(publicConfigContext, { supabaseUrl: settings.SUPABASE_URL, supabaseAnonKey: settings.SUPABASE_ANON_KEY });
     context.set(clockContext, createClock({ testClock: settings.TEST_CLOCK === "on" }, request));
+    // Signed confirmation cookie (checkout AC48): its key is derived from a server-only secret, never the secret itself.
+    context.set(confirmationContext, confirmationSignerFor(settings.SUPABASE_SERVICE_ROLE_KEY));
     // Supabase Auth for this request (lazy: no client until a guard or sign-in needs it).
     context.set(authContext, createSupabaseAuth({ url: settings.SUPABASE_URL, anonKey: settings.SUPABASE_ANON_KEY }, request));
     // Storage with the service key, server side only: removing photos of deleted products,

@@ -393,6 +393,26 @@ test.describe("S-013 place an order as a guest", () => {
     expect(order).toEqual({ total_rs: 850, delivery_fee_rs: 0, locale: "fr" });
   });
 
+  test("AC48 (checkout spec): the confirmation after Place order opens no database connection; a refresh shows the same page", async ({ page }) => {
+    await basketWithCake(page);
+    await hydrated(page);
+    await fillOrder(page, "pickup");
+    const confirmationData = page.waitForResponse((r) => /\/order\/[A-Za-z0-9_-]{43}\/confirmed\.data/.test(r.url()));
+    await page.getByRole("button", { name: "Place order" }).click();
+
+    const timing = (await (await confirmationData).allHeaders())["server-timing"] ?? "";
+    expect(timing).not.toContain("db-connect");
+    await expect(page).toHaveURL(TOKEN_URL);
+    const number = page.getByRole("region", { name: "Your order number" }).locator("p").first();
+    await expect(number).toHaveText(/^APB-\d+$/);
+    const shown = await number.textContent();
+
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
+    await expect(number).toHaveText(shown!);
+    await expect(page.getByRole("link", { name: "Follow my order" })).toHaveAttribute("href", /\/t\/[A-Za-z0-9_-]{43}$/);
+  });
+
   test("AC2, AC13: an empty submit moves focus to an error summary whose links reach each field", async ({ page }) => {
     await basketWithCake(page);
     await hydrated(page);

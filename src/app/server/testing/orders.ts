@@ -10,6 +10,8 @@ export interface PlacedTestOrder {
   /** The confirmation path the action redirected to. */
   path: string;
   token: string;
+  /** The `apb_confirmed` cookie the action set, as `name=value` (AC48). */
+  confirmationCookie: string;
 }
 
 export const DELIVERY_ORDER = {
@@ -23,10 +25,11 @@ export const DELIVERY_ORDER = {
 /** A pickup order of one sample cake for aisha@example.com unless `overrides` say otherwise. */
 export async function placeTestOrder(
   database: TestDatabase,
-  options: { basketPath?: string; quantity?: number; overrides?: Record<string, string> } = {},
+  options: { basketPath?: string; quantity?: number; overrides?: Record<string, string>; extraLines?: string[] } = {},
 ): Promise<PlacedTestOrder> {
   const productId = await insertProduct(database.db, { slug: `cake-${randomUUID().slice(0, 8)}` });
-  const cookie = cookieFrom(basketCookie([{ lineId: "a", productId, options: [], quantity: options.quantity ?? 1 }]));
+  const extra = (options.extraLines ?? []).map((id, i) => ({ lineId: `x${i}`, productId: id, options: [], quantity: 1 }));
+  const cookie = cookieFrom(basketCookie([{ lineId: "a", productId, options: [], quantity: options.quantity ?? 1 }, ...extra]));
   const form = {
     intent: "placeOrder",
     idempotencyKey: randomUUID(),
@@ -44,5 +47,6 @@ export async function placeTestOrder(
   const path = response instanceof Response ? response.headers.get("Location") : null;
   const token = path ? /\/order\/([^/]+)\/confirmed$/.exec(path)?.[1] : undefined;
   if (!path || !token) throw new Error(`placing the test order was refused: ${JSON.stringify((response as { data?: unknown }).data)}`);
-  return { path, token };
+  const confirmed = (response as Response).headers.getSetCookie().find((c) => c.startsWith("apb_confirmed="));
+  return { path, token, confirmationCookie: confirmed ? cookieFrom(confirmed) : "" };
 }

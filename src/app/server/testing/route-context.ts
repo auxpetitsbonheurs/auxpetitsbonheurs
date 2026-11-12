@@ -6,12 +6,15 @@ import { afterResponseContext, createAfterResponse } from "~/server/after-respon
 import { authContext } from "~/server/auth-gateway.server";
 import type { TestDatabase } from "~/db/testing/pglite";
 import { clockContext } from "~/server/clock.server";
+import { confirmationContext, confirmationSignerFor } from "~/server/confirmation-cookie.server";
 import { type RequestDb, requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { type StorageGateway, type UploadGateway, storageContext, uploadContext } from "~/server/storage.server";
 import { FakeAuth } from "./fake-auth";
 
 export const TEST_SUPABASE_URL = "https://storage.test";
+/** The server secret the confirmation cookie is signed with in route tests (a test value). */
+export const TEST_CONFIRMATION_SECRET = "test-confirmation-secret";
 
 export interface RouteArgsOptions {
   path: string;
@@ -52,6 +55,7 @@ export function routeArgs(database: TestDatabase, options: RouteArgsOptions) {
   context.set(clockContext, { now: () => now });
   context.set(authContext, (options.auth ?? new FakeAuth()).gateway(request, () => now));
   context.set(publicConfigContext, { supabaseUrl: TEST_SUPABASE_URL, supabaseAnonKey: "test-anon-key" });
+  context.set(confirmationContext, confirmationSignerFor(TEST_CONFIRMATION_SECRET));
   context.set(storageContext, options.storage === undefined ? acceptingStorage : options.storage);
   context.set(uploadContext, options.uploads ?? null);
   // Deferred work starts at once (the response is "ready"); tests await `afterResponse.settled()`.

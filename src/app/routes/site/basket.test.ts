@@ -281,7 +281,19 @@ describe("what is left out of the order (UX audit H1, H2; spec AC41, AC42)", () 
     const cake = await insertProduct(database.db);
 
     const response = (await post(form(), cookieWith([{ lineId: "a", productId: cake, quantity: 1 }]))) as Response;
-    expect(response.headers.getSetCookie()).toHaveLength(1);
+    expect(response.headers.getSetCookie().filter((c) => c.startsWith("apb_left_out="))).toEqual([]);
+  });
+
+  test("a new order also gets the signed confirmation cookie for its own path, after the others (AC48)", async () => {
+    const cake = await insertProduct(database.db);
+
+    const response = (await post(form(), cookieWith([{ lineId: "a", productId: cake, quantity: 1 }]))) as Response;
+    const path = response.headers.get("Location")!.replace(/\/confirmed$/, "");
+    const cookies = response.headers.getSetCookie();
+    expect(cookies).toHaveLength(2);
+    expect(cookies[1]).toMatch(/^apb_confirmed=[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}; Max-Age=600; /);
+    expect(cookies[1]!.endsWith(`; Path=${path}; HttpOnly; SameSite=Lax; Secure`)).toBe(true);
+    expect(cookies[1]).not.toContain("aisha");
   });
 
   test("lines that can all not be ordered get their own message; an empty basket keeps 'Your basket is empty.'", async () => {
@@ -352,6 +364,15 @@ describe("idempotency key in the form (S-014 AC4)", () => {
     expect(replay.headers.get("Location")).toBe(first.headers.get("Location"));
     expect(replay.headers.get("Location")).toMatch(/^\/fr\/order\//);
     expect((await database.client.query("select * from orders")).rows).toEqual(before.rows);
+    // The first answer's confirmation cookie (with its left-out names) is left as it is (AC48).
+    expect(first.headers.getSetCookie().some((c) => c.startsWith("apb_confirmed="))).toBe(true);
+    expect(replay.headers.getSetCookie().some((c) => c.startsWith("apb_confirmed="))).toBe(false);
+  });
+
+  test("a refusal sets no confirmation cookie", async () => {
+    const id = await insertProduct(database.db);
+    const refused = await post(form({ displayedTotalRs: "1" }), cookieWith([{ lineId: "a", productId: id, quantity: 1 }]));
+    expect(refused instanceof Response ? refused.headers.getSetCookie() : []).toEqual([]);
   });
 });
 
