@@ -236,6 +236,17 @@ refuses `APP_ENV=production`; the price is sample data, not a launch price.
 APP_ENV=staging DATABASE_URL='postgresql://…' npm run seed:sample
 ```
 
+### Real menu on staging (S-241)
+
+GitHub → Actions → **seed-menu** → Run workflow (branch `main`) loads the Owner's cookies and
+the six cake flavours from `app/db/menu-data.ts` (built from `docs/content/menu-source/`), with
+their photos resized and uploaded to Storage. Insert-only by web address: a re-run reports
+"already present" and never changes what the Owner edited. Cakes still at a placeholder price
+are Rs 0 and hidden; the run prints "Prices to enter" and the missing content. It needs the
+`STAGING_DATABASE_URL`, `STAGING_SUPABASE_URL` and `STAGING_SUPABASE_SERVICE_ROLE_KEY` secrets
+(docs/runbooks/deploy-keys.md) and refuses any `APP_ENV` but `staging`. The unedited sample
+cake becomes the real Chocolate Cake (same id).
+
 ## Backups
 
 Weekly, every Sunday 02:00 Mauritius time (Saturday 22:00 UTC), and on demand (GitHub →

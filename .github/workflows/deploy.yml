@@ -148,7 +148,11 @@ jobs:
           check /
           grep -qi '^x-robots-tag: noindex, nofollow' "$SMOKE/headers" || { echo "::error::/ lacks X-Robots-Tag: noindex, nofollow"; failed=1; }
           check /healthz
-          check /menu/chocolate-cake
+          check /api/menu
+          # A product page that is on the menu now: the real menu (S-241) hides placeholder-priced
+          # cakes, so no fixed slug is safe. Nothing on the menu yet = no product page to check.
+          slug=$(curl -sS --max-time 20 "$STAGING_URL/api/menu" | node -e 'let s="";process.stdin.on("data",(d)=>(s+=d)).on("end",()=>{try{const p=JSON.parse(s).data.products;process.stdout.write(p.length?encodeURIComponent(p[0].slug):"")}catch{}})') || slug=""
+          if [ -n "$slug" ]; then check "/menu/$slug"; else echo "No product on the menu yet; product page not checked."; fi
           if [ "$failed" -ne 0 ]; then sleep 10; fi # let the failed requests' events reach the tail
           kill "$tail_pid" 2>/dev/null || :
           for _ in $(seq 1 10); do kill -0 "$tail_pid" 2>/dev/null || break; sleep 1; done

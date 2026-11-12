@@ -27,6 +27,15 @@ describe("seed:sample (S-011 sample data)", () => {
     expect(await count("product_photo")).toBe(1);
   });
 
+  test("is not re-created once the cake was renamed (its slug is in the history, S-050/S-241)", async () => {
+    await seedSample(database.db, "staging");
+    await database.client.query("update product set slug = 'chocolate-cake-real'");
+    await database.client.query("insert into product_slug_history (slug, product_id) select 'chocolate-cake', id from product");
+
+    expect(await seedSample(database.db, "staging")).toBe("exists");
+    expect(await count("product")).toBe(1);
+  });
+
   test("refuses to run with APP_ENV=production", async () => {
     await expect(seedSample(database.db, "production")).rejects.toBeInstanceOf(SeedSampleRefused);
     expect(await count("product")).toBe(0);

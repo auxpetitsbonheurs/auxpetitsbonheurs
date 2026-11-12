@@ -31,6 +31,8 @@ leave it off. **Hyperdrive** is optional, see section 6 (ADR-0003).
 | `CLOUDFLARE_ACCOUNT_ID` | Secret | one for both | Cloudflare → Workers & Pages → Overview, right column **Account ID** |
 | `STAGING_DATABASE_URL` | Secret | staging | Supabase staging project → **Connect** (top bar) → Connection string → Method **Session pooler** → URI. Replace `[YOUR-PASSWORD]` with the staging database password. Used only to apply migrations |
 | `PRODUCTION_DATABASE_URL` | Secret | production | Same, in the production project |
+| `STAGING_SUPABASE_URL` | Secret | staging | Supabase **staging** project → Project Settings → Data API → **Project URL**. Used only by the manual `seed-menu` workflow (S-241) |
+| `STAGING_SUPABASE_SERVICE_ROLE_KEY` | Secret | staging | Supabase **staging** project → Project Settings → API Keys → **service_role** → Reveal. Used only by `seed-menu` to upload the menu photos. Full access to staging: never share |
 
 "Variables" tab → **New repository variable** (optional, enables the after-deploy checks):
 

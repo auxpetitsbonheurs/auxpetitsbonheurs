@@ -1,0 +1,51 @@
+name: seed-menu
+
+# Loads the Owner's real menu on STAGING (S-241, src/app/db/menu-data.ts from
+# docs/content/menu-source/). Manual only: Actions -> seed-menu -> Run workflow (branch main).
+# Insert-only by slug, so a re-run never duplicates or overwrites the Owner's edits; it is kept
+# out of the deploy job so a redeploy never re-runs it. Staging only, by construction: the job
+# is bound to the `staging` GitHub Environment, uses only STAGING_* secrets, and the script
+# refuses any APP_ENV but staging. Secrets are referenced by name only and never printed; if
+# one is missing the run names it and stops before writing anything.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seed-menu-staging
+  cancel-in-progress: false
+
+jobs:
+  seed-menu:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: staging
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Check the staging secrets (names only)
+        env:
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          STAGING_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          STAGING_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
+        run: scripts/check-keys.sh --require STAGING_DATABASE_URL STAGING_SUPABASE_URL STAGING_SUPABASE_SERVICE_ROLE_KEY
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+      - run: npm ci
+      - name: Load the real menu (staging)
+        env:
+          APP_ENV: staging
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run seed:menu
