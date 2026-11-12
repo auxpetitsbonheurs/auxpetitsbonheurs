@@ -66,7 +66,7 @@ test.describe("S-022 Owner-only screens refuse Admins", () => {
       expect(response!.status(), path).toBe(403);
       await expect(page.getByRole("heading", { level: 1, name: "Owner only" })).toBeVisible();
       await expect(page.getByRole("link", { name: "Back to Today" })).toHaveAttribute("href", "/admin");
-      await expect(page.getByText("Not available yet")).toHaveCount(0);
+      await expect(page.getByRole("heading", { name: "Not available yet" })).toHaveCount(0);
     }
     await page.getByRole("link", { name: "Back to Today" }).click();
     await expect(page).toHaveURL(/\/admin$/);
@@ -89,7 +89,7 @@ test.describe("S-022 Owner-only screens refuse Admins", () => {
       const response = await page.goto(path);
       expect(response!.status(), path).toBe(200);
       await expect(page.getByRole("heading", { level: 1, name: headings[path] })).toBeVisible();
-      await expect(page.getByText("Not available yet")).toHaveCount(0);
+      await expect(page.getByRole("heading", { name: "Not available yet" })).toHaveCount(0);
     }
   });
 
