@@ -66,7 +66,7 @@ test.describe("S-033 admin frame", () => {
     await expect(main.getByRole("button", { name: "Sign out" })).toBeVisible();
     await main.getByRole("link", { name: "Team" }).click();
     await expect(page).toHaveURL(/\/admin\/team$/);
-    await expect(page.getByText("Not available yet")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Team" })).toBeVisible();
     await expect(bar(page).getByRole("link", { name: "More" })).toHaveAttribute("aria-current", "true");
   });
 
