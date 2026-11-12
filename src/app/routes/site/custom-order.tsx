@@ -115,12 +115,12 @@ export default function CustomOrder({ loaderData }: Route.ComponentProps) {
       </header>
       {text.body && (
         <section aria-labelledby="custom-what" className="flex flex-col gap-3">
-          <h2 id="custom-what" className="section-title-start text-2xl">{t("customOrderPage.whatHeading")}</h2>
+          <h2 id="custom-what" className="border-b border-gold pb-2 text-2xl">{t("customOrderPage.whatHeading")}</h2>
           <PlainText text={text.body} />
         </section>
       )}
       <section aria-labelledby="custom-how" className="flex flex-col gap-3">
-        <h2 id="custom-how" className="section-title-start text-2xl">{t("customOrderPage.howHeading")}</h2>
+        <h2 id="custom-how" className="border-b border-gold pb-2 text-2xl">{t("customOrderPage.howHeading")}</h2>
         <ol className="flex flex-col gap-3">
           {STEPS.map((step, i) => (
             <li key={step} className="flex gap-3">
@@ -133,7 +133,7 @@ export default function CustomOrder({ loaderData }: Route.ComponentProps) {
         </ol>
       </section>
       <section aria-labelledby="custom-notice" className="flex flex-col gap-3">
-        <h2 id="custom-notice" className="section-title-start text-2xl">{t("customOrderPage.noticeHeading")}</h2>
+        <h2 id="custom-notice" className="border-b border-gold pb-2 text-2xl">{t("customOrderPage.noticeHeading")}</h2>
         <p>{noticeDays > 0 ? t("customOrderPage.notice", { count: noticeDays }) : t("customOrderPage.noticeSoon")}</p>
       </section>
       {/* Repeat the call to action at the end of the page (one clear next step after reading). */}

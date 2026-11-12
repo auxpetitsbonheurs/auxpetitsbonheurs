@@ -96,7 +96,7 @@ export function meta({ loaderData, matches, location }: Route.MetaArgs) {
 
 function InfoCard({ id, title, icon, children }: { id: string; title: string; icon: ReactNode; children: ReactNode }) {
   return (
-    <section aria-labelledby={id} className="flex flex-col gap-3 rounded-card border border-border bg-card p-4 min-[23rem]:p-5">
+    <section aria-labelledby={id} className="flex min-w-0 flex-col gap-3 rounded-card border border-border bg-card p-3 min-[20rem]:p-4 min-[23rem]:p-5">
       <h2 id={id} className="flex items-center gap-2 text-2xl">
         {icon}
         {title}
@@ -108,6 +108,13 @@ function InfoCard({ id, title, icon, children }: { id: string; title: string; ic
 
 const iconProps = { "aria-hidden": true, className: "size-5 shrink-0 text-primary-strong", strokeWidth: 1.75 } as const;
 
+/**
+ * Below 20rem (200% zoom on a 320 or 375 px phone) the buttons drop their icon and side padding
+ * and may break inside a word, so "WhatsApp" and the number never push the page sideways.
+ */
+const NARROW_BUTTON = "w-full px-3 wrap-anywhere min-[20rem]:px-6";
+const NARROW_ICON = "hidden min-[20rem]:block";
+
 /** WhatsApp (primary) and phone (outline), full width on phones; each omitted without its Settings value (AC2). */
 function ReachCard({ whatsapp, phone }: { whatsapp: string | null; phone: string | null }) {
   const { t } = useI18n();
@@ -115,17 +122,17 @@ function ReachCard({ whatsapp, phone }: { whatsapp: string | null; phone: string
     <InfoCard id="contact-reach" title={t("contactPage.reachHeading")} icon={<MessageCircle {...iconProps} />}>
       <div className="flex flex-col gap-3">
         {whatsapp && (
-          <Button asChild className="w-full">
+          <Button asChild className={NARROW_BUTTON}>
             <a href={whatsappHref(whatsapp, t("contactPage.greeting"))}>
-              <MessageCircle aria-hidden="true" strokeWidth={1.75} />
+              <MessageCircle aria-hidden="true" strokeWidth={1.75} className={NARROW_ICON} />
               {t("sitePage.whatsapp")}
             </a>
           </Button>
         )}
         {phone && (
-          <Button asChild variant="outline" className="w-full">
+          <Button asChild variant="outline" className={NARROW_BUTTON}>
             <a href={telHref(phone)}>
-              <Phone aria-hidden="true" strokeWidth={1.75} />
+              <Phone aria-hidden="true" strokeWidth={1.75} className={NARROW_ICON} />
               <span>{t("sitePage.call", { number: phone })}</span>
             </a>
           </Button>
