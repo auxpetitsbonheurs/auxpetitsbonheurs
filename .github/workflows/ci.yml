@@ -19,8 +19,9 @@ jobs:
   app:
     runs-on: ubuntu-latest
     # The unit suite (one PGlite database per test) passed 15 minutes on 2026-11-12 (run
-    # 43144000030 timed out in `npm test`); tech-debt.md tracks making it faster.
-    timeout-minutes: 25
+    # 43144000030 timed out in `npm test`), then took 19 (run 43157429961) and outgrew 25 with
+    # batch 5 (run 43172461462 cut at 24 min in `npm test`); tech-debt.md tracks making it faster.
+    timeout-minutes: 35
     defaults:
       run:
         working-directory: src
