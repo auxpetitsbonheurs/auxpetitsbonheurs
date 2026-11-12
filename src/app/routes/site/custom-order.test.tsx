@@ -12,6 +12,7 @@ const base: Data = {
   phone: "+230 400 0000",
   noticeDays: 3,
   text: { intro: "A cake for you.", body: "What it is.\n\nHow we do it." },
+  photos: [],
   isPlaceholder: true,
 };
 
@@ -72,5 +73,12 @@ describe("Custom order page (S-252)", () => {
     expect(html).toMatch(/<h1[^>]*>Custom order<\/h1>/);
     expect(html).toContain('role="alert"');
     expect(html).toContain("Try again");
+  });
+
+  test("AC1 (photos, S-245/S-247): up to 3 photos from admin Pages with size and alt; none leaves no image area", () => {
+    const photos = [1, 2].map((n) => ({ url: `https://cdn.test/c${n}.webp`, width: 1200, height: 900, alt: `Cake ${n}` }));
+
+    expect(page({ photos })).toContain('<img src="https://cdn.test/c1.webp" alt="Cake 1" width="1200" height="900" loading="lazy"');
+    expect(page()).not.toContain("<img");
   });
 });

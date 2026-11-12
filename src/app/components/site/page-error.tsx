@@ -24,16 +24,16 @@ export function SitePageError({ title }: { title: string }) {
   const retrying = revalidator.state !== "idle";
   return (
     <>
-      <h1 className="text-center">{title}</h1>
+      <h1 className="text-center wrap-anywhere">{title}</h1>
       <Alert tone="danger" role="alert" title={t("sitePage.errorTitle")} className="mx-auto mt-8 max-w-measure">
         <p>{t("sitePage.errorBody")}</p>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Button type="button" variant="outline" onClick={() => void revalidator.revalidate()} aria-busy={retrying || undefined} disabled={retrying}>
+          <Button type="button" variant="outline" onClick={() => void revalidator.revalidate()} aria-busy={retrying || undefined} disabled={retrying} className="h-auto max-w-full shrink whitespace-normal wrap-anywhere">
             <RotateCw aria-hidden="true" strokeWidth={1.75} className={retrying ? "motion-safe:animate-spin" : undefined} />
             {t("sitePage.retry")}
           </Button>
           {whatsapp && (
-            <Button asChild variant="secondary">
+            <Button asChild variant="secondary" className="h-auto max-w-full shrink whitespace-normal wrap-anywhere">
               <a href={whatsappHref(whatsapp)}>
                 <MessageCircle aria-hidden="true" strokeWidth={1.75} />
                 {t("sitePage.whatsapp")}

@@ -1,5 +1,6 @@
 import { Clock, ExternalLink, MapPin, MessageCircle, Phone } from "lucide-react";
 import type { ReactNode } from "react";
+import { data } from "react-router";
 import { SitePageError } from "~/components/site/page-error";
 import { PlainText } from "~/components/site/plain-text";
 import { Button } from "~/components/ui/button";
@@ -10,7 +11,8 @@ import { type Locale, localeFromPathname } from "~/lib/locale";
 import { SEO_HANDLE, SITE_NAME, canonicalUrl, rootOrigin, seoMeta } from "~/lib/seo";
 import { requestDbContext } from "~/server/db.server";
 import { getSiteSettings } from "~/server/repos/settings.server";
-import { contentPagePlaceholders } from "~/server/seo-pages.server";
+import { publicConfigContext } from "~/server/public-config.server";
+import { getSitePage } from "~/server/services/site-page.server";
 import { timed } from "~/server/server-timing.server";
 import type { Route } from "./+types/contact";
 
@@ -21,17 +23,6 @@ export interface ContactText {
   pickupNote: string;
 }
 
-/**
- * Interim text until the `site_page` read exists (S-245): the copywriter's neutral placeholder
- * from the catalogue (EN fallback per field). S-245 swaps this for the stored page.
- */
-function placeholderText(locale: Locale): ContactText {
-  return {
-    intro: serverT("contactPage.intro", locale),
-    hours: serverT("contactPage.hours", locale),
-    pickupNote: serverT("contactPage.pickupNote", locale),
-  };
-}
 
 /** The pickup area every page names; the seeded Settings address is just this, not an exact address. */
 const PICKUP_AREA = "beau bassin";
@@ -52,7 +43,11 @@ export const handle = SEO_HANDLE;
 export async function loader({ url, context }: Route.LoaderArgs) {
   const locale = localeFromPathname(url.pathname);
   const db = context.get(requestDbContext).db;
-  const [settings, placeholders] = await Promise.all([timed(context, "settings", () => getSiteSettings(db)), contentPagePlaceholders(db)]);
+  const { supabaseUrl } = context.get(publicConfigContext);
+  const [settings, read] = await Promise.all([timed(context, "settings", () => getSiteSettings(db)), timed(context, "page", () => getSitePage(db, "contact", locale, supabaseUrl))]);
+  // The page text is the client's (admin Pages, S-245/S-246); a failed read is the error state.
+  if (!read.ok) throw data(null, { status: 503 });
+  const text: ContactText = { intro: read.page.text.intro ?? "", hours: read.page.text.hours ?? "", pickupNote: read.page.text.pickup_note ?? "" };
   return {
     title: serverT("contactPage.title", locale),
     description: serverT("contactPage.metaDescription", locale),
@@ -60,8 +55,8 @@ export async function loader({ url, context }: Route.LoaderArgs) {
     phone: settings.footer.phone,
     address: exactAddress(settings.footer.pickupAddress),
     mapUrl: safeWebUrl(settings.checkout.pickup.mapUrl),
-    text: placeholderText(locale),
-    isPlaceholder: placeholders.contact,
+    text,
+    isPlaceholder: read.page.isPlaceholder,
   };
 }
 

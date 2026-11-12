@@ -63,13 +63,18 @@ describe("S-245 AC1: one row per page, typed fields and flags", () => {
 });
 
 describe("S-245 AC2: neutral placeholder seed", () => {
-  test("every field has English and French sample text with no prices or dates", async () => {
+  test("every field has English and French placeholder text with no prices or dates", async () => {
     const rows = await query<{ key: string; content: Record<string, { en: string; fr?: string }> }>("select key, content from site_page");
 
     for (const row of rows) {
+      // Contact and Custom order carry the batch D interim copy (S-251, S-252); the others say "Sample text".
+      const sample = !["contact", "custom_order"].includes(row.key);
       for (const [field, text] of Object.entries(row.content)) {
-        expect(text.en, `${row.key}.${field}`).toMatch(/^Sample text/);
-        expect(text.fr, `${row.key}.${field}`).toMatch(/^Texte d'exemple/);
+        expect(text.en.length, `${row.key}.${field}`).toBeGreaterThan(20);
+        expect(text.fr, `${row.key}.${field}`).toBeTruthy();
+        expect(text.fr).not.toBe(text.en);
+        if (sample) expect(text.en, `${row.key}.${field}`).toMatch(/^Sample text/);
+        if (sample) expect(text.fr, `${row.key}.${field}`).toMatch(/^Texte d'exemple/);
         expect(`${text.en} ${text.fr}`).not.toMatch(/Rs\s?\d|\d{1,2}[/:]\d{2}|20\d\d/);
       }
     }

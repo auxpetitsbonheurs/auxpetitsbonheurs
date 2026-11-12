@@ -40,7 +40,7 @@ describe("view", () => {
   });
 
   test("AC2: a failed read shows the error with Retry", () => {
-    expect(render({ page: null })).toContain("This page did not load");
+    expect(render({ page: null })).toContain("We could not load this page.");
   });
 
   test("AC3: more than shown: a Show more link (works without JavaScript)", () => {

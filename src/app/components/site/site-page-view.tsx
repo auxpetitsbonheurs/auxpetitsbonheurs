@@ -2,14 +2,12 @@
 // h1 with the gold rule, the editable intro and body as escaped plain text (PlainText: blank
 // line = paragraph), the page photos with explicit sizes, and the page error state. Empty
 // fields leave no empty block (S-248 AC3).
-import { MessageCircle, RotateCw } from "lucide-react";
 import { type ReactNode, useState } from "react";
-import { useRevalidator, useRouteLoaderData } from "react-router";
+import { useRouteLoaderData } from "react-router";
 import type { FooterContacts } from "~/components/shell/site-footer";
-import { Alert } from "~/components/ui/alert";
-import { Button } from "~/components/ui/button";
 import { useI18n } from "~/i18n/react";
-import { whatsappHref } from "~/lib/contact";
+import { localeFromPathname } from "~/lib/locale";
+import { rootOrigin, seoMeta } from "~/lib/seo";
 import { cn } from "~/lib/utils";
 import { PlainText } from "./plain-text";
 
@@ -86,42 +84,29 @@ export function SitePageView({ title, intro, body, photos = [], children }: Site
   );
 }
 
-/** The page read failed (S-245 AC5): Retry and, when set, WhatsApp; never a white screen. */
-export function SitePageError({ title }: { title: string }) {
-  const { t } = useI18n();
-  const contacts = useSiteContacts();
-  const revalidator = useRevalidator();
-  const retrying = revalidator.state !== "idle";
-  return (
-    <div className="mx-auto max-w-3xl pt-2">
-      <h1 className="text-center wrap-anywhere">{title}</h1>
-      <Alert tone="danger" role="alert" title={t("sitePages.error.title")} className="mx-auto mt-8 max-w-measure">
-        <p>{t("sitePages.error.body")}</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Button type="button" variant="outline" onClick={() => void revalidator.revalidate()} aria-busy={retrying || undefined} disabled={retrying} className="h-auto max-w-full shrink whitespace-normal wrap-anywhere">
-            <RotateCw aria-hidden="true" strokeWidth={1.75} className={retrying ? "motion-safe:animate-spin" : undefined} />
-            {t("sitePages.error.retry")}
-          </Button>
-          {contacts?.whatsapp && (
-            <Button asChild variant="secondary" className="h-auto max-w-full shrink whitespace-normal wrap-anywhere">
-              <a href={whatsappHref(contacts.whatsapp)}>
-                <MessageCircle aria-hidden="true" strokeWidth={1.75} />
-                {t("sitePages.error.whatsapp")}
-              </a>
-            </Button>
-          )}
-        </div>
-      </Alert>
-    </div>
-  );
+/** The page read failed (S-245 AC5): the shared content-page error state (Retry, WhatsApp; S-251). */
+export { SitePageError } from "./page-error";
+
+interface BrandPageMetaArgs {
+  loaderData: { title: string; description: string; indexable: boolean; page: { photos: PagePhotoView[] } | null } | undefined;
+  matches: readonly unknown[];
+  location: { pathname: string };
 }
 
-/** Meta tags of a brand page: title, description, and noindex while it holds sample text (FR-081). */
-export function sitePageMeta(data: { title: string; description: string; indexable: boolean } | undefined) {
-  if (!data) return [];
-  return [
-    { title: `${data.title} | Aux petits bonheurs` },
-    { name: "description", content: data.description },
-    ...(data.indexable ? [] : [{ name: "robots", content: "noindex" }]),
-  ];
+/**
+ * Head of a brand page through the shared S-253 helper: title, description, canonical, share
+ * preview (the page's first photo, else the brand image) and noindex while it holds sample text
+ * (FR-081; the sitemap reads the same `is_placeholder`). Routes using it export `handle = SEO_HANDLE`.
+ */
+export function brandPageMeta({ loaderData, matches, location }: BrandPageMetaArgs, path: string) {
+  if (!loaderData) return [];
+  return seoMeta({
+    origin: rootOrigin(matches),
+    locale: localeFromPathname(location.pathname),
+    path,
+    title: loaderData.title,
+    description: loaderData.description,
+    image: loaderData.page?.photos[0]?.url ?? null,
+    noindex: !loaderData.indexable,
+  });
 }

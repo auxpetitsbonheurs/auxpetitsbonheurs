@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { sitemapXml } from "~/lib/sitemap";
 import { indexablePaths } from "~/server/seo-pages.server";
+import { clearSitePageCache } from "~/server/services/site-page.server";
 import { routeArgs } from "~/server/testing/route-context";
 import { loader as robots } from "./robots";
 import { loader } from "./sitemap";
@@ -41,6 +42,17 @@ describe("/sitemap.xml (S-253)", () => {
     const { xml } = await fetchSitemap();
 
     for (const path of ["/our-story", "/custom-cake", "/workshops", "/gallery", "/contact"]) expect(xml).not.toContain(path);
+  });
+
+  test("AC5 with S-245: a page saved in admin (is_placeholder false) joins the sitemap after the cache is cleared", async () => {
+    await database.client.query("update site_page set is_placeholder = false where key = 'workshops'");
+    clearSitePageCache();
+
+    const { xml } = await fetchSitemap();
+
+    expect(locs(xml)).toEqual(expect.arrayContaining(["http://localhost/workshops", "http://localhost/fr/workshops"]));
+    expect(xml).not.toContain("/our-story");
+    clearSitePageCache();
   });
 
   test("AC4, AC5: a page the client has edited joins, in both languages", async () => {

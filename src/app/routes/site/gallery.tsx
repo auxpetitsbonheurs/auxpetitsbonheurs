@@ -1,8 +1,9 @@
 import { MessageCircle } from "lucide-react";
 import { data, Link } from "react-router";
-import { SitePageError, SitePageView, sitePageMeta, useSiteContacts } from "~/components/site/site-page-view";
+import { SitePageError, SitePageView, brandPageMeta, useSiteContacts } from "~/components/site/site-page-view";
 import { Button } from "~/components/ui/button";
 import { t as serverT } from "~/i18n/catalog.server";
+import { SEO_HANDLE } from "~/lib/seo";
 import { useI18n } from "~/i18n/react";
 import { whatsappHref } from "~/lib/contact";
 import { localeFromPathname, localePath } from "~/lib/locale";
@@ -37,8 +38,11 @@ export async function loader({ context, url }: Route.LoaderArgs) {
   return { ...seo, page: read.page, photos, total: gallery.photos.length, indexable: !read.page.isPlaceholder };
 }
 
-export function meta({ loaderData }: Route.MetaArgs) {
-  return sitePageMeta(loaderData);
+/** Its meta uses seoMeta (S-253): the root Layout leaves the share image to it. */
+export const handle = SEO_HANDLE;
+
+export function meta(args: Route.MetaArgs) {
+  return brandPageMeta(args, "/gallery");
 }
 
 type Photo = Route.ComponentProps["loaderData"]["photos"][number];

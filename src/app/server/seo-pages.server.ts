@@ -1,13 +1,13 @@
 // Which customer pages search engines may index (S-253 AC4, AC5, AC6; FR-081). The sitemap and
 // the pages' `robots` tag read the same answer, so a page is never listed but noindex.
 //
-// Seam for the content pages (S-245..S-250): `contentPagePlaceholders` is the ONE place that
-// says whether a content page still holds placeholder text. Until the `site_page` table exists
-// every content page counts as placeholder (noindex, out of the sitemap). S-245 replaces its
-// body with the `site_page.is_placeholder` read (one query, the Settings cache pattern); each
-// page's `meta` passes the same flag as `seoMeta({ noindex })` (lib/seo.ts). Nothing else
-// changes: a page the client edits joins the sitemap on the next read.
+// The content pages (S-245..S-250): `contentPagePlaceholders` is the ONE place that says
+// whether a content page still holds placeholder text: `site_page.is_placeholder` (one query,
+// cached per isolate like Settings, cleared by an admin save). Each page's `meta` passes the
+// flag of its own page read as `seoMeta({ noindex })` (lib/seo.ts): a page the client edits
+// joins the sitemap and loses noindex on the next read.
 import type { Database } from "~/server/db.server";
+import { getPagePlaceholders } from "~/server/services/site-page.server";
 
 /** The S-245 page keys and their unprefixed paths (docs/content/sitemap.md slugs). */
 export const CONTENT_PAGE_PATHS = {
@@ -27,11 +27,17 @@ export const ALWAYS_INDEXED_PATHS = ["/", "/menu"] as const;
 const ALL_PLACEHOLDER: PlaceholderFlags = { our_story: true, custom_order: true, workshops: true, gallery: true, contact: true };
 
 /**
- * True per page while it still holds placeholder text. S-245: read `site_page.is_placeholder`
- * here (a page missing from the table counts as placeholder).
+ * True per page while it still holds placeholder text (`site_page.is_placeholder`). A page
+ * missing from the table, or a failed read, counts as placeholder: never index sample text.
  */
-export async function contentPagePlaceholders(_db: Database): Promise<PlaceholderFlags> {
-  return ALL_PLACEHOLDER;
+export async function contentPagePlaceholders(db: Database): Promise<PlaceholderFlags> {
+  try {
+    const stored = await getPagePlaceholders(db);
+    return Object.fromEntries((Object.keys(ALL_PLACEHOLDER) as ContentPageKey[]).map((key) => [key, stored[key] ?? true])) as PlaceholderFlags;
+  } catch (error) {
+    console.log(JSON.stringify({ level: "warn", event: "page_placeholders_read_failed", error: error instanceof Error ? error.message.slice(0, 200) : "unknown" }));
+    return ALL_PLACEHOLDER;
+  }
 }
 
 /** Unprefixed sitemap paths for these flags: the fixed pages, then content pages the client has edited. */

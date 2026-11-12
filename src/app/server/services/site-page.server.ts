@@ -91,6 +91,20 @@ function cacheFor(key: SitePageKey): TtlCache<StoredSitePage | null> {
 export function clearSitePageCache(): void {
   for (const cache of caches.values()) cache.clear();
   galleryCache.clear();
+  placeholderCache.clear();
+}
+
+const placeholderCache = createTtlCache<Partial<Record<SitePageKey, boolean>>>(SETTINGS_TTL_MS, () => Date.now());
+
+/**
+ * `is_placeholder` of every page, one query, cached like the page read (S-253 seam: the
+ * sitemap and each page's noindex read it). A page missing from the table is not in the answer.
+ */
+export function getPagePlaceholders(db: Database): Promise<Partial<Record<SitePageKey, boolean>>> {
+  return placeholderCache.get(async () => {
+    const rows = await db.select({ key: sitePage.key, isPlaceholder: sitePage.isPlaceholder }).from(sitePage);
+    return Object.fromEntries(rows.map((r) => [r.key, r.isPlaceholder]));
+  });
 }
 
 function photoView(photo: StoredPagePhoto, locale: Locale, supabaseUrl: string): PagePhoto {

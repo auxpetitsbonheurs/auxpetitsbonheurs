@@ -1,16 +1,18 @@
 import { MessageCircle, Phone } from "lucide-react";
-import { Link } from "react-router";
+import { Link, data } from "react-router";
 import { SitePageError } from "~/components/site/page-error";
 import { PlainText } from "~/components/site/plain-text";
+import { PagePhotoGrid } from "~/components/site/site-page-view";
 import { Button } from "~/components/ui/button";
 import { t as serverT } from "~/i18n/catalog.server";
 import { useI18n } from "~/i18n/react";
 import { telHref, whatsappHref } from "~/lib/contact";
-import { type Locale, localeFromPathname, localePath } from "~/lib/locale";
+import { localeFromPathname, localePath } from "~/lib/locale";
 import { SEO_HANDLE, rootOrigin, seoMeta } from "~/lib/seo";
 import { requestDbContext } from "~/server/db.server";
 import { getSiteSettings } from "~/server/repos/settings.server";
-import { contentPagePlaceholders } from "~/server/seo-pages.server";
+import { publicConfigContext } from "~/server/public-config.server";
+import { getSitePage } from "~/server/services/site-page.server";
 import { timed } from "~/server/server-timing.server";
 import type { Route } from "./+types/custom-order";
 
@@ -20,13 +22,6 @@ export interface CustomOrderText {
   body: string;
 }
 
-/**
- * Interim text until the `site_page` read exists (S-245): the copywriter's neutral placeholder
- * (no prices, no lead times; the notice comes from Settings). S-245 swaps this for the stored page.
- */
-function placeholderText(locale: Locale): CustomOrderText {
-  return { intro: serverT("customOrderPage.intro", locale), body: serverT("customOrderPage.what", locale) };
-}
 
 /** Its meta uses seoMeta: the root Layout leaves the brand share image to it. */
 export const handle = SEO_HANDLE;
@@ -39,15 +34,19 @@ export const handle = SEO_HANDLE;
 export async function loader({ url, context }: Route.LoaderArgs) {
   const locale = localeFromPathname(url.pathname);
   const db = context.get(requestDbContext).db;
-  const [settings, placeholders] = await Promise.all([timed(context, "settings", () => getSiteSettings(db)), contentPagePlaceholders(db)]);
+  const { supabaseUrl } = context.get(publicConfigContext);
+  const [settings, read] = await Promise.all([timed(context, "settings", () => getSiteSettings(db)), timed(context, "page", () => getSitePage(db, "custom_order", locale, supabaseUrl))]);
+  // The page text and up to 3 photos are the client's (admin Pages, S-245..S-247); a failed read is the error state.
+  if (!read.ok) throw data(null, { status: 503 });
   return {
     title: serverT("customOrderPage.title", locale),
     description: serverT("customOrderPage.metaDescription", locale),
     whatsapp: settings.footer.whatsapp,
     phone: settings.footer.phone,
     noticeDays: settings.noticeDays,
-    text: placeholderText(locale),
-    isPlaceholder: placeholders.custom_order,
+    text: { intro: read.page.text.intro ?? "", body: read.page.text.body ?? "" } satisfies CustomOrderText,
+    photos: read.page.photos,
+    isPlaceholder: read.page.isPlaceholder,
   };
 }
 
@@ -60,6 +59,7 @@ export function meta({ loaderData, matches, location }: Route.MetaArgs) {
     path: "/custom-cake",
     title: loaderData.title,
     description: loaderData.description,
+    image: loaderData.photos[0]?.url ?? null,
     noindex: loaderData.isPlaceholder,
   });
 }
@@ -102,7 +102,7 @@ const STEPS = ["share", "reply", "bake"] as const;
 
 export default function CustomOrder({ loaderData }: Route.ComponentProps) {
   const { t } = useI18n();
-  const { whatsapp, phone, noticeDays, text } = loaderData;
+  const { whatsapp, phone, noticeDays, text, photos } = loaderData;
   return (
     <article className="mx-auto flex max-w-measure flex-col gap-8">
       <header className="text-center">
@@ -119,6 +119,8 @@ export default function CustomOrder({ loaderData }: Route.ComponentProps) {
           <PlainText text={text.body} />
         </section>
       )}
+      {/* Up to 3 photos from admin Pages (S-252 AC1, S-247); none leaves no empty area. */}
+      <PagePhotoGrid photos={photos} />
       <section aria-labelledby="custom-how" className="flex flex-col gap-3">
         <h2 id="custom-how" className="border-b border-gold pb-2 text-2xl">{t("customOrderPage.howHeading")}</h2>
         <ol className="flex flex-col gap-3">

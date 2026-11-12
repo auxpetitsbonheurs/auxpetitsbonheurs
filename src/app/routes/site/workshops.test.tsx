@@ -84,7 +84,7 @@ describe("view", () => {
   test("AC4: a failed read shows the error state with Retry", () => {
     const html = render({ page: null });
 
-    expect(html).toContain("This page did not load");
+    expect(html).toContain("We could not load this page.");
     expect(html).toContain("Try again");
   });
 });

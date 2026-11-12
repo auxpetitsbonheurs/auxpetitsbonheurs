@@ -1,11 +1,12 @@
 import { Armchair, CalendarHeart, MessageCircle, PhoneCall } from "lucide-react";
 import { data, Link } from "react-router";
 import { PlainText } from "~/components/site/plain-text";
-import { PagePhoto, SitePageError, SitePageView, sitePageMeta, useSiteContacts } from "~/components/site/site-page-view";
+import { PagePhoto, SitePageError, SitePageView, brandPageMeta, useSiteContacts } from "~/components/site/site-page-view";
 import { Button } from "~/components/ui/button";
 import { isUpcoming } from "~/domain/site-pages";
 import { formatLongDate, todayMU } from "~/domain/time";
 import { t as serverT } from "~/i18n/catalog.server";
+import { SEO_HANDLE } from "~/lib/seo";
 import { useI18n } from "~/i18n/react";
 import { telHref, whatsappHref } from "~/lib/contact";
 import { localeFromPathname, localePath } from "~/lib/locale";
@@ -34,8 +35,11 @@ export async function loader({ context, url }: Route.LoaderArgs) {
   return { ...seo, page, next, indexable: !page.isPlaceholder };
 }
 
-export function meta({ loaderData }: Route.MetaArgs) {
-  return sitePageMeta(loaderData);
+/** Its meta uses seoMeta (S-253): the root Layout leaves the share image to it. */
+export const handle = SEO_HANDLE;
+
+export function meta(args: Route.MetaArgs) {
+  return brandPageMeta(args, "/workshops");
 }
 
 type Next = NonNullable<Route.ComponentProps["loaderData"]["next"]>;

@@ -53,7 +53,7 @@ describe("view", () => {
     const html = render({ page: null });
 
     expect(html).toMatch(/<h1[^>]*>Our story<\/h1>/);
-    expect(html).toContain("This page did not load");
+    expect(html).toContain("We could not load this page.");
     expect(html).toContain("Try again");
   });
 
@@ -63,8 +63,17 @@ describe("view", () => {
   });
 
   test("FR-081: sample text is noindex; edited text is indexable", () => {
-    expect(meta({ loaderData: { title: "Our story", description: "d", indexable: false } } as never)).toContainEqual({ name: "robots", content: "noindex" });
-    expect(meta({ loaderData: { title: "Our story", description: "d", indexable: true } } as never)).not.toContainEqual({ name: "robots", content: "noindex" });
+    const args = (indexable: boolean) =>
+      ({
+        loaderData: { title: "Our story", description: "d", indexable, page: page({ photos: [{ url: "https://cdn.test/a.webp", width: 1, height: 1, alt: "" }] }) },
+        matches: [{ id: "root", loaderData: { origin: "https://apb.test" } }],
+        location: { pathname: "/fr/our-story" },
+      }) as never;
+    expect(meta(args(false))).toContainEqual({ name: "robots", content: "noindex" });
+    expect(meta(args(true))).not.toContainEqual({ name: "robots", content: "noindex" });
+    // S-253 head: canonical in the page language, the page's first photo as the share image.
+    expect(meta(args(true))).toContainEqual({ tagName: "link", rel: "canonical", href: "https://apb.test/fr/our-story" });
+    expect(meta(args(true))).toContainEqual({ property: "og:image", content: "https://cdn.test/a.webp" });
   });
 });
 

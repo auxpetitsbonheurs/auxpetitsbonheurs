@@ -9,11 +9,14 @@ import { meta as menuMeta } from "./menu";
 
 const ORIGIN = "https://apb.test";
 
-/** Each page built so far and its title/description keys (S-248..S-250 add theirs here). */
+/** Each new customer page and its title/description keys (S-244, S-248..S-252). */
 const PAGES = [
   { path: "/menu", title: "collection.title", description: "collection.metaDescription" },
   { path: "/contact", title: "contactPage.title", description: "contactPage.metaDescription" },
   { path: "/custom-cake", title: "customOrderPage.title", description: "customOrderPage.metaDescription" },
+  { path: "/our-story", title: "sitePages.ourStory.title", description: "sitePages.ourStory.metaDescription" },
+  { path: "/workshops", title: "sitePages.workshops.title", description: "sitePages.workshops.metaDescription" },
+  { path: "/gallery", title: "sitePages.gallery.title", description: "sitePages.gallery.metaDescription" },
 ] as const;
 
 const LOCALES: Locale[] = ["en", "fr"];
@@ -30,8 +33,8 @@ describe("titles and descriptions (AC1, AC8)", () => {
   test.each(LOCALES)("descriptions in %s are 50 to 160 characters and written in that language", (locale) => {
     const messages = locale === "en" ? en : fr;
     for (const p of PAGES) {
-      const [section, key] = p.description.split(".") as [keyof typeof messages, string];
-      const own = (messages[section] as Record<string, string>)[key];
+      // Walks the dotted key in this catalogue only (no EN fallback): "sitePages.ourStory.metaDescription".
+      const own = p.description.split(".").reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], messages) as string;
       expect(own, `${locale} ${p.description}`).toBeTruthy(); // present in the catalogue itself (no EN fallback)
       expect(own.length).toBeGreaterThanOrEqual(DESCRIPTION_LENGTH.min);
       expect(own.length).toBeLessThanOrEqual(DESCRIPTION_LENGTH.max);
