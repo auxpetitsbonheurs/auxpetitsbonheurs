@@ -29,5 +29,6 @@ As a customer, I want to read about the bakery, contact it and find the policies
 - AC8 → src/tests/e2e/browse-content.spec.ts
 
 ## Notes
+- 2026-11-12 (E-13): About is now "Our story" at `/our-story` (S-248) and Contact is rebuilt as S-251 (opening hours, Beau Bassin area, no email). This story keeps FAQ and policies; build AC1/AC2/AC4/AC5 for About and Contact only if E-13 has not shipped, and 301 `/about` to `/our-story`.
 - Seed content (EN/FR) is part of the migration seed; FR text from copywriter. Policy text is a launch value: owner reviews before go-live (E-12).
 - Depends on E-01 (settings table, seed mechanism) and E-03 (Settings editor, FR-067).

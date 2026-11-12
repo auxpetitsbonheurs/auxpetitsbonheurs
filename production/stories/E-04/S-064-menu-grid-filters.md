@@ -35,6 +35,7 @@ As a customer, I want to browse the menu and filter by type and allergen, so tha
 - AC11 → src/tests/e2e/perf-budgets.spec.ts
 
 ## Notes
+- 2026-11-12 (E-13): the `/menu` route and a grouped product list are created by E-13 S-244 ("Our collection"); this story adds the type and allergen filters, promotion pricing and the sold-out and season rules on top of that route. product-director to confirm the split.
 - Open question from spec (allergen AND vs OR) decided AND; confirm at launch test.
 - `fromPriceRs` and promotion pricing come from the domain (S-081/S-082); this story may use a stub that S-081 replaces. Dependency flagged.
 - Depends on E-01, E-03.
