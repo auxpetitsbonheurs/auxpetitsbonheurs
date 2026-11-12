@@ -1,5 +1,5 @@
-import { CakeSlice, Ellipsis, EyeOff, LoaderCircle, Plus, Trash2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { ArrowDown, ArrowUp, CakeSlice, Ellipsis, EyeOff, GripVertical, LoaderCircle, Plus, Trash2 } from "lucide-react";
+import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Link, isRouteErrorResponse, useFetcher, useRevalidator, useRouteError } from "react-router";
 import { AdminErrorBoundary } from "~/components/admin/admin-states";
 import { Alert } from "~/components/ui/alert";
@@ -15,15 +15,17 @@ import type { Translate } from "~/i18n/translator";
 import { type Locale, formatRupees } from "~/lib/locale";
 import { actionError } from "~/server/action-result.server";
 import { requireAdmin } from "~/server/auth.server";
-import { MenuActionInput } from "~/server/contracts/admin";
+import { MenuActionInput, parseReorderForm } from "~/server/contracts/admin";
 import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { type AdminMenuRow, listAdminMenu } from "~/server/repos/admin-menu.server";
 import { timed } from "~/server/server-timing.server";
 import { deleteProduct } from "~/server/services/delete-product.server";
+import { reorderProducts } from "~/server/services/reorder-products.server";
 import { setProductStatus } from "~/server/services/product-status.server";
 import { storageContext } from "~/server/storage.server";
+import { moveItem, useDragSort } from "~/lib/use-drag-sort";
 import type { Route } from "./+types/menu";
 
 /** `admin/menu` (FR-061): every product by type, with its row actions. */
@@ -43,15 +45,18 @@ export async function loader(args: Route.LoaderArgs) {
 }
 
 /**
- * `admin/menu` actions (contracts.md): `setStatus { id, status }` → `{ ok, id, status }`
+ * `admin/menu` actions (contracts.md): `reorder { type, ids }` → `{ ok, type, ids }` (S-042);
+ * `setStatus { id, status }` → `{ ok, id, status }`
  * (S-043); `delete { id }` → `{ ok, id }` (S-045). Unknown id NOT_FOUND; bad input
  * VALIDATION_FAILED; offering a product with no photo VALIDATION_FAILED `fields.status`.
  */
 export async function action(args: Route.ActionArgs) {
   const me = await requireAdmin(args);
-  const input = MenuActionInput.safeParse(Object.fromEntries(await args.request.formData()));
-  if (!input.success) return actionError("VALIDATION_FAILED", me.locale);
+  const form = await args.request.formData();
   const db = args.context.get(requestDbContext).db;
+  if (form.get("intent") === "reorder") return reorder(db, form, me);
+  const input = MenuActionInput.safeParse(Object.fromEntries(form));
+  if (!input.success) return actionError("VALIDATION_FAILED", me.locale);
   if (input.data.intent === "delete") {
     const deleted = await deleteProduct(db, args.context.get(storageContext), input.data.id);
     if (!deleted.ok) return actionError(deleted.code, me.locale);
@@ -65,6 +70,17 @@ export async function action(args: Route.ActionArgs) {
     return actionError(result.code, me.locale, fields ? { fields } : {});
   }
   console.log(JSON.stringify({ level: "info", event: "product_status_changed", id: result.id, status: result.status, actorRole: me.role }));
+  return result;
+}
+
+/** `reorder { type, ids }` → `{ ok, type, ids }`; ids not exactly that type's products → VALIDATION_FAILED "The menu changed, reload". */
+async function reorder(db: Parameters<typeof reorderProducts>[0], form: FormData, me: { locale: Locale; role: string }) {
+  const input = parseReorderForm(form);
+  const changed = () => actionError("VALIDATION_FAILED", me.locale, { fields: { ids: translate("admin.menu.reorderChanged", me.locale) } });
+  if (!input.success) return changed();
+  const result = await reorderProducts(db, input.data.type, input.data.ids);
+  if (!result.ok) return changed();
+  console.log(JSON.stringify({ level: "info", event: "products_reordered", type: result.type, count: result.ids.length, actorRole: me.role }));
   return result;
 }
 
@@ -137,13 +153,32 @@ function useRowStatus(row: AdminMenuRow) {
   return { status: pending ?? row.status, saving: pending !== null, refusal };
 }
 
-function ProductRow({ row, onActions }: { row: AdminMenuRow; onActions: (row: AdminMenuRow) => void }) {
+interface RowHandle {
+  type: ProductType;
+  dragging: boolean;
+  pointer: ReturnType<ReturnType<typeof useDragSort>["handleProps"]>;
+  onKey: (event: KeyboardEvent<HTMLButtonElement>) => void;
+}
+
+function ProductRow({ row, onActions, handle }: { row: AdminMenuRow; onActions: (row: AdminMenuRow) => void; handle: RowHandle }) {
   const { t, locale } = useI18n();
   const { status, saving, refusal } = useRowStatus(row);
   const view = rowView({ ...row, status }, locale, t);
   return (
     // Wraps at 200% zoom on a 320 px phone: the name takes its own line rather than a sliver.
-    <li className="flex min-h-20 flex-wrap items-center gap-3 p-3" data-status={status} aria-busy={saving || undefined}>
+    <li data-sort-item="" data-dragging={handle.dragging || undefined} className="flex min-h-20 flex-wrap items-center gap-3 p-3 data-dragging:bg-accent" data-status={status} aria-busy={saving || undefined}>
+      {/* Drag by pointer, or focus and use the arrow keys (S-042 AC3); Move up/down are in the row's sheet. */}
+      <button
+        type="button"
+        data-reorder-handle={row.id}
+        aria-label={t("admin.menu.reorder", { name: view.name })}
+        aria-describedby={`reorder-help-${handle.type}`}
+        onKeyDown={handle.onKey}
+        {...handle.pointer}
+        className="-ms-1 flex size-11 shrink-0 cursor-grab items-center justify-center rounded-md text-muted-foreground hover:bg-muted active:cursor-grabbing"
+      >
+        <GripVertical aria-hidden="true" className="size-5" />
+      </button>
       <RowPhoto url={row.imageUrl} />
       <div className="min-w-0 flex-[1_1_8rem]">
         <Link to={`/admin/menu/${row.id}`} prefetch="intent" className="inline-flex min-h-11 items-center font-semibold wrap-anywhere hover:underline">
@@ -183,26 +218,149 @@ function AddProductLink({ type, label }: { type: ProductType; label: string }) {
   );
 }
 
-function TypeGroup({ type, rows, onActions }: { type: ProductType; rows: AdminMenuRow[]; onActions: (row: AdminMenuRow) => void }) {
-  const { t } = useI18n();
+/** Polite live region for reorder results ("Chocolate cake moved to position 2 of 5"). */
+function useAnnouncer() {
+  const [message, setMessage] = useState("");
+  const announce = useCallback((text: string) => {
+    // Cleared first so the same sentence twice is announced twice.
+    setMessage("");
+    requestAnimationFrame(() => setMessage(text));
+  }, []);
+  const region = (
+    <p role="status" aria-live="polite" className="sr-only">
+      {message}
+    </p>
+  );
+  return { announce, region };
+}
+
+type ReorderAnswer = { ok: true; type: ProductType; ids: string[] } | { ok: false; error: { message: string; fields?: Record<string, string> } };
+
+/** What the sheet's Move up / Move down buttons need for the open row. */
+interface Mover {
+  index: number;
+  count: number;
+  move: (delta: -1 | 1) => void;
+}
+
+const sameMembers = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((id) => b.includes(id));
+
+/**
+ * One type's order (S-042): the loader's, or while a move is on its way the posted one
+ * (optimistic), or during a pointer drag the live draft. Every finished move autosaves.
+ */
+function useTypeOrder(type: ProductType, rows: AdminMenuRow[]) {
+  const fetcher = useFetcher<ReorderAnswer>({ key: `reorder-${type}` });
+  const [draft, setDraft] = useState<string[] | null>(null);
+  const loaded = rows.map((r) => r.id);
+  const posted = fetcher.state !== "idle" ? (fetcher.formData?.getAll("ids").map(String) ?? null) : null;
+  const answered = fetcher.state === "idle" && fetcher.data?.ok ? fetcher.data.ids : null;
+  // The answer bridges the gap until the loader has the new order; a different set means the menu changed since.
+  const pick = (ids: string[] | null) => (ids && sameMembers(ids, loaded) ? ids : null);
+  const ids = draft ?? pick(posted) ?? pick(answered) ?? loaded;
+  const save = (next: string[]) => {
+    const body = new FormData();
+    body.set("intent", "reorder");
+    body.set("type", type);
+    for (const id of next) body.append("ids", id);
+    void fetcher.submit(body, { method: "post", action: "/admin/menu" });
+  };
+  const failed = fetcher.state === "idle" && fetcher.data && !fetcher.data.ok ? (fetcher.data.error.fields?.ids ?? fetcher.data.error.message) : null;
+  const state: "saving" | "saved" | "failed" | null = fetcher.state !== "idle" ? "saving" : failed ? "failed" : answered ? "saved" : null;
+  return { ids, draft, setDraft, save, state, failed };
+}
+
+function TypeGroup(props: {
+  type: ProductType;
+  rows: AdminMenuRow[];
+  selected: AdminMenuRow | null;
+  onActions: (row: AdminMenuRow) => void;
+  onClose: () => void;
+  onDelete: (row: AdminMenuRow) => void;
+  announce: (text: string) => void;
+}) {
+  const { type, rows, announce } = props;
+  const { t, locale } = useI18n();
+  const revalidator = useRevalidator();
   const headingId = `group-${type}`;
+  const order = useTypeOrder(type, rows);
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  const ordered = order.ids.map((id) => byId.get(id)).filter((r): r is AdminMenuRow => r !== undefined);
+  const list = useRef<HTMLUListElement>(null);
+  const refocus = useRef<string | null>(null);
+  useEffect(() => {
+    if (!refocus.current) return;
+    list.current?.querySelector<HTMLElement>(`[data-reorder-handle="${refocus.current}"]`)?.focus();
+    refocus.current = null;
+  });
+  const nameOf = (id: string) => localized(byId.get(id)?.name ?? { en: "", fr: null }, locale);
+  const moved = (id: string, to: number, count: number) => announce(t("admin.menu.moved", { name: nameOf(id), n: to + 1, count }));
+  const moveBy = (id: string, delta: -1 | 1, keepFocus = false) => {
+    const from = order.ids.indexOf(id);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= order.ids.length) return;
+    if (keepFocus) refocus.current = id;
+    order.save(moveItem(order.ids, from, to));
+    moved(id, to, order.ids.length);
+  };
+  const drag = useDragSort({
+    container: list,
+    onMove: (from, to) => order.setDraft((current) => moveItem(current ?? order.ids, from, to)),
+    onDrop: (_from, to) => {
+      // The draft already holds the moves made while dragging.
+      const next = [...order.ids];
+      order.setDraft(null);
+      order.save(next);
+      moved(next[to]!, to, next.length);
+    },
+  });
+  const onKey = (id: string) => (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    event.preventDefault();
+    moveBy(id, event.key === "ArrowUp" ? -1 : 1, true);
+  };
+  const open = props.selected && byId.has(props.selected.id) ? props.selected : null;
+  const mover: Mover | null = open ? { index: order.ids.indexOf(open.id), count: order.ids.length, move: (delta) => moveBy(open.id, delta) } : null;
   return (
     <section aria-labelledby={headingId} className="mt-8">
-      <h2 id={headingId} className="text-h2">
-        {t(`admin.menu.group.${type}`)}
-      </h2>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+        <h2 id={headingId} className="text-h2">
+          {t(`admin.menu.group.${type}`)}
+        </h2>
+        <p role="status" className="inline-flex items-center gap-1 text-sm font-semibold">
+          {order.state === "saving" && <LoaderCircle aria-hidden="true" className="size-4 motion-safe:animate-spin" />}
+          {order.state === "saving" ? t("admin.menu.saving") : order.state === "saved" ? t("admin.menu.orderSaved") : ""}
+        </p>
+      </div>
+      <p id={`reorder-help-${type}`} className="sr-only">
+        {t("admin.menu.reorderHelp")}
+      </p>
+      {order.failed && (
+        <Alert tone="danger" role="alert" title={order.failed} className="mt-3">
+          <p>{t("admin.menu.reorderFailedBody")}</p>
+          <Button type="button" variant="outline" className="mt-3" onClick={() => void revalidator.revalidate()} aria-busy={revalidator.state === "loading" || undefined}>
+            {t("admin.menu.reload")}
+          </Button>
+        </Alert>
+      )}
       {rows.length === 0 ? (
         <div className="mt-3 rounded-card border border-border bg-card p-4">
           <p>{t(`admin.menu.empty.${type}`)}</p>
           <AddProductLink type={type} label={t("admin.menu.addProduct")} />
         </div>
       ) : (
-        <ul aria-labelledby={headingId} className="mt-3 divide-y divide-border overflow-hidden rounded-card border border-border bg-card">
-          {rows.map((row) => (
-            <ProductRow key={row.id} row={row} onActions={onActions} />
+        <ul ref={list} aria-labelledby={headingId} className="mt-3 divide-y divide-border overflow-hidden rounded-card border border-border bg-card">
+          {ordered.map((row, index) => (
+            <ProductRow
+              key={row.id}
+              row={row}
+              onActions={props.onActions}
+              handle={{ type, dragging: drag.dragging === index, pointer: drag.handleProps(index), onKey: onKey(row.id) }}
+            />
           ))}
         </ul>
       )}
+      <RowActions row={open} onClose={props.onClose} onDelete={props.onDelete} mover={mover} />
     </section>
   );
 }
@@ -236,7 +394,41 @@ function StatusButtons({ row, onDone }: { row: AdminMenuRow; onDone: () => void 
   ));
 }
 
-function RowActions({ row, onClose, onDelete }: { row: AdminMenuRow | null; onClose: () => void; onDelete: (row: AdminMenuRow) => void }) {
+/** Move up / Move down in the sheet (S-042 AC3, AC7): the non-drag way; disabled at the ends with the reason. */
+function MoveButtons({ mover, name }: { mover: Mover; name: string }) {
+  const { t } = useI18n();
+  const first = mover.index === 0;
+  const last = mover.index === mover.count - 1;
+  return (
+    <li className="grid gap-2">
+      <p className="text-sm font-semibold" id="move-position">
+        {t("admin.menu.position", { n: mover.index + 1, count: mover.count })}
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <Button type="button" variant="outline" disabled={first} aria-describedby={first ? "move-first" : "move-position"} onClick={() => mover.move(-1)} aria-label={t("admin.menu.moveUpNamed", { name })}>
+          <ArrowUp aria-hidden="true" />
+          {t("admin.menu.moveUp")}
+        </Button>
+        <Button type="button" variant="outline" disabled={last} aria-describedby={last ? "move-last" : "move-position"} onClick={() => mover.move(1)} aria-label={t("admin.menu.moveDownNamed", { name })}>
+          <ArrowDown aria-hidden="true" />
+          {t("admin.menu.moveDown")}
+        </Button>
+      </div>
+      {first && (
+        <p id="move-first" className="text-sm">
+          {t("admin.menu.alreadyFirst")}
+        </p>
+      )}
+      {last && (
+        <p id="move-last" className="text-sm">
+          {t("admin.menu.alreadyLast")}
+        </p>
+      )}
+    </li>
+  );
+}
+
+function RowActions({ row, onClose, onDelete, mover }: { row: AdminMenuRow | null; onClose: () => void; onDelete: (row: AdminMenuRow) => void; mover?: Mover | null }) {
   const { t, locale } = useI18n();
   const name = row ? localized(row.name, locale) : "";
   return (
@@ -249,6 +441,7 @@ function RowActions({ row, onClose, onDelete }: { row: AdminMenuRow | null; onCl
             </Button>
           </li>
           <StatusButtons row={row} onDone={onClose} />
+          {mover && mover.count > 1 && <MoveButtons mover={mover} name={name} />}
           <li className="mt-4">
             {/* Destructive in the sheet: outline in danger with an icon (filled only in the confirm dialog). */}
             <Button type="button" variant="outline" className="w-full border-destructive text-destructive" onClick={() => onDelete(row)}>
@@ -355,6 +548,7 @@ export default function AdminMenu({ loaderData }: Route.ComponentProps) {
   const [selected, setSelected] = useState<AdminMenuRow | null>(null);
   const [toDelete, setToDelete] = useState<AdminMenuRow | null>(null);
   const { goneId, remove } = useDelete();
+  const { announce, region } = useAnnouncer();
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -366,17 +560,22 @@ export default function AdminMenu({ loaderData }: Route.ComponentProps) {
           </Link>
         </Button>
       </div>
+      {region}
       {PRODUCT_TYPES.map((type) => (
-        <TypeGroup key={type} type={type} rows={loaderData.byType[type].filter((row) => row.id !== goneId)} onActions={setSelected} />
+        <TypeGroup
+          key={type}
+          type={type}
+          rows={loaderData.byType[type].filter((row) => row.id !== goneId)}
+          selected={selected}
+          onActions={setSelected}
+          onClose={() => setSelected(null)}
+          onDelete={(row) => {
+            setSelected(null);
+            setToDelete(row);
+          }}
+          announce={announce}
+        />
       ))}
-      <RowActions
-        row={selected}
-        onClose={() => setSelected(null)}
-        onDelete={(row) => {
-          setSelected(null);
-          setToDelete(row);
-        }}
-      />
       <DeleteDialog
         row={toDelete}
         onClose={() => setToDelete(null)}

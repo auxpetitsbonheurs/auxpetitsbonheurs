@@ -1,4 +1,4 @@
-// E-03 admin menu: list (S-041), editor (S-046), hide / sold out (S-043), delete (S-045),
+// E-03 admin menu: list (S-041), reorder (S-042), editor (S-046), hide / sold out (S-043), delete (S-045),
 // photos (S-047), option groups (S-048), seasonal dates (S-049). Every spec makes its own products (unique names), so parallel projects
 // never share one.
 import { readFileSync } from "node:fs";
@@ -19,7 +19,7 @@ import { type Page, expect, test } from "./support/fixtures";
 const hydrated = (page: Page) => expect(page.locator("html")).toHaveAttribute("data-hydrated", "true");
 const bar = (page: Page) => page.getByRole("navigation", { name: "Admin" });
 /** The menu grows as specs add products; Tab through all of it. */
-const MENU_TAB_LIMIT = 400;
+const MENU_TAB_LIMIT = 700;
 
 test.describe("S-041 menu list", () => {
   test("AC1, AC7: rows show photo, name, from-price and tags as text, under one heading per type; each actions button is named", async ({ page, db }) => {
@@ -949,6 +949,139 @@ test.describe("S-049 seasonal dates", () => {
       await page.getByLabel("First day").fill("2099-12-01");
       await page.getByRole("button", { name: "Save" }).click();
       await expect(page.getByLabel("Last day")).toHaveAccessibleDescription(/Enter both seasonal dates, or clear both\./);
+      await expectNoA11yViolations(page);
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// S-042 reorder products within a type. Tests that change an order use the Seasonal group
+// (no other spec adds seasonal products) and run one at a time on the 375 px phone, so a
+// parallel spec never adds a product to that group between a page load and a move.
+
+const seasonalNames = async (page: Page) =>
+  page.getByRole("list", { name: "Seasonal" }).getByRole("link").allTextContents();
+
+async function seasonalOrder(db: Parameters<typeof createProduct>[0]): Promise<string[]> {
+  const rows = await db<{ id: string }[]>`select id from product where type = 'seasonal' order by sort_order, name_en`;
+  return rows.map((r) => r.id);
+}
+
+test.describe("S-042 reorder within a type", () => {
+  test.describe.configure({ mode: "serial" });
+
+  /** Order-changing tests run once, on the 375 px phone (see above). */
+  const onlyOnPhone = () => test.skip(test.info().project.name !== "phone-375", "changes the Seasonal order: runs once, on the phone");
+
+  test("AC1, AC3: arrow keys on the handle move the product, announce its position, autosave with Saved, and survive a reload", async ({ page, db }) => {
+    onlyOnPhone();
+    const first = await createProduct(db, { name: "Aaa first", type: "seasonal" });
+    const second = await createProduct(db, { name: "Aab second", type: "seasonal" });
+    await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu");
+    await hydrated(page);
+    const before = await seasonalNames(page);
+    const from = before.indexOf(second.name);
+
+    const handle = page.getByRole("button", { name: `Reorder ${second.name}` });
+    await expect(handle).toHaveAccessibleDescription("Use the up and down arrow keys to move it. The new order is saved at once.");
+    await handle.focus();
+    await page.keyboard.press("ArrowUp");
+
+    await expect(page.getByRole("status").filter({ hasText: `${second.name} moved to position ${from} of ${before.length}.` })).toBeAttached();
+    await expect(handle).toBeFocused();
+    await expect(page.getByRole("region", { name: "Seasonal" }).getByRole("status")).toHaveText("Saved");
+    await page.reload();
+    const after = await seasonalNames(page);
+    expect(after.indexOf(second.name)).toBe(after.indexOf(first.name) - 1);
+    const ids = await seasonalOrder(db);
+    expect(ids.indexOf(second.id)).toBeLessThan(ids.indexOf(first.id));
+  });
+
+  test("AC1: dragging the handle moves the product and saves", async ({ page, db }) => {
+    onlyOnPhone();
+    const top = await createProduct(db, { name: "Aac drag top", type: "seasonal" });
+    const below = await createProduct(db, { name: "Aad drag below", type: "seasonal" });
+    await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu");
+    await hydrated(page);
+    await rowOf(page, below.name).scrollIntoViewIfNeeded();
+    const handle = await page.getByRole("button", { name: `Reorder ${top.name}` }).boundingBox();
+    const target = await rowOf(page, below.name).boundingBox();
+
+    await page.mouse.move(handle!.x + handle!.width / 2, handle!.y + handle!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(handle!.x + handle!.width / 2, target!.y + target!.height * 0.8, { steps: 8 });
+    await page.mouse.up();
+
+    await expect(page.getByRole("region", { name: "Seasonal" }).getByRole("status")).toHaveText("Saved");
+    const ids = await seasonalOrder(db);
+    expect(ids.indexOf(below.id)).toBeLessThan(ids.indexOf(top.id));
+  });
+
+  test("AC3, AC7: the sheet's Move up and Move down; at the ends they are disabled and say why", async ({ page, db }) => {
+    onlyOnPhone();
+    await createProduct(db, { name: "Aae sheet", type: "seasonal" });
+    await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu");
+    await hydrated(page);
+    const names = await seasonalNames(page);
+    const firstName = names[0]!;
+    const lastName = names.at(-1)!;
+
+    const sheet = await openActions(page, firstName);
+    await expect(sheet.getByRole("button", { name: `Move ${firstName} up` })).toBeDisabled();
+    await expect(sheet.getByRole("button", { name: `Move ${firstName} up` })).toHaveAccessibleDescription("Already first in its group.");
+    await sheet.getByRole("button", { name: `Move ${firstName} down` }).click();
+    await expect(sheet.getByText(`Position 2 of ${names.length} in its group`)).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: `${firstName} moved to position 2 of ${names.length}.` })).toBeAttached();
+    await page.keyboard.press("Escape");
+
+    const lastSheet = await openActions(page, lastName);
+    await expect(lastSheet.getByRole("button", { name: `Move ${lastName} down` })).toBeDisabled();
+    await expect(lastSheet.getByRole("button", { name: `Move ${lastName} down` })).toHaveAccessibleDescription("Already last in its group.");
+  });
+
+  test("AC4: when a product was added meanwhile, the move is refused with \"The menu changed, reload\" and Reload shows it", async ({ page, db }) => {
+    onlyOnPhone();
+    const mine = await createProduct(db, { name: "Aaf stale", type: "seasonal" });
+    await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu");
+    await hydrated(page);
+    const before = await seasonalOrder(db);
+    const added = await createProduct(db, { name: "Aag added meanwhile", type: "seasonal" });
+
+    await page.getByRole("button", { name: `Reorder ${mine.name}` }).focus();
+    await page.keyboard.press(before.indexOf(mine.id) === 0 ? "ArrowDown" : "ArrowUp");
+
+    const alert = page.getByRole("alert").filter({ hasText: "The menu changed, reload." });
+    await expect(alert).toBeVisible();
+    expect((await seasonalOrder(db)).filter((id) => id !== added.id)).toEqual(before);
+    await alert.getByRole("button", { name: "Reload" }).click();
+    await expect(page.getByRole("link", { name: added.name })).toBeVisible();
+  });
+
+  test("AC8, AC9: handles and buttons are 44 px with distinct names; nothing clipped or sideways at 100% and 200%", async ({ page, db }) => {
+    await createProduct(db, { name: "Reorder targets", status: "sold_out" });
+    await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu");
+    await hydrated(page);
+    for (const zoom of [1, 2]) {
+      await withZoom(page, zoom, async () => {
+        await expectNoHorizontalScroll(page);
+        await expectNothingClipped(page);
+        await expectTapTargets(page);
+      });
+    }
+    const handles = await page.getByRole("button", { name: /^Reorder / }).evaluateAll((buttons) => buttons.map((b) => b.getAttribute("aria-label")));
+    expect(new Set(handles).size).toBe(handles.length);
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`AC8, AC9: reduced motion and no serious or critical axe violations with the Move buttons open, ${colorScheme} mode`, async ({ page, db }) => {
+      await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+      const product = await createProduct(db, { name: "Reorder axe" });
+      await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu");
+      await hydrated(page);
+      const row = rowOf(page, product.name);
+      expect(await row.evaluate((el) => getComputedStyle(el).transitionDuration)).toBe("0s");
+      await expectNoA11yViolations(page);
+      await openActions(page, product.name);
       await expectNoA11yViolations(page);
     });
   }

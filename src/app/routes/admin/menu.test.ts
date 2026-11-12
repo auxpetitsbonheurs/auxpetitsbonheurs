@@ -322,3 +322,42 @@ describe("delete (S-045 AC5)", () => {
     expect((await database.client.query("select path from storage_purge")).rows).toEqual([{ path: "products/x/a.webp" }]);
   });
 });
+
+describe("reorder (S-042)", () => {
+  const post = (form: Record<string, string | string[]>, s: { auth: FakeAuth; cookie?: string } = session) =>
+    action(routeArgs(database, { path: "/admin/menu", auth: s.auth, cookie: s.cookie, form }) as never) as Promise<unknown>;
+  const order = async () => (await database.client.query<{ id: string }>("select id from product where type = 'cake' order by sort_order")).rows.map((r) => r.id);
+
+  test("AC1: an admin saves the new order and gets it back", async () => {
+    const a = await insertProduct(database.db, { slug: "a", sortOrder: 0 });
+    const b = await insertProduct(database.db, { slug: "b", sortOrder: 1 });
+
+    expect(await post({ intent: "reorder", type: "cake", ids: [b, a] })).toEqual({ ok: true, type: "cake", ids: [b, a] });
+    expect((await load()).byType.cake.map((r) => r.id)).toEqual([b, a]);
+  });
+
+  test("AC4: a stale list is VALIDATION_FAILED with \"The menu changed, reload\"", async () => {
+    const a = await insertProduct(database.db, { slug: "a", sortOrder: 0 });
+    await insertProduct(database.db, { slug: "b", sortOrder: 1 });
+
+    const refusal = (await post({ intent: "reorder", type: "cake", ids: [a] })) as { data: { error: { code: string; fields: Record<string, string> } }; init: { status: number } };
+
+    expect(refusal.init.status).toBe(400);
+    expect(refusal.data.error).toMatchObject({ code: "VALIDATION_FAILED", fields: { ids: "The menu changed, reload." } });
+  });
+
+  test("AC6: a customer session is FORBIDDEN and an anonymous visitor is redirected; no order changes", async () => {
+    const a = await insertProduct(database.db, { slug: "a", sortOrder: 0 });
+    const b = await insertProduct(database.db, { slug: "b", sortOrder: 1 });
+    const auth = new FakeAuth();
+    const customer = await insertCustomerAccount(database, auth);
+    const cookie = auth.sessionCookie(customer.id, new Date("2026-11-09T08:00:00Z"));
+
+    const forbidden = (await caught(() => post({ intent: "reorder", type: "cake", ids: [b, a] }, { auth, cookie }))) as unknown as { init: { status: number } };
+    const anonymous = await caught(() => post({ intent: "reorder", type: "cake", ids: [b, a] }, { auth: new FakeAuth() }));
+
+    expect(forbidden.init.status).toBe(403);
+    expect(anonymous.headers.get("Location")).toBe("/admin/login?next=%2Fadmin%2Fmenu");
+    expect(await order()).toEqual([a, b]);
+  });
+});

@@ -404,7 +404,21 @@
       "hideInstead": "Masquer plutôt",
       "deleteConfirm": "Supprimer définitivement",
       "deleted": "{{name}} supprimé.",
-      "deleteFailed": "Le produit n'a pas été supprimé. {{reason}}"
+      "deleteFailed": "Le produit n'a pas été supprimé. {{reason}}",
+      "reorder": "Déplacer {{name}}",
+      "reorderHelp": "Utilisez les flèches haut et bas pour le déplacer. Le nouvel ordre est enregistré tout de suite.",
+      "moved": "{{name}} déplacé en position {{n}} sur {{count}}.",
+      "orderSaved": "Enregistré",
+      "reorderChanged": "Le menu a changé, rechargez.",
+      "reorderFailedBody": "Un produit a été ajouté ou supprimé entre-temps, cet ordre n'a donc pas été enregistré. Rechargez pour voir le menu à jour, puis déplacez-le à nouveau.",
+      "reload": "Recharger",
+      "position": "Position {{n}} sur {{count}} dans son groupe",
+      "moveUp": "Monter",
+      "moveDown": "Descendre",
+      "moveUpNamed": "Monter {{name}}",
+      "moveDownNamed": "Descendre {{name}}",
+      "alreadyFirst": "Déjà le premier de son groupe.",
+      "alreadyLast": "Déjà le dernier de son groupe."
     },
     "product": {
       "newTitle": "Nouveau produit",

@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { productPhoto } from "~/db/schema";
 import { insertProduct } from "~/db/testing/catalogue";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
-import { findProductBySlug, findProductsByIds } from "./catalogue.server";
+import { reorderProducts } from "~/server/services/reorder-products.server";
+import { findProductBySlug, findProductsByIds, listMenuProducts } from "./catalogue.server";
 
 let database: TestDatabase;
 
@@ -70,5 +71,19 @@ describe("findProductsByIds", () => {
     const queries = countQueries();
     expect((await findProductsByIds(database.db, [])).size).toBe(0);
     expect(queries()).toBe(0);
+  });
+});
+
+describe("listMenuProducts order (S-042 AC2)", () => {
+  test("after a reorder the customer menu lists that type's products in the saved order", async () => {
+    const ids = [] as string[];
+    for (const [i, name] of ["Apple", "Banana", "Cherry"].entries()) ids.push(await insertProduct(database.db, { slug: `c-${i}`, nameEn: `${name} cake`, sortOrder: i }));
+    const box = await insertProduct(database.db, { slug: "box", type: "cupcake_box", nameEn: "Box" });
+
+    await reorderProducts(database.db, "cake", [ids[2]!, ids[0]!, ids[1]!]);
+
+    const menu = await listMenuProducts(database.db);
+    expect(menu.filter((p) => p.type === "cake").map((p) => p.id)).toEqual([ids[2], ids[0], ids[1]]);
+    expect(menu.filter((p) => p.type === "cupcake_box").map((p) => p.id)).toEqual([box]);
   });
 });

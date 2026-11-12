@@ -404,7 +404,21 @@
       "hideInstead": "Hide instead",
       "deleteConfirm": "Delete for good",
       "deleted": "{{name}} deleted.",
-      "deleteFailed": "The product was not deleted. {{reason}}"
+      "deleteFailed": "The product was not deleted. {{reason}}",
+      "reorder": "Reorder {{name}}",
+      "reorderHelp": "Use the up and down arrow keys to move it. The new order is saved at once.",
+      "moved": "{{name}} moved to position {{n}} of {{count}}.",
+      "orderSaved": "Saved",
+      "reorderChanged": "The menu changed, reload.",
+      "reorderFailedBody": "A product was added or removed meanwhile, so this order was not saved. Reload to see the latest menu, then move it again.",
+      "reload": "Reload",
+      "position": "Position {{n}} of {{count}} in its group",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "moveUpNamed": "Move {{name}} up",
+      "moveDownNamed": "Move {{name}} down",
+      "alreadyFirst": "Already first in its group.",
+      "alreadyLast": "Already last in its group."
     },
     "product": {
       "newTitle": "New product",

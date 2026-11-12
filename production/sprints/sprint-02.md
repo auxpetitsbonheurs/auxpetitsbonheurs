@@ -23,7 +23,7 @@ Milestone: MVP (E-02 Admin access and team, E-03 Menu and content management) ·
 | S-035 | Install the admin app on the home screen | 3 | remix-specialist, ui-engineer, hosting-platform-specialist | ready |
 | S-036 | My profile with name, language, password and alert switches | 3 | remix-specialist, ui-engineer, auth-specialist | ready |
 | S-041 | Menu list grouped by type | 3 | remix-specialist, ui-engineer, tailwind-shadcn-specialist | review |
-| S-042 | Reorder products within a type | 5 | remix-specialist, ui-engineer, accessibility-specialist, postgres-specialist | ready |
+| S-042 | Reorder products within a type | 5 | remix-specialist, ui-engineer, accessibility-specialist, postgres-specialist | review |
 | S-043 | Hide a product or mark it sold out | 2 | remix-specialist, api-engineer, ui-engineer | review |
 | S-045 | Delete a product safely | 2 | remix-specialist, postgres-specialist, ui-engineer | review |
 | S-046 | Create and edit a product's basic details | 5 | remix-specialist, ui-engineer, tailwind-shadcn-specialist, api-engineer | review |

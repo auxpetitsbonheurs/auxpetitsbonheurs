@@ -72,6 +72,17 @@ export function decodeCursor(raw: string | null): number | null {
   }
 }
 
+/** `admin/menu` reorder (S-042): one type's product ids in their new order (repeated `ids`). */
+export const ReorderInput = z.object({
+  intent: z.literal("reorder"),
+  type: z.enum(PRODUCT_TYPES),
+  ids: z.array(Uuid).max(500),
+});
+
+export function parseReorderForm(form: FormData) {
+  return ReorderInput.safeParse({ intent: form.get("intent"), type: form.get("type"), ids: form.getAll("ids") });
+}
+
 /** `admin/menu` row actions (S-043 setStatus, S-045 delete). */
 export const MenuActionInput = z.discriminatedUnion("intent", [
   z.object({ intent: z.literal("setStatus"), id: Uuid, status: z.enum(PRODUCT_STATUSES) }),
