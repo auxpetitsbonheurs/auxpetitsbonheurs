@@ -19,3 +19,4 @@ paths:
 - Integration tests run against a real test database (Docker/Testcontainers), not mocks of your own repository layer
 - Never skip, delete or weaken a failing test to make CI green; fix the cause or report it
 - Never call live payment, email or AI APIs from tests
+- Before a push run lint, typecheck and only the affected tests (`vitest run --changed`, the touched Playwright specs); CI runs the full suites (`docs/runbooks/testing.md`)
