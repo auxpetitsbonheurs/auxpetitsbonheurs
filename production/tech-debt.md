@@ -61,7 +61,7 @@
 - TD: admin menu `fromPriceRs` is still the base price; with a required Size group whose smallest choice is not Rs 0 it should be base + lowest required choice (`lowestOptionPrice`). Low.
 
 ## From sprint 02 batch 4 (2026-11-12)
-- TD: unit suite takes about 15 minutes on CI (a fresh PGlite database per test, 1600+ tests); the app job timeout was raised to 25, then 35 minutes (run 43172461462 cut `npm test` at 24 min). Share one migrated PGlite snapshot per file (clone or truncate between tests) or shard `npm test`. Medium.
+- RESOLVED 2026-11-12 (perf(test): one migrated PGlite per run, reset between tests; see docs/runbooks/testing.md). Was: unit suite takes about 15 minutes on CI (a fresh PGlite database per test, 1600+ tests); the app job timeout was raised to 25, then 35 minutes (run 43172461462 cut `npm test` at 24 min). Share one migrated PGlite snapshot per file (clone or truncate between tests) or shard `npm test`. Medium.
 - TD: the S-011 sample and `scripts/cpu-load.ts` default to `/menu/chocolate-cake`, which the real menu (S-241) turns into a hidden Rs 0 cake on staging; pass `--product chocolate-chip-cookies` (or a priced cake) to cpu-load until the default follows the menu. Low.
 - TD: the public product page does not show option groups yet (E-02 builds it), so on staging the cookies add as the Rs 420 base (Box of 6) with no box choice. Low (staging only; E-02 in this sprint).
 
@@ -70,3 +70,6 @@
 - Code check done: supabase-js 2.119 and @supabase/ssr 0.12 accept the new keys, and nothing verifies JWTs with the legacy JWT secret. `storage.server.ts` sends the key as both `apikey` and `Authorization: Bearer`, which the gateway accepts when the two match. Confirm with the first seed-menu run on staging that uses an `sb_secret_` key.
 - Production must start on the new keys.
 - 2026-11-12: Owner swapped the staging Cloudflare keys to the new format; GitHub STAGING_SUPABASE_SERVICE_ROLE_KEY uses sb_secret_ (seed-menu green).
+
+## Order-dependent unit tests (added 2026-11-12)
+- `db.server.test.ts` ("a transaction that throws midway") and `supabase-auth.server.test.ts` ("…memoised") pass only in file order; they fail with `--sequence.shuffle --sequence.seed=4242`, on main too. Make each test set up its own state. Found by the CI speed-up work.

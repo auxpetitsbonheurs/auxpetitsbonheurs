@@ -46,7 +46,9 @@ npm run build
 npm run check:js-budget   # gzipped initial JS per route <= project.yaml budgets.js_initial_kb
 ```
 
-Then a second job runs the browser tests (`npm run test:e2e`, Playwright). Locally:
+A second job runs the browser tests in parallel (`npm run test:e2e`, Playwright, two shards).
+Commits that change only docs skip both. Before a push, run only the affected tests:
+see `docs/runbooks/testing.md` (the fast local loop). Locally:
 
 ```sh
 # Needs a local Postgres on 127.0.0.1:5432 with user/password postgres/postgres

@@ -137,3 +137,36 @@ describe("Settings images (S-059 AC6, AC8): scope site", () => {
     expect(response.status).toBe(400);
   });
 });
+
+describe("Brand page photos (E-13 S-247 AC6, AC8): scope page:<key>", () => {
+  test("an Admin (not only an Owner) gets paths under site/pages/<key>/<admin>/<editor session>/", async () => {
+    const helper = await signedInAdmin(database, { role: "admin" });
+    const uploads = gateway();
+
+    const response = await post({ uploadSessionId: SESSION, scope: "page:our_story", type: "image/webp", size: "1000" }, helper, uploads);
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { uploads: { path: string }[] };
+    expect(body.uploads[0]!.path).toMatch(new RegExp(`^site/pages/our_story/${helper.admin.id}/${SESSION}/[0-9a-f-]{36}\\.webp$`));
+  });
+
+  test("a customer is refused and nothing is signed", async () => {
+    const auth = new FakeAuth();
+    const customer = await insertCustomerAccount(database, auth);
+    const uploads = gateway();
+
+    const response = await post({ uploadSessionId: SESSION, scope: "page:our_story", type: "image/webp", size: "1000" }, { auth, cookie: auth.sessionCookie(customer.id, new Date("2026-11-09T08:00:00Z")) }, uploads);
+
+    expect(response.status).toBe(403);
+    expect(uploads.signUpload).not.toHaveBeenCalled();
+  });
+
+  test("a page without photos (gallery, contact) is UPLOAD_REJECTED; an unknown page is VALIDATION_FAILED", async () => {
+    const uploads = gateway();
+
+    expect((await post({ uploadSessionId: SESSION, scope: "page:gallery", type: "image/webp", size: "1000" }, session, uploads)).status).toBe(422);
+    expect((await post({ uploadSessionId: SESSION, scope: "page:contact", type: "image/webp", size: "1000" }, session, uploads)).status).toBe(422);
+    expect((await post({ uploadSessionId: SESSION, scope: "page:home", type: "image/webp", size: "1000" }, session, uploads)).status).toBe(400);
+    expect(uploads.signUpload).not.toHaveBeenCalled();
+  });
+});

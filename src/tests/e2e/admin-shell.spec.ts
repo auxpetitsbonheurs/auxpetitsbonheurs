@@ -146,7 +146,8 @@ test.describe("S-033 admin frame", () => {
     await expect(skip).toBeFocused();
     await page.keyboard.press("Enter");
     await page.keyboard.press("Tab");
-    await expect(page.getByRole("main").getByRole("link", { name: "Gallery" })).toBeFocused();
+    // Pages is the first item in More since E-13 S-246.
+    await expect(page.getByRole("main").getByRole("link", { name: "Pages" })).toBeFocused();
 
     for (const path of ["/admin", "/admin/more"]) {
       await page.goto(path);

@@ -21,7 +21,8 @@ interface RouteModule {
 }
 
 const moduleName = (path: string) => path.replace(/^\.\//, "").replace(/\.tsx$/, "");
-const modules = Object.entries(import.meta.glob<RouteModule>("./*.tsx", { eager: true })).filter(
+// Route modules only: importing a *.test.tsx here would re-register its tests in this file.
+const modules = Object.entries(import.meta.glob<RouteModule>(["./*.tsx", "!./*.test.tsx"], { eager: true })).filter(
   ([path]) => !(PUBLIC_ADMIN_MODULES as readonly string[]).includes(moduleName(path)),
 );
 

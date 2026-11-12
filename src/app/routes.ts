@@ -1,8 +1,5 @@
 import { type RouteConfig, index, layout, route } from "@react-router/dev/routes";
 
-/** Placeholder nav pages (E-13): each later story points its path at its own module. */
-const comingSoonPages = ["our-story", "custom-cake", "workshops", "gallery", "contact"] as const;
-
 /**
  * Customer pages exist twice: English unprefixed and French under /fr (FR-001),
  * from the same route modules with locale-suffixed ids. An exact `fr` prefix (not
@@ -15,8 +12,15 @@ function customerPages(locale: "en" | "fr") {
     // Our collection (S-244) and the phone menu's no-JavaScript page (S-243 AC8).
     route("menu", "routes/site/menu.tsx", { id: `menu-${locale}` }),
     route("menu-links", "routes/site/menu-links.tsx", { id: `menu-links-${locale}` }),
-    // Nav pages later E-13 stories build (S-248..S-252): "coming soon" until then, never a 404.
-    ...comingSoonPages.map((path) => route(path, "routes/site/coming-soon.tsx", { id: `${path}-${locale}` })),
+    // The E-13 nav pages: brand pages from the admin Pages content (S-248..S-250; old /about
+    // answers 301, S-248 AC7), Contact us (S-251) and Custom order, interim until the E-08
+    // request form (S-252).
+    route("our-story", "routes/site/our-story.tsx", { id: `our-story-${locale}` }),
+    route("about", "routes/site/about-redirect.ts", { id: `about-${locale}` }),
+    route("workshops", "routes/site/workshops.tsx", { id: `workshops-${locale}` }),
+    route("gallery", "routes/site/gallery.tsx", { id: `gallery-${locale}` }),
+    route("contact", "routes/site/contact.tsx", { id: `contact-${locale}` }),
+    route("custom-cake", "routes/site/custom-order.tsx", { id: `custom-cake-${locale}` }),
     route("menu/:slug", "routes/site/product.tsx", { id: `product-${locale}` }),
     route("basket", "routes/site/basket.tsx", { id: `basket-${locale}` }),
     route("order/:token/confirmed", "routes/site/order-confirmed.tsx", { id: `order-confirmed-${locale}` }),
@@ -58,6 +62,9 @@ const adminPages = [
     route("customers", "routes/admin/customers.tsx"),
     route("sales", "routes/admin/sales.tsx"),
     route("profile", "routes/admin/profile.tsx"),
+    // Brand pages text and photos (E-13 S-246, S-247): Admins and Owners.
+    route("pages", "routes/admin/pages.tsx"),
+    route("pages/:key", "routes/admin/page-editor.tsx"),
     // Owner-only (S-022); placeholders until E-02/E-03 build the screens.
     route("availability", "routes/admin/availability.tsx"),
     route("settings", "routes/admin/settings.tsx"),
@@ -70,6 +77,9 @@ const adminPages = [
 const resourceRoutes = [
   route("healthz", "routes/hooks/healthz.ts"),
   route("api/menu", "routes/hooks/menu.ts"),
+  // Search engines (S-253): indexable pages with hreflang alternates, and the crawl rules.
+  route("sitemap.xml", "routes/hooks/sitemap.ts"),
+  route("robots.txt", "routes/hooks/robots.ts"),
   route("api/basket/reissue", "routes/hooks/basket-reissue.ts"),
   // Supabase Auth Send Email hook (S-024) and the emailed link's landing (S-026).
   route("hooks/supabase/send-email", "routes/hooks/send-email.ts"),

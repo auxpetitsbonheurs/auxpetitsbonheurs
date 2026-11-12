@@ -42,15 +42,18 @@ interface OneLanguageProps {
   multiline: boolean;
   error?: string;
   hintId?: string;
+  /** Shown while the field is empty (Pages: "English will show in French", S-246 AC7). */
+  emptyHint?: string;
+  rows?: number;
 }
 
-function OneLanguage({ id, name, label, max, value, multiline, error, hintId }: OneLanguageProps) {
+function OneLanguage({ id, name, label, max, value, multiline, error, hintId, emptyHint, rows = 6 }: OneLanguageProps) {
   const { t } = useI18n();
   const [length, setLength] = useState(value.length);
   const left = max - length;
   const countText = t("admin.settings.charsLeft", { count: left });
   const spoken = useQuietAnnouncement(countText);
-  const describedBy = cn(hintId, `${id}-count`, error && `${id}-error`);
+  const describedBy = cn(hintId, `${id}-count`, emptyHint && length === 0 && `${id}-empty`, error && `${id}-error`);
   const shared = {
     id,
     name,
@@ -66,10 +69,15 @@ function OneLanguage({ id, name, label, max, value, multiline, error, hintId }: 
       <label htmlFor={id} className="block font-semibold">
         {label}
       </label>
-      {multiline ? <textarea rows={6} {...shared} /> : <input type="text" autoComplete="off" {...shared} />}
+      {multiline ? <textarea rows={rows} {...shared} /> : <input type="text" autoComplete="off" {...shared} />}
       <p id={`${id}-count`} className={cn("mt-1 text-sm", left < max / 10 ? "font-semibold" : "text-muted-foreground")}>
         {countText}
       </p>
+      {emptyHint && length === 0 && (
+        <p id={`${id}-empty`} className="mt-1 text-sm">
+          {emptyHint}
+        </p>
+      )}
       <p role="status" aria-live="polite" className="sr-only">
         {spoken}
       </p>
@@ -94,10 +102,13 @@ export interface BilingualFieldProps {
   multiline?: boolean;
   errors: Record<string, string | undefined>;
   children?: ReactNode;
+  /** Shown under the French field while it is empty. */
+  frEmptyHint?: string;
+  rows?: number;
 }
 
 /** English and French versions of one text; French left blank shows the English on French pages. */
-export function BilingualField({ name, id, label, hint, max, value, multiline = false, errors, children }: BilingualFieldProps) {
+export function BilingualField({ name, id, label, hint, max, value, multiline = false, errors, children, frEmptyHint, rows }: BilingualFieldProps) {
   const { t } = useI18n();
   const hintId = hint ? `${id}-hint` : undefined;
   return (
@@ -110,8 +121,8 @@ export function BilingualField({ name, id, label, hint, max, value, multiline = 
       )}
       {children}
       <div className="mt-1 grid gap-4 md:grid-cols-2">
-        <OneLanguage id={`${id}-en`} name={`${name}.en`} label={t("admin.settings.inEnglish", { label })} max={max} value={value?.en ?? ""} multiline={multiline} error={errors[`${name}.en`]} hintId={hintId} />
-        <OneLanguage id={`${id}-fr`} name={`${name}.fr`} label={t("admin.settings.inFrench", { label })} max={max} value={value?.fr ?? ""} multiline={multiline} error={errors[`${name}.fr`]} hintId={hintId} />
+        <OneLanguage id={`${id}-en`} name={`${name}.en`} label={t("admin.settings.inEnglish", { label })} max={max} value={value?.en ?? ""} multiline={multiline} error={errors[`${name}.en`]} hintId={hintId} rows={rows} />
+        <OneLanguage id={`${id}-fr`} name={`${name}.fr`} label={t("admin.settings.inFrench", { label })} max={max} value={value?.fr ?? ""} multiline={multiline} error={errors[`${name}.fr`]} hintId={hintId} rows={rows} emptyHint={frEmptyHint} />
       </div>
     </fieldset>
   );

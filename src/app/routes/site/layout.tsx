@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Outlet, redirect, useLocation } from "react-router";
+import { Outlet, redirect, useLocation, useMatches, useRouteLoaderData } from "react-router";
 import { LanguageSwitch } from "~/components/shell/language-switch";
 import { NavProgress } from "~/components/shell/nav-progress";
 import { SiteFooter } from "~/components/shell/site-footer";
@@ -10,6 +10,7 @@ import { readCookie } from "~/lib/cookies";
 import { basketStore } from "~/lib/basket-store";
 import { localeFromPathname } from "~/lib/locale";
 import { menuStore } from "~/lib/menu-cache";
+import { BRAND_SHARE_IMAGE, handlesOwnShareImage } from "~/lib/seo";
 import { LOCALE_COOKIE, decideLocale, localeCookie, twinPath } from "~/lib/locale-detect";
 import { readBasketCount } from "~/server/basket.server";
 import { clockContext } from "~/server/clock.server";
@@ -81,6 +82,24 @@ function useBrowserBasket(serverCount: number) {
   }, [serverCount]);
 }
 
+/**
+ * The brand share image (S-253 AC3) for customer pages whose meta does not bring its own: pages
+ * using seoMeta (lib/seo) export `handle = SEO_HANDLE`, so there is never a second og:image.
+ * Hoisted into <head> by React; here rather than in root so the admin app never loads lib/seo.
+ */
+function BrandShareImage() {
+  const root = useRouteLoaderData("root") as { origin?: string | null } | undefined;
+  const ownShareImage = useMatches().some((match) => handlesOwnShareImage(match.handle));
+  if (!root?.origin || ownShareImage) return null;
+  return (
+    <>
+      <meta property="og:image" content={`${root.origin}${BRAND_SHARE_IMAGE.path}`} />
+      <meta property="og:image:width" content={String(BRAND_SHARE_IMAGE.width)} />
+      <meta property="og:image:height" content={String(BRAND_SHARE_IMAGE.height)} />
+    </>
+  );
+}
+
 export default function SiteLayout({ loaderData }: Route.ComponentProps) {
   const location = useLocation();
   const other = localeFromPathname(location.pathname) === "fr" ? "en" : "fr";
@@ -89,6 +108,7 @@ export default function SiteLayout({ loaderData }: Route.ComponentProps) {
     <div className="flex min-h-dvh flex-col">
       {/* React hoists this into <head>: the phone's browser bar matches the burgundy header band (tokens color.band). */}
       <meta name="theme-color" content={SITE_BAND} />
+      <BrandShareImage />
       <NavProgress />
       <SkipLink />
       <SiteHeader

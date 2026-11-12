@@ -20,6 +20,8 @@ const STATUS = {
   SLUG_TAKEN: 409,
   /** Settings or availability saved from a stale page (S-056..S-059). */
   SETTINGS_CHANGED: 409,
+  /** A brand page saved from a stale editor (E-13 S-246 AC5). */
+  PAGE_CHANGED: 409,
   /** Invite or accept: the email already has an admin or customer account (S-028, S-029). */
   EMAIL_IN_USE: 409,
   /** changeRole / deactivate would leave no active Owner (S-031, S-032). */

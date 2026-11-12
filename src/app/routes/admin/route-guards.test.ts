@@ -17,7 +17,8 @@ interface RouteModule {
   action?: Handler;
 }
 
-const modules = import.meta.glob<RouteModule>("./*.tsx", { eager: true });
+// Route modules only: importing a *.test.tsx here would re-register its tests in this file.
+const modules = import.meta.glob<RouteModule>(["./*.tsx", "!./*.test.tsx"], { eager: true });
 
 /** Every route file whose URL is /admin or below, with its full path. */
 function adminRoutes(entries: RouteConfigEntry[], parent = ""): { path: string; file: string }[] {
@@ -100,8 +101,8 @@ describe("the policy table (S-022 AC4)", () => {
     expect([...OWNER_ONLY_MODULES].sort()).toEqual(["availability", "settings", "team"]);
   });
 
-  test("Menu, Promotions, Gallery, Customers, Sales summary, Orders, Calendar and Profile are open to Admins", () => {
-    for (const name of ["menu", "promotions", "gallery", "customers", "sales", "orders", "order", "calendar", "profile"] as const) {
+  test("Menu, Promotions, Gallery, Customers, Sales summary, Orders, Calendar, Profile and Pages (E-13 S-246 AC6) are open to Admins", () => {
+    for (const name of ["menu", "promotions", "gallery", "customers", "sales", "orders", "order", "calendar", "profile", "pages", "page-editor"] as const) {
       expect(ADMIN_MODULE_POLICY[name], name).toBe("admin");
     }
   });

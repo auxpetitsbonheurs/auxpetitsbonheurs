@@ -97,7 +97,7 @@ describe("compressPhoto (AC1)", () => {
     const io = fakeIo({ width: 1600, height: 1600, bytesPerPixel: 100 });
 
     await expect(compressPhoto(file("noise.png", "image/png", 9 * MB), io)).rejects.toMatchObject({ problem: "too_big_after" });
-  });
+  }, 30_000); // each fake encode allocates its whole output (up to ~250 MB): ~2.5 s alone
 });
 
 describe("refused before anything is sent (AC2)", () => {

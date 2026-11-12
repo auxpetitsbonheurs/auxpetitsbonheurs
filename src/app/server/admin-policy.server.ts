@@ -30,6 +30,9 @@ export const ADMIN_MODULE_POLICY = {
   customers: "admin",
   sales: "admin",
   profile: "admin",
+  // Brand pages (E-13 S-246, S-247): Admins may edit page content (Lead decision 1, 2026-11-12).
+  pages: "admin",
+  "page-editor": "admin",
   team: "owner",
   settings: "owner",
   availability: "owner",
