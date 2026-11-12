@@ -1,5 +1,5 @@
 // Confirmation rendered without the database right after Place order (checkout spec AC48,
-// contracts.md v0.31, ADR-0003 amendment 4): a short-lived signed cookie scoped to that order's
+// contracts.md v0.31, ADR-0003 amendment 5): a short-lived signed cookie scoped to that order's
 // /order/:token path. Anything that does not verify is ignored and the page reads the database.
 import { describe, expect, test } from "vitest";
 import { CONFIRMATION_COOKIE, type ConfirmationSnapshot, confirmationSigner } from "./confirmation-cookie.server";

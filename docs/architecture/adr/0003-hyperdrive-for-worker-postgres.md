@@ -216,7 +216,12 @@ CPU (cpu-measure 43196081265, warm, 50 rounds, no Hyperdrive): place order p50 9
 24), basket 26 ms (was 38), tracking 20 ms (was 34); p99 30 / 73 / 47 ms, so still above the
 10 ms target; no request exceeded the limit (see `cpu-measurements.md`).
 
-## Amendment 2026-11-12 (4): the confirmation after Place order skips the database
+## Amendment 4 (2026-11-12): Hyperdrive on for staging
+The Owner pointed the staging Hyperdrive config at the Supabase **session pooler (port 5432)** and turned **query caching off**. Deploy 43250574974 confirmed it ("Hyperdrive origin: Supabase session pooler, port 5432; query caching off"). With the node-postgres driver (amendment 3), probes of /api/menu, a product page and /healthz all returned 200 with no hangs.
+Decision: staging deploys use Hyperdrive by default, both the automatic deploys after CI and manual runs, where untick `hyperdrive` to fall back to DATABASE_URL. Production stays off (PRODUCTION_HYPERDRIVE_ID empty) until staging has run cleanly through a sprint. Production must then use the same origin type and caching off.
+Rejected: the transaction pooler (6543) as origin (it caused the earlier hangs), and Hyperdrive caching (it could show order and tracking data up to a minute old).
+
+## Amendment 2026-11-12 (5): the confirmation after Place order skips the database
 Appended. Trigger: amendment 3 left Place order at 2,106 ms (median), of which ~0.9 s was the
 confirmation page opening a second database connection (TLS + SCRAM to the pooler) for one
 query whose answer the Place order POST had just computed. Lead-approved.
@@ -251,7 +256,19 @@ left-out notice (AC41) comes from the signed names first and from `apb_left_out`
 
 Rollback: revert the commit; cookies already set are ignored and expire within 10 minutes.
 
-## Amendment 4 (2026-11-12): Hyperdrive on for staging
-The Owner pointed the staging Hyperdrive config at the Supabase **session pooler (port 5432)** and turned **query caching off**. Deploy 43250574974 confirmed it ("Hyperdrive origin: Supabase session pooler, port 5432; query caching off"). With the node-postgres driver (amendment 3), probes of /api/menu, a product page and /healthz all returned 200 with no hangs.
-Decision: staging deploys use Hyperdrive by default, both the automatic deploys after CI and manual runs, where untick `hyperdrive` to fall back to DATABASE_URL. Production stays off (PRODUCTION_HYPERDRIVE_ID empty) until staging has run cleanly through a sprint. Production must then use the same origin type and caching off.
-Rejected: the transaction pooler (6543) as origin (it caused the earlier hangs), and Hyperdrive caching (it could show order and tracking data up to a minute old).
+Result, staging, Pixel 7 emulation from a US cloud machine, median of 5, orders "Perf test
+(staging) — ignore". Before: f220960 the same day, no Hyperdrive. After: f379011 (this change,
+0a3968c, plus Hyperdrive on, amendment 4, deployed in the same run 43250574974), so the two effects are separated with Server-Timing below.
+
+| Step | Before | After |
+|---|---|---|
+| Place order: tap to confirmation shown | 2,068 ms (2,106 in amendment 3) | 597 ms (457-908) |
+| Place order POST, server (`app`) | 864-1,021 ms (connect ~700 + 1 query) | 184-266 ms (connect 9-20 + 1 query) |
+| Confirmation load, server (`app`) | 872-972 ms (connect ~730 + 1 query) | 0 ms, no `db-connect` (cookie) |
+| Confirmation refresh within 10 min, TTFB | 1,021 ms | 135 ms |
+| Confirmation on another device (database path), server | as above | 184-209 ms (connect 7-25 + 1 query) |
+
+Hyperdrive removes the ~0.7 s connection on every request; this change removes the
+confirmation's remaining query and connection altogether, ~0.2 s per Place order with Hyperdrive
+and ~0.9 s if staging goes back to the pooler without it. One cold-isolate run read the layout's
+Settings once (208 ms, the 60 s display cache); the order itself never.

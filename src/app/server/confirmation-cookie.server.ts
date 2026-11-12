@@ -1,5 +1,5 @@
 // Confirmation without a second database connection (checkout spec AC48, contracts.md v0.31,
-// ADR-0003 amendment 4). A successful new `placeOrder` already knows everything the
+// ADR-0003 amendment 5). A successful new `placeOrder` already knows everything the
 // confirmation page shows (number, order language, names of left-out lines), so it puts them in
 // `apb_confirmed`: HMAC-signed, bound to the order's tracking token, scoped to that order's
 // /order/:token path (the page and its `.data` request), 10 minutes, HttpOnly. The loader renders
