@@ -59,3 +59,8 @@
 - TD: `/admin/uploads` has no rate limit (admin-only, contract "Admin actions are not rate-limited beyond auth"); a compromised admin session could fill Storage. Fold into the cleanup job's alerting or add RL-upload for admins if abuse appears. Low.
 - TD: customer side of option groups (picker, `textOptionProblem`, price with options, `isInSeason` on the chosen date) lands in E-04/E-05; `priceLines` still ignores options. Must be done before any product with priced options is offered. Medium (tracked by E-04/E-05 stories).
 - TD: admin menu `fromPriceRs` is still the base price; with a required Size group whose smallest choice is not Rs 0 it should be base + lowest required choice (`lowestOptionPrice`). Low.
+
+## From sprint 02 batch 4 (2026-11-12)
+- TD: unit suite takes about 15 minutes on CI (a fresh PGlite database per test, 1600+ tests); the app job timeout was raised to 25 minutes. Share one migrated PGlite snapshot per file (clone or truncate between tests) or shard `npm test`. Medium.
+- TD: the S-011 sample and `scripts/cpu-load.ts` default to `/menu/chocolate-cake`, which the real menu (S-241) turns into a hidden Rs 0 cake on staging; pass `--product chocolate-chip-cookies` (or a priced cake) to cpu-load until the default follows the menu. Low.
+- TD: the public product page does not show option groups yet (E-02 builds it), so on staging the cookies add as the Rs 420 base (Box of 6) with no box choice. Low (staging only; E-02 in this sprint).

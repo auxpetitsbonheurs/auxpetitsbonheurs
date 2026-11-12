@@ -18,7 +18,9 @@ concurrency:
 jobs:
   app:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # The unit suite (one PGlite database per test) passed 15 minutes on 2026-11-12 (run
+    # 43144000030 timed out in `npm test`); tech-debt.md tracks making it faster.
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: src
