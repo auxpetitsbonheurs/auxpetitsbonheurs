@@ -66,7 +66,8 @@ jobs:
   e2e:
     needs: app
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 703 specs on one worker reached ~19 min in batch 5 (run 43167358551, cut off at 20).
+    timeout-minutes: 35
     services:
       postgres:
         image: postgres:16
