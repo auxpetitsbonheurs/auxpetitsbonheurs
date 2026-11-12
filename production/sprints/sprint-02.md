@@ -22,11 +22,11 @@ Milestone: MVP (E-02 Admin access and team, E-03 Menu and content management) ·
 | S-034 | Orders badge showing how many need review | 2 | ui-engineer, remix-specialist | ready (contract resolved 2026-11-11) |
 | S-035 | Install the admin app on the home screen | 3 | remix-specialist, ui-engineer, hosting-platform-specialist | ready |
 | S-036 | My profile with name, language, password and alert switches | 3 | remix-specialist, ui-engineer, auth-specialist | ready |
-| S-041 | Menu list grouped by type | 3 | remix-specialist, ui-engineer, tailwind-shadcn-specialist | ready |
+| S-041 | Menu list grouped by type | 3 | remix-specialist, ui-engineer, tailwind-shadcn-specialist | review |
 | S-042 | Reorder products within a type | 5 | remix-specialist, ui-engineer, accessibility-specialist, postgres-specialist | ready |
-| S-043 | Hide a product or mark it sold out | 2 | remix-specialist, api-engineer, ui-engineer | ready |
-| S-045 | Delete a product safely | 2 | remix-specialist, postgres-specialist, ui-engineer | ready |
-| S-046 | Create and edit a product's basic details | 5 | remix-specialist, ui-engineer, tailwind-shadcn-specialist, api-engineer | ready |
+| S-043 | Hide a product or mark it sold out | 2 | remix-specialist, api-engineer, ui-engineer | review |
+| S-045 | Delete a product safely | 2 | remix-specialist, postgres-specialist, ui-engineer | review |
+| S-046 | Create and edit a product's basic details | 5 | remix-specialist, ui-engineer, tailwind-shadcn-specialist, api-engineer | review |
 | S-047 | Add up to five product photos from the phone | 5 | baas-specialist, ui-engineer, remix-specialist, api-engineer | ready |
 | S-048 | Add sizes, flavours, add-ons and a message field to a product | 5 | remix-specialist, ui-engineer, tailwind-shadcn-specialist, api-engineer | ready |
 | S-049 | Set seasonal dates on a product | 2 | remix-specialist, ui-engineer, api-engineer | ready |
@@ -84,6 +84,7 @@ Within a batch, stories run in the order listed (later ones may depend on earlie
 <!-- One line per working session. -->
 - 2026-11-11: sprint planned; S-034 contract resolved; S-241 written.
 - 2026-11-12: batch 1 built (S-021, S-022, S-033, S-023 → review). Review (security-lead + ux-lead): every /admin loader and action guarded (route-guards.test walks routes.ts incl. .data; owner modules refuse Admins); rate limiter = Postgres fixed window in the existing table (no new infra, no ADR). Fixed: rate-limit buckets were never purged (now an hourly job); Sign out moved from the header to the end of More (design-system thumb zone: header read-only, less header height at 320 px). Left (Medium): no per-email cap across many IPs (spec is email + IP); Supabase Auth still rate-limits by the Worker's shared egress IP (tech-debt A5); e2e basket-instant cookie test can flake when a random line id contains "rs" (ADR-0004 owner).
+- 2026-11-12: batch 2 built (S-041, S-046, S-043, S-045 → review; contract v0.18, v0.20 to v0.22; migrations 0002 `product.updated_by` and 0003 `storage_purge`, both expand-only, applied by the staging deploy). Review (security-lead + ux-lead): every new loader and action calls `requireAdmin` first (route-guards walks `menu/new` and `menu/:id`; policy row `product`); inputs parsed by zod; the Storage service key stays server-side with a 3 s timeout and failures queued, never surfaced. Fixed: the product editor had no loading state (spec: form skeleton) → skeleton after 300 ms like the menu list. Left (Low): a failed navigation keeps the frame's last data in the tab (the admin's own name and role, refreshed on the next good load); `/menu/<old slug>` is 404 until S-050 adds the redirect; Storage removal of real photos is proven with a double only (no product has Storage photos before S-047).
 
 ## Review (filled at sprint end)
 - Completed: — · Carried over: —

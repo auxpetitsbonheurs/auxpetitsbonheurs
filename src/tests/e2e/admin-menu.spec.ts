@@ -184,6 +184,24 @@ test.describe("S-046 product editor", () => {
     await expect(page).toHaveURL(/\/admin\/menu\/new$/);
   });
 
+  test("review: a slow editor load shows the form skeleton, then the form", async ({ page, db }) => {
+    const product = await createProduct(db, { status: "hidden" });
+    await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu");
+    await hydrated(page);
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    await page.route(`**/admin/menu/${product.id}.data*`, async (route) => {
+      await held;
+      await route.continue();
+    });
+
+    await page.getByRole("link", { name: product.name }).click();
+
+    await expect(page.getByTestId("form-skeleton")).toBeVisible();
+    release();
+    await expect(page.getByLabel("Name (English)")).toHaveValue(product.name);
+  });
+
   test("AC4: blank notice shows the Settings default", async ({ page }) => {
     await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu/new");
     await expect(page.getByLabel(/^Notice days/)).toHaveAttribute("placeholder", "Use default (3)");

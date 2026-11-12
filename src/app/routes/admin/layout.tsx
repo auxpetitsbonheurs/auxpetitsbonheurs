@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { Outlet, isRouteErrorResponse, useLocation, useMatches, useNavigation } from "react-router";
 import { AdminHeader } from "~/components/admin/admin-header";
 import { AdminBottomBar } from "~/components/admin/bottom-bar";
-import { MenuSkeleton } from "~/components/admin/menu-skeleton";
+import { MenuSkeleton, ProductFormSkeleton } from "~/components/admin/menu-skeleton";
 import { NavProgress } from "~/components/shell/nav-progress";
 import { SkipLink } from "~/components/shell/skip-link";
 import { Toaster } from "~/components/ui/toaster";
@@ -73,21 +73,26 @@ function usePageTitleKey(): string | undefined {
 export const SKELETON_DELAY_MS = 300;
 
 /** Pages with a skeleton of their own: shown while a navigation to them is slow (S-041 AC3). */
-const SKELETONS: Record<string, () => ReactNode> = { "/admin/menu": () => <MenuSkeleton /> };
+const SKELETONS: [RegExp, () => ReactNode][] = [
+  [/^\/admin\/menu$/, () => <MenuSkeleton />],
+  [/^\/admin\/menu\/[^/]+$/, () => <ProductFormSkeleton />],
+];
+
+const skeletonFor = (path: string) => SKELETONS.find(([pattern]) => pattern.test(path))?.[1];
 
 /** The skeleton of the page being opened, once its data has taken longer than 300 ms; else null. */
 function usePendingSkeleton(): ReactNode {
   const navigation = useNavigation();
   const { pathname } = useLocation();
   const target = navigation.state === "loading" && !navigation.formMethod ? navigation.location?.pathname : undefined;
-  const pending = target && target !== pathname && SKELETONS[target] ? target : undefined;
+  const pending = target && target !== pathname && skeletonFor(target) ? target : undefined;
   const [late, setLate] = useState<string | undefined>();
   useEffect(() => {
     if (!pending) return;
     const timer = setTimeout(() => setLate(pending), SKELETON_DELAY_MS);
     return () => clearTimeout(timer);
   }, [pending]);
-  return pending && late === pending ? SKELETONS[pending]!() : null;
+  return pending && late === pending ? skeletonFor(pending)!() : null;
 }
 
 export default function AdminLayout({ loaderData }: Route.ComponentProps) {

@@ -465,7 +465,8 @@
         "slug_taken": "This web address is already used. Choose another.",
         "allergens_invalid": "Choose allergens from the list.",
         "id_invalid": "This product could not be found. Go back to the menu."
-      }
+      },
+      "loading": "Loading the product…"
     }
   }
 }

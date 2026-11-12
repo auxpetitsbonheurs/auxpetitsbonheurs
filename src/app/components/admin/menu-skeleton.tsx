@@ -1,5 +1,29 @@
 import { useI18n } from "~/i18n/react";
 
+/** Placeholder product editor (spec "Screens & states": form skeleton), shown while it loads. */
+export function ProductFormSkeleton() {
+  const { t } = useI18n();
+  return (
+    <div aria-busy="true" data-testid="form-skeleton">
+      <p role="status" className="sr-only">
+        {t("admin.product.loading")}
+      </p>
+      <div aria-hidden="true">
+        <div className="h-11 w-36 rounded-md bg-muted" />
+        <div className="mt-2 h-10 w-56 rounded-md bg-muted" />
+        <div className="mt-6 grid gap-6 md:grid-cols-2">
+          {[0, 1, 2, 3].map((field) => (
+            <div key={field}>
+              <div className="h-5 w-40 rounded bg-muted" />
+              <div className="mt-2 h-12 rounded-md bg-muted" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Placeholder rows with the loaded rows' box sizes (CLS), shown while the menu loads (S-041 AC3). */
 export function MenuSkeleton() {
   const { t } = useI18n();

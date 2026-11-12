@@ -465,7 +465,8 @@
         "slug_taken": "Cette adresse web est déjà utilisée. Choisissez-en une autre.",
         "allergens_invalid": "Choisissez les allergènes dans la liste.",
         "id_invalid": "Ce produit est introuvable. Revenez à la carte."
-      }
+      },
+      "loading": "Chargement du produit…"
     }
   }
 }
