@@ -41,9 +41,9 @@ test.describe("only the active locale ships (S-006 AC5)", () => {
     expect(frenchOnly.length).toBeGreaterThan(5);
     expect(scripts.size).toBeGreaterThan(0);
     const bodies = [html, ...(await Promise.all([...scripts].map(async (url) => (await request.get(url)).text())))];
-    for (const body of bodies) {
-      for (const sentence of frenchOnly) expect(body).not.toContain(sentence);
-    }
+    // One assertion naming every leaked sentence (an expect per sentence and body cost ~8 s).
+    const leaked = bodies.flatMap((body, i) => frenchOnly.filter((sentence) => body.includes(sentence)).map((s) => `${i}: ${s}`));
+    expect(leaked, "French-only sentences found in an English page or its scripts").toEqual([]);
   });
 });
 
