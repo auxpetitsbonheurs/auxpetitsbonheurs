@@ -14,6 +14,7 @@ import * as schema from "~/db/schema";
 import { withLibpqSslModes } from "~/lib/pg-url";
 import type { AfterResponseQueue } from "./after-response.server";
 import { type DbTimingName, startDbTiming } from "./db-timing.server";
+import { workersSocketFactory } from "./pg-socket.server";
 
 /**
  * Every wait is bounded so a stuck connection fails fast instead of hanging the customer
@@ -73,8 +74,15 @@ class TimedClient extends pg.Client {
 
 const logEvent = (event: string, fields: Record<string, unknown>) => console.error(JSON.stringify({ level: "error", event, ...fields }));
 
+/** On Workers, a socket that sends each query's messages in one write (pg-socket.server.ts). */
+const workersStream = workersSocketFactory();
+
 export const connectPool: Connect = (config) => {
-  const pool = new pg.Pool({ ...config, Client: TimedClient as unknown as new () => pg.ClientBase });
+  const pool = new pg.Pool({
+    ...config,
+    Client: TimedClient as unknown as new () => pg.ClientBase,
+    ...(workersStream ? { stream: workersStream as unknown as pg.PoolConfig["stream"] } : {}),
+  });
   // A connection that drops while idle emits "error"; unhandled, it would throw in the isolate.
   // While the pool is ending, the Workers socket reports its own close as an error: not news.
   pool.on("error", (error) => {
