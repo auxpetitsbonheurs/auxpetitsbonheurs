@@ -53,3 +53,9 @@
 - [ ] Alert on Worker `exceededCpu` / error 1102 in staging and production (fold into E-12 observability story).
 - [ ] Re-run cpu-measure on staging before launch; if any request is blocked, raise Workers Paid ($5/month) with the Owner.
 - [ ] Hyperdrive needs a different driver (postgres.js param-type round-trip stalls through it); revisit only if CPU becomes a problem.
+
+## From review of sprint 02 batch 3 (S-047, S-048, S-049, S-042; 2026-11-12)
+- TD: uploaded photos that are never saved (editor closed before Save, or a new photo removed before Save) stay in `public-images` under `products/<adminId>/<uploadSessionId>/`. Add an hourly job that lists that prefix and removes objects older than a day that no `product_photo` row references. Low (free 1 GB; ~300 kB each).
+- TD: `/admin/uploads` has no rate limit (admin-only, contract "Admin actions are not rate-limited beyond auth"); a compromised admin session could fill Storage. Fold into the cleanup job's alerting or add RL-upload for admins if abuse appears. Low.
+- TD: customer side of option groups (picker, `textOptionProblem`, price with options, `isInSeason` on the chosen date) lands in E-04/E-05; `priceLines` still ignores options. Must be done before any product with priced options is offered. Medium (tracked by E-04/E-05 stories).
+- TD: admin menu `fromPriceRs` is still the base price; with a required Size group whose smallest choice is not Rs 0 it should be base + lowest required choice (`lowestOptionPrice`). Low.

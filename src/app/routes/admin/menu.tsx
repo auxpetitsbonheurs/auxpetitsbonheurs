@@ -265,9 +265,12 @@ function useTypeOrder(type: ProductType, rows: AdminMenuRow[]) {
     for (const id of next) body.append("ids", id);
     void fetcher.submit(body, { method: "post", action: "/admin/menu" });
   };
-  const failed = fetcher.state === "idle" && fetcher.data && !fetcher.data.ok ? (fetcher.data.error.fields?.ids ?? fetcher.data.error.message) : null;
+  // Reload clears the refusal: the fresh list is what the next move starts from.
+  const [dismissed, setDismissed] = useState<unknown>(null);
+  const refusal = fetcher.state === "idle" && fetcher.data && !fetcher.data.ok && fetcher.data !== dismissed ? fetcher.data : null;
+  const failed = refusal ? (refusal.error.fields?.ids ?? refusal.error.message) : null;
   const state: "saving" | "saved" | "failed" | null = fetcher.state !== "idle" ? "saving" : failed ? "failed" : answered ? "saved" : null;
-  return { ids, draft, setDraft, save, state, failed };
+  return { ids, draft, setDraft, save, state, failed, dismiss: () => setDismissed(fetcher.data) };
 }
 
 function TypeGroup(props: {
@@ -338,7 +341,15 @@ function TypeGroup(props: {
       {order.failed && (
         <Alert tone="danger" role="alert" title={order.failed} className="mt-3">
           <p>{t("admin.menu.reorderFailedBody")}</p>
-          <Button type="button" variant="outline" className="mt-3" onClick={() => void revalidator.revalidate()} aria-busy={revalidator.state === "loading" || undefined}>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-3"
+            onClick={() => {
+              order.dismiss();
+              void revalidator.revalidate();
+            }}
+          >
             {t("admin.menu.reload")}
           </Button>
         </Alert>

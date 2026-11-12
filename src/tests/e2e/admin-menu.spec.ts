@@ -1055,6 +1055,7 @@ test.describe("S-042 reorder within a type", () => {
     expect((await seasonalOrder(db)).filter((id) => id !== added.id)).toEqual(before);
     await alert.getByRole("button", { name: "Reload" }).click();
     await expect(page.getByRole("link", { name: added.name })).toBeVisible();
+    await expect(alert).toBeHidden(); // review: the refusal goes once the fresh list is shown
   });
 
   test("AC8, AC9: handles and buttons are 44 px with distinct names; nothing clipped or sideways at 100% and 200%", async ({ page, db }) => {
@@ -1068,8 +1069,11 @@ test.describe("S-042 reorder within a type", () => {
         await expectTapTargets(page);
       });
     }
-    const handles = await page.getByRole("button", { name: /^Reorder / }).evaluateAll((buttons) => buttons.map((b) => b.getAttribute("aria-label")));
-    expect(new Set(handles).size).toBe(handles.length);
+    // Each handle names its own product (products may share a name; their rows then do too).
+    const mismatched = await page.locator("li:has([data-reorder-handle])").evaluateAll((rows) =>
+      rows.filter((row) => row.querySelector("[data-reorder-handle]")?.getAttribute("aria-label") !== `Reorder ${row.querySelector("a")?.textContent ?? ""}`).length,
+    );
+    expect(mismatched).toBe(0);
   });
 
   for (const colorScheme of ["light", "dark"] as const) {
