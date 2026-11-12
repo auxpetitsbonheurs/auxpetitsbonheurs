@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Form, redirect, useNavigation } from "react-router";
+import { Form, Link, redirect, useNavigation } from "react-router";
 import { AdminHeader } from "~/components/admin/admin-header";
 import { ErrorSummary } from "~/components/checkout/error-summary";
 import { SkipLink } from "~/components/shell/skip-link";
@@ -135,6 +135,11 @@ export default function AdminLogin({ loaderData, actionData }: Route.ComponentPr
               </SubmitButton>
             </div>
           </Form>
+          <p className="mt-6">
+            <Link to="/admin/forgot" className="inline-flex min-h-11 items-center font-semibold link">
+              {t("admin.login.forgot")}
+            </Link>
+          </p>
         </div>
       </main>
     </div>

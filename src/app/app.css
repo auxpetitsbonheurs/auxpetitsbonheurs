@@ -180,6 +180,14 @@ html[data-sheet-open] [data-bottom-bar] {
     [data-bottom-bar] {
     display: none;
   }
+  /*
+   * Controls scrolled to stop above where the bar comes back, so tapping Save right after
+   * typing (the field blurs, the bar returns) never lands on the bar instead (S-036 review).
+   * 5rem = the bar's height plus a gap; no spacing token is that tall.
+   */
+  html:has([data-bottom-bar]) {
+    scroll-padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
 }
 
 /*

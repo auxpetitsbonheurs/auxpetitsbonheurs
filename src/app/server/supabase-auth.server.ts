@@ -2,6 +2,7 @@
 // cookies read from the request and written back through `takeSetCookies`. Claims are
 // verified locally with the project's JWKS (cached per isolate), not with a call per request.
 import { createServerClient, parseCookieHeader, serializeCookieHeader } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import type { AuthClaims, AuthGateway } from "./auth-gateway.server";
 
 /** The session cookie lives as long as the longest allowed session (FR-040). */
@@ -17,14 +18,36 @@ export interface SupabaseAuthConfig {
 }
 
 interface AmrEntry {
+  method?: unknown;
   timestamp?: unknown;
 }
 
+const stampsOf = (amr: unknown): { method: unknown; at: number }[] =>
+  Array.isArray(amr)
+    ? (amr as AmrEntry[]).flatMap((entry) => (typeof entry?.timestamp === "number" ? [{ method: entry.method, at: entry.timestamp }] : []))
+    : [];
+
 /** The latest authentication time in `amr` (seconds), as a Date; undefined when absent. */
 export function signInTime(amr: unknown): Date | undefined {
-  if (!Array.isArray(amr)) return undefined;
-  const stamps = (amr as AmrEntry[]).map((entry) => entry?.timestamp).filter((t): t is number => typeof t === "number");
-  return stamps.length === 0 ? undefined : new Date(Math.max(...stamps) * 1000);
+  const stamps = stampsOf(amr);
+  return stamps.length === 0 ? undefined : new Date(Math.max(...stamps.map((s) => s.at)) * 1000);
+}
+
+/** Auth methods a recovery link reports (`recovery`; older GoTrue versions say `otp`). */
+const RECOVERY_METHODS = new Set(["recovery", "otp"]);
+
+/** When the latest authentication was a recovery link: its time; else undefined (S-026). */
+export function recoveryTime(amr: unknown): Date | undefined {
+  const latest = stampsOf(amr).sort((a, b) => b.at - a.at)[0];
+  return latest && RECOVERY_METHODS.has(String(latest.method)) ? new Date(latest.at * 1000) : undefined;
+}
+
+/** A client with no cookies and no stored session: recovery requests and password checks. */
+function statelessClient(config: SupabaseAuthConfig) {
+  return createClient(config.url, config.anonKey, {
+    auth: { flowType: "implicit", persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: config.fetch ? { fetch: config.fetch } : undefined,
+  });
 }
 
 export function createSupabaseAuth(config: SupabaseAuthConfig, request: Request): AuthGateway {
@@ -57,7 +80,9 @@ export function createSupabaseAuth(config: SupabaseAuthConfig, request: Request)
     const { data, error } = await supabase().auth.getClaims();
     if (error || !data) return null;
     const signedInAt = signInTime(data.claims.amr);
-    return typeof data.claims.sub === "string" && signedInAt ? { userId: data.claims.sub, signedInAt } : null;
+    if (typeof data.claims.sub !== "string" || !signedInAt) return null;
+    const recoveredAt = recoveryTime(data.claims.amr);
+    return recoveredAt ? { userId: data.claims.sub, signedInAt, recoveredAt } : { userId: data.claims.sub, signedInAt };
   }
 
   return {
@@ -76,6 +101,29 @@ export function createSupabaseAuth(config: SupabaseAuthConfig, request: Request)
     },
     takeSetCookies() {
       return pending.splice(0, pending.length);
+    },
+    async requestRecovery(email, redirectTo) {
+      const { error } = await statelessClient(config).auth.resetPasswordForEmail(email, { redirectTo });
+      return !error;
+    },
+    async verifyRecovery(tokenHash) {
+      const { data, error } = await supabase().auth.verifyOtp({ type: "recovery", token_hash: tokenHash });
+      if (error || !data.user) return null;
+      claims = undefined;
+      return { userId: data.user.id };
+    },
+    async updatePassword(password) {
+      const { error } = await supabase().auth.updateUser({ password });
+      if (!error) return { ok: true };
+      return error.code === "weak_password" || error.code === "same_password" ? { ok: false, reason: "weak" } : { ok: false, reason: "failed" };
+    },
+    async checkPassword({ email, password }) {
+      const checker = statelessClient(config);
+      const { data, error } = await checker.auth.signInWithPassword({ email, password });
+      if (error || !data.session) return false;
+      // The check made a session of its own: end it so it leaves nothing behind.
+      await checker.auth.signOut({ scope: "local" });
+      return true;
     },
   };
 }

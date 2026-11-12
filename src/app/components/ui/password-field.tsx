@@ -9,6 +9,8 @@ export interface PasswordFieldProps {
   label: string;
   autoComplete: "current-password" | "new-password";
   error?: string;
+  /** Visible rule under the label (e.g. "At least 10 characters"), tied with aria-describedby. */
+  hint?: string;
   labels: { show: string; hide: string; shown: string; hidden: string };
 }
 
@@ -17,7 +19,7 @@ export interface PasswordFieldProps {
  * "Show password" / "Hide password" and the new state is announced politely. It only
  * renders once JavaScript runs, so there is never a button that does nothing.
  */
-export function PasswordField({ id, name, label, autoComplete, error, labels }: PasswordFieldProps) {
+export function PasswordField({ id, name, label, autoComplete, error, hint, labels }: PasswordFieldProps) {
   const [visible, setVisible] = useState(false);
   const interactive = useHydrated();
   const [announcement, setAnnouncement] = useState("");
@@ -25,11 +27,17 @@ export function PasswordField({ id, name, label, autoComplete, error, labels }: 
     setVisible(!visible);
     setAnnouncement(visible ? labels.hidden : labels.shown);
   };
+  const describedBy = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ") || undefined;
   return (
     <div>
       <label htmlFor={id} className="block font-semibold">
         {label}
       </label>
+      {hint && (
+        <p id={`${id}-hint`} className="text-sm text-muted-foreground">
+          {hint}
+        </p>
+      )}
       <div className="mt-2 flex items-stretch gap-2">
         <input
           id={id}
@@ -37,7 +45,7 @@ export function PasswordField({ id, name, label, autoComplete, error, labels }: 
           type={visible ? "text" : "password"}
           autoComplete={autoComplete}
           aria-invalid={error ? true : undefined}
-          aria-describedby={error ? `${id}-error` : undefined}
+          aria-describedby={describedBy}
           className="block min-h-12 w-full min-w-0 rounded-md border-2 border-input bg-card px-3 py-2 text-base text-foreground aria-invalid:border-destructive"
         />
         {interactive && (

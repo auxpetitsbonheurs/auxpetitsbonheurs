@@ -18,6 +18,8 @@ const STATUS = {
   PRICE_CHANGED: 409,
   PRODUCT_UNAVAILABLE: 409,
   SLUG_TAKEN: 409,
+  /** Recovery link expired, used or missing (S-026); also the generic refusal of a reset. */
+  LINK_EXPIRED: 410,
   BASKET_FULL: 422,
   UPLOAD_REJECTED: 422,
   RATE_LIMITED: 429,

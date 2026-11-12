@@ -10,7 +10,7 @@ import { RL_AUTH, type RateLimitResult, type RateLimitSubject, consumeRateLimit,
 import { rateLimitBucket } from "~/db/schema";
 import { eq } from "drizzle-orm";
 
-export const AUTH_ACTIONS = { signIn: "admin.signIn", forgot: "admin.forgot", reset: "admin.reset" } as const;
+export const AUTH_ACTIONS = { signIn: "admin.signIn", forgot: "admin.forgot", reset: "admin.reset", changePassword: "admin.changePassword" } as const;
 export type AuthAction = (typeof AUTH_ACTIONS)[keyof typeof AUTH_ACTIONS];
 
 /**

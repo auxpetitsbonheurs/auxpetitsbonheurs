@@ -1,5 +1,7 @@
 // Admin sign-in through the real login page (against the local GoTrue stub).
+import { randomUUID } from "node:crypto";
 import { type BrowserContext, type Page, expect } from "@playwright/test";
+import type postgres from "postgres";
 import type { E2eAccount } from "./auth-users";
 
 export async function signIn(page: Page, account: E2eAccount, next?: string) {
@@ -32,4 +34,31 @@ export async function addSessionCookies(context: BrowserContext, baseURL: string
   const named = chunks.length === 1 ? [{ name: SESSION_COOKIE, value }] : chunks.map((chunk, i) => ({ name: `${SESSION_COOKIE}.${i}`, value: chunk }));
   await context.addCookies(named.map((cookie) => ({ ...cookie, url: baseURL, httpOnly: true, sameSite: "Lax" as const })));
   return named.map((cookie) => cookie.name);
+}
+
+/**
+ * A throwaway active admin for specs that change an account (password, name, language):
+ * rows in the e2e database and the account in the GoTrue stub, unique per call.
+ */
+export async function createE2eAdmin(sql: postgres.Sql, options: { name?: string; locale?: "en" | "fr" } = {}): Promise<E2eAccount> {
+  const id = randomUUID();
+  const email = `admin-${id.slice(0, 8)}@e2e.test`;
+  const password = `e2e-${randomUUID()}`;
+  const name = options.name ?? "Temp Admin";
+  const locale = options.locale ?? "en";
+  await sql`insert into auth.users (id, email, email_confirmed_at) values (${id}, ${email}, now())`;
+  await sql`insert into admin (id, name, email, role, active, locale) values (${id}, ${name}, ${email}, 'admin', true, ${locale})`;
+  const response = await fetch(`${GOTRUE_STUB}/__stub/users`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ id, email, password }),
+  });
+  if (!response.ok) throw new Error("the GoTrue stub refused the new account");
+  return { id, email, password, name, kind: "admin", role: "admin", active: true, locale };
+}
+
+/** The recovery email the stub "sent" to `email` (its token, as the hook would link it, S-024), or null. */
+export async function recoveryFor(email: string): Promise<{ tokenHash: string; redirectTo: string } | null> {
+  const response = await fetch(`${GOTRUE_STUB}/__stub/recovery?email=${encodeURIComponent(email)}`);
+  return response.ok ? ((await response.json()) as { tokenHash: string; redirectTo: string }) : null;
 }

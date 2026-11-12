@@ -121,7 +121,8 @@
       "INVALID_TRANSITION": "Cette commande ne peut plus être modifiée ainsi. Rechargez.",
       "RATE_LIMITED": "Trop de tentatives, patientez quelques minutes.",
       "SLUG_TAKEN": "Cette adresse web est déjà utilisée par un autre produit. Choisissez-en une autre.",
-      "UPLOAD_REJECTED": "Une photo n'a pas pu être utilisée. Le produit garde ses photos précédentes."
+      "UPLOAD_REJECTED": "Une photo n'a pas pu être utilisée. Le produit garde ses photos précédentes.",
+      "LINK_EXPIRED": "Ce lien a expiré. Demandez-en un nouveau."
     }
   },
   "product": {
@@ -255,7 +256,8 @@
         "password": "Saisissez votre mot de passe."
       },
       "retryIn_one": "Vous pourrez réessayer dans {{count}} minute.",
-      "retryIn_other": "Vous pourrez réessayer dans {{count}} minutes."
+      "retryIn_other": "Vous pourrez réessayer dans {{count}} minutes.",
+      "forgot": "Mot de passe oublié ?"
     },
     "home": {
       "metaTitle": "Aujourd'hui",
@@ -622,6 +624,91 @@
         "en": "Show in English",
         "fr": "Voir en français"
       }
+    },
+    "forgot": {
+      "metaTitle": "Réinitialiser le mot de passe",
+      "title": "Réinitialiser le mot de passe",
+      "intro": "Saisissez l'e-mail avec lequel vous vous connectez. S'il appartient à un membre de l'équipe, nous envoyons un lien pour choisir un nouveau mot de passe.",
+      "email": "E-mail",
+      "submit": "Envoyer le lien",
+      "sending": "Envoi du lien…",
+      "sent": "Si cet e-mail appartient à un membre de l'équipe, un lien de réinitialisation est en route.",
+      "sentHint": "Le lien est valable 1 heure. Regardez dans vos spams s'il n'arrive pas d'ici quelques minutes.",
+      "backToSignIn": "Retour à la connexion",
+      "errorSummaryTitle": "Veuillez vérifier le formulaire",
+      "errors": {
+        "email": "Saisissez votre adresse e-mail.",
+        "emailFormat": "Saisissez une adresse e-mail, par exemple nom@exemple.com."
+      }
+    },
+    "reset": {
+      "metaTitle": "Choisir un nouveau mot de passe",
+      "title": "Choisir un nouveau mot de passe",
+      "intro": "Pour {{email}}. Votre session reste ensuite ouverte sur ce téléphone.",
+      "introNoEmail": "Votre session reste ensuite ouverte sur ce téléphone.",
+      "password": "Nouveau mot de passe",
+      "rule": "Au moins 10 caractères",
+      "submit": "Enregistrer et se connecter",
+      "saving": "Enregistrement du mot de passe…",
+      "expiredTitle": "Ce lien a expiré",
+      "expired": "Ce lien a expiré. Demandez-en un nouveau.",
+      "requestNew": "Demander un nouveau lien",
+      "errorSummaryTitle": "Veuillez vérifier le formulaire",
+      "errors": {
+        "tooShort": "Au moins 10 caractères",
+        "tooLong": "72 caractères au maximum.",
+        "weak": "Choisissez un autre mot de passe : celui-ci est trop facile à deviner ou identique au précédent."
+      }
+    },
+    "profile": {
+      "title": "Mon profil",
+      "detailsTitle": "Nom et langue",
+      "name": "Nom",
+      "email": "E-mail",
+      "emailHint": "Demandez à la propriétaire de changer votre e-mail.",
+      "language": "Langue de l'application",
+      "english": "English",
+      "french": "Français",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "saved": "Enregistré",
+      "passwordTitle": "Mot de passe",
+      "currentPassword": "Mot de passe actuel",
+      "newPassword": "Nouveau mot de passe",
+      "rule": "Au moins 10 caractères",
+      "changePassword": "Changer le mot de passe",
+      "changingPassword": "Changement du mot de passe…",
+      "passwordChanged": "Mot de passe changé. Votre session reste ouverte.",
+      "alertsTitle": "Alertes",
+      "alertsIntro": "Choisissez comment recevoir les nouvelles commandes.",
+      "alertPush": "Alertes push",
+      "alertPushHint": "Une notification sur votre téléphone.",
+      "alertEmail": "Alertes par e-mail",
+      "alertEmailHint": "Un e-mail à {{email}}.",
+      "pushDevices": "Appareils push : {{count}}",
+      "pushLater": "L'activation du push sur cet appareil arrive avec les notifications",
+      "saveAlerts": "Enregistrer les alertes",
+      "errorSummaryTitle": "Veuillez vérifier le formulaire",
+      "errors": {
+        "name": "Saisissez votre nom (80 caractères au maximum).",
+        "locale": "Choisissez English ou Français.",
+        "currentPassword": "Votre mot de passe actuel n'est pas le bon.",
+        "tooShort": "Au moins 10 caractères",
+        "tooLong": "72 caractères au maximum.",
+        "weak": "Choisissez un autre mot de passe : celui-ci est trop facile à deviner ou identique au précédent."
+      },
+      "loading": "Chargement de votre profil…"
+    }
+  },
+  "email": {
+    "recovery": {
+      "subject": "Réinitialiser votre mot de passe {{bakery}}",
+      "heading": "Réinitialiser votre mot de passe",
+      "reason": "Quelqu'un a demandé à réinitialiser le mot de passe de votre compte d'équipe {{bakery}} ; si c'est vous, utilisez le bouton ci-dessous.",
+      "button": "Choisir un nouveau mot de passe",
+      "expiry_one": "Ce lien est valable {{count}} heure, une seule fois.",
+      "expiry_other": "Ce lien est valable {{count}} heures, une seule fois.",
+      "ignore": "Si vous n'avez rien demandé, ignorez cet e-mail : votre mot de passe ne change pas."
     }
   }
 }

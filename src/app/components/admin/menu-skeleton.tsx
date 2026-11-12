@@ -1,12 +1,12 @@
 import { useI18n } from "~/i18n/react";
 
-/** Placeholder product editor (spec "Screens & states": form skeleton), shown while it loads. */
-export function ProductFormSkeleton() {
+/** Placeholder form (spec "Screens & states": form skeleton): the product editor, My profile. */
+export function ProductFormSkeleton({ labelKey = "admin.product.loading" }: { labelKey?: string }) {
   const { t } = useI18n();
   return (
     <div aria-busy="true" data-testid="form-skeleton">
       <p role="status" className="sr-only">
-        {t("admin.product.loading")}
+        {t(labelKey)}
       </p>
       <div aria-hidden="true">
         <div className="h-11 w-36 rounded-md bg-muted" />

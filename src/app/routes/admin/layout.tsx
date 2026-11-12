@@ -76,6 +76,7 @@ export const SKELETON_DELAY_MS = 300;
 const SKELETONS: [RegExp, () => ReactNode][] = [
   [/^\/admin\/menu$/, () => <MenuSkeleton />],
   [/^\/admin\/menu\/[^/]+$/, () => <ProductFormSkeleton />],
+  [/^\/admin\/profile$/, () => <ProductFormSkeleton labelKey="admin.profile.loading" />],
 ];
 
 const skeletonFor = (path: string) => SKELETONS.find(([pattern]) => pattern.test(path))?.[1];

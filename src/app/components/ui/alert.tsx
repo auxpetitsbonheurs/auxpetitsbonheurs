@@ -23,7 +23,8 @@ export const Alert = forwardRef<HTMLDivElement, ComponentProps<"div"> & { tone?:
   function Alert({ tone = "info", title, className, children, ...props }, ref) {
     const Icon = toneIcon[tone];
     return (
-      <div ref={ref} className={cn("flex gap-3 rounded-card border-2 bg-card p-4", toneClass[tone], className)} {...props}>
+      // Tighter below 20rem (200% zoom on a 320 px phone) so links inside stay 44 px wide.
+      <div ref={ref} className={cn("flex gap-2 rounded-card border-2 bg-card p-2 min-[20rem]:gap-3 min-[20rem]:p-4", toneClass[tone], className)} {...props}>
         <Icon aria-hidden="true" className={cn("mt-0.5 size-5 shrink-0", iconClass[tone])} />
         <div className="min-w-0">
           {title && <p className="font-semibold">{title}</p>}

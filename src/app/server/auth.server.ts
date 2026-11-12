@@ -38,7 +38,9 @@ const sessions = new WeakMap<AuthGateway, Promise<AdminSession>>();
 
 async function readSession(args: GuardArgs, gateway: AuthGateway): Promise<AdminSession> {
   const claims = await gateway.claims();
-  if (!claims) return { status: "anonymous" };
+  // A recovery link's session only opens /admin/reset (S-026): until a password is chosen it
+  // is not an admin session, so a forwarded or leaked link cannot browse the admin app.
+  if (!claims || claims.recoveredAt) return { status: "anonymous" };
   const record = await findAdminById(args.context.get(requestDbContext).db, claims.userId);
   if (!record) return { status: "not_admin" };
   if (!record.active) return { status: "ended", reason: "inactive" };
@@ -132,6 +134,20 @@ export async function signInAdmin(
   await recordSignIn(db, record.id, args.context.get(clockContext).now());
   const { active: _active, ...admin } = record;
   return { ok: true, admin, headers: withCookies(gateway).headers };
+}
+
+/** A recovery session lets the admin choose a password for this long after the link was used (S-026). */
+export const RECOVERY_WINDOW_MS = 60 * 60 * 1000;
+
+/**
+ * The request's session when it comes from a recovery link used within the last hour
+ * (S-026 AC4): `null` when there is no session, it is an ordinary sign-in, or it is too old.
+ */
+export async function recoverySession(args: GuardArgs): Promise<{ userId: string } | null> {
+  const claims = await args.context.get(authContext).claims();
+  if (!claims?.recoveredAt) return null;
+  const age = args.context.get(clockContext).now().getTime() - claims.recoveredAt.getTime();
+  return age >= 0 && age <= RECOVERY_WINDOW_MS ? { userId: claims.userId } : null;
 }
 
 /** The language of the admin UI: the signed-in admin's, else the visitor's remembered or browser language. */

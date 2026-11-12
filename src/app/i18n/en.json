@@ -121,7 +121,8 @@
       "INVALID_TRANSITION": "This order can no longer be changed this way. Reload.",
       "RATE_LIMITED": "Too many attempts, wait a few minutes.",
       "SLUG_TAKEN": "This web address is already used by another product. Please choose another.",
-      "UPLOAD_REJECTED": "A photo could not be used. The product keeps its previous photos."
+      "UPLOAD_REJECTED": "A photo could not be used. The product keeps its previous photos.",
+      "LINK_EXPIRED": "This link has expired. Request a new one."
     }
   },
   "product": {
@@ -255,7 +256,8 @@
         "password": "Enter your password."
       },
       "retryIn_one": "You can try again in {{count}} minute.",
-      "retryIn_other": "You can try again in {{count}} minutes."
+      "retryIn_other": "You can try again in {{count}} minutes.",
+      "forgot": "Forgot your password?"
     },
     "home": {
       "metaTitle": "Today",
@@ -622,6 +624,91 @@
         "en": "Show in English",
         "fr": "Voir en français"
       }
+    },
+    "forgot": {
+      "metaTitle": "Reset your password",
+      "title": "Reset your password",
+      "intro": "Enter the email you sign in with. If it belongs to an admin, we send a link to choose a new password.",
+      "email": "Email",
+      "submit": "Send the link",
+      "sending": "Sending the link…",
+      "sent": "If that email belongs to an admin, a reset link is on its way.",
+      "sentHint": "The link works for 1 hour. Check your spam folder if it does not arrive in a few minutes.",
+      "backToSignIn": "Back to sign in",
+      "errorSummaryTitle": "Please check the form",
+      "errors": {
+        "email": "Enter your email address.",
+        "emailFormat": "Enter an email address, for example name@example.com."
+      }
+    },
+    "reset": {
+      "metaTitle": "Choose a new password",
+      "title": "Choose a new password",
+      "intro": "For {{email}}. You stay signed in on this phone afterwards.",
+      "introNoEmail": "You stay signed in on this phone afterwards.",
+      "password": "New password",
+      "rule": "At least 10 characters",
+      "submit": "Save and sign in",
+      "saving": "Saving your password…",
+      "expiredTitle": "This link has expired",
+      "expired": "This link has expired. Request a new one.",
+      "requestNew": "Request a new link",
+      "errorSummaryTitle": "Please check the form",
+      "errors": {
+        "tooShort": "At least 10 characters",
+        "tooLong": "Use 72 characters or fewer.",
+        "weak": "Choose another password: this one is too easy to guess or the same as before."
+      }
+    },
+    "profile": {
+      "title": "My profile",
+      "detailsTitle": "Name and language",
+      "name": "Name",
+      "email": "Email",
+      "emailHint": "Ask the Owner to change your email.",
+      "language": "Language of the admin app",
+      "english": "English",
+      "french": "Français",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "passwordTitle": "Password",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "rule": "At least 10 characters",
+      "changePassword": "Change password",
+      "changingPassword": "Changing your password…",
+      "passwordChanged": "Password changed. You stay signed in.",
+      "alertsTitle": "Alerts",
+      "alertsIntro": "Choose how you hear about new orders.",
+      "alertPush": "Push alerts",
+      "alertPushHint": "A notification on your phone.",
+      "alertEmail": "Email alerts",
+      "alertEmailHint": "An email to {{email}}.",
+      "pushDevices": "Push devices: {{count}}",
+      "pushLater": "Turning on push on this device is added with notifications",
+      "saveAlerts": "Save alerts",
+      "errorSummaryTitle": "Please check the form",
+      "errors": {
+        "name": "Enter your name (80 characters or fewer).",
+        "locale": "Choose English or Français.",
+        "currentPassword": "Your current password is not right.",
+        "tooShort": "At least 10 characters",
+        "tooLong": "Use 72 characters or fewer.",
+        "weak": "Choose another password: this one is too easy to guess or the same as before."
+      },
+      "loading": "Loading your profile…"
+    }
+  },
+  "email": {
+    "recovery": {
+      "subject": "Reset your {{bakery}} password",
+      "heading": "Reset your password",
+      "reason": "Someone asked to reset the password of your {{bakery}} admin account; if it was you, use the button below.",
+      "button": "Choose a new password",
+      "expiry_one": "This link works for {{count}} hour and only once.",
+      "expiry_other": "This link works for {{count}} hours and only once.",
+      "ignore": "If you did not ask, ignore this email: your password stays the same."
     }
   }
 }

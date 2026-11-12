@@ -18,6 +18,7 @@ import {
 } from "~/domain/product";
 import { type OptionGroupInput, type OptionProblem, checkOptionGroups } from "~/domain/options";
 import { type SeasonProblem, type SeasonWindow, checkSeason } from "~/domain/season";
+import { PASSWORD_MAX, PASSWORD_MIN, PROFILE_NAME_MAX } from "~/domain/admin-account";
 import { Email, Uuid, Version } from "./shared";
 
 /** `admin/login` signIn. Field problems are reported per field; the password is never echoed. */
@@ -37,6 +38,32 @@ export function signInProblems(form: Record<string, unknown>): Partial<Record<Si
   else if (!SignInInput.shape.email.safeParse(email).success) problems.email = "format";
   if (password === "" || password.length > 1024) problems.password = "missing";
   return problems;
+}
+
+/** An email field's problem: empty reads differently from malformed (S-025 AC3). */
+export function emailProblem(raw: unknown): "missing" | "format" | undefined {
+  const email = typeof raw === "string" ? raw.trim() : "";
+  if (email === "") return "missing";
+  return Email.safeParse(email).success ? undefined : "format";
+}
+
+export { PASSWORD_MAX, PASSWORD_MIN, PROFILE_NAME_MAX } from "~/domain/admin-account";
+
+export function newPasswordProblem(raw: unknown): "tooShort" | "tooLong" | undefined {
+  const password = typeof raw === "string" ? raw : "";
+  if (password.length < PASSWORD_MIN) return "tooShort";
+  return password.length > PASSWORD_MAX ? "tooLong" : undefined;
+}
+
+/** `admin/profile` updateProfile (S-036 AC1, AC2). */
+export const ProfileInput = z.object({
+  name: z.string().trim().min(1).max(PROFILE_NAME_MAX),
+  locale: z.enum(["en", "fr"]),
+});
+
+/** `admin/profile` setAlerts (S-036 AC4): an unticked checkbox posts nothing, so absent = off. */
+export function parseAlerts(form: FormData): { alertPush: boolean; alertEmail: boolean } {
+  return { alertPush: form.get("alertPush") === "on", alertEmail: form.get("alertEmail") === "on" };
 }
 
 /** `admin/order` approve: the version the page loaded (FR-054). */

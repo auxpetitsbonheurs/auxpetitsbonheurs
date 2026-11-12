@@ -28,6 +28,8 @@ export interface TestTokenClaims {
   /** Issue time; `exp` is one hour later. Defaults to now. */
   issuedAt?: Date;
   sessionId?: string;
+  /** The `amr` method; "recovery" for a session made by a recovery link (S-026). Defaults to "password". */
+  method?: string;
 }
 
 export async function signTestJwt(key: TestSigningKey, claims: TestTokenClaims): Promise<string> {
@@ -42,7 +44,7 @@ export async function signTestJwt(key: TestSigningKey, claims: TestTokenClaims):
     iat,
     exp: iat + 3600,
     aal: "aal1",
-    amr: [{ method: "password", timestamp: Math.floor(claims.signedInAt.getTime() / 1000) }],
+    amr: [{ method: claims.method ?? "password", timestamp: Math.floor(claims.signedInAt.getTime() / 1000) }],
     session_id: claims.sessionId ?? crypto.randomUUID(),
     is_anonymous: false,
   });

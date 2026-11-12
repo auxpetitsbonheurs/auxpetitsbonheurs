@@ -1,8 +1,20 @@
 // The Supabase-backed gateway against a fake GoTrue at the HTTP boundary (no network):
 // cookie attributes (S-009 AC1), local JWKS verification and the amr sign-in time (AC3).
 import { describe, expect, test } from "vitest";
-import { createSupabaseAuth } from "./supabase-auth.server";
+import { createSupabaseAuth, recoveryTime } from "./supabase-auth.server";
 import { createTestSigningKey, sessionBody, signTestJwt } from "./testing/test-jwt";
+
+describe("recovery sessions (S-026)", () => {
+  test("the latest amr method decides: recovery (or otp) gives its time, anything else none", () => {
+    const at = (s: number) => new Date(s * 1000);
+
+    expect(recoveryTime([{ method: "recovery", timestamp: 200 }])).toEqual(at(200));
+    expect(recoveryTime([{ method: "otp", timestamp: 200 }])).toEqual(at(200));
+    expect(recoveryTime([{ method: "recovery", timestamp: 100 }, { method: "password", timestamp: 200 }])).toBeUndefined();
+    expect(recoveryTime([{ method: "password", timestamp: 100 }, { method: "recovery", timestamp: 200 }])).toEqual(at(200));
+    expect(recoveryTime(undefined)).toBeUndefined();
+  });
+});
 
 const URL_BASE = "https://project.test";
 const USER = { id: "5b3e1f0a-2c4d-4e5f-8a9b-0c1d2e3f4a5b", email: "owner@example.com" };

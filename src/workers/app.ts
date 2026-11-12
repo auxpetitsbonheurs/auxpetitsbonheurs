@@ -4,6 +4,9 @@ import { authContext } from "~/server/auth-gateway.server";
 import { clockContext, createClock } from "~/server/clock.server";
 import { handleWithDb, requestDbContext } from "~/server/db.server";
 import { type ServerEnv, getEnv } from "~/server/env.server";
+import { EMAIL_TIMEOUT_MS, resendMailer } from "~/server/email/sender.server";
+import { backgroundContext, emailContext } from "~/server/email/context.server";
+import { integrationConfigured } from "~/lib/integrations";
 import { refuseCrossSiteAdminRequest } from "~/server/origin.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { withDbTiming } from "~/server/db-timing.server";
@@ -35,6 +38,14 @@ async function respond(request: Request, settings: ServerEnv, ctx: ExecutionCont
     const storage = supabaseStorage({ url: settings.SUPABASE_URL, serviceRoleKey: settings.SUPABASE_SERVICE_ROLE_KEY });
     context.set(storageContext, storage);
     context.set(uploadContext, storage);
+    // Email (S-024): optional integrations; without their keys the hook answers a safe 500
+    // and the forgot page still shows its calm message (ADR-0002 amendment).
+    context.set(emailContext, {
+      mailer: integrationConfigured(settings, "email") ? resendMailer({ apiKey: settings.RESEND_API_KEY!, from: settings.EMAIL_FROM! }) : null,
+      hookSecret: settings.SUPABASE_AUTH_HOOK_SECRET ?? null,
+      timeoutMs: EMAIL_TIMEOUT_MS,
+    });
+    context.set(backgroundContext, { waitUntil: (promise) => ctx.waitUntil(promise) });
     return requestHandler(request, context);
   }, undefined, { idempotent: request.method === "GET" || request.method === "HEAD" });
 }

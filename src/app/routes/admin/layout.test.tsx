@@ -14,7 +14,6 @@ import * as customers from "./customers";
 import * as gallery from "./gallery";
 import { clientLoader as layoutClientLoader, loader as layoutLoader } from "./layout";
 import { loader as moreLoader } from "./more";
-import * as profile from "./profile";
 import * as sales from "./sales";
 
 let database: TestDatabase;
@@ -94,7 +93,6 @@ describe("destinations not built yet (AC7)", () => {
     ["customers", customers, "Customers"],
     ["sales", sales, "Sales summary"],
     ["gallery", gallery, "Gallery"],
-    ["profile", profile, "My profile"],
   ] as const)("/admin/%s loads its placeholder for an Admin, with its title", async (name, module, title) => {
     const args = await as("admin");
 

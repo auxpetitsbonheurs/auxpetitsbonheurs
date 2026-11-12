@@ -24,6 +24,9 @@ function customerPages(locale: "en" | "fr") {
 const adminPages = [
   route("admin/login", "routes/admin/login.tsx"),
   route("admin/sign-out", "routes/admin/sign-out.tsx"),
+  // Password recovery (S-025, S-026): public like login; reset needs a recovery session.
+  route("admin/forgot", "routes/admin/forgot.tsx"),
+  route("admin/reset", "routes/admin/reset.tsx"),
   // Signed upload URLs as JSON (resource route, guarded like any admin module; S-047).
   route("admin/uploads", "routes/admin/uploads.tsx"),
   // Customer view of any product (S-051): outside the frame so it looks like the live page.
@@ -55,6 +58,9 @@ const resourceRoutes = [
   route("healthz", "routes/hooks/healthz.ts"),
   route("api/menu", "routes/hooks/menu.ts"),
   route("api/basket/reissue", "routes/hooks/basket-reissue.ts"),
+  // Supabase Auth Send Email hook (S-024) and the emailed link's landing (S-026).
+  route("hooks/supabase/send-email", "routes/hooks/send-email.ts"),
+  route("auth/confirm", "routes/auth/confirm.ts"),
 ];
 
 export default [
