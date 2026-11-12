@@ -9,12 +9,12 @@ Milestone: MVP (customer site, brand v0.3) · Goal: **E-13 site navigation and b
 | A | S-242 | Horizontal site navigation in the laptop header | 3 | remix-specialist, tailwind-shadcn-specialist, i18n-specialist | review |
 | A | S-243 | Phone menu button with full-screen menu | 5 | remix-specialist, ui-engineer, tailwind-shadcn-specialist, accessibility-specialist | review |
 | A | S-244 | Our collection page grouped by type | 5 | remix-specialist, tailwind-shadcn-specialist, ui-engineer | review |
-| B | S-245 | Content pages: data, placeholder seed and public read | 5 | postgres-specialist, api-engineer, data-engineer, remix-specialist, copywriter | ready |
-| B | S-246 | Admin Pages: edit page text in English and French | 5 | remix-specialist, ui-engineer, api-engineer, tailwind-shadcn-specialist | ready |
-| B | S-247 | Admin Pages: add, order and remove photos | 3 | baas-specialist, ui-engineer, remix-specialist, api-engineer | ready |
-| C | S-248 | Our story page | 3 | remix-specialist, tailwind-shadcn-specialist, copywriter | ready |
-| C | S-249 | Workshops page | 2 | remix-specialist, tailwind-shadcn-specialist, copywriter | ready |
-| C | S-250 | Gallery page | 3 | remix-specialist, tailwind-shadcn-specialist, accessibility-specialist | ready |
+| B | S-245 | Content pages: data, placeholder seed and public read | 5 | postgres-specialist, api-engineer, data-engineer, remix-specialist, copywriter | review |
+| B | S-246 | Admin Pages: edit page text in English and French | 5 | remix-specialist, ui-engineer, api-engineer, tailwind-shadcn-specialist | review |
+| B | S-247 | Admin Pages: add, order and remove photos | 3 | baas-specialist, ui-engineer, remix-specialist, api-engineer | review |
+| C | S-248 | Our story page | 3 | remix-specialist, tailwind-shadcn-specialist, copywriter | review |
+| C | S-249 | Workshops page | 2 | remix-specialist, tailwind-shadcn-specialist, copywriter | review |
+| C | S-250 | Gallery page | 3 | remix-specialist, tailwind-shadcn-specialist, accessibility-specialist | review |
 | D | S-251 | Contact us page | 3 | remix-specialist, tailwind-shadcn-specialist, copywriter | review |
 | D | S-252 | Custom order page (interim, until the request form) | 2 | remix-specialist, tailwind-shadcn-specialist, copywriter | review |
 | D | S-253 | Titles, descriptions, hreflang, share previews and sitemap for the new pages | 3 | seo-specialist, remix-specialist, copywriter | review |
@@ -33,3 +33,4 @@ Milestone: MVP (customer site, brand v0.3) · Goal: **E-13 site navigation and b
 ## Daily log
 - 2026-11-12: sprint started with E-13. Batch A built (S-242, S-243, S-244 → review): laptop nav bar from 1024 px, phone Menu button opening a full-screen modal dialog (no-JavaScript fallback `/menu-links`), `/menu` collection page from the cached menu, `GET /api/menu` products carry their season window (contracts v0.33), placeholder routes for the five pages not built yet.
 - 2026-11-12: batch D part built (S-251, S-252, S-253 → review): Contact us and the interim Custom order page replace their placeholders; shared head helper `seoMeta`, `/sitemap.xml` and `/robots.txt`; placeholder pages stay noindex and out of the sitemap through `contentPagePlaceholders` (server/seo-pages.server.ts), the seam S-245 fills. S-254 waits for batches B/C and D.
+- 2026-11-12: batches B and C built (S-245..S-250 → review): migration 0008 `site_page` / `site_page_photo` with EN/FR sample text (noindex until edited), public page read cached like Settings, admin More > Pages (Owner and Admin) with EN/FR text, photos through the S-047 upload path and the Workshops next workshop, `/our-story` (`/about` 301), `/workshops` (WhatsApp call to action, no booking) and `/gallery` (empty state). Product editor JS unchanged at 169.5 kB; the Pages editor is its own chunk (164.7 kB). Contracts v0.34.

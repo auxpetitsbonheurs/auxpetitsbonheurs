@@ -80,6 +80,12 @@ Home or Menu -> filter (chips, URL-driven so the back button and shared links ke
 ### Gallery (FR-009)
 Occasion chips (single select + All, URL `?occasion=`). Lightbox is lazy-loaded; swipe, prev/next buttons, Esc closes, focus returns to the tapped photo. "Request something similar" links to `/custom-cake?fromGallery=<id>` (the custom-cake loader attaches the photo).
 
+### Brand pages (FR-078; E-13 S-248..S-250, as built 2026-11-12)
+- Our story `/our-story` (About moved here; `/about` answers 301 in the same language), Workshops `/workshops` and Gallery `/gallery` share `SitePageView`: one h1 with the gold rule, the editable intro and body (admin Pages, `site_page`) rendered only through `PlainText` (escaped; a blank line = paragraph), photos with explicit size, lazy, a missing file hidden rather than broken. Empty fields leave no empty block. A failed read answers 503 with the page error state (Retry, WhatsApp).
+- Workshops (Owner clarification 2026-11-12: occasional event workshops): the next workshop block (title, long date, seats, short text, photo) shows until its Mauritius date has passed; otherwise "No workshop planned right now. Follow us or message us to hear about the next one." The call to action is "Ask about workshops on WhatsApp" (`wa.me` with a pre-filled message in the visitor's language, new tab, screen-reader cue), else the phone, else Contact us. No booking, price or date picker.
+- Gallery: intro, then `gallery_photo` in the admin's order, 2 columns on phones and 3 from `md`, caption as text below; 24 first, "Show more photos" link (`?more=1`, no JavaScript needed); "Photos coming soon." with links to the collection and WhatsApp while there are none. Lightbox and occasion filter: E-04 S-069.
+- A page still holding the seeded sample text is noindex (and stays out of the sitemap, S-253).
+
 ### Content pages (FR-010)
 About (text + photo), Contact (WhatsApp, phone, email, Instagram buttons; pickup address with map link), FAQ (Q&A list, policies, privacy note). Seeded content (migration, EN and FR) must contain: (a) cancellation policy: free via WhatsApp until 48 hours before the order date, no refund after that; (b) storage advice: keep refrigerated, take out about 30 minutes before serving, best eaten within 2-3 days. The cancellation block has anchor `#cancellation`, linked from checkout and tracking.
 

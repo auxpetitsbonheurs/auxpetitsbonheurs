@@ -65,6 +65,9 @@ Multi-select upload (<= 20 per batch, same compression as above), occasion tag p
 ### Availability (Owner)
 Default notice days (0-60, default 3), closed weekdays (default Sunday), delivery windows and pickup windows (each: label EN/FR, start, end; default Morning 9-12, Afternoon 12-17, Evening 17-20; delivery and pickup may differ; at least one window each; no overlaps), blocked dates/ranges with private reason (add, list, remove). Adding a block shows existing orders in its range as a warning (FR-059); existing orders unaffected. Window ids are stable so existing orders keep their snapshot.
 
+### Pages (Owner and Admin; E-13 S-245..S-247, FR-078)
+More > Pages lists Our story, Workshops, Gallery, Contact us and Custom order (row >= 64 px, "Sample text" badge while the page still holds the seeded placeholder, last edit and who). `/admin/pages/:key` edits that page's text fields in English and French (Introduction <= 300, other fields <= 10,000 characters per language; plain text only, a blank line starts a paragraph; French left empty shows "English will show in French") with one versioned Save (`PAGE_CHANGED` when another admin saved first: typed text stays until Reload is chosen) and the leave prompt. Our story (4), Workshops (6) and Custom order (3) take photos with the S-047 rules (browser compression to WebP <= 1600 px / 300 kB, HEIC, signed upload under `site/pages/<key>/`, Retry per photo, server re-check of path and bytes), an English description required per photo, Move up / Move down, Remove with an inline confirm. Workshops also has an optional "Next workshop" (title, date, seats, short text, one photo; all empty = none planned; it leaves the site the day after its date). Contact tells Owners that WhatsApp, phone, address and map link are in Settings (link) and Admins the same in words. Gallery photos stay in Gallery. The editor is its own route chunk (product editor JS budget). Contract: `admin/pages`, `admin/page-editor` (contracts.md v0.34).
+
 ### Settings (Owner)
 Delivery fee (Rs, default 200), pickup address and map link, contact phone/WhatsApp/email, Juice number, Instagram, homepage hero tagline+image and featured products (<= 6), About, FAQ, policies (must keep cancellation and storage entries, FR-010, shown as required-section hint), privacy note, WhatsApp templates (5: approved, ready, on_the_way, payment_reminder, blank; EN and FR each; placeholders {name} {order_number} {date} {window} {total} {juice_number} {pickup_address} {tracking_link}; unknown placeholder rejected; live preview with sample data), quote validity days (default 5), cake message max (default 40), evening reminder time (18:00), order number prefix (APB-, change affects new orders only). All EN/FR where relevant. Single Save with a version check.
 
@@ -105,6 +108,7 @@ None required. Uses `product`, `product_photo` (sort_order 0..4, unique), `optio
 | Promotions create/edit/end early/delete | no | no | yes | yes |
 | Availability (rules, windows, ranges) | no | no | no | yes |
 | Settings | no | no | no | yes |
+| Pages (brand page text and photos) | no | no | yes | yes |
 Admins: Owner screens absent from More and refused by URL (FR-041).
 
 ## Analytics Events

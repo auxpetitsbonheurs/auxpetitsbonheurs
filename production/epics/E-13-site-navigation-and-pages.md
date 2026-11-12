@@ -1,6 +1,6 @@
 # E-13: Site navigation and brand pages
 
-Status: in progress (batch A in review) · Milestone: MVP (customer site, brand v0.3) · Added 2026-11-12 after the Owner's navigation decisions
+Status: in progress (S-242..S-253 in review; S-254 ready) · Milestone: MVP (customer site, brand v0.3) · Added 2026-11-12 after the Owner's navigation decisions
 PRD: FR-076 to FR-081 (PRD section 5.10, added 2026-11-12 v0.4; they extend FR-004, FR-005, FR-009, FR-010, FR-064, FR-067) (NFR-001, 002, 003, 006, 007, 010) · Specs: docs/specs/features/catalogue-browsing.md (to be extended), docs/specs/features/admin-menu-content.md (to be extended) · Design: docs/design/design-system.md (Navigation: Top bar, Site menu), docs/design/brand-guide.md v0.3, docs/design/explorations/2026-11-12-burgundy-reference.jpg
 Release phase: 3 Customer site (can run in parallel with E-04; see Overlaps)
 
@@ -40,12 +40,12 @@ A customer on a 375 px phone reaches any of the 7 pages in at most 2 taps from a
 | S-242 | Horizontal site navigation in the laptop header | review | 3 |
 | S-243 | Phone menu button with full-screen menu | review | 5 |
 | S-244 | Our collection page grouped by type | review | 5 |
-| S-245 | Content pages: data, placeholder seed and public read | ready | 5 |
-| S-246 | Admin Pages: edit page text in English and French | ready | 5 |
-| S-247 | Admin Pages: add, order and remove photos | ready | 3 |
-| S-248 | Our story page | ready | 3 |
-| S-249 | Workshops page | ready | 2 |
-| S-250 | Gallery page | ready | 3 |
+| S-245 | Content pages: data, placeholder seed and public read | review | 5 |
+| S-246 | Admin Pages: edit page text in English and French | review | 5 |
+| S-247 | Admin Pages: add, order and remove photos | review | 3 |
+| S-248 | Our story page | review | 3 |
+| S-249 | Workshops page | review | 2 |
+| S-250 | Gallery page | review | 3 |
 | S-251 | Contact us page | review | 3 |
 | S-252 | Custom order page (interim, until the request form) | review | 2 |
 | S-253 | Titles, descriptions, hreflang, share previews and sitemap for the new pages | review | 3 |
