@@ -122,3 +122,59 @@ Placement had not moved the Worker yet (it needs traffic to decide). Each reques
 a new pooler connection (~0.7-0.8 s, about four round trips) plus ~180 ms per query from the
 US; from Mauritius the edge is closer to the database. If placement stays local, add
 `"hint"` with the Supabase region once confirmed from the project settings (not from secrets).
+
+## Amendment 2026-11-12 (3): node-postgres, Hyperdrive on for staging, one round trip per hot mutation
+Appended. Trigger: Place order on staging still took ~4.2 s (median, Pixel 7 emulation) and
+basket first visit ~1.2 s; the Owner approved three changes without a prior measurement.
+
+Decision:
+- **Driver: node-postgres (`pg` 8.23.1) with `drizzle-orm/node-postgres`**, Cloudflare's
+  recommended driver for Hyperdrive. Each parameterised query goes out as one
+  Parse/Bind/Describe/Execute/Sync batch with an unnamed statement, so there is no
+  Parse/Describe/Flush wait (the likely cause of the postgres.js stalls behind Hyperdrive,
+  amendment 1) and it stays valid on the Supavisor transaction pooler. The unknown-type string
+  workaround (`pg-params.server.ts`) is gone. Per request: a `pg.Pool` with `max: 1` (a
+  transaction holds the only connection; loaders queue), opened lazily, `connectionTimeoutMillis`
+  4 s, `query_timeout` 5 s, no idle timer, ended in `ctx.waitUntil` with a 5 s cap. The bounded
+  deadline, read retry and 503 behaviour of `handleWithDb` (3c626fb, 1d05168) are unchanged.
+  Server-Timing `db-connect`/`db-query` now come from a timed `pg.Client` subclass.
+  `sslmode` keeps libpq's meaning (`uselibpqcompat=true`, `app/lib/pg-url.ts`): node-postgres
+  would otherwise treat `require` as verify-full and refuse Supabase's own CA, both in the
+  Worker fallback and in `drizzle-kit migrate` (which picks `pg` once it is installed).
+- **Hyperdrive on for staging by default.** Automatic staging deploys inject
+  `STAGING_HYPERDRIVE_ID`; a manual deploy with `hyperdrive` unticked is the rollback (the
+  Worker then uses `DATABASE_URL`). Production unchanged: `PRODUCTION_HYPERDRIVE_ID` stays
+  empty. The Hyperdrive origin must be Supabase's **Direct** connection or **Session pooler**
+  (port 5432), never the transaction pooler (6543), and query **caching must be off** (with it
+  on, reads such as the tracking status or the admin order could be up to a minute old). The
+  deploy prints the origin kind, port and caching state (no host, user or database) and a
+  warning with the Owner's fix when either is wrong (`scripts/inject-hyperdrive.ts`).
+- **One round trip for Place order.** A forward-only, additive migration
+  (`drizzle/0004_place_order_procedure.sql`) adds the `place_order(jsonb, INOUT jsonb)`
+  procedure (SECURITY INVOKER, not executable by `anon`/`authenticated`). One `CALL` does the
+  idempotency replay lookup, reads Settings and the basket's products, and, when the
+  application allowed it (form and date valid), checks window, availability and total and
+  writes customer, number, order, items, event and outbox row, all or nothing; a lost race on
+  the idempotency key is rolled back (no number consumed) and answered with the winner. The
+  application re-prices the returned snapshot with `domain/pricing` for every refusal, so codes,
+  fields, lines and totals (ADR-0004 left-out rules, checkout AC31/AC40–47) are as before; a
+  disagreement between the two rule sets is logged (`place_order_rule_drift`) and shown as
+  PRICE_CHANGED, never as an error. E-05 (options, promotions) must update both. A `CALL` is
+  not a plain read, so Hyperdrive never caches it.
+- **Approve is one statement** (data-modifying CTEs: versioned UPDATE, event, outbox; current
+  status and version returned to explain a refusal). The confirmation page reads order, number
+  prefix and left-out names in one query, the tracking page order, items and Settings in one,
+  the admin order page order and items in one (prefix from the 60 s display cache).
+- **Side effects after the response.** `app/server/after-response.server.ts`: a request's
+  deferred tasks start once `handleWithDb` has chosen the response, run under
+  `ctx.waitUntil`, and the database client closes after they settle. A failure logs
+  `deferred_task_failed` with the task label and error name/code only (no message, no PII) and
+  never reaches the customer. Storage clean-up after a product save or delete uses it now;
+  Resend, web push and Sentry (E-10, E-12) must use it when they are built. Committing the
+  order and its outbox row stays before the response.
+- CPU and size: `pg` adds about 0.1 MB to the server bundle (Worker limit 3 MB gzipped on
+  Free); the client bundle is unchanged (`check:js-budget`).
+
+Rollback: untick `hyperdrive` on a manual staging deploy (driver change stays; it works on
+both paths), or revert the commits; the procedure can stay (nothing else calls it) and a later
+migration may drop it.
