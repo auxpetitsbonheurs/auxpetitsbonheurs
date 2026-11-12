@@ -64,3 +64,8 @@
 - TD: unit suite takes about 15 minutes on CI (a fresh PGlite database per test, 1600+ tests); the app job timeout was raised to 25, then 35 minutes (run 43172461462 cut `npm test` at 24 min). Share one migrated PGlite snapshot per file (clone or truncate between tests) or shard `npm test`. Medium.
 - TD: the S-011 sample and `scripts/cpu-load.ts` default to `/menu/chocolate-cake`, which the real menu (S-241) turns into a hidden Rs 0 cake on staging; pass `--product chocolate-chip-cookies` (or a priced cake) to cpu-load until the default follows the menu. Low.
 - TD: the public product page does not show option groups yet (E-02 builds it), so on staging the cookies add as the Rs 420 base (Box of 6) with no box choice. Low (staging only; E-02 in this sprint).
+
+## Supabase legacy keys retire early 2027 (added 2026-11-12)
+- Move every environment to the new keys: `sb_publishable_…` in place of the anon key (SUPABASE_ANON_KEY) and `sb_secret_…` in place of service_role (SUPABASE_SERVICE_ROLE_KEY), in Cloudflare and GitHub. Variable names stay the same.
+- Code check done: supabase-js 2.119 and @supabase/ssr 0.12 accept the new keys, and nothing verifies JWTs with the legacy JWT secret. `storage.server.ts` sends the key as both `apikey` and `Authorization: Bearer`, which the gateway accepts when the two match. Confirm with the first seed-menu run on staging that uses an `sb_secret_` key.
+- Production must start on the new keys.
