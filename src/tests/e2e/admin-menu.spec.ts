@@ -77,6 +77,9 @@ test.describe("S-041 menu list", () => {
   });
 
   test("AC6: keyboard, visible focus, no clipping or sideways scroll and 44 px targets, at 100% and 200%", async ({ page, db }) => {
+    // Tabs through the whole shared menu twice; it grows with every spec's products (timed out
+    // once at 30 s under the full parallel suite), so it gets the slow-test budget.
+    test.slow();
     await createProduct(db, { name: "A cake with a rather long name to wrap on small phones", status: "sold_out" });
     await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu");
     await hydrated(page);
@@ -959,8 +962,12 @@ test.describe("S-049 seasonal dates", () => {
 // (no other spec adds seasonal products) and run one at a time on the 375 px phone, so a
 // parallel spec never adds a product to that group between a page load and a move.
 
-const seasonalNames = async (page: Page) =>
-  page.getByRole("list", { name: "Seasonal" }).getByRole("link").allTextContents();
+/** The Seasonal group's names once it has rendered (reading earlier raced the list and got none). */
+async function seasonalNames(page: Page): Promise<string[]> {
+  const links = page.getByRole("list", { name: "Seasonal" }).getByRole("link");
+  await expect(links.first()).toBeVisible();
+  return links.allTextContents();
+}
 
 async function seasonalOrder(db: Parameters<typeof createProduct>[0]): Promise<string[]> {
   const rows = await db<{ id: string }[]>`select id from product where type = 'seasonal' order by sort_order, name_en`;

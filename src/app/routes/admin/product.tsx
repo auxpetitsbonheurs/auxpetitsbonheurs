@@ -515,7 +515,7 @@ function PreviewLink({ url }: { url: string | null }) {
           {t("admin.product.preview")}
         </Link>
       ) : (
-        <button type="button" aria-disabled="true" aria-describedby="preview-note" onClick={() => setExplained(true)} className={`${style} text-muted-foreground`}>
+        <button type="button" aria-describedby="preview-note" onClick={() => setExplained(true)} className={`${style} text-muted-foreground`}>
           {t("admin.product.preview")}
         </button>
       )}
