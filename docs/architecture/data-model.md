@@ -128,7 +128,7 @@ id · customer_id FK CASCADE · label text · address text · landmark text · i
 Never hard-deleted (names stay on past events, FR-043). Last-owner rule (FR-044): enforced in the role/deactivate action inside a transaction that locks `admin` rows (`SELECT … FOR UPDATE WHERE role='owner' AND active`) and refuses if the result would be zero. An auth user is either an admin or a customer, never both (checked at invite and sign-up).
 
 ### admin_invitation
-id · email · name · role · token_hash text UNIQUE (SHA-256 of a 32-byte random token; plaintext only in the email) · invited_by FK → admin · expires_at timestamptz (= created + 7 days, FR-042) · accepted_at, revoked_at · created_at. Resend = revoke the open row + insert a new one. Own table because Supabase invite links cannot live 7 days.
+id · email · name · role · locale (language of the email and accept page, default en; migration 0005) · token_hash text UNIQUE (SHA-256 of a 32-byte random token; plaintext only in the email) · invited_by FK → admin · expires_at timestamptz (= created + 7 days, FR-042) · accepted_at, revoked_at · created_at. Resend = revoke the open row + insert a new one; at most one unused (not accepted, not revoked) row per lower(email) (`admin_invitation_open_email_uq`, migration 0005), so a new invite revokes the old one first. Own table because Supabase invite links cannot live 7 days.
 
 ### orders (`order` is reserved)
 | Field | Type | Null | Default | Notes |

@@ -90,7 +90,7 @@ No client analytics (no tracking cookies, NFR-011). Server-side structured log l
 - Session at day 30 + 1 minute: redirect to login; refresh tokens do not extend beyond 30 days from sign-in.
 - Push: permission denied or iOS not installed shows guidance; expired subscriptions (404/410) are deleted silently. Signing out removes this device's subscription.
 - Rate limit on sign-in/forgot (RL-auth); the response is identical for known and unknown emails.
-- Password rules: min 10 characters; changing password keeps current session, ends others (open question).
+- Password rules: min 10 characters; changing the password (My profile or the reset link) keeps the current session and signs out every other device (decided 2026-11-12). Deactivating or removing an admin signs that admin out everywhere (S-032).
 
 ## Acceptance Criteria
 - AC1: Given a customer-account session, when opening `/admin` or any `/admin/*` page, then no admin data is returned and the user cannot reach any admin screen.
@@ -138,5 +138,5 @@ No client analytics (no tracking cookies, NFR-011). Server-side structured log l
 
 ## Open Questions
 - ~~Team route~~ Resolved 2026-11-10: `/admin/team`.
-- Should changing one's own password end other devices' sessions? Proposed yes — owner product-director.
+- ~~Should changing one's own password end other devices' sessions?~~ Resolved 2026-11-12 (lead decision): yes. A password change signs out every other session (Supabase `signOut` scope `others`); deactivating or removing an admin signs them out of every session (scope `global`, S-032). Access tokens already issued stay valid until they expire (at most 1 hour).
 - May an Owner change their own role while another Owner exists? Spec allows — owner Sabera.
