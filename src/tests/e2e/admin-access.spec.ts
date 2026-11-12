@@ -83,13 +83,13 @@ test.describe("S-022 Owner-only screens refuse Admins", () => {
 
   test("AC3: an Owner opens the three pages", async ({ page }) => {
     await signIn(page, E2E_ACCOUNTS.owner, "/admin");
-    // Team is built (S-027); Settings and Availability are still placeholders.
+    // All three are built: Team (S-027), Settings (S-058) and Availability (S-056).
     const headings: Record<string, string> = { "/admin/team": "Team", "/admin/settings": "Settings", "/admin/availability": "Availability" };
     for (const path of OWNER_PAGES) {
       const response = await page.goto(path);
       expect(response!.status(), path).toBe(200);
       await expect(page.getByRole("heading", { level: 1, name: headings[path] })).toBeVisible();
-      if (path !== "/admin/team") await expect(page.getByText("Not available yet")).toBeVisible();
+      await expect(page.getByText("Not available yet")).toHaveCount(0);
     }
   });
 

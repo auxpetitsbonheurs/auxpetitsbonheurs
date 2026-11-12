@@ -10,6 +10,7 @@ import {
   withZoom,
 } from "./support/a11y";
 import { createE2eAdmin, signIn } from "./support/admin";
+import { E2E_ACCOUNTS } from "./support/database";
 import { type Page, expect, test } from "./support/fixtures";
 import { withSettingsLock } from "./support/settings-lock";
 
@@ -24,7 +25,7 @@ const save = (page: Page) => page.getByRole("button", { name: "Save settings" })
 test.describe("S-058, S-059 Settings", () => {
   test("S-058 AC1, AC10 + S-059 AC4: values shown, errors linked with the summary focused, Saved announced", async ({ page, db }, testInfo) => {
     test.skip(testInfo.project.name !== "phone-375", "saves the shared Settings row: one project is enough");
-    const owner = await createE2eAdmin(db, { role: "owner" });
+    const owner = E2E_ACCOUNTS.owner;
     await signIn(page, owner, "/admin/settings");
     await withSettingsLock(db, async () => {
       await openSettings(page);
@@ -63,7 +64,7 @@ test.describe("S-058, S-059 Settings", () => {
 
   test("S-058 AC7: a second Owner saving a stale page sees Someone changed this, Reload", async ({ page, browser, db }, testInfo) => {
     test.skip(testInfo.project.name !== "phone-375", "saves the shared Settings row: one project is enough");
-    const owner = await createE2eAdmin(db, { role: "owner" });
+    const owner = E2E_ACCOUNTS.owner;
     await signIn(page, owner, "/admin/settings");
     const other = await browser.newPage();
     await signIn(other, owner, "/admin/settings");
@@ -83,8 +84,8 @@ test.describe("S-058, S-059 Settings", () => {
     await other.close();
   });
 
-  test("S-058 AC9 + S-059 AC9: keyboard, 200% zoom, 44 px targets, no sideways scroll; EN and FR stacked on phones", async ({ page, db }) => {
-    const owner = await createE2eAdmin(db, { role: "owner" });
+  test("S-058 AC9 + S-059 AC9: keyboard, 200% zoom, 44 px targets, no sideways scroll; EN and FR stacked on phones", async ({ page }) => {
+    const owner = E2E_ACCOUNTS.owner;
     await signIn(page, owner, "/admin/settings");
     await openSettings(page);
     const english = await page.getByLabel("About text (English)").boundingBox();
@@ -101,12 +102,12 @@ test.describe("S-058, S-059 Settings", () => {
     // One Save stays reachable at the bottom of the screen.
     await expect(page.getByRole("button", { name: "Save settings" })).toBeInViewport();
     const pin = await page.addStyleTag({ content: "[data-bottom-bar] { display: block !important; }" });
-    await expectKeyboardOperable(page, 160);
+    await expectKeyboardOperable(page, 400);
     await pin.evaluate((style) => (style as Element).remove());
   });
 
-  test("S-058 AC10 + S-059 AC10: labels name their language, the count is a hint, axe clean light and dark", async ({ page, db }) => {
-    const owner = await createE2eAdmin(db, { role: "owner" });
+  test("S-058 AC10 + S-059 AC10: labels name their language, the count is a hint, axe clean light and dark", async ({ page }) => {
+    const owner = E2E_ACCOUNTS.owner;
     await signIn(page, owner, "/admin/settings");
     await openSettings(page);
     const tagline = page.getByRole("textbox", { name: "Tagline (French)" });

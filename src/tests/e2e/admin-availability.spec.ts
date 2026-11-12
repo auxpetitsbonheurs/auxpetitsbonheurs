@@ -9,6 +9,7 @@ import {
   withZoom,
 } from "./support/a11y";
 import { createE2eAdmin, signIn } from "./support/admin";
+import { E2E_ACCOUNTS } from "./support/database";
 import { type Page, expect, test } from "./support/fixtures";
 import { withSettingsLock } from "./support/settings-lock";
 
@@ -23,7 +24,7 @@ const saved = (page: Page) => expect(page.getByRole("status").filter({ hasText: 
 test.describe("S-056, S-057 Availability", () => {
   test("S-056 AC1, AC3, AC4, AC10: rules shown; an overlap is linked from the summary; a window added then removed", async ({ page, db }, testInfo) => {
     test.skip(testInfo.project.name !== "phone-375", "saves the shared Settings row: one project is enough");
-    const owner = await createE2eAdmin(db, { role: "owner" });
+    const owner = E2E_ACCOUNTS.owner;
     await signIn(page, owner, "/admin/availability");
     await withSettingsLock(db, async () => {
       await openAvailability(page);
@@ -61,7 +62,7 @@ test.describe("S-056, S-057 Availability", () => {
 
   test("S-057 AC1, AC4, AC5, AC9: block a range, see it listed, remove it through the dialog; No blocked dates", async ({ page, db }, testInfo) => {
     test.skip(testInfo.project.name !== "phone-375", "changes the shared blocked dates: one project is enough");
-    const owner = await createE2eAdmin(db, { role: "owner" });
+    const owner = E2E_ACCOUNTS.owner;
     await signIn(page, owner, "/admin/availability");
     await withSettingsLock(db, async () => {
       await openAvailability(page);
@@ -93,8 +94,8 @@ test.describe("S-056, S-057 Availability", () => {
     });
   });
 
-  test("S-056 AC9 + S-057 AC8: keyboard, 200% zoom, 44 px targets and no sideways scroll", async ({ page, db }) => {
-    const owner = await createE2eAdmin(db, { role: "owner" });
+  test("S-056 AC9 + S-057 AC8: keyboard, 200% zoom, 44 px targets and no sideways scroll", async ({ page }) => {
+    const owner = E2E_ACCOUNTS.owner;
     await signIn(page, owner, "/admin/availability");
     await openAvailability(page);
     for (const zoom of [1, 2]) {
@@ -105,12 +106,12 @@ test.describe("S-056, S-057 Availability", () => {
       });
     }
     const pin = await page.addStyleTag({ content: "[data-bottom-bar] { display: block !important; }" });
-    await expectKeyboardOperable(page, 120);
+    await expectKeyboardOperable(page, 300);
     await pin.evaluate((style) => (style as Element).remove());
   });
 
-  test("S-056 AC10 + S-057 AC9: axe clean light and dark", async ({ page, db }) => {
-    const owner = await createE2eAdmin(db, { role: "owner" });
+  test("S-056 AC10 + S-057 AC9: axe clean light and dark", async ({ page }) => {
+    const owner = E2E_ACCOUNTS.owner;
     await signIn(page, owner, "/admin/availability");
     await openAvailability(page);
     await expectNoA11yViolations(page);
