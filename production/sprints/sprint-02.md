@@ -51,6 +51,12 @@ Total: 109 pts of ~135 (≈80%; slack kept for Owner-test fixes, ADR-0004 rebase
 | S-055 | Caption, reorder and delete gallery photos | 3 |
 Stretch total: 22 pts. Order: S-044 first (it speeds up entering similar cakes), then promotions, WhatsApp templates, gallery.
 
+## Next epic (added 2026-11-12, product-manager)
+**E-13 Site navigation and brand pages** (production/epics/E-13-site-navigation-and-pages.md, 13 stories, 45 pts) is next after the committed work: it is a sprint-02 stretch if batches 1-8 stay on track, otherwise sprint 03. It is not committed in sprint 02 and does not change the 109 committed points.
+- Stretch order if started in sprint 02: S-245 (page data), S-242 and S-243 (navigation, needs the burgundy header being built now), S-244 (collection page; `/menu` is a 404 today), then S-246/S-247 (admin Pages). Pull S-054 and S-055 (gallery admin) ahead of S-250. Remaining pages and SEO (S-248 to S-254) go to sprint 03.
+- Before build: Owner confirms Admins may edit page content; lead-backend and lead-frontend add the `admin/pages` contract; ux-lead confirms header layout, menu button position and the 1024 px breakpoint.
+- **E-14 Bakery reviews** (31 pts) follows E-11 customer accounts (phase 5); not planned in this sprint.
+
 ## Build order (batches; each batch is built, reviewed and pushed to staging before the next)
 Within a batch, stories run in the order listed (later ones may depend on earlier ones).
 1. **Admin frame and guards** (11 pts): S-021 → S-022 → S-033 → S-023. Unblocks every admin screen; closes the sign-in rate-limit TD.

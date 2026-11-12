@@ -16,7 +16,9 @@ Source: docs/product/prd.md (section 4 Scope, section 11 Release plan). Gate con
 | E-10 | Notifications | 5 | 070-075 | 6 |
 | E-11 | Customer accounts | 5 | 034-038 | 5 |
 | E-12 | Polish, test, launch, handover | 6-7 | none (NFR verification) | 0 |
-| | | | Total | 75 |
+| E-13 | Site navigation and brand pages (added 2026-11-12) | 3 | 076-081 | 6 |
+| E-14 | Bakery reviews (added 2026-11-12, Should; after E-11) | 5 | 082-086 | 5 |
+| | | | Total | 86 |
 
 ## Traceability (FR to epic)
 
@@ -48,6 +50,8 @@ Source: docs/product/prd.md (section 4 Scope, section 11 Release plan). Gate con
 | 024 | E-01 | 049 | E-06 | 074 | E-10 |
 | 025 | E-05 | 050 | E-06 | 075 | E-10 |
 
+Added 2026-11-12 (PRD section 5.10, v0.4): FR-076 to FR-081 are in E-13 (S-242 to S-254); FR-082 to FR-086 are in E-14 (S-261 to S-269).
+
 ## Cuttable Should items
 
 PRD cut order (section 11), first to last: FR-069 CSV export (E-09), FR-065 Customers list (E-09), FR-037 Reorder (E-11), FR-038 Save my details (E-11), customer accounts FR-034..036 (E-11; FR-034 is Must in the PRD table, so cutting it needs a product-director decision).
@@ -62,6 +66,7 @@ Other Should items not in the cut order: FR-009 (E-04), FR-033 (E-08), FR-075 (E
 | Worker CPU check on staging (T3) | E-01 (re-check in E-05) |
 | A11y acceptance criteria on first UI stories (keyboard, 200% zoom, contrast, 320/375 px; no prototype defects) | E-01, E-02, E-04, E-05 and every UI epic |
 | Recorded phone session before launch | E-12 |
+| Navigation and new pages: a11y, 320/375 px, perf budgets, real-phone check of the menu (2026-11-12) | E-13 (S-254) |
 
 ## Unmapped
 No FR is unmapped. NFRs are verified in E-12 and carried as acceptance criteria in the epics where they apply.
@@ -70,5 +75,6 @@ No FR is unmapped. NFRs are verified in E-12 and carried as acceptance criteria 
 - Stories were written in parallel, so each epic got a pre-allocated block (E-01 S-001..020, E-02 021..040, E-03 041..060, E-04 061..080, E-05 081..110, E-06 111..130, E-07 131..150, E-08 151..170, E-09 171..185, E-10 186..205, E-11 206..220, E-12 221..240). Gaps are expected; new stories take the next free number after S-240.
 - [x] RESOLVED 2026-11-11: S-034 (orders "to review" dot) — `admin/layout` loader adds `badges: { toReview }` (contracts.md v0.14, lead-backend + lead-frontend); story ready, in sprint 02.
 - [x] ADDED 2026-11-11: S-241 "Load the Owner's real menu on staging" (E-03, 3 pts, ready, sprint 02) seeds the real menu from docs/content/menu-source/ (placeholder-priced cakes hidden at Rs 0). It covers the menu part of the E-03 sample data; gallery photos and promotions follow S-052..S-055 or E-12. Next free story number: S-242.
+- [x] ADDED 2026-11-12: E-13 "Site navigation and brand pages" (13 stories, 45 pts; block S-242..S-260, used S-242..S-254, S-255..S-260 spare) from the Owner's 7-item navigation decisions, and E-14 "Bakery reviews" (9 stories, 31 pts; block S-261..S-275, used S-261..S-269, S-270..S-275 spare; depends on E-11 sign-in S-206, S-207, S-210). Next free story number: S-276. E-13 overlaps E-04 S-064, S-069, S-070 and E-08 S-151 (see the epic's Overlaps section; notes added to those stories). E-13 is next after sprint 02 (see sprint-02.md).
 - S-204 (phone normalisation) may duplicate E-05 FR-021 work; drop if E-05 delivers it.
 - Open product questions carried in story Notes: S-159 AC4 (decline after expiry before job runs), S-036 password change vs other sessions.

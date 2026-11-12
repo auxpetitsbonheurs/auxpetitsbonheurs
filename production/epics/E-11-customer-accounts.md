@@ -37,6 +37,8 @@ Total: 49 pts. Story files: `production/stories/E-11/`. Cut order: S-214 (#3), S
 ## Dependencies
 - E-05, E-10 (sign-in and reset emails).
 
+- E-14 Bakery reviews (added 2026-11-12) builds on S-206, S-207 and S-210 (sign-in and the profile name); cutting accounts cuts reviews.
+
 ## Risks
 - Account takeover via unconfirmed email linking; follow the confirmed-email rule.
 
