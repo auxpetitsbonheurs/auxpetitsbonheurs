@@ -189,3 +189,29 @@ Decision:
 
 Rollback: revert the commits (the driver works with and without Hyperdrive); the procedure
 can stay (nothing else calls it) and a later migration may drop it.
+
+Result, staging, Pixel 7 emulation from a US cloud machine (`cf-placement: local-ORD`),
+median of 5, orders "Perf test (staging) — ignore". Before: 01b71d9 (postgres.js) measured
+the same day with the same script; ADR-0004's figures in brackets. After: 506dbe6
+(node-postgres, corked socket, one-statement mutations), **without** Hyperdrive.
+
+| Step | Before | After |
+|---|---|---|
+| Place order: tap to confirmation shown | 4,073 ms (4,210) | 2,106 ms |
+| Place order POST, server time (Server-Timing `app`) | 2.6-2.9 s: connect + 11 queries | 0.9-1.0 s: connect + 1 query |
+| Basket, first visit (Place order visible) | 1,120 ms (1,159) | 1,045 ms |
+| Product page TTFB | 1,663 ms | 1,829 ms (same 1-2 queries; noise) |
+| Language switch (tap to French page) | 1,380 ms | 1,208 ms (160-220 ms when served client-side) |
+| Admin approve (server) | 5 round trips | 1 round trip (not timed: no staging admin login here) |
+| Each query | ~180 ms (one round trip) | ~180 ms (~400 ms before the socket was corked) |
+
+What is left is the connection: every request still pays ~0.7 s of TLS and SCRAM to the
+Supavisor pooler (four round trips from ORD), twice for Place order (the POST and the
+confirmation page). That is what Hyperdrive removes: the one Hyperdrive run that completed
+before the stall (deploy 43182355823) measured Place order 643 ms, basket first visit 185 ms
+and product TTFB 604 ms. The 1.5 s target needs Hyperdrive working (Owner steps above), or
+Smart Placement moving the Worker next to Supabase.
+
+CPU (cpu-measure 43196081265, warm, 50 rounds, no Hyperdrive): place order p50 9 ms (was
+24), basket 26 ms (was 38), tracking 20 ms (was 34); p99 30 / 73 / 47 ms, so still above the
+10 ms target; no request exceeded the limit (see `cpu-measurements.md`).

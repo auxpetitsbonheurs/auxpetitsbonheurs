@@ -46,3 +46,19 @@ Verdict: FAIL against the 10 ms target (all three hot paths). Cloudflare stopped
 
 ## Decision 2026-11-11 (Owner): accept and monitor
 Staging (Hyperdrive off, run 43063416243) is stable but hot paths use ~20–50 ms CPU p50 (p99 up to ~108 ms) vs the 10 ms free-plan target; Cloudflare blocked no request (exceededCpu 0). Owner chose to stay on the free plan and monitor. Actions: alert on any `exceededCpu` / 1102 error (E-12 observability), re-run cpu-measure before launch (S-226); switch to Workers Paid ($5/month) only if blocks appear. Risk T3 stays open at "monitor".
+
+## Staging run 2026-11-12 (warm, 50 rounds; cpu-measure run 43196081265, commit 506dbe6)
+node-postgres, place order in one statement, token pages in one query (ADR-0003 amendment 3);
+no Hyperdrive.
+
+| Route | Count | p50 | p95 | p99 | Max | Exceeded CPU |
+|---|---|---|---|---|---|---|
+| POST /basket (place order) | 49 | 9 | 15 | 30 | 30 | 0 |
+| GET /basket | 50 | 26 | 55 | 73 | 73 | 0 |
+| GET /t/[token] (tracking) | 49 | 20 | 37 | 47 | 47 | 0 |
+| POST /menu/chocolate-cake (add to basket) | 48 | 8 | 14 | 47 | 47 | 0 |
+
+Verdict: still FAIL against the 10 ms p99 target, but p50 fell by 40-60% on all three hot paths
+(24 → 9, 38 → 26, 34 → 20). Cloudflare stopped no request. The remaining cost is mostly the
+per-request TLS + SCRAM handshake to the pooler, which Hyperdrive would take off the Worker.
+Decision of 2026-11-11 (accept and monitor) unchanged.
