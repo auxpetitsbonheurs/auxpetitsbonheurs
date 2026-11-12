@@ -14,6 +14,7 @@ import {
 import { signIn } from "./support/admin";
 import { addOptionGroups, createProduct } from "./support/catalogue";
 import { E2E_ACCOUNTS } from "./support/database";
+import { devices } from "@playwright/test";
 import { type Page, expect, test } from "./support/fixtures";
 
 const hydrated = (page: Page) => expect(page.locator("html")).toHaveAttribute("data-hydrated", "true");
@@ -1025,6 +1026,112 @@ test.describe("S-042 reorder within a type", () => {
     await expect(page.getByRole("region", { name: "Seasonal" }).getByRole("status")).toHaveText("Saved");
     const ids = await seasonalOrder(db);
     expect(ids.indexOf(below.id)).toBeLessThan(ids.indexOf(top.id));
+  });
+
+  test.describe("on a touch phone (Pixel 7)", () => {
+    // Real touch input (CDP touch events become pointer events with pointerType "touch").
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { defaultBrowserType, ...pixel7 } = devices["Pixel 7"];
+    test.use(pixel7);
+
+    type Step = () => Promise<void>;
+    /** Press at `from` (then `pressed`), move to `to` in steps, run `held` while still pressing, then lift. */
+    async function touchDrag(page: Page, from: { x: number; y: number }, to: { x: number; y: number }, { pressed, held }: { pressed?: Step; held?: Step } = {}) {
+      const cdp = await page.context().newCDPSession(page);
+      const touch = (type: "touchStart" | "touchMove" | "touchEnd", point?: { x: number; y: number }) =>
+        cdp.send("Input.dispatchTouchEvent", { type, touchPoints: point ? [{ x: point.x, y: point.y }] : [] });
+      await touch("touchStart", from);
+      await pressed?.();
+      const steps = 12;
+      for (let i = 1; i <= steps; i += 1) await touch("touchMove", { x: from.x + ((to.x - from.x) * i) / steps, y: from.y + ((to.y - from.y) * i) / steps });
+      await held?.();
+      await touch("touchEnd");
+      await cdp.detach();
+    }
+
+    const centre = (box: { x: number; y: number; width: number; height: number }) => ({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
+
+    test("AC1, AC10: a finger drag lifts a ghost, shows the dashed drop slot and the new place, then saves", async ({ page, db }) => {
+      onlyOnPhone();
+      const top = await createProduct(db, { name: "Aah touch top", type: "seasonal" });
+      const below = await createProduct(db, { name: "Aai touch below", type: "seasonal" });
+      await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu");
+      await hydrated(page);
+      const names = await seasonalNames(page);
+      await rowOf(page, below.name).scrollIntoViewIfNeeded();
+      const handle = (await page.getByRole("button", { name: `Reorder ${top.name}` }).boundingBox())!;
+      const target = (await rowOf(page, below.name).boundingBox())!;
+
+      const pressed = async () => {
+        await expect(page.getByRole("status").filter({ hasText: `Picked up ${top.name}, position ${names.indexOf(top.name) + 1} of ${names.length}.` })).toBeAttached();
+      };
+      const held = async () => {
+        // Mid-drag: a ghost of the row follows the finger; the dashed slot sits where it will land.
+        await expect(page.locator("[data-drag-ghost]")).toHaveCount(1);
+        await expect(page.locator("[data-drag-ghost]")).toContainText(top.name);
+        const slot = page.locator("[data-drag-placeholder]");
+        await expect(slot).toHaveCount(1);
+        await expect(slot).toHaveCSS("outline-style", "dashed");
+        await expect(page.getByRole("status").filter({ hasText: /^Moved to position \d+ of \d+\.$/ })).toBeAttached();
+        // The slot has slid over the row below (rows move with transform, not in the DOM).
+        await expect.poll(async () => (await slot.boundingBox())!.y).toBeGreaterThan(target.y - 2);
+      };
+      await touchDrag(page, centre(handle), { x: centre(handle).x, y: target.y + target.height * 0.8 }, { pressed, held });
+
+      await expect(page.locator("[data-drag-ghost]")).toHaveCount(0);
+      await expect(page.locator("[data-drag-placeholder]")).toHaveCount(0);
+      await expect(page.getByRole("status").filter({ hasText: `Dropped. ${top.name} is at position` })).toBeAttached();
+      await expect(page.getByRole("region", { name: "Seasonal" }).getByRole("status")).toHaveText("Saved");
+      const after = await seasonalNames(page);
+      expect(after.indexOf(below.name)).toBe(after.indexOf(top.name) - 1);
+      const ids = await seasonalOrder(db);
+      expect(ids.indexOf(below.id)).toBeLessThan(ids.indexOf(top.id));
+    });
+
+    test("AC10: Esc or a release outside the list puts the row back and saves nothing", async ({ page, db }) => {
+      onlyOnPhone();
+      const moving = await createProduct(db, { name: "Aaj touch cancel", type: "seasonal" });
+      await createProduct(db, { name: "Aak touch cancel below", type: "seasonal" });
+      await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu");
+      await hydrated(page);
+      const before = await seasonalOrder(db);
+      const names = await seasonalNames(page);
+      const handle = page.getByRole("button", { name: `Reorder ${moving.name}` });
+      await handle.scrollIntoViewIfNeeded();
+      const box = (await handle.boundingBox())!;
+      const list = (await page.getByRole("list", { name: "Seasonal" }).boundingBox())!;
+
+      // Released far above the list (outside it, short of the auto-scroll band).
+      await touchDrag(page, centre(box), { x: centre(box).x, y: Math.max(list.y - 2 * box.height - 60, 80) });
+      await expect(page.getByRole("status").filter({ hasText: `Put back. ${moving.name} stays at position ${names.indexOf(moving.name) + 1}` })).toBeAttached();
+
+      // Esc while dragging.
+      const escape = async () => {
+        await page.keyboard.press("Escape");
+        await expect(page.locator("[data-drag-ghost]")).toHaveCount(0);
+      };
+      await touchDrag(page, centre(box), { x: centre(box).x, y: box.y + box.height * 1.5 }, { held: escape });
+
+      await expect(page.locator("[data-drag-placeholder]")).toHaveCount(0);
+      expect(await seasonalNames(page)).toEqual(names);
+      expect(await seasonalOrder(db)).toEqual(before);
+    });
+  });
+
+  test("AC11: the one-time hint shows the grip, hides on dismiss and stays hidden after a reload", async ({ page, db }) => {
+    await createProduct(db, { name: "Hint pair one" });
+    await createProduct(db, { name: "Hint pair two" });
+    await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu");
+    await hydrated(page);
+    const hint = page.getByRole("region", { name: "Tip: reordering" });
+
+    await expect(hint).toHaveText("Hold the grip and drag to reorder.");
+    await hint.getByRole("button", { name: "Hide this tip" }).click();
+    await expect(hint).toHaveCount(0);
+    await page.reload();
+    await hydrated(page);
+    await expect(page.getByRole("heading", { level: 2, name: "Cakes" })).toBeVisible();
+    await expect(hint).toHaveCount(0);
   });
 
   test("AC3, AC7: the sheet's Move up and Move down; at the ends they are disabled and say why", async ({ page, db }) => {

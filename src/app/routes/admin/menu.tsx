@@ -1,5 +1,5 @@
-import { ArrowDown, ArrowUp, CakeSlice, Ellipsis, EyeOff, GripVertical, LoaderCircle, Plus, Trash2 } from "lucide-react";
-import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
+import { ArrowDown, ArrowUp, CakeSlice, Ellipsis, EyeOff, GripVertical, LoaderCircle, Plus, Trash2, X } from "lucide-react";
+import { type CSSProperties, type KeyboardEvent, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Link, isRouteErrorResponse, useFetcher, useRevalidator, useRouteError } from "react-router";
 import { AdminErrorBoundary } from "~/components/admin/admin-states";
 import { Alert } from "~/components/ui/alert";
@@ -26,7 +26,8 @@ import { reorderProducts } from "~/server/services/reorder-products.server";
 import { setProductStatus } from "~/server/services/product-status.server";
 import { afterResponseContext } from "~/server/after-response.server";
 import { storageContext } from "~/server/storage.server";
-import { moveItem, useDragSort } from "~/lib/use-drag-sort";
+import { moveItem } from "~/lib/use-drag-sort";
+import { useRowDrag } from "~/components/admin/use-row-drag";
 import type { Route } from "./+types/menu";
 
 /** `admin/menu` (FR-061): every product by type, with its row actions. */
@@ -157,8 +158,12 @@ function useRowStatus(row: AdminMenuRow) {
 
 interface RowHandle {
   type: ProductType;
-  dragging: boolean;
-  pointer: ReturnType<ReturnType<typeof useDragSort>["handleProps"]>;
+  /** A pointer drag is on in this group: rows slide (150 ms, none with reduced motion). */
+  active: boolean;
+  /** This row is the one being dragged: its slot shows as the dashed drop placeholder. */
+  placeholder: boolean;
+  slide: CSSProperties | undefined;
+  pointer: ReturnType<ReturnType<typeof useRowDrag>["handleProps"]>;
   onKey: (event: KeyboardEvent<HTMLButtonElement>) => void;
 }
 
@@ -168,7 +173,15 @@ function ProductRow({ row, onActions, handle }: { row: AdminMenuRow; onActions: 
   const view = rowView({ ...row, status }, locale, t);
   return (
     // Wraps at 200% zoom on a 320 px phone: the name takes its own line rather than a sliver.
-    <li data-sort-item="" data-dragging={handle.dragging || undefined} className="flex min-h-20 flex-wrap items-center gap-3 p-3 data-dragging:bg-accent" data-status={status} aria-busy={saving || undefined}>
+    // While dragged, the row's slot is the drop placeholder (dashed outline, content hidden).
+    <li
+      data-sort-item=""
+      data-drag-placeholder={handle.placeholder || undefined}
+      style={handle.slide}
+      className={`relative flex min-h-20 flex-wrap items-center gap-3 bg-card p-3 data-drag-placeholder:z-10 data-drag-placeholder:rounded-md data-drag-placeholder:bg-muted data-drag-placeholder:outline-2 data-drag-placeholder:-outline-offset-4 data-drag-placeholder:outline-primary data-drag-placeholder:outline-dashed data-drag-placeholder:*:invisible ${handle.active ? "motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out" : ""}`}
+      data-status={status}
+      aria-busy={saving || undefined}
+    >
       {/* Drag by pointer, or focus and use the arrow keys (S-042 AC3); Move up/down are in the row's sheet. */}
       <button
         type="button"
@@ -177,9 +190,9 @@ function ProductRow({ row, onActions, handle }: { row: AdminMenuRow; onActions: 
         aria-describedby={`reorder-help-${handle.type}`}
         onKeyDown={handle.onKey}
         {...handle.pointer}
-        className="-ms-1 flex size-11 shrink-0 cursor-grab items-center justify-center rounded-md text-muted-foreground hover:bg-muted active:cursor-grabbing"
+        className="-ms-1 flex size-11 shrink-0 cursor-grab items-center justify-center rounded-md border border-border bg-muted text-primary select-none hover:bg-accent active:cursor-grabbing active:bg-accent"
       >
-        <GripVertical aria-hidden="true" className="size-5" />
+        <GripVertical aria-hidden="true" className="size-6" />
       </button>
       <RowPhoto url={row.imageUrl} />
       <div className="min-w-0 flex-[1_1_8rem]">
@@ -236,6 +249,58 @@ function useAnnouncer() {
   return { announce, region };
 }
 
+/** localStorage: the "Hold the grip and drag" hint was dismissed (or a drag was done) in this browser. */
+const DRAG_HINT_KEY = "apb_admin_menu_drag_hint";
+
+function hintDismissedBefore(): boolean {
+  try {
+    return window.localStorage.getItem(DRAG_HINT_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+const noSubscription = () => () => undefined;
+
+/** The one-time hint: shown once hydrated unless dismissed before (not rendered on the server); storage may be blocked. */
+function useDragHint() {
+  const before = useSyncExternalStore(noSubscription, hintDismissedBefore, () => true);
+  const [dismissed, setDismissed] = useState(false);
+  const dismiss = useCallback(() => {
+    setDismissed(true);
+    try {
+      window.localStorage.setItem(DRAG_HINT_KEY, "1");
+    } catch {
+      // Private mode or blocked storage: hidden for this page view only.
+    }
+  }, []);
+  return { show: !before && !dismissed, dismiss };
+}
+
+/** Splits a translated sentence at its {{grip}} placeholder, so the grip icon sits inside it. */
+const GRIP = "\u0000";
+
+/** "Hold ⠿ and drag to reorder." with the grip drawn as on the rows (and named for screen readers). */
+function DragHint({ onDismiss }: { onDismiss: () => void }) {
+  const { t } = useI18n();
+  const [before, after] = t("admin.menu.dragHint", { grip: GRIP }).split(GRIP);
+  return (
+    <section aria-label={t("admin.menu.dragHintLabel")} className="mt-4 flex items-center gap-2 rounded-card border border-border bg-card p-3 ps-4" data-drag-hint="">
+      <p className="min-w-0 flex-1">
+        {before}
+        <span className="mx-1 inline-flex size-6 items-center justify-center rounded-sm border border-border bg-muted align-middle text-primary">
+          <GripVertical aria-hidden="true" className="size-4" />
+        </span>
+        <span className="sr-only">{t("admin.menu.dragHintGrip")}</span>
+        {after}
+      </p>
+      <Button type="button" size="icon" variant="ghost" aria-label={t("admin.menu.dragHintDismiss")} onClick={onDismiss}>
+        <X aria-hidden="true" />
+      </Button>
+    </section>
+  );
+}
+
 type ReorderAnswer = { ok: true; type: ProductType; ids: string[] } | { ok: false; error: { message: string; fields?: Record<string, string> } };
 
 /** What the sheet's Move up / Move down buttons need for the open row. */
@@ -249,11 +314,13 @@ const sameMembers = (a: readonly string[], b: readonly string[]) => a.length ===
 
 /**
  * One type's order (S-042): the loader's, or while a move is on its way the posted one
- * (optimistic), or during a pointer drag the live draft. Every finished move autosaves.
+ * (optimistic), or just after a pointer drop that order. Every finished move autosaves.
  */
 function useTypeOrder(type: ProductType, rows: AdminMenuRow[]) {
   const fetcher = useFetcher<ReorderAnswer>({ key: `reorder-${type}` });
-  const [draft, setDraft] = useState<string[] | null>(null);
+  // A drop's order, shown at once (no flash of the old order) until the save posts it.
+  const [dropped, setDropped] = useState<{ ids: string[]; answer: unknown } | null>(null);
+  const draft = dropped && fetcher.state === "idle" && fetcher.data === dropped.answer ? dropped.ids : null;
   const loaded = rows.map((r) => r.id);
   const posted = fetcher.state !== "idle" ? (fetcher.formData?.getAll("ids").map(String) ?? null) : null;
   const answered = fetcher.state === "idle" && fetcher.data?.ok ? fetcher.data.ids : null;
@@ -272,7 +339,7 @@ function useTypeOrder(type: ProductType, rows: AdminMenuRow[]) {
   const refusal = fetcher.state === "idle" && fetcher.data && !fetcher.data.ok && fetcher.data !== dismissed ? fetcher.data : null;
   const failed = refusal ? (refusal.error.fields?.ids ?? refusal.error.message) : null;
   const state: "saving" | "saved" | "failed" | null = fetcher.state !== "idle" ? "saving" : failed ? "failed" : answered ? "saved" : null;
-  return { ids, draft, setDraft, save, state, failed, dismiss: () => setDismissed(fetcher.data) };
+  return { ids, show: (next: string[]) => setDropped({ ids: next, answer: fetcher.data }), save, state, failed, dismiss: () => setDismissed(fetcher.data) };
 }
 
 function TypeGroup(props: {
@@ -283,6 +350,8 @@ function TypeGroup(props: {
   onClose: () => void;
   onDelete: (row: AdminMenuRow) => void;
   announce: (text: string) => void;
+  /** A pointer drag was completed: the one-time hint has done its job. */
+  onDragged: () => void;
 }) {
   const { type, rows, announce } = props;
   const { t, locale } = useI18n();
@@ -308,16 +377,19 @@ function TypeGroup(props: {
     order.save(moveItem(order.ids, from, to));
     moved(id, to, order.ids.length);
   };
-  const drag = useDragSort({
-    container: list,
-    onMove: (from, to) => order.setDraft((current) => moveItem(current ?? order.ids, from, to)),
-    onDrop: (_from, to) => {
-      // The draft already holds the moves made while dragging.
-      const next = [...order.ids];
-      order.setDraft(null);
+  const count = order.ids.length;
+  const drag = useRowDrag(list, {
+    onPick: (from) => announce(t("admin.menu.dragPicked", { name: nameOf(order.ids[from]!), n: from + 1, count })),
+    onTarget: (to) => announce(t("admin.menu.dragOver", { n: to + 1, count })),
+    onDrop: (from, to) => {
+      const next = moveItem(order.ids, from, to);
+      // Shown at once in its new place (no flash of the old order), then saved.
+      order.show(next);
       order.save(next);
-      moved(next[to]!, to, next.length);
+      announce(t("admin.menu.dragDropped", { name: nameOf(next[to]!), n: to + 1, count }));
+      props.onDragged();
     },
+    onCancel: (from) => announce(t("admin.menu.dragCancelled", { name: nameOf(order.ids[from]!), n: from + 1, count })),
   });
   const onKey = (id: string) => (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
@@ -368,7 +440,14 @@ function TypeGroup(props: {
               key={row.id}
               row={row}
               onActions={props.onActions}
-              handle={{ type, dragging: drag.dragging === index, pointer: drag.handleProps(index), onKey: onKey(row.id) }}
+              handle={{
+                type,
+                active: drag.state !== null,
+                placeholder: drag.state?.from === index,
+                slide: drag.rowStyle(index),
+                pointer: drag.handleProps(index),
+                onKey: onKey(row.id),
+              }}
             />
           ))}
         </ul>
@@ -562,6 +641,8 @@ export default function AdminMenu({ loaderData }: Route.ComponentProps) {
   const [toDelete, setToDelete] = useState<AdminMenuRow | null>(null);
   const { goneId, remove } = useDelete();
   const { announce, region } = useAnnouncer();
+  const hint = useDragHint();
+  const sortable = PRODUCT_TYPES.some((type) => loaderData.byType[type].length > 1);
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -574,6 +655,7 @@ export default function AdminMenu({ loaderData }: Route.ComponentProps) {
         </Button>
       </div>
       {region}
+      {hint.show && sortable && <DragHint onDismiss={hint.dismiss} />}
       {PRODUCT_TYPES.map((type) => (
         <TypeGroup
           key={type}
@@ -587,6 +669,7 @@ export default function AdminMenu({ loaderData }: Route.ComponentProps) {
             setToDelete(row);
           }}
           announce={announce}
+          onDragged={hint.dismiss}
         />
       ))}
       <DeleteDialog
