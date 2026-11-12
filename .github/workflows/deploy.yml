@@ -19,9 +19,9 @@ on:
   workflow_dispatch:
     inputs:
       hyperdrive:
-        description: Staging only. Tick to deploy with the Hyperdrive binding (off by default, ADR-0003 amendment; the Worker otherwise uses DATABASE_URL).
+        description: Staging only. Untick to deploy without the Hyperdrive binding (on by default since node-postgres, ADR-0003 amendment 3; the Worker then uses DATABASE_URL).
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: read
@@ -104,9 +104,10 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # Plain repository variable (not a secret). Used only by a manual run with `hyperdrive`
-          # ticked: with the binding, parameterised queries timed out (ADR-0003 amendment).
-          HYPERDRIVE_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.hyperdrive && vars.STAGING_HYPERDRIVE_ID || '' }}
+          # Plain repository variable (not a secret). Automatic deploys use it; a manual run with
+          # `hyperdrive` unticked deploys on DATABASE_URL (the rollback, ADR-0003 amendment 3).
+          # inject-hyperdrive also reports the configuration's origin port and caching (no secrets).
+          HYPERDRIVE_ID: ${{ (github.event_name != 'workflow_dispatch' || inputs.hyperdrive) && vars.STAGING_HYPERDRIVE_ID || '' }}
         run: npm run deploy:staging
       - name: Launch readiness (staging, secret names only)
         # Lists which core secrets and optional integrations the Worker still lacks

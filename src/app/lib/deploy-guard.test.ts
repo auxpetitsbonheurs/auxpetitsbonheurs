@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
-import { deployProblems, hyperdriveBinding, parseDeployTarget, readJsonc } from "./deploy-guard";
+import { deployProblems, describeHyperdriveConfig, hyperdriveBinding, parseDeployTarget, readJsonc } from "./deploy-guard";
 
 const built = (overrides: Record<string, unknown> = {}) => ({
   name: "auxpetitsbonheurs-staging",
@@ -79,6 +79,31 @@ describe("hyperdriveBinding (ADR-0003)", () => {
 
   test("a build carrying the binding still passes the deploy guard", () => {
     expect(deployProblems(built({ hyperdrive: [{ binding: "HYPERDRIVE", id: ID }] }), "staging")).toEqual([]);
+  });
+});
+
+describe("describeHyperdriveConfig (ADR-0003 amendment 3)", () => {
+  const config = (host: string, port: number, caching?: { disabled: boolean }) => ({
+    id: "x",
+    origin: { host, port, database: "postgres", user: "postgres.abcdef", scheme: "postgres" },
+    ...(caching ? { caching } : {}),
+  });
+
+  test("the direct connection with caching off needs nothing", () => {
+    expect(describeHyperdriveConfig(config("db.abcdefghij.supabase.co", 5432, { disabled: true }))).toEqual({ origin: "Supabase direct", port: 5432, caching: "off", warnings: [] });
+  });
+
+  test("the session pooler is fine; caching on (also the API default) asks the Owner to turn it off", () => {
+    const report = describeHyperdriveConfig(config("aws-0-ap-south-1.pooler.supabase.com", 5432));
+    expect(report).toMatchObject({ origin: "Supabase session pooler", port: 5432, caching: "on" });
+    expect(report.warnings).toEqual([expect.stringContaining("Caching: turn it off")]);
+  });
+
+  test("the transaction pooler is flagged with where to change it, and nothing identifying is echoed", () => {
+    const report = describeHyperdriveConfig(config("aws-0-ap-south-1.pooler.supabase.com", 6543, { disabled: true }));
+    expect(report.origin).toBe("Supabase transaction pooler");
+    expect(report.warnings[0]).toMatch(/Session pooler \(port 5432\) or Direct/);
+    expect(JSON.stringify(report)).not.toMatch(/abcdef|ap-south-1|postgres\./);
   });
 });
 

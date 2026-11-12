@@ -79,6 +79,43 @@ export function readJsonc(text: string): unknown {
   return JSON.parse(out.replace(/,(\s*[}\]])/g, "$1"));
 }
 
+export interface HyperdriveReport {
+  origin: "Supabase direct" | "Supabase session pooler" | "Supabase transaction pooler" | "other";
+  port: number | null;
+  caching: "on" | "off" | "unknown";
+  /** What the Owner should change, if anything (minimum steps). */
+  warnings: string[];
+}
+
+/**
+ * Classifies a Hyperdrive configuration (Cloudflare API `GET .../hyperdrive/configs/:id`
+ * result) without echoing it: host, user and database never leave this function, only the
+ * kind of origin, its port and whether query caching is on (ADR-0003 amendment 3).
+ */
+export function describeHyperdriveConfig(config: unknown): HyperdriveReport {
+  const value = (config ?? {}) as { origin?: { host?: unknown; port?: unknown }; caching?: { disabled?: unknown } };
+  const host = typeof value.origin?.host === "string" ? value.origin.host.toLowerCase() : "";
+  const port = typeof value.origin?.port === "number" ? value.origin.port : null;
+  const pooler = host.endsWith(".pooler.supabase.com");
+  const origin: HyperdriveReport["origin"] = /^db\.[a-z0-9]+\.supabase\.co$/.test(host)
+    ? "Supabase direct"
+    : pooler && port === 6543
+      ? "Supabase transaction pooler"
+      : pooler
+        ? "Supabase session pooler"
+        : "other";
+  const disabled = value.caching?.disabled;
+  const caching = disabled === true ? "off" : disabled === false || value.caching === undefined ? "on" : "unknown";
+  const warnings: string[] = [];
+  if (origin === "Supabase transaction pooler") {
+    warnings.push("Hyperdrive points at Supabase's transaction pooler (port 6543). Cloudflare dashboard > Hyperdrive > this configuration > Settings > Origin: paste Supabase's Session pooler (port 5432) or Direct connection string.");
+  }
+  if (caching === "on") {
+    warnings.push("Hyperdrive query caching is on: pages could show data up to a minute old (an approved order still pending). Cloudflare dashboard > Hyperdrive > this configuration > Settings > Caching: turn it off.");
+  }
+  return { origin, port, caching, warnings };
+}
+
 function endOfString(text: string, start: number): number {
   let i = start + 1;
   while (i < text.length && text[i] !== '"') i += text[i] === "\\" ? 2 : 1;
