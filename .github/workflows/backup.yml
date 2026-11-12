@@ -64,7 +64,7 @@ jobs:
           rm -rf backup
           echo "ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
       - name: Upload to Google Drive
-        run: rclone copy "$ARCHIVE" gdrive:
+        run: 'rclone copy "$ARCHIVE" gdrive:'
       - name: Keep the latest 8
         run: |
           rclone lsf gdrive: --files-only --include "apb-backup-*.tar.age" | sort | head -n -8 | while read -r old; do
