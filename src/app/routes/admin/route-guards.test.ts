@@ -17,7 +17,8 @@ interface RouteModule {
   action?: Handler;
 }
 
-const modules = import.meta.glob<RouteModule>("./*.tsx", { eager: true });
+// Route modules only: importing a *.test.tsx here would re-register its tests in this file.
+const modules = import.meta.glob<RouteModule>(["./*.tsx", "!./*.test.tsx"], { eager: true });
 
 /** Every route file whose URL is /admin or below, with its full path. */
 function adminRoutes(entries: RouteConfigEntry[], parent = ""): { path: string; file: string }[] {
