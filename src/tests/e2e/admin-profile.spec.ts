@@ -62,7 +62,7 @@ test.describe("S-036 My profile", () => {
     await section.getByLabel("Current password", { exact: true }).fill(admin.password);
     await section.getByLabel("New password", { exact: true }).fill("another long password");
     await section.getByRole("button", { name: "Change password" }).click();
-    await expect(section.getByRole("status").filter({ hasText: "Password changed. You stay signed in." })).toBeVisible();
+    await expect(section.getByRole("status").filter({ hasText: "Password changed. You stay signed in here; your other devices are signed out." })).toBeVisible();
 
     await page.reload();
     await expect(page.getByRole("heading", { level: 1, name: "My profile" })).toBeVisible();

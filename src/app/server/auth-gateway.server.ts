@@ -24,6 +24,12 @@ export interface AuthGateway {
   claims(): Promise<AuthClaims | null>;
   /** Ends this device's session and clears its cookies. */
   signOut(): Promise<void>;
+  /**
+   * Ends every OTHER session of this request's user (refresh tokens revoked; this device
+   * stays signed in). Lead decision 2026-11-12: a password change signs other devices out.
+   * `false` when Auth refused or failed (the caller logs it; the password is changed anyway).
+   */
+  signOutOthers(): Promise<boolean>;
   /** Set-Cookie values produced so far that are not yet on a response; returns each once. */
   takeSetCookies(): string[];
   /**
@@ -40,3 +46,12 @@ export interface AuthGateway {
 }
 
 export const authContext = createContext<AuthGateway>();
+
+/**
+ * After a password change: signs the user out of every other device. A failure is logged
+ * (no user data) and never undoes the change: the new password already locks others out
+ * at their next sign-in, and their access tokens lapse within the hour.
+ */
+export async function endOtherSessions(gateway: AuthGateway, where: string): Promise<void> {
+  if (!(await gateway.signOutOthers())) console.error(JSON.stringify({ level: "error", event: "sign_out_others_failed", where }));
+}

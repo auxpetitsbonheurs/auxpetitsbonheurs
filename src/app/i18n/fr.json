@@ -122,7 +122,9 @@
       "RATE_LIMITED": "Trop de tentatives, patientez quelques minutes.",
       "SLUG_TAKEN": "Cette adresse web est déjà utilisée par un autre produit. Choisissez-en une autre.",
       "UPLOAD_REJECTED": "Une photo n'a pas pu être utilisée. Le produit garde ses photos précédentes.",
-      "LINK_EXPIRED": "Ce lien a expiré. Demandez-en un nouveau."
+      "LINK_EXPIRED": "Ce lien a expiré. Demandez-en un nouveau.",
+      "EMAIL_IN_USE": "Cette adresse e-mail a déjà un compte.",
+      "INVITE_INVALID": "Cette invitation a expiré ou a déjà été utilisée. Demandez-en une nouvelle à la propriétaire."
     }
   },
   "product": {
@@ -678,7 +680,7 @@
       "rule": "Au moins 10 caractères",
       "changePassword": "Changer le mot de passe",
       "changingPassword": "Changement du mot de passe…",
-      "passwordChanged": "Mot de passe changé. Votre session reste ouverte.",
+      "passwordChanged": "Mot de passe changé. Vous restez connecté ici ; vos autres appareils sont déconnectés.",
       "alertsTitle": "Alertes",
       "alertsIntro": "Choisissez comment recevoir les nouvelles commandes.",
       "alertPush": "Alertes push",
@@ -698,6 +700,79 @@
         "weak": "Choisissez un autre mot de passe : celui-ci est trop facile à deviner ou identique au précédent."
       },
       "loading": "Chargement de votre profil…"
+    },
+    "team": {
+      "title": "Équipe",
+      "loading": "Chargement de l'équipe…",
+      "invite": "Inviter une personne",
+      "adminsTitle": "Personnes ayant accès",
+      "invitesTitle": "Invitations en attente",
+      "onlyYou": "Vous êtes seule pour l'instant. Invitez une personne.",
+      "you": "vous",
+      "status": {
+        "active": "Actif",
+        "deactivated": "Désactivé"
+      },
+      "lastSignIn": "Dernière connexion {{time}}",
+      "neverSignedIn": "Pas encore connecté",
+      "validUntil": "valable jusqu'au {{date}}",
+      "emailNotSent": "E-mail non envoyé, renvoyez",
+      "actionsFor": "Actions pour {{name}}",
+      "adminSheetLater": "Changer le rôle et désactiver arrivent bientôt.",
+      "resend": "Renvoyer l'invitation à {{email}}",
+      "revoke": "Annuler l'invitation de {{email}}",
+      "revokeTitle": "Annuler cette invitation ?",
+      "revokeBody": "Le lien envoyé à {{email}} cesse de fonctionner tout de suite. Vous pourrez inviter cette personne plus tard.",
+      "revokeConfirm": "Annuler l'invitation",
+      "keep": "La garder",
+      "revoking": "Annulation…",
+      "resending": "Envoi d'un nouveau lien…",
+      "sent": "Invitation envoyée à {{email}}",
+      "savedNotSent": "Invitation enregistrée pour {{email}}, mais l'e-mail n'est pas parti. Utilisez Renvoyer.",
+      "resent": "Un nouveau lien a été envoyé à {{email}}",
+      "revoked": "Invitation de {{email}} annulée",
+      "loadFailedTitle": "L'équipe ne s'est pas chargée",
+      "loadFailedBody": "Vérifiez la connexion et réessayez.",
+      "form": {
+        "title": "Inviter une personne",
+        "intro": "Elle reçoit un e-mail avec un lien valable 7 jours.",
+        "name": "Nom",
+        "email": "E-mail",
+        "role": "Rôle",
+        "adminHint": "Commandes, carte et travail du jour",
+        "ownerHint": "Tout, y compris l'équipe et les réglages",
+        "language": "Langue de l'e-mail",
+        "send": "Envoyer l'invitation",
+        "sending": "Envoi…",
+        "errorSummaryTitle": "Veuillez vérifier le formulaire"
+      },
+      "errors": {
+        "name": "Indiquez son nom (80 caractères au plus).",
+        "email": "Indiquez une adresse e-mail, par exemple nom@exemple.com.",
+        "role": "Choisissez Administrateur ou Propriétaire.",
+        "locale": "Choisissez English ou Français.",
+        "emailInUseDeactivated": "Cette adresse e-mail a déjà un compte. Utilisez plutôt Réactiver."
+      }
+    },
+    "invite": {
+      "metaTitle": "Rejoindre l'équipe",
+      "title": "Rejoindre l'équipe de la pâtisserie",
+      "intro": "Choisissez un mot de passe pour terminer. Vous arrivez ensuite directement dans l'application.",
+      "name": "Nom",
+      "email": "E-mail",
+      "role": "Rôle",
+      "password": "Choisissez un mot de passe",
+      "rule": "Au moins 10 caractères",
+      "language": "Langue de l'application",
+      "submit": "Créer mon compte",
+      "submitting": "Création de votre compte…",
+      "invalidTitle": "Cette invitation ne peut pas être utilisée",
+      "errorSummaryTitle": "Veuillez vérifier le formulaire",
+      "errors": {
+        "tooShort": "Au moins 10 caractères",
+        "tooLong": "72 caractères au plus.",
+        "locale": "Choisissez English ou Français."
+      }
     }
   },
   "email": {
@@ -709,6 +784,15 @@
       "expiry_one": "Ce lien est valable {{count}} heure, une seule fois.",
       "expiry_other": "Ce lien est valable {{count}} heures, une seule fois.",
       "ignore": "Si vous n'avez rien demandé, ignorez cet e-mail : votre mot de passe ne change pas."
+    },
+    "invitation": {
+      "subject": "Votre invitation à l'application d'équipe {{bakery}}",
+      "heading": "Rejoindre l'équipe {{bakery}}",
+      "reason_admin": "{{inviter}} vous invite à aider {{bakery}} en tant qu'administrateur : commandes, carte et travail du jour.",
+      "reason_owner": "{{inviter}} vous invite à aider {{bakery}} en tant que propriétaire : tout, y compris l'équipe et les réglages.",
+      "button": "Accepter l'invitation",
+      "expiry": "Ce lien est valable jusqu'au {{date}}, une seule fois.",
+      "ignore": "Si vous ne vous y attendiez pas, ignorez cet e-mail : rien ne se passe sans vous."
     }
   }
 }

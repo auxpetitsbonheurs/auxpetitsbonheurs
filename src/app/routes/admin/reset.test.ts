@@ -57,6 +57,14 @@ describe("set the password and carry on (AC2)", () => {
     expect(cookies.at(-1)).not.toContain("recovery");
   });
 
+  test("lead decision 2026-11-12: the new password signs every other device out (a lost phone loses its session)", async () => {
+    const admin = await insertAdmin(database, auth);
+
+    await post(NEW_PASSWORD, recovery(admin.id));
+
+    expect(auth.otherSessionsEnded).toEqual([admin.id]);
+  });
+
   test("the loader shows the admin's email for a fresh recovery session", async () => {
     const admin = await insertAdmin(database, auth);
 

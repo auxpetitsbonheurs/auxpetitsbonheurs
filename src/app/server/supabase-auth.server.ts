@@ -99,6 +99,14 @@ export function createSupabaseAuth(config: SupabaseAuthConfig, request: Request)
       await supabase().auth.signOut({ scope: "local" });
       claims = Promise.resolve(null);
     },
+    async signOutOthers() {
+      try {
+        const { error } = await supabase().auth.signOut({ scope: "others" });
+        return !error;
+      } catch {
+        return false;
+      }
+    },
     takeSetCookies() {
       return pending.splice(0, pending.length);
     },

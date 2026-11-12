@@ -36,6 +36,24 @@ async function refusal(run: () => unknown): Promise<Envelope> {
   }
 }
 
+// S-028 AC6, S-030 AC4: every Team intent refuses an Admin before reading the form.
+test.each(["invite", "resendInvite", "revokeInvite"])("an Admin posting %s to /admin/team gets FORBIDDEN and nothing changes", async (intent) => {
+  const owner = await signedInAdmin(database, { role: "owner" });
+  await database.client.query(
+    "insert into admin_invitation (email, name, role, token_hash, invited_by, expires_at) values ('open@example.com', 'Open', 'admin', 'hash-1', $1, now() + interval '7 days')",
+    [owner.admin.id],
+  );
+  const { id } = (await database.client.query<{ id: string }>("select id from admin_invitation")).rows[0]!;
+  const session = await signedInAdmin(database, { role: "admin" });
+  const form = { intent, id, name: "Helper", email: "helper@example.com", role: "owner", locale: "en" };
+
+  const refused = await refusal(() => team.action(routeArgs(database, { path: "/admin/team", auth: session.auth, cookie: session.cookie, form }) as never));
+
+  expect(refused.init.status).toBe(403);
+  expect(refused.data.error.code).toBe("FORBIDDEN");
+  expect((await database.client.query("select email, revoked_at from admin_invitation")).rows).toEqual([{ email: "open@example.com", revoked_at: null }]);
+});
+
 describe.each(PAGES)("%s", (path, module, intent) => {
   test("AC1: an Admin gets 403 with the Owner-only state and no Owner data", async () => {
     const session = await signedInAdmin(database, { role: "admin" });

@@ -14,6 +14,7 @@ import { withDbTiming } from "~/server/db-timing.server";
 import { ServerTiming, serverTimingContext } from "~/server/server-timing.server";
 import { storageContext, supabaseStorage, uploadContext } from "~/server/storage.server";
 import { createSupabaseAuth } from "~/server/supabase-auth.server";
+import { supabaseUserAdmin, userAdminContext } from "~/server/user-admin.server";
 import { withEnvironmentHeaders, withServerTiming } from "./headers";
 import { requestLogLine } from "./log-redact";
 
@@ -42,6 +43,8 @@ async function respond(request: Request, settings: ServerEnv, ctx: ExecutionCont
     const storage = supabaseStorage({ url: settings.SUPABASE_URL, serviceRoleKey: settings.SUPABASE_SERVICE_ROLE_KEY });
     context.set(storageContext, storage);
     context.set(uploadContext, storage);
+    // Auth Admin API (service key, server only): creating an invited admin's account (S-029).
+    context.set(userAdminContext, supabaseUserAdmin({ url: settings.SUPABASE_URL, serviceRoleKey: settings.SUPABASE_SERVICE_ROLE_KEY }));
     // Email (S-024): optional integrations; without their keys the hook answers a safe 500
     // and the forgot page still shows its calm message (ADR-0002 amendment).
     context.set(emailContext, {

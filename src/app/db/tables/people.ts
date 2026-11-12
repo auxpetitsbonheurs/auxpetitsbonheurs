@@ -77,6 +77,8 @@ export const adminInvitation = pgTable(
     email: text("email").notNull(),
     name: text("name").notNull(),
     role: adminRoleEnum("role").notNull(),
+    /** Language of the invitation email and the accept page (S-028 AC1, S-029 AC10). */
+    locale: localeEnum("locale").notNull().default("en"),
     tokenHash: text("token_hash").notNull().unique(),
     invitedBy: uuid("invited_by")
       .notNull()
@@ -86,5 +88,11 @@ export const adminInvitation = pgTable(
     revokedAt: timestamp("revoked_at", tz),
     createdAt: timestamp("created_at", tz).notNull().defaultNow(),
   },
-  (t) => [index("admin_invitation_email_idx").on(t.email)],
+  (t) => [
+    index("admin_invitation_email_idx").on(t.email),
+    // At most one open (not accepted, not revoked) row per address: a new invite revokes the old one first (S-028).
+    uniqueIndex("admin_invitation_open_email_uq")
+      .on(sql`lower(${t.email})`)
+      .where(sql`${t.acceptedAt} is null and ${t.revokedAt} is null`),
+  ],
 ).enableRLS();

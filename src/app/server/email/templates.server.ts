@@ -2,6 +2,7 @@
 // from the server catalogue (FR falls back to EN per key, NFR-007). Each email holds the
 // bakery name, one sentence saying why it was sent, the link and when it expires: never a
 // password, never order data (NFR-004). Wording reviewed by `copywriter` before launch (E-12).
+import { formatDayLabel } from "~/domain/time";
 import { t } from "~/i18n/catalog.server";
 import type { Locale } from "~/lib/locale";
 
@@ -36,6 +37,32 @@ function layout(locale: Locale, parts: { heading: string; reason: string; button
 </div>
 </body>
 </html>`;
+}
+
+export interface InvitationDetails {
+  inviterName: string;
+  role: "owner" | "admin";
+  link: string;
+  /** Mauritius calendar date the link lasts until (`YYYY-MM-DD`). */
+  expiresOn: string;
+}
+
+/**
+ * The invitation email (S-028 AC7): bakery name, who invited, the role in plain words,
+ * the link and "valid until Thu 19 Nov". Not the invitee's email or anything else personal.
+ */
+export function invitationEmail(locale: Locale, details: InvitationDetails): RenderedEmail {
+  const vars = { bakery: BAKERY_NAME, inviter: details.inviterName };
+  const parts = {
+    heading: t("email.invitation.heading", locale, vars),
+    reason: t(`email.invitation.reason_${details.role}`, locale, vars),
+    button: t("email.invitation.button", locale),
+    link: details.link,
+    expiry: t("email.invitation.expiry", locale, { date: formatDayLabel(details.expiresOn, locale) }),
+    ignore: t("email.invitation.ignore", locale),
+  };
+  const text = [BAKERY_NAME, "", parts.heading, "", parts.reason, "", details.link, "", parts.expiry, parts.ignore].join("\n");
+  return { subject: t("email.invitation.subject", locale, vars), html: layout(locale, parts), text };
 }
 
 /** The password reset email (S-024 AC1, AC4, AC7). */

@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { Outlet, isRouteErrorResponse, useLocation, useMatches, useNavigation } from "react-router";
 import { AdminHeader } from "~/components/admin/admin-header";
 import { AdminBottomBar } from "~/components/admin/bottom-bar";
-import { MenuSkeleton, ProductFormSkeleton } from "~/components/admin/menu-skeleton";
+import { MenuSkeleton, ProductFormSkeleton, TeamSkeleton } from "~/components/admin/menu-skeleton";
 import { NavProgress } from "~/components/shell/nav-progress";
 import { SkipLink } from "~/components/shell/skip-link";
 import { Toaster } from "~/components/ui/toaster";
@@ -77,6 +77,7 @@ const SKELETONS: [RegExp, () => ReactNode][] = [
   [/^\/admin\/menu$/, () => <MenuSkeleton />],
   [/^\/admin\/menu\/[^/]+$/, () => <ProductFormSkeleton />],
   [/^\/admin\/profile$/, () => <ProductFormSkeleton labelKey="admin.profile.loading" />],
+  [/^\/admin\/team$/, () => <TeamSkeleton />],
 ];
 
 const skeletonFor = (path: string) => SKELETONS.find(([pattern]) => pattern.test(path))?.[1];

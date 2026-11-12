@@ -13,6 +13,9 @@ describe("redactPath", () => {
     ["/basket", "/basket"],
     ["/menu/chocolate-cake", "/menu/chocolate-cake"],
     ["/admin/orders/5f0c", "/admin/orders/5f0c"],
+    // S-029: an invitation link is a credential until it is used.
+    ["/admin/invite/AbC123_-xyz", "/admin/invite/[redacted]"],
+    ["/admin/invite/AbC123_-xyz.data", "/admin/invite/[redacted]"],
   ])("%s -> %s", (path, expected) => {
     expect(redactPath(path)).toBe(expected);
   });

@@ -4,9 +4,11 @@
 
 /** `/t/:token` and `/order/:token/*` (either language) carry bearer tokens. */
 const TOKEN_PATH = /^((?:\/fr)?\/(?:t|order)\/)[^/]+/i;
+/** `/admin/invite/:token` (S-029), including its `.data` request. */
+const INVITE_PATH = /^(\/admin\/invite\/)[^/]+$/i;
 
 export function redactPath(pathname: string): string {
-  return pathname.replace(TOKEN_PATH, "$1[redacted]");
+  return pathname.replace(TOKEN_PATH, "$1[redacted]").replace(INVITE_PATH, "$1[redacted]");
 }
 
 export interface RequestLogLine {

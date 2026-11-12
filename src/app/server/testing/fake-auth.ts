@@ -15,6 +15,8 @@ export class FakeAuth {
   /** Every sign-in attempt, by email (AC5: no attempt on invalid input). */
   readonly attempts: string[] = [];
   readonly signOuts: string[] = [];
+  /** Users whose other devices were signed out (`signOutOthers`, password changes). */
+  readonly otherSessionsEnded: string[] = [];
   /** Recovery emails asked for (S-025). */
   readonly recoveryRequests: { email: string; redirectTo: string }[] = [];
   /** Passwords set, by user id (S-026, S-036). */
@@ -25,6 +27,14 @@ export class FakeAuth {
   addUser(email: string, password: string, id: string = randomUUID()): string {
     this.users.set(email.toLowerCase(), { id, password });
     return id;
+  }
+
+  hasUser(email: string): boolean {
+    return this.users.has(email.toLowerCase());
+  }
+
+  removeUser(id: string): void {
+    for (const [email, user] of this.users) if (user.id === id) this.users.delete(email);
   }
 
   passwordOf(email: string): string | undefined {
@@ -80,6 +90,12 @@ export class FakeAuth {
         if (session) this.signOuts.push(session.userId);
         claims = null;
         pending.push(`${FAKE_SESSION_COOKIE}=; ${COOKIE_ATTRIBUTES}; Max-Age=0`);
+      },
+      signOutOthers: async () => {
+        const session = current();
+        if (!session || this.failing) return false;
+        this.otherSessionsEnded.push(session.userId);
+        return true;
       },
       takeSetCookies: () => pending.splice(0, pending.length),
       requestRecovery: async (email, redirectTo) => {

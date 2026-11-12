@@ -1,0 +1,2 @@
+ALTER TABLE "admin_invitation" ADD COLUMN "locale" "locale" DEFAULT 'en' NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "admin_invitation_open_email_uq" ON "admin_invitation" USING btree (lower("email")) WHERE "admin_invitation"."accepted_at" is null and "admin_invitation"."revoked_at" is null;

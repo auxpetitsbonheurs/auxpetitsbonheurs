@@ -5,10 +5,11 @@
 // endpoints in storage-stub.ts. Started by playwright.config.ts on 127.0.0.1:54321
 // (SUPABASE_URL of the `e2e` environment). Never deployed; holds only placeholder accounts
 // (auth-users.ts, and the throwaway ones specs add through `POST /__stub/users`).
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { type IncomingMessage, type ServerResponse, createServer } from "node:http";
 import { createTestSigningKey, sessionBody, signTestJwt } from "../../../app/server/testing/test-jwt";
 import { E2E_ACCOUNTS } from "./auth-users";
+import { connectE2eDatabase } from "./database";
 import { storageStub } from "./storage-stub";
 
 const PORT = Number(process.env.GOTRUE_STUB_PORT ?? 54321);
@@ -107,6 +108,37 @@ async function updateUser(request: IncomingMessage, response: ServerResponse) {
   return send(response, 200, sessionBody("unused", "unused", user).user);
 }
 
+/**
+ * Writes and deletes the e2e Postgres `auth.users` rows the Admin API owns on Supabase (one
+ * database there). A connection per call: an idle one would block global setup's DROP DATABASE.
+ */
+async function withAuthDb<T>(work: (sql: ReturnType<typeof connectE2eDatabase>) => Promise<T>): Promise<T> {
+  const sql = connectE2eDatabase();
+  try {
+    return await work(sql);
+  } finally {
+    await sql.end();
+  }
+}
+
+/** Admin API (S-029): a confirmed user, as `auth.admin.createUser({ email_confirm: true })` makes it. */
+async function adminCreateUser(request: IncomingMessage, response: ServerResponse) {
+  const body = await readJson(request);
+  const email = String(body.email ?? "").toLowerCase();
+  const taken = users.has(email) || (await withAuthDb((sql) => sql`select 1 from auth.users where lower(email) = ${email}`)).length > 0;
+  if (taken) return send(response, 422, { code: "email_exists", error_code: "email_exists", msg: "A user with this email address has already been registered" });
+  const user = { id: randomUUID(), email, password: String(body.password ?? "") };
+  await withAuthDb((sql) => sql`insert into auth.users (id, email, email_confirmed_at) values (${user.id}, ${email}, now())`);
+  users.set(email, user);
+  return send(response, 200, sessionBody("unused", "unused", user).user);
+}
+
+async function adminDeleteUser(id: string, response: ServerResponse) {
+  await withAuthDb((sql) => sql`delete from auth.users where id = ${id}`);
+  for (const [email, user] of users) if (user.id === id) users.delete(email);
+  return send(response, 200, {});
+}
+
 /** Test-only: a throwaway account (spec-made admins whose password a spec may change). */
 async function addUser(request: IncomingMessage, response: ServerResponse) {
   const body = await readJson(request);
@@ -127,6 +159,9 @@ createServer((request, response) => {
   if (route === "POST /auth/v1/verify") return void verify(request, response);
   if (route === "PUT /auth/v1/user") return void updateUser(request, response);
   if (route === "POST /__stub/users") return void addUser(request, response);
+  if (route === "POST /auth/v1/admin/users") return void adminCreateUser(request, response);
+  const deleting = /^DELETE \/auth\/v1\/admin\/users\/([0-9a-f-]{36})$/.exec(route);
+  if (deleting) return void adminDeleteUser(deleting[1]!, response);
   if (route === "GET /__stub/recovery") {
     const sent = recoveries.get((url.searchParams.get("email") ?? "").toLowerCase());
     return sent ? send(response, 200, sent) : send(response, 404, { msg: "no recovery email" });

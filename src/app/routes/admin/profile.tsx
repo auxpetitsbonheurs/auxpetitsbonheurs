@@ -12,7 +12,7 @@ import { t as translate } from "~/i18n/catalog.server";
 import { useI18n } from "~/i18n/react";
 import type { Locale } from "~/lib/locale";
 import { actionError } from "~/server/action-result.server";
-import { authContext } from "~/server/auth-gateway.server";
+import { authContext, endOtherSessions } from "~/server/auth-gateway.server";
 import { AUTH_ACTIONS, clearAuthAttempts, consumeAuthAttempt, rateLimitedResult } from "~/server/auth-rate-limit.server";
 import { type AdminUser, requireAdmin } from "~/server/auth.server";
 import { PROFILE_NAME_MAX } from "~/domain/admin-account";
@@ -51,7 +51,8 @@ async function saveProfile(args: Route.ActionArgs, me: AdminUser, form: FormData
 /**
  * changePassword: the current password is checked first (a 30-day session on a lost phone
  * must not be enough to take the account), RL-auth counts each check, and the session
- * on this device stays signed in (AC3).
+ * on this device stays signed in (AC3) while every other device is signed out (lead
+ * decision 2026-11-12).
  */
 async function changePassword(args: Route.ActionArgs, me: AdminUser, form: FormData) {
   const intent = "changePassword" as const;
@@ -69,6 +70,7 @@ async function changePassword(args: Route.ActionArgs, me: AdminUser, form: FormD
   const update = await gateway.updatePassword(password);
   if (!update.ok) return update.reason === "weak" ? fieldError(intent, me.locale, { password: "admin.profile.errors.weak" }) : actionError("INTERNAL", me.locale, { extra: { intent } });
   await clearAuthAttempts(args, AUTH_ACTIONS.changePassword, me.email);
+  await endOtherSessions(gateway, "profile");
   return { ok: true as const, intent };
 }
 

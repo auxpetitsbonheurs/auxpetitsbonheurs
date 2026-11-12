@@ -10,7 +10,7 @@ import { useI18n } from "~/i18n/react";
 import type { Locale } from "~/lib/locale";
 import { actionError } from "~/server/action-result.server";
 import { adminMiddleware, adminPageLocale } from "~/server/admin-page.server";
-import { authContext } from "~/server/auth-gateway.server";
+import { authContext, endOtherSessions } from "~/server/auth-gateway.server";
 import { AUTH_ACTIONS, clearAuthAttempts, consumeAuthAttempt, rateLimitedResult } from "~/server/auth-rate-limit.server";
 import { ADMIN_HOME, LOGIN_PATH, recoverySession, signInAdmin } from "~/server/auth.server";
 import { newPasswordProblem } from "~/server/contracts/admin";
@@ -66,6 +66,8 @@ export async function action(args: Route.ActionArgs) {
   if (!update.ok) return update.reason === "weak" ? passwordRefusal("weak", locale) : actionError("INTERNAL", locale);
   await gateway.signOut();
   const signedIn = await signInAdmin(args, { email: admin.email, password });
+  // Lead decision 2026-11-12: a new password ends every other device's session (lost phone).
+  if (signedIn.ok) await endOtherSessions(gateway, "reset");
   await clearAuthAttempts(args, AUTH_ACTIONS.reset, session.userId);
   // The password is set either way; if the fresh sign-in failed, the login page takes it from here.
   return redirect(signedIn.ok ? ADMIN_HOME : LOGIN_PATH, signedIn.ok ? { headers: signedIn.headers } : undefined);

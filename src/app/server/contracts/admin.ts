@@ -18,7 +18,7 @@ import {
 } from "~/domain/product";
 import { type OptionGroupInput, type OptionProblem, checkOptionGroups } from "~/domain/options";
 import { type SeasonProblem, type SeasonWindow, checkSeason } from "~/domain/season";
-import { PASSWORD_MAX, PASSWORD_MIN, PROFILE_NAME_MAX } from "~/domain/admin-account";
+import { ADMIN_ROLES, PASSWORD_MAX, PASSWORD_MIN, PROFILE_NAME_MAX } from "~/domain/admin-account";
 import { Email, Uuid, Version } from "./shared";
 
 /** `admin/login` signIn. Field problems are reported per field; the password is never echoed. */
@@ -58,6 +58,24 @@ export function newPasswordProblem(raw: unknown): "tooShort" | "tooLong" | undef
 /** `admin/profile` updateProfile (S-036 AC1, AC2). */
 export const ProfileInput = z.object({
   name: z.string().trim().min(1).max(PROFILE_NAME_MAX),
+  locale: z.enum(["en", "fr"]),
+});
+
+/** `admin/team` invite (S-028): name, email, role and the language of the email and accept page. */
+export const InviteInput = z.object({
+  name: z.string().trim().min(1).max(PROFILE_NAME_MAX),
+  email: Email,
+  role: z.enum(ADMIN_ROLES),
+  locale: z.enum(["en", "fr"]),
+});
+export type InviteFields = z.infer<typeof InviteInput>;
+
+/** `admin/team` resendInvite / revokeInvite (S-030). */
+export const InviteIdInput = z.object({ id: Uuid });
+
+/** `admin/invite` accept (S-029): the role, name and email come from the invitation, never the form. */
+export const AcceptInviteInput = z.object({
+  password: z.string().min(PASSWORD_MIN).max(PASSWORD_MAX),
   locale: z.enum(["en", "fr"]),
 });
 

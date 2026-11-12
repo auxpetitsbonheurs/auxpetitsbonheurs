@@ -10,7 +10,14 @@ import { RL_AUTH, type RateLimitResult, type RateLimitSubject, consumeRateLimit,
 import { rateLimitBucket } from "~/db/schema";
 import { eq } from "drizzle-orm";
 
-export const AUTH_ACTIONS = { signIn: "admin.signIn", forgot: "admin.forgot", reset: "admin.reset", changePassword: "admin.changePassword" } as const;
+export const AUTH_ACTIONS = {
+  signIn: "admin.signIn",
+  forgot: "admin.forgot",
+  reset: "admin.reset",
+  changePassword: "admin.changePassword",
+  /** Accepting an invitation (S-029): counted per IP, so trying many links is limited too. */
+  acceptInvite: "admin.acceptInvite",
+} as const;
 export type AuthAction = (typeof AUTH_ACTIONS)[keyof typeof AUTH_ACTIONS];
 
 /**

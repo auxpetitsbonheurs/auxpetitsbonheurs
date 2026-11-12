@@ -74,6 +74,18 @@ describe("password (AC3)", () => {
     expect((await load()).name).toBe("Sarah");
   });
 
+  test("lead decision 2026-11-12: a password change signs the admin out of every other device", async () => {
+    await post({ intent: "changePassword", currentPassword: TEST_PASSWORD, password: "0123456789" });
+
+    expect(session.auth.otherSessionsEnded).toEqual([session.admin.id]);
+  });
+
+  test("a refused change (wrong current password) signs nobody out", async () => {
+    await post({ intent: "changePassword", currentPassword: "not it", password: "0123456789" });
+
+    expect(session.auth.otherSessionsEnded).toEqual([]);
+  });
+
   test("9 characters is VALIDATION_FAILED on password", async () => {
     const result = (await post({ intent: "changePassword", currentPassword: TEST_PASSWORD, password: "012345678" })) as Envelope;
 

@@ -122,7 +122,9 @@
       "RATE_LIMITED": "Too many attempts, wait a few minutes.",
       "SLUG_TAKEN": "This web address is already used by another product. Please choose another.",
       "UPLOAD_REJECTED": "A photo could not be used. The product keeps its previous photos.",
-      "LINK_EXPIRED": "This link has expired. Request a new one."
+      "LINK_EXPIRED": "This link has expired. Request a new one.",
+      "EMAIL_IN_USE": "This email already has an account.",
+      "INVITE_INVALID": "This invitation has expired or was already used. Ask the owner for a new one."
     }
   },
   "product": {
@@ -678,7 +680,7 @@
       "rule": "At least 10 characters",
       "changePassword": "Change password",
       "changingPassword": "Changing your password…",
-      "passwordChanged": "Password changed. You stay signed in.",
+      "passwordChanged": "Password changed. You stay signed in here; your other devices are signed out.",
       "alertsTitle": "Alerts",
       "alertsIntro": "Choose how you hear about new orders.",
       "alertPush": "Push alerts",
@@ -698,6 +700,79 @@
         "weak": "Choose another password: this one is too easy to guess or the same as before."
       },
       "loading": "Loading your profile…"
+    },
+    "team": {
+      "title": "Team",
+      "loading": "Loading the team…",
+      "invite": "Invite a helper",
+      "adminsTitle": "People with access",
+      "invitesTitle": "Waiting invitations",
+      "onlyYou": "Only you for now. Invite a helper.",
+      "you": "you",
+      "status": {
+        "active": "Active",
+        "deactivated": "Deactivated"
+      },
+      "lastSignIn": "Last sign in {{time}}",
+      "neverSignedIn": "Not signed in yet",
+      "validUntil": "valid until {{date}}",
+      "emailNotSent": "Email not sent, resend",
+      "actionsFor": "Actions for {{name}}",
+      "adminSheetLater": "Changing the role and deactivating are coming soon.",
+      "resend": "Resend invitation to {{email}}",
+      "revoke": "Revoke invitation for {{email}}",
+      "revokeTitle": "Revoke this invitation?",
+      "revokeBody": "The link sent to {{email}} stops working at once. You can invite them again later.",
+      "revokeConfirm": "Revoke invitation",
+      "keep": "Keep it",
+      "revoking": "Revoking…",
+      "resending": "Sending a new link…",
+      "sent": "Invitation sent to {{email}}",
+      "savedNotSent": "Invitation saved for {{email}}, but the email was not sent. Use Resend.",
+      "resent": "A new link was sent to {{email}}",
+      "revoked": "Invitation for {{email}} revoked",
+      "loadFailedTitle": "The team did not load",
+      "loadFailedBody": "Check the connection and try again.",
+      "form": {
+        "title": "Invite a helper",
+        "intro": "They get an email with a link that works for 7 days.",
+        "name": "Name",
+        "email": "Email",
+        "role": "Role",
+        "adminHint": "Orders, menu and the day's work",
+        "ownerHint": "Everything, including the team and settings",
+        "language": "Language of the email",
+        "send": "Send invitation",
+        "sending": "Sending…",
+        "errorSummaryTitle": "Please check the form"
+      },
+      "errors": {
+        "name": "Enter their name (80 characters or fewer).",
+        "email": "Enter an email address, for example name@example.com.",
+        "role": "Choose Admin or Owner.",
+        "locale": "Choose English or Français.",
+        "emailInUseDeactivated": "This email already has an account. Use Reactivate instead."
+      }
+    },
+    "invite": {
+      "metaTitle": "Join the team",
+      "title": "Join the bakery team",
+      "intro": "Choose a password to finish. You land in the app straight after.",
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "password": "Choose a password",
+      "rule": "At least 10 characters",
+      "language": "Language of the admin app",
+      "submit": "Create my account",
+      "submitting": "Creating your account…",
+      "invalidTitle": "This invitation cannot be used",
+      "errorSummaryTitle": "Please check the form",
+      "errors": {
+        "tooShort": "At least 10 characters",
+        "tooLong": "Use 72 characters or fewer.",
+        "locale": "Choose English or Français."
+      }
     }
   },
   "email": {
@@ -709,6 +784,15 @@
       "expiry_one": "This link works for {{count}} hour and only once.",
       "expiry_other": "This link works for {{count}} hours and only once.",
       "ignore": "If you did not ask, ignore this email: your password stays the same."
+    },
+    "invitation": {
+      "subject": "Your invitation to the {{bakery}} admin app",
+      "heading": "Join the {{bakery}} team",
+      "reason_admin": "{{inviter}} invited you to help run {{bakery}} as an Admin: orders, the menu and the day's work.",
+      "reason_owner": "{{inviter}} invited you to help run {{bakery}} as an Owner: everything, including the team and the settings.",
+      "button": "Accept the invitation",
+      "expiry": "This link is valid until {{date}} and works once.",
+      "ignore": "If you were not expecting this, ignore this email: nothing happens without you."
     }
   }
 }
