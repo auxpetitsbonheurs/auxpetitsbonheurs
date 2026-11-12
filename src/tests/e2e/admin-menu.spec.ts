@@ -1,5 +1,8 @@
-// E-03 admin menu: list (S-041), editor (S-046), hide / sold out (S-043), delete (S-045).
-// Every spec makes its own products (unique names), so parallel projects never share one.
+// E-03 admin menu: list (S-041), editor (S-046), hide / sold out (S-043), delete (S-045),
+// photos (S-047), option groups (S-048). Every spec makes its own products (unique names), so parallel projects
+// never share one.
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import {
   expectKeyboardOperable,
   expectNoA11yViolations,
@@ -9,7 +12,7 @@ import {
   withZoom,
 } from "./support/a11y";
 import { signIn } from "./support/admin";
-import { createProduct } from "./support/catalogue";
+import { addOptionGroups, createProduct } from "./support/catalogue";
 import { E2E_ACCOUNTS } from "./support/database";
 import { type Page, expect, test } from "./support/fixtures";
 
@@ -115,10 +118,10 @@ test.describe("S-041 menu list", () => {
  * Keyboard order through a form. On phone widths the bottom bar leaves while a text field
  * has focus (S-033 AC5), which would renumber the stops mid-walk; it is pinned for the walk.
  */
-async function expectFormKeyboardOperable(page: Page) {
+async function expectFormKeyboardOperable(page: Page, limit?: number) {
   const pin = await page.addStyleTag({ content: "[data-bottom-bar] { display: block !important; }" });
   try {
-    await expectKeyboardOperable(page);
+    await expectKeyboardOperable(page, limit);
   } finally {
     await pin.evaluate((style) => (style as Element).remove());
   }
@@ -427,6 +430,468 @@ test.describe("S-045 delete a product", () => {
       await openDelete(page, product.name);
       await expectNoA11yViolations(page);
       await expectNoA11yViolations(page, { zoom: 2 });
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// S-047 product photos. Uploads go to the Storage stub (tests/e2e/support/storage-stub.ts).
+
+const FIXTURES = fileURLToPath(new URL("./fixtures/", import.meta.url));
+const JPEG_WITH_EXIF = `${FIXTURES}cake-exif.jpg`;
+const HEIC = `${FIXTURES}cake.heic`;
+const STORAGE_STUB = "http://127.0.0.1:54321";
+
+const addPhotos = (page: Page) => page.getByLabel("Add photos");
+const photoList = (page: Page) => page.getByRole("list", { name: "Product photos, in order" });
+const photoRows = (page: Page) => photoList(page).getByRole("listitem");
+
+/** Every photo row has finished (no "Getting ready" or "Uploading" left). */
+async function uploadsSettled(page: Page) {
+  await expect(photoList(page).getByText(/Getting the photo ready|Uploading/)).toHaveCount(0, { timeout: 30_000 });
+}
+
+async function storedPhotos(db: Parameters<typeof createProduct>[0], productId: string) {
+  return db<{ storage_path: string; width: number; height: number }[]>`
+    select storage_path, width, height from product_photo where product_id = ${productId} order by sort_order`;
+}
+
+async function storedBytes(path: string): Promise<Buffer> {
+  const response = await fetch(`${STORAGE_STUB}/__storage/object?path=${encodeURIComponent(path)}`);
+  expect(response.status).toBe(200);
+  return Buffer.from(await response.arrayBuffer());
+}
+
+async function productIdFromUrl(page: Page): Promise<string> {
+  await expect(page).toHaveURL(/\/admin\/menu\/[0-9a-f-]{36}$/);
+  return /\/admin\/menu\/([0-9a-f-]{36})$/.exec(page.url())![1]!;
+}
+
+async function newProductWithName(page: Page, name: string) {
+  await signIn(page, E2E_ACCOUNTS.owner, "/admin/menu/new");
+  await hydrated(page);
+  await page.getByLabel("Name (English)").fill(name);
+  await page.getByLabel("Base price (Rs)").fill("900");
+}
+
+test.describe("S-047 product photos", () => {
+  test("AC1, AC8: a JPEG is shrunk to WebP within 1600 px and 300 kB with EXIF removed; the compression code loads only when a photo is chosen", async ({ page, db }) => {
+    const chunks: string[] = [];
+    page.on("request", (request) => chunks.push(request.url()));
+    const name = `Photo cake ${Date.now()}`;
+    await newProductWithName(page, name);
+    expect(chunks.filter((url) => /image-compress/.test(url))).toEqual([]);
+
+    await addPhotos(page).setInputFiles(JPEG_WITH_EXIF);
+    await uploadsSettled(page);
+    expect(chunks.some((url) => /image-compress/.test(url))).toBe(true);
+    await expect(photoRows(page)).toHaveCount(1);
+    await expect(photoRows(page).getByRole("img", { name })).toBeVisible();
+    await page.getByRole("radio", { name: "Available" }).check();
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+
+    const [stored] = await storedPhotos(db, await productIdFromUrl(page));
+    expect(stored).toMatchObject({ width: 1600, height: 1200 });
+    const bytes = await storedBytes(stored!.storage_path);
+    expect(bytes.length).toBeLessThanOrEqual(307_200);
+    expect(bytes.subarray(0, 4).toString("latin1")).toBe("RIFF");
+    expect(bytes.subarray(8, 12).toString("latin1")).toBe("WEBP");
+    expect(bytes.includes(Buffer.from("E2E-CAMERA"))).toBe(false);
+    expect(bytes.includes(Buffer.from("Exif"))).toBe(false);
+  });
+
+  test("AC1: a HEIC photo is converted in the browser and stored as WebP", async ({ page, db }) => {
+    test.slow(); // the HEIC decoder is a large download, fetched only for HEIC files
+    const name = `Heic cake ${Date.now()}`;
+    await newProductWithName(page, name);
+
+    await addPhotos(page).setInputFiles(HEIC);
+    await uploadsSettled(page);
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+
+    const [stored] = await storedPhotos(db, await productIdFromUrl(page));
+    expect(stored).toMatchObject({ width: 1600, height: 1200 });
+    const bytes = await storedBytes(stored!.storage_path);
+    expect(bytes.subarray(8, 12).toString("latin1")).toBe("WEBP");
+    expect(bytes.length).toBeLessThanOrEqual(307_200);
+  });
+
+  test("AC2: a PDF and a photo over 10 MB are refused with a plain message and nothing is sent", async ({ page }) => {
+    await newProductWithName(page, `Refused ${Date.now()}`);
+    const sent: string[] = [];
+    page.on("request", (request) => {
+      if (request.method() !== "GET") sent.push(request.url());
+    });
+
+    await addPhotos(page).setInputFiles([
+      { name: "menu.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7\n") },
+      { name: "huge.jpg", mimeType: "image/jpeg", buffer: Buffer.alloc(10 * 1_048_576 + 1, 0xff) },
+    ]);
+
+    await expect(page.getByText("menu.pdf is not a photo we can use. Choose a JPEG, PNG, WebP or HEIC photo.")).toBeVisible();
+    await expect(page.getByText("huge.jpg is over 10 MB. Choose a smaller photo.")).toBeVisible();
+    await expect(photoRows(page)).toHaveCount(0);
+    expect(sent).toEqual([]);
+  });
+
+  test("AC4: with 5 photos the add control is disabled and says why", async ({ page, db }) => {
+    const product = await createProduct(db, { photos: 5, status: "hidden" });
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+    await hydrated(page);
+
+    await expect(photoRows(page)).toHaveCount(5);
+    await expect(addPhotos(page)).toBeDisabled();
+    await expect(addPhotos(page)).toHaveAccessibleDescription("This product has 5 photos, the most it can have. Remove one to add another.");
+  });
+
+  test("AC5, AC9: Move buttons reorder (the first is the main photo), Remove renumbers, each change is announced and saved", async ({ page, db }) => {
+    const product = await createProduct(db, { photos: 3, status: "hidden" });
+    const before = await storedPhotos(db, product.id);
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+    await hydrated(page);
+    await expect(page.getByRole("button", { name: "Move photo 1 earlier" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Move photo 3 later" })).toBeDisabled();
+
+    await page.getByRole("button", { name: "Move photo 3 earlier" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Photo moved to position 2 of 3." })).toBeAttached();
+    await page.getByRole("button", { name: "Remove photo 1" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Photo 1 removed. 2 left." })).toBeAttached();
+    await expect(photoRows(page)).toHaveCount(2);
+    await expect(photoRows(page).first()).toContainText("Photo 1Main photo");
+    await expect(page.getByRole("button", { name: "Remove photo 3" })).toHaveCount(0);
+    // Saved photos keep their place until Save succeeds.
+    expect((await storedPhotos(db, product.id)).map((p) => p.storage_path)).toEqual(before.map((p) => p.storage_path));
+
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+    expect((await storedPhotos(db, product.id)).map((p) => p.storage_path)).toEqual([before[2]!.storage_path, before[1]!.storage_path]);
+  });
+
+  test("AC5: dragging a photo by its picture moves it", async ({ page, db }) => {
+    const product = await createProduct(db, { photos: 2, status: "hidden" });
+    const before = await storedPhotos(db, product.id);
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+    await hydrated(page);
+    const first = photoRows(page).nth(0).getByRole("img");
+    const second = await photoRows(page).nth(1).boundingBox();
+
+    const from = await first.boundingBox();
+    await page.mouse.move(from!.x + from!.width / 2, from!.y + from!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(second!.x + 40, second!.y + second!.height * 0.8, { steps: 8 }); // past its middle
+    await page.mouse.up();
+
+    await expect(page.getByRole("status").filter({ hasText: "Photo moved to position 2 of 2." })).toBeAttached();
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+    expect((await storedPhotos(db, product.id)).map((p) => p.storage_path)).toEqual([before[1]!.storage_path, before[0]!.storage_path]);
+  });
+
+  test("AC6: a failed upload shows Retry while the other continues; a slow one shows progress; Save waits, and the product keeps its photos until then", async ({ page, db }) => {
+    const product = await createProduct(db, { photos: 1, status: "hidden" });
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+    await hydrated(page);
+    let puts = 0;
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    await page.route("**/storage/v1/object/upload/sign/**", async (route) => {
+      if (route.request().method() !== "PUT") return route.continue();
+      puts += 1;
+      if (puts === 1) return route.abort("connectionreset"); // the first upload fails midway
+      await held; // the second one is slow
+      return route.continue();
+    });
+
+    const jpeg = readFileSync(JPEG_WITH_EXIF);
+    await addPhotos(page).setInputFiles([
+      { name: "first.jpg", mimeType: "image/jpeg", buffer: jpeg },
+      { name: "second.jpg", mimeType: "image/jpeg", buffer: jpeg },
+    ]);
+
+    const failed = photoRows(page).filter({ hasText: "Not uploaded. Check the connection and press Retry." });
+    await expect(failed).toHaveCount(1);
+    await expect(page.getByRole("progressbar")).toBeVisible(); // still uploading after 1 s
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("A photo did not upload. Retry it or remove it, then save.")).toBeVisible();
+    release();
+    await uploadsSettled(page);
+    expect(await storedPhotos(db, product.id)).toHaveLength(1);
+
+    await failed.getByRole("button", { name: /^Retry photo \d$/ }).click();
+    await uploadsSettled(page);
+    await expect(page.getByText("Not uploaded.")).toHaveCount(0);
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+    expect(await storedPhotos(db, product.id)).toHaveLength(3);
+  });
+
+  test("AC6: Save pressed during an upload waits for it, then saves", async ({ page, db }) => {
+    const product = await createProduct(db, { photos: 1, status: "hidden" });
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+    await hydrated(page);
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    await page.route("**/storage/v1/object/upload/sign/**", async (route) => {
+      if (route.request().method() === "PUT") await held;
+      return route.continue();
+    });
+
+    await addPhotos(page).setInputFiles(JPEG_WITH_EXIF);
+    await expect(photoList(page).getByText(/Uploading/)).toBeVisible({ timeout: 30_000 });
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("button", { name: "Waiting for photos…" })).toBeVisible();
+    release();
+
+    await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+    expect(await storedPhotos(db, product.id)).toHaveLength(2);
+  });
+
+  test("AC7: removing the only photo then choosing Available is refused with \"Add a photo first\"", async ({ page, db }) => {
+    const product = await createProduct(db, { photos: 1, status: "hidden" });
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+    await hydrated(page);
+
+    await page.getByRole("button", { name: "Remove photo 1" }).click();
+    await page.getByRole("radio", { name: "Available" }).check();
+    await page.getByRole("button", { name: "Save" }).click();
+
+    await expect(page.getByRole("alert").filter({ hasText: "Add a photo first" })).toBeFocused();
+    expect(await storedPhotos(db, product.id)).toHaveLength(1);
+  });
+
+  test("AC9: photos by keyboard, 44 px targets, nothing clipped, at 100% and 200%", async ({ page, db }) => {
+    const product = await createProduct(db, { photos: 2, status: "hidden" });
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+    await hydrated(page);
+    await expect(photoRows(page).first().getByRole("img", { name: product.name })).toBeVisible();
+    for (const zoom of [1, 2]) {
+      await withZoom(page, zoom, async () => {
+        await expectNoHorizontalScroll(page);
+        await expectNothingClipped(page);
+        await expectTapTargets(page);
+        await expectFormKeyboardOperable(page);
+      });
+    }
+    await page.getByRole("button", { name: "Move photo 2 earlier" }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("status").filter({ hasText: "Photo moved to position 1 of 2." })).toBeAttached();
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`AC10: photos with a failed upload are axe clean in ${colorScheme} mode`, async ({ page, db }) => {
+      await page.emulateMedia({ colorScheme });
+      const product = await createProduct(db, { photos: 2, status: "hidden" });
+      await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+      await hydrated(page);
+      await page.route("**/storage/v1/object/upload/sign/**", (route) => (route.request().method() === "PUT" ? route.abort("connectionreset") : route.continue()));
+      await addPhotos(page).setInputFiles(JPEG_WITH_EXIF);
+      await expect(photoRows(page).filter({ hasText: "Not uploaded." })).toHaveCount(1, { timeout: 30_000 });
+
+      await expectNoA11yViolations(page);
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// S-048 option groups.
+
+const groupCard = (page: Page, name: string) => page.getByRole("region", { name, exact: true });
+
+async function storedGroups(db: Parameters<typeof createProduct>[0], productId: string) {
+  return db<{ name_en: string; kind: string; required: boolean; text_max_length: number | null; choices: { name: string; delta: number }[] }[]>`
+    select g.name_en, g.kind, g.required, g.text_max_length,
+      coalesce((select json_agg(json_build_object('name', c.name_en, 'delta', c.price_delta_rs) order by c.sort_order) from option_choice c where c.group_id = g.id), '[]'::json) as choices
+    from option_group g where g.product_id = ${productId} order by g.sort_order`;
+}
+
+test.describe("S-048 option groups", () => {
+  test("AC1: each quick-add button adds a card with a sensible kind (Size required) and moves focus to its name", async ({ page, db }) => {
+    const product = await createProduct(db, { status: "hidden" });
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+    await hydrated(page);
+
+    await page.getByRole("button", { name: "+ Size" }).click();
+    const size = groupCard(page, "Size");
+    await expect(size.getByLabel("Group name (English)")).toBeFocused();
+    await expect(size.getByRole("radio", { name: "Pick one" })).toBeChecked();
+    await expect(size.getByRole("checkbox", { name: "Customers must answer" })).toBeChecked();
+    await expect(page.getByRole("status").filter({ hasText: "Group Size added." })).toBeAttached();
+
+    await page.getByRole("button", { name: "+ Flavour" }).click();
+    await expect(groupCard(page, "Flavour").getByRole("radio", { name: "Pick one" })).toBeChecked();
+    await expect(groupCard(page, "Flavour").getByRole("checkbox", { name: "Customers must answer" })).not.toBeChecked();
+    await page.getByRole("button", { name: "+ Add-ons" }).click();
+    await expect(groupCard(page, "Add-ons").getByRole("radio", { name: "Pick several" })).toBeChecked();
+    await page.getByRole("button", { name: "+ Message" }).click();
+    const message = groupCard(page, "Message");
+    await expect(message.getByRole("radio", { name: "Write a text" })).toBeChecked();
+    await expect(message.getByLabel(/^Longest message/)).toHaveAttribute("placeholder", "Use default (40)");
+    await expect(message.getByLabel("Group name (English)")).toBeFocused();
+  });
+
+  test("AC9 path: a cake with 2 sizes, 3 flavours, add-ons and a message is saved and comes back in order", async ({ page, db }) => {
+    const product = await createProduct(db, { status: "hidden", priceRs: 1200 });
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+    await hydrated(page);
+
+    await page.getByRole("button", { name: "+ Size" }).click();
+    const size = groupCard(page, "Size");
+    await size.getByLabel("Choice name (English)").fill("6 inch (5-10 people)");
+    await expect(size.getByText("Customers pay Rs 1,200 with this choice.")).toBeVisible();
+    await size.getByRole("button", { name: "Add choice to Size" }).click();
+    await size.getByLabel("Choice name (English)").nth(1).fill("8 inch (15-20 people)");
+    await size.getByLabel("Price change").nth(1).fill("600");
+    await expect(size.getByText("Customers pay Rs 1,800 with this choice.")).toBeVisible();
+
+    await page.getByRole("button", { name: "+ Flavour" }).click();
+    const flavour = groupCard(page, "Flavour");
+    for (const [i, name] of ["Chocolate", "Red velvet", "Pistachio"].entries()) {
+      if (i > 0) await flavour.getByRole("button", { name: "Add choice to Flavour" }).click();
+      await flavour.getByLabel("Choice name (English)").nth(i).fill(name);
+    }
+    await page.getByRole("button", { name: "+ Add-ons" }).click();
+    await groupCard(page, "Add-ons").getByLabel("Choice name (English)").fill("Candles");
+    await groupCard(page, "Add-ons").getByLabel("Price change").fill("50");
+    await page.getByRole("button", { name: "+ Message" }).click();
+    await groupCard(page, "Message").getByLabel(/^Longest message/).fill("25");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+
+    expect(await storedGroups(db, product.id)).toEqual([
+      { name_en: "Size", kind: "single", required: true, text_max_length: null, choices: [{ name: "6 inch (5-10 people)", delta: 0 }, { name: "8 inch (15-20 people)", delta: 600 }] },
+      { name_en: "Flavour", kind: "single", required: false, text_max_length: null, choices: [{ name: "Chocolate", delta: 0 }, { name: "Red velvet", delta: 0 }, { name: "Pistachio", delta: 0 }] },
+      { name_en: "Add-ons", kind: "multiple", required: false, text_max_length: null, choices: [{ name: "Candles", delta: 50 }] },
+      { name_en: "Message", kind: "text", required: false, text_max_length: 25, choices: [] },
+    ]);
+    await page.reload();
+    await expect(page.getByRole("list", { name: "Option groups, in order" }).getByRole("heading", { level: 3 })).toHaveText(["Size", "Flavour", "Add-ons", "Message"]);
+  });
+
+  test("AC4: a group with no choices is highlighted, the summary takes focus and links to it; nothing is saved", async ({ page, db }) => {
+    const product = await createProduct(db, { status: "hidden" });
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+    await hydrated(page);
+    await page.getByRole("button", { name: "+ Size" }).click();
+    await page.getByRole("button", { name: "Remove choice 1 of Size" }).click();
+
+    await page.getByRole("button", { name: "Save" }).click();
+
+    const summary = page.getByRole("alert").filter({ hasText: "Please check the product" });
+    await expect(summary).toBeFocused();
+    await summary.getByRole("link", { name: "Size: add at least one choice." }).click();
+    await expect(groupCard(page, "Size")).toBeFocused();
+    await expect(groupCard(page, "Size")).toContainText("Size: add at least one choice.");
+    expect(await storedGroups(db, product.id)).toEqual([]);
+  });
+
+  test("AC5: with 10 groups the add buttons are disabled with the reason; with 30 choices Add choice is", async ({ page, db }) => {
+    const product = await createProduct(db, { status: "hidden" });
+    await addOptionGroups(db, product.id, 10);
+    const full = await createProduct(db, { status: "hidden" });
+    await addOptionGroups(db, full.id, 1, 30);
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+    await hydrated(page);
+
+    for (const name of ["+ Size", "+ Flavour", "+ Add-ons", "+ Message", "Add group"]) {
+      await expect(page.getByRole("button", { name })).toBeDisabled();
+    }
+    await expect(page.getByRole("button", { name: "Add group" })).toHaveAccessibleDescription("A product has at most 10 option groups. Remove one to add another.");
+
+    await page.goto(`/admin/menu/${full.id}`);
+    await expect(page.getByRole("button", { name: "Add choice to Group 1" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Add choice to Group 1" })).toHaveAccessibleDescription("A group has at most 30 choices. Remove one to add another.");
+  });
+
+  test("AC6, AC11: groups and choices move with named buttons; each move is announced and the order is saved", async ({ page, db }) => {
+    const product = await createProduct(db, { status: "hidden" });
+    await addOptionGroups(db, product.id, 2, 2);
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+    await hydrated(page);
+    await expect(page.getByRole("button", { name: "Move group Group 1 earlier" })).toBeDisabled();
+
+    await page.getByRole("button", { name: "Move group Group 2 earlier" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Group moved to position 1 of 2." })).toBeAttached();
+    await page.getByRole("button", { name: "Move choice 2 of Group 2 earlier" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Choice moved to position 1 of 2 in Group 2." })).toBeAttached();
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+
+    const groups = await storedGroups(db, product.id);
+    expect(groups.map((g) => g.name_en)).toEqual(["Group 2", "Group 1"]);
+    expect(groups[0]!.choices.map((c) => c.name)).toEqual(["Choice 2", "Choice 1"]);
+  });
+
+  test("AC6: a group moves by dragging its grip", async ({ page, db }) => {
+    const product = await createProduct(db, { status: "hidden" });
+    await addOptionGroups(db, product.id, 2);
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+    await hydrated(page);
+    const headings = page.getByRole("list", { name: "Option groups, in order" }).getByRole("heading", { level: 3 });
+    const grip = page.getByRole("list", { name: "Option groups, in order" }).locator(":scope > li").nth(0).locator("[aria-hidden=true]").first();
+    await grip.scrollIntoViewIfNeeded();
+    const box = await grip.boundingBox();
+    const height = page.viewportSize()!.height;
+
+    // Press the grip, then rest near the bottom edge: the page scrolls and the card follows.
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box!.x + box!.width / 2, height - 10, { steps: 8 });
+    await expect(headings).toHaveText(["Group 2", "Group 1"], { timeout: 15_000 });
+    await page.mouse.up();
+    await expect(page.getByRole("status").filter({ hasText: "Group moved to position 2 of 2." })).toBeAttached();
+  });
+
+  test("AC7: a choice that can push the price below Rs 0 shows the warning; saving is allowed", async ({ page, db }) => {
+    const product = await createProduct(db, { status: "hidden", priceRs: 500 });
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+    await hydrated(page);
+    await page.getByRole("button", { name: "+ Size" }).click();
+    const size = groupCard(page, "Size");
+    await size.getByLabel("Choice name (English)").fill("Mini");
+    await size.getByRole("combobox", { name: "Adds or takes off, choice 1 of Size" }).selectOption("-");
+    await size.getByLabel("Price change").fill("600");
+
+    await expect(page.getByText("This option can make the price below Rs 0.", { exact: false })).toBeVisible();
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+    expect((await storedGroups(db, product.id))[0]!.choices).toEqual([{ name: "Mini", delta: -600 }]);
+  });
+
+  test("AC10: group cards by keyboard, 44 px targets, nothing clipped, no sideways scroll, at 100% and 200%", async ({ page, db }) => {
+    const product = await createProduct(db, { status: "hidden" });
+    await addOptionGroups(db, product.id, 2, 2);
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+    await hydrated(page);
+    await page.getByRole("button", { name: "+ Message" }).click();
+    for (const zoom of [1, 2]) {
+      await withZoom(page, zoom, async () => {
+        await expectNoHorizontalScroll(page);
+        await expectNothingClipped(page);
+        await expectTapTargets(page);
+        await expectFormKeyboardOperable(page, 200);
+        await expectBarsHideNothing(page);
+      });
+    }
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`AC11: labelled fields, distinct control names and an error, axe clean in ${colorScheme} mode`, async ({ page, db }) => {
+      await page.emulateMedia({ colorScheme });
+      const product = await createProduct(db, { status: "hidden" });
+      await addOptionGroups(db, product.id, 2, 2);
+      await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+      await hydrated(page);
+      const names = await page.getByRole("button", { name: /^(Move|Remove) (choice|group)/ }).evaluateAll((buttons) => buttons.map((b) => b.getAttribute("aria-label")));
+      expect(new Set(names).size).toBe(names.length);
+      await expectNoA11yViolations(page);
+
+      await page.getByRole("button", { name: "+ Size" }).click();
+      await page.getByRole("button", { name: "Save" }).click();
+      await expect(page.getByRole("alert").filter({ hasText: "Please check the product" })).toBeFocused();
+      await expect(groupCard(page, "Size").getByLabel("Choice name (English)")).toHaveAccessibleDescription("Size, choice 1: enter the choice name in English.");
+      await expectNoA11yViolations(page);
     });
   }
 });

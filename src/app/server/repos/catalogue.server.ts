@@ -107,7 +107,7 @@ export type MenuProductRecord = ProductRecord & { status: "available" | "sold_ou
 const productIdColumn = sql.raw(`"${getTableName(product)}"."id"`);
 
 /** Option groups with their choices, in sort order, aggregated in the same statement. */
-const optionGroupsJson = sql<OptionGroupRecord[] | string>`coalesce((
+export const optionGroupsJson = sql<OptionGroupRecord[] | string>`coalesce((
   select json_agg(json_build_object(
     'id', og.id, 'name', json_build_object('en', og.name_en, 'fr', og.name_fr), 'kind', og.kind,
     'required', og.required, 'textMaxLength', og.text_max_length, 'quantityMin', og.quantity_min, 'quantityMax', og.quantity_max,
@@ -119,7 +119,7 @@ const optionGroupsJson = sql<OptionGroupRecord[] | string>`coalesce((
   from ${optionGroup} og where og.product_id = ${productIdColumn}
 ), '[]'::json)`;
 
-const parseJsonColumn = <T>(value: T | string): T => (typeof value === "string" ? (JSON.parse(value) as T) : value);
+export const parseJsonColumn = <T>(value: T | string): T => (typeof value === "string" ? (JSON.parse(value) as T) : value);
 
 /**
  * The public menu (ADR-0004): every product that is not hidden, in menu order, with photos

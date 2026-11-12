@@ -18,6 +18,9 @@ export const PRODUCT_DESCRIPTION_MAX = 2000;
 export const PRODUCT_CATEGORY_MAX = 60;
 export const PRODUCT_SLUG_MAX = 80;
 export const NOTICE_DAYS_MAX = 60;
+/** Minimum units per basket line (data-model `product.min_quantity`). */
+export const MIN_QUANTITY_MIN = 1;
+export const MIN_QUANTITY_MAX = 50;
 export const PRICE_MAX_RS = 1_000_000;
 
 /** `[a-z0-9-]`, no leading, trailing or double dash. */

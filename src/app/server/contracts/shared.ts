@@ -3,6 +3,7 @@
 import { z } from "zod";
 
 export { BASKET_MAX_LINES, LINE_MAX_QUANTITY } from "~/domain/basket";
+export { MAX_PHOTOS, UPLOAD_MAX_BYTES, UPLOAD_TARGET_BYTES } from "~/domain/upload";
 
 export const Locale = z.enum(["en", "fr"]);
 export const Uuid = z.uuid();

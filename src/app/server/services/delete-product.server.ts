@@ -6,32 +6,12 @@
 // job, and the delete still succeeds. Baskets are cookies: their line turns "No longer
 // available" on the next menu read (ADR-0004).
 import { eq } from "drizzle-orm";
-import { product, productPhoto, storagePurge } from "~/db/schema";
-import { PUBLIC_IMAGES_BUCKET } from "~/lib/images";
+import { product, productPhoto } from "~/db/schema";
 import type { Database } from "~/server/db.server";
 import type { StorageGateway } from "~/server/storage.server";
+import { isStoragePath, removePhotos } from "./storage-cleanup.server";
 
 export type DeleteProductResult = { ok: true; id: string; photosQueued: number } | { ok: false; code: "NOT_FOUND" };
-
-/** Bundled sample images ("/images/…") are app assets, not Storage objects. */
-const isStoragePath = (path: string) => !path.startsWith("/");
-
-async function removePhotos(db: Database, storage: StorageGateway | null, paths: string[]): Promise<number> {
-  if (paths.length === 0) return 0;
-  try {
-    if (!storage) throw new Error("no storage gateway configured");
-    await storage.remove(PUBLIC_IMAGES_BUCKET, paths);
-    return 0;
-  } catch (error) {
-    const lastError = error instanceof Error ? error.message.slice(0, 200) : "unknown";
-    await db
-      .insert(storagePurge)
-      .values(paths.map((path) => ({ bucket: PUBLIC_IMAGES_BUCKET, path, lastError })))
-      .onConflictDoNothing();
-    console.log(JSON.stringify({ level: "warn", event: "storage_remove_queued", count: paths.length, error: lastError }));
-    return paths.length;
-  }
-}
 
 export async function deleteProduct(db: Database, storage: StorageGateway | null, id: string): Promise<DeleteProductResult> {
   const paths = await db.transaction(async (tx) => {

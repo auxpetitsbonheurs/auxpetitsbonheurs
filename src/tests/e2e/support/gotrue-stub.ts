@@ -1,12 +1,14 @@
 // Local stand-in for the Supabase Auth (GoTrue) endpoints the app calls, so e2e runs
 // offline and deterministically against the real @supabase/ssr adapter: password and
-// refresh-token grants, JWKS (ES256 key made at start), logout and health. Started by
+// refresh-token grants, JWKS (ES256 key made at start), logout and health, plus the Storage
+// endpoints in storage-stub.ts. Started by
 // playwright.config.ts on 127.0.0.1:54321 (SUPABASE_URL of the `e2e` environment).
 // Never deployed; holds only the placeholder accounts of auth-users.ts.
 import { randomBytes } from "node:crypto";
 import { type IncomingMessage, type ServerResponse, createServer } from "node:http";
 import { createTestSigningKey, sessionBody, signTestJwt } from "../../../app/server/testing/test-jwt";
 import { E2E_ACCOUNTS } from "./auth-users";
+import { storageStub } from "./storage-stub";
 
 const PORT = Number(process.env.GOTRUE_STUB_PORT ?? 54321);
 const key = await createTestSigningKey("e2e-stub");
@@ -55,6 +57,7 @@ async function token(request: IncomingMessage, url: URL, response: ServerRespons
 createServer((request, response) => {
   const url = new URL(request.url ?? "/", `http://127.0.0.1:${PORT}`);
   const route = `${request.method} ${url.pathname}`;
+  if (storageStub(request, response, url) !== false) return;
   if (route === "GET /auth/v1/health") return send(response, 200, { name: "GoTrue stub" });
   if (route === "GET /auth/v1/.well-known/jwks.json") return send(response, 200, { keys: [key.publicJwk] });
   if (route === "POST /auth/v1/token") return void token(request, url, response);

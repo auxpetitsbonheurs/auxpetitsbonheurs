@@ -1,7 +1,10 @@
 import { Check, ChevronLeft } from "lucide-react";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FocusEvent, type FormEvent, type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { Link, data, useBlocker, useFetcher, useNavigate } from "react-router";
 import { AdminErrorBoundary } from "~/components/admin/admin-states";
+import { OptionGroupsEditor, optionAnchor } from "~/components/admin/option-groups-editor";
+import { PhotoManager } from "~/components/admin/photo-manager";
+import { usePhotoUploads } from "~/components/admin/use-photo-uploads";
 import { ErrorSummary } from "~/components/checkout/error-summary";
 import { Button } from "~/components/ui/button";
 import { Modal } from "~/components/ui/modal";
@@ -27,8 +30,10 @@ import { type ProductField, type ProductProblem, parseProductForm } from "~/serv
 import { Uuid } from "~/server/contracts/shared";
 import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
+import { publicConfigContext } from "~/server/public-config.server";
 import { findAdminProduct, getProductDefaults, listCategories } from "~/server/repos/admin-menu.server";
 import { saveProduct } from "~/server/services/save-product.server";
+import { storageContext, uploadContext } from "~/server/storage.server";
 import type { Route } from "./+types/product";
 
 /** `admin/product` (FR-062): `/admin/menu/new` and `/admin/menu/:id`. */
@@ -50,7 +55,7 @@ export async function loader(args: Route.LoaderArgs) {
   const id = productId(args.params);
   const db = args.context.get(requestDbContext).db;
   const [product, categories, settingsDefaults] = await Promise.all([
-    id ? findAdminProduct(db, id) : Promise.resolve(null),
+    id ? findAdminProduct(db, id, args.context.get(publicConfigContext).supabaseUrl) : Promise.resolve(null),
     listCategories(db),
     getProductDefaults(db),
   ]);
@@ -69,20 +74,47 @@ export async function loader(args: Route.LoaderArgs) {
 
 const problemKey = (field: string, problem: ProductProblem) => `admin.product.errors.${field.replace(".", "_")}_${problem}`;
 
-function localizedProblems(problems: Partial<Record<string, ProductProblem>>, locale: Locale): Record<string, string> {
-  return Object.fromEntries(Object.entries(problems).map(([field, problem]) => [field, translate(problemKey(field, problem!), locale)]));
+/** English names of the posted groups, so an option problem can say which group ("Size: …"). */
+function postedGroupNames(form: FormData): string[] {
+  try {
+    const groups = JSON.parse(String(form.get("optionGroups") ?? "[]")) as { name?: { en?: unknown } }[];
+    return Array.isArray(groups) ? groups.map((g) => (typeof g?.name?.en === "string" ? g.name.en.trim().slice(0, 60) : "")) : [];
+  } catch {
+    return [];
+  }
 }
 
-/** `admin/product` save → `{ ok, id, slug }`; VALIDATION_FAILED / SLUG_TAKEN with `fields`; NOT_FOUND. */
+/** `optionGroups.2.choices.0.name.en` + `missing` -> "Size, choice 1: enter the choice name in English." */
+function optionMessage(field: string, problem: ProductProblem, locale: Locale, names: string[]): string | null {
+  const match = /^optionGroups\.(\d+)(?:\.choices\.(\d+))?(?:\.(.+))?$/.exec(field);
+  if (!match) return null;
+  const [, g, c, rest] = match;
+  const group = names[Number(g)] || translate("admin.product.options.groupN", locale, { n: Number(g) + 1 });
+  const part = c !== undefined ? `choice_${(rest ?? "").replace(".", "_")}` : (rest ?? "group").replace(".", "_");
+  return translate(`admin.product.errors.option.${part}_${problem}`, locale, { group, n: Number(c ?? 0) + 1 });
+}
+
+function localizedProblems(problems: Partial<Record<string, ProductProblem>>, locale: Locale, groupNames: string[] = []): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(problems).map(([field, problem]) => [field, optionMessage(field, problem!, locale, groupNames) ?? translate(problemKey(field, problem!), locale)]),
+  );
+}
+
+/** `admin/product` save → `{ ok, id, slug }`; VALIDATION_FAILED / SLUG_TAKEN / UPLOAD_REJECTED with `fields`; NOT_FOUND. */
 export async function action(args: Route.ActionArgs) {
   const me = await requireAdmin(args);
   const routeId = productId(args.params);
   const form = await args.request.formData();
   if (form.get("intent") !== "save") return actionError("VALIDATION_FAILED", me.locale);
   const parsed = parseProductForm(form);
-  if (!parsed.ok) return actionError("VALIDATION_FAILED", me.locale, { fields: localizedProblems(parsed.problems, me.locale) });
+  if (!parsed.ok) return actionError("VALIDATION_FAILED", me.locale, { fields: localizedProblems(parsed.problems, me.locale, postedGroupNames(form)) });
   const input = { ...parsed.input, ...(routeId ? { id: routeId } : {}) };
-  const result = await saveProduct(args.context.get(requestDbContext).db, input, { adminId: me.id, now: args.context.get(clockContext).now() });
+  const result = await saveProduct(args.context.get(requestDbContext).db, input, {
+    adminId: me.id,
+    now: args.context.get(clockContext).now(),
+    uploads: args.context.get(uploadContext),
+    storage: args.context.get(storageContext),
+  });
   if (!result.ok) {
     return actionError(result.code, me.locale, "fields" in result ? { fields: localizedProblems(result.fields, me.locale) } : {});
   }
@@ -113,8 +145,20 @@ const ANCHORS: Record<ProductField | "id", string> = {
   status: "status",
   slug: "slug",
   allergens: "allergens",
+  photos: "photos",
+  minQuantity: "min-quantity",
+  optionGroups: "options",
   id: "name-en",
 };
+
+/** The summary's links: fixed fields plus each option group path (AC4: links to that group). */
+function anchorsFor(fields: Record<string, string> | undefined): Record<string, string> {
+  const extra = Object.keys(fields ?? {}).flatMap((field) => {
+    const id = optionAnchor(field);
+    return id ? [[field, id] as const] : [];
+  });
+  return { ...ANCHORS, ...Object.fromEntries(extra) };
+}
 
 /** After a save: toast "Saved" (and `onSaved`), or focus on the error summary. */
 function useSaveFeedback(fetcher: ReturnType<typeof useFetcher<ActionData>>, onSaved: (id: string) => void) {
@@ -133,14 +177,14 @@ function useSaveFeedback(fetcher: ReturnType<typeof useFetcher<ActionData>>, onS
   return { summary, refusal: result && !result.ok ? result.error : undefined };
 }
 
-function NamesSection({ product, errors, onFrenchName }: { product: LoaderData["product"]; errors: Fields; onFrenchName: (v: string) => void }) {
+function NamesSection({ product, errors, onFrenchName, onEnglishName }: { product: LoaderData["product"]; errors: Fields; onFrenchName: (v: string) => void; onEnglishName: (v: string) => void }) {
   const { t } = useI18n();
   const [frenchName, setFrenchName] = useState(product?.name.fr ?? "");
   const optional = t("admin.product.optional");
   return (
     <fieldset className="grid gap-4 md:grid-cols-2">
       <legend className="mb-2 text-xl font-semibold">{t("admin.product.namesSection")}</legend>
-      <TextField id="name-en" name="name.en" label={t("admin.product.nameEn")} defaultValue={product?.name.en} maxLength={PRODUCT_NAME_MAX} error={errors["name.en"]} autoComplete="off" />
+      <TextField id="name-en" name="name.en" label={t("admin.product.nameEn")} defaultValue={product?.name.en} maxLength={PRODUCT_NAME_MAX} error={errors["name.en"]} autoComplete="off" onInput={(event) => onEnglishName(event.currentTarget.value)} />
       <TextField
         id="name-fr"
         name="name.fr"
@@ -162,7 +206,7 @@ function NamesSection({ product, errors, onFrenchName }: { product: LoaderData["
   );
 }
 
-function PriceField({ defaultValue, error }: { defaultValue?: number; error?: string }) {
+function PriceField({ defaultValue, error, onPrice }: { defaultValue?: number; error?: string; onPrice: (value: number | null) => void }) {
   const { t } = useI18n();
   return (
     <div>
@@ -181,6 +225,10 @@ function PriceField({ defaultValue, error }: { defaultValue?: number; error?: st
           pattern="[0-9]*"
           autoComplete="off"
           defaultValue={defaultValue}
+          onInput={(event) => {
+            const value = event.currentTarget.value.trim();
+            onPrice(/^\d+$/.test(value) ? Number(value) : null);
+          }}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? "price-error" : undefined}
           className="block min-h-12 w-full max-w-48 rounded-md border-2 border-input bg-card px-3 py-2 text-base aria-invalid:border-destructive"
@@ -281,13 +329,13 @@ function LeaveDialog({ blocker }: { blocker: ReturnType<typeof useBlocker> }) {
   );
 }
 
-function OtherFields({ loaderData, errors }: { loaderData: LoaderData; errors: Fields }) {
+function OtherFields({ loaderData, errors, onPrice, children }: { loaderData: LoaderData; errors: Fields; onPrice: (value: number | null) => void; children?: ReactNode }) {
   const { t } = useI18n();
   const { product, settingsDefaults, categories } = loaderData;
   const optional = t("admin.product.optional");
   return (
     <>
-      <PriceField defaultValue={product?.basePriceRs} error={errors.basePriceRs} />
+      <PriceField defaultValue={product?.basePriceRs} error={errors.basePriceRs} onPrice={onPrice} />
       <TextField
         id="notice"
         name="noticeDays"
@@ -302,6 +350,19 @@ function OtherFields({ loaderData, errors }: { loaderData: LoaderData; errors: F
         error={errors.noticeDays}
         className="max-w-sm"
       />
+      <TextField
+        id="min-quantity"
+        name="minQuantity"
+        label={t("admin.product.minQuantity")}
+        optionalLabel={optional}
+        hint={t("admin.product.minQuantityHint")}
+        inputMode="numeric"
+        pattern="[0-9]*"
+        autoComplete="off"
+        defaultValue={product?.minQuantity ?? ""}
+        error={errors.minQuantity}
+        className="max-w-sm"
+      />
       <AllergenChips tags={loaderData.allergenTags} selected={product?.allergens ?? []} error={errors.allergens} />
       <ChoiceGroup id="type" legend={t("admin.product.type")} name="type" value={product?.type ?? loaderData.newType} error={errors.type} options={PRODUCT_TYPES.map((value) => ({ value, label: t(`admin.menu.group.${value}`) }))} />
       <TextField id="category" name="category" label={t("admin.product.category")} optionalLabel={optional} hint={t("admin.product.categoryHint")} list="category-suggestions" defaultValue={product?.category ?? ""} maxLength={PRODUCT_CATEGORY_MAX} error={errors.category} autoComplete="off" />
@@ -310,6 +371,7 @@ function OtherFields({ loaderData, errors }: { loaderData: LoaderData; errors: F
           <option key={category} value={category} />
         ))}
       </datalist>
+      {children}
       <ChoiceGroup
         id="status"
         legend={t("admin.product.status")}
@@ -324,20 +386,99 @@ function OtherFields({ loaderData, errors }: { loaderData: LoaderData; errors: F
   );
 }
 
+/** Polite live region for list changes (photos moved, removed, uploaded). */
+function useAnnouncer() {
+  const [message, setMessage] = useState("");
+  const announce = useCallback((text: string) => {
+    // Cleared first so the same sentence twice is announced twice.
+    setMessage("");
+    requestAnimationFrame(() => setMessage(text));
+  }, []);
+  const region = (
+    <p role="status" aria-live="polite" className="sr-only">
+      {message}
+    </p>
+  );
+  return { announce, region };
+}
+
+/**
+ * Save while photos are still uploading waits for them, then sends (the button says so);
+ * a photo that failed blocks the save with a message until it is retried or removed.
+ */
+function useSaveWithPhotos(fetcher: ReturnType<typeof useFetcher<ActionData>>, form: RefObject<HTMLFormElement | null>, photos: ReturnType<typeof usePhotoUploads>) {
+  const [pendingSave, setPendingSave] = useState(false);
+  const [blockedPress, setBlockedPress] = useState(false);
+  const submitted = useRef(false);
+  const { busy, failed } = photos.summary;
+  // Save pressed during uploads: sent once they are all done (none failed).
+  useEffect(() => {
+    if (!pendingSave || busy || failed > 0 || submitted.current || !form.current) return;
+    submitted.current = true;
+    void fetcher.submit(form.current);
+  }, [pendingSave, busy, failed, fetcher, form]);
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    setBlockedPress(failed > 0);
+    if (failed > 0) {
+      event.preventDefault();
+      setPendingSave(false);
+      document.getElementById("photos")?.focus();
+    } else if (busy) {
+      event.preventDefault();
+      submitted.current = false;
+      setPendingSave(true);
+    } else setPendingSave(false);
+  };
+  return {
+    waiting: pendingSave && busy,
+    blocked: failed > 0 && (blockedPress || (pendingSave && !busy)),
+    onSubmit,
+    /** Any change to the photo list cancels a save that was waiting for uploads. */
+    cancel: () => setPendingSave(false),
+  };
+}
+
+/**
+ * A focused control never stays under the sticky Save bar (WCAG 2.4.11). Browsers do not
+ * scroll a control that is already partly visible, so `scroll-padding` alone leaves a tall
+ * field's lower edge under the bar; this scrolls by the overlap.
+ */
+function keepAboveSaveBar(event: FocusEvent<HTMLFormElement>) {
+  const bar = event.currentTarget.querySelector<HTMLElement>("[data-editor-bar]");
+  if (!bar || getComputedStyle(bar).position !== "sticky") return;
+  const target = event.target as HTMLElement;
+  // Fields only, typed into: a button is pressed where it is (scrolling would move it from under the finger).
+  if (!target.matches("input:not([type=checkbox], [type=radio], [type=file]), textarea, select") || bar.contains(target)) return;
+  const box = (target.closest("label") ?? target).getBoundingClientRect();
+  const overlap = box.bottom - bar.getBoundingClientRect().top;
+  if (overlap > 0 && box.top - overlap - 16 >= 0) window.scrollBy({ top: overlap + 16, behavior: "instant" });
+}
+
 export default function AdminProduct({ loaderData }: Route.ComponentProps) {
+  // Keyed by product: a newly created product's page starts from what the server saved.
+  return <ProductEditor key={loaderData.product?.id ?? "new"} loaderData={loaderData} />;
+}
+
+function ProductEditor({ loaderData }: { loaderData: LoaderData }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const fetcher = useFetcher<ActionData>();
   const [dirty, setDirty] = useState(false);
   const { blocker, dirtyRef } = useUnsavedGuard(dirty);
   const { product } = loaderData;
+  const { announce, region } = useAnnouncer();
+  const [englishName, setEnglishName] = useState(product?.name.en ?? "");
+  const [basePrice, setBasePrice] = useState<number | null>(product?.basePriceRs ?? null);
+  const photos = usePhotoUploads(product?.photos ?? [], ({ key, values }) => announce(t(key, values)));
+  const formRef = useRef<HTMLFormElement>(null);
+  const save = useSaveWithPhotos(fetcher, formRef, photos);
   const { summary, refusal } = useSaveFeedback(fetcher, (id) => {
     dirtyRef.current = false;
     setDirty(false);
     if (!product) void navigate(`/admin/menu/${id}`, { replace: true });
   });
   const errors = refusal?.fields ?? {};
-  const saving = fetcher.state !== "idle";
+  const saving = fetcher.state !== "idle" || save.waiting;
   const markDirty = (_event?: FormEvent) => setDirty(true);
   return (
     <>
@@ -347,14 +488,41 @@ export default function AdminProduct({ loaderData }: Route.ComponentProps) {
       </Link>
       <h1 className="mt-2">{loaderData.title}</h1>
       {product?.updated && <p className="mt-2 text-sm">{t("admin.product.updatedBy", { name: product.updated.name, time: formatClockTime(new Date(product.updated.at)) })}</p>}
-      {refusal && <ErrorSummary ref={summary} message={refusal.message} fields={refusal.fields} anchors={ANCHORS} title={t("admin.product.errorSummaryTitle")} />}
-      <fetcher.Form method="post" key={product?.id ?? "new"} onChange={markDirty} onInput={markDirty} className="mt-6 grid gap-8" noValidate>
+      {refusal && <ErrorSummary ref={summary} message={refusal.message} fields={refusal.fields} anchors={anchorsFor(refusal.fields)} title={t("admin.product.errorSummaryTitle")} />}
+      {region}
+      <fetcher.Form ref={formRef} method="post" onChange={markDirty} onInput={markDirty} onSubmit={save.onSubmit} onFocus={keepAboveSaveBar} className="mt-6 grid gap-8" noValidate>
         <input type="hidden" name="intent" value="save" />
-        <NamesSection product={product} errors={errors} onFrenchName={() => setDirty(true)} />
-        <OtherFields loaderData={loaderData} errors={errors} />
+        <input type="hidden" name="photos" value={JSON.stringify(photos.summary.posted)} />
+        <input type="hidden" name="uploadSessionId" value={photos.sessionId() ?? ""} />
+        <PhotoManager
+          photos={photos}
+          productName={englishName}
+          error={errors.photos ?? (save.blocked ? t("admin.product.photos.blockedSave") : undefined)}
+          onChange={() => {
+            setDirty(true);
+            save.cancel();
+          }}
+          announce={announce}
+        />
+        <NamesSection product={product} errors={errors} onFrenchName={() => setDirty(true)} onEnglishName={setEnglishName} />
+        <OtherFields loaderData={loaderData} errors={errors} onPrice={setBasePrice}>
+          <OptionGroupsEditor
+            initial={product?.optionGroups ?? []}
+            basePrice={basePrice}
+            cakeMessageMax={loaderData.settingsDefaults.cakeMessageMax}
+            errors={errors}
+            onChange={() => setDirty(true)}
+            announce={announce}
+          />
+        </OtherFields>
         {/* Sticky above the bottom bar; static while typing on a phone (keyboard up) and at 200% zoom. */}
         <div data-editor-bar="" className="sticky bottom-0 z-30 -mx-4 border-t border-border bg-card px-4 py-3 shadow-md min-[20rem]:bottom-[calc(3.5rem+env(safe-area-inset-bottom))] md:-mx-6 md:px-6">
-          <SubmitButton pending={saving} pendingText={t("admin.product.saving")} pendingLabel={t("admin.product.savingLabel")} className="w-full md:w-auto">
+          <SubmitButton
+            pending={saving}
+            pendingText={save.waiting ? t("admin.product.photos.waitingSave") : t("admin.product.saving")}
+            pendingLabel={save.waiting ? t("admin.product.photos.waitingSaveLabel") : t("admin.product.savingLabel")}
+            className="w-full md:w-auto"
+          >
             {t("admin.product.save")}
           </SubmitButton>
         </div>

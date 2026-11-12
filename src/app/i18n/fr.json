@@ -120,7 +120,8 @@
       "ORDER_CHANGED": "Cette commande a changé. Rechargez",
       "INVALID_TRANSITION": "Cette commande ne peut plus être modifiée ainsi. Rechargez.",
       "RATE_LIMITED": "Trop de tentatives, patientez quelques minutes.",
-      "SLUG_TAKEN": "Cette adresse web est déjà utilisée par un autre produit. Choisissez-en une autre."
+      "SLUG_TAKEN": "Cette adresse web est déjà utilisée par un autre produit. Choisissez-en une autre.",
+      "UPLOAD_REJECTED": "Une photo n'a pas pu être utilisée. Le produit garde ses photos précédentes."
     }
   },
   "product": {
@@ -464,9 +465,125 @@
         "slug_invalid": "Utilisez seulement des lettres minuscules, des chiffres et des tirets.",
         "slug_taken": "Cette adresse web est déjà utilisée. Choisissez-en une autre.",
         "allergens_invalid": "Choisissez les allergènes dans la liste.",
-        "id_invalid": "Ce produit est introuvable. Revenez à la carte."
+        "id_invalid": "Ce produit est introuvable. Revenez à la carte.",
+        "photos_invalid": "La liste des photos n'a pas pu être lue. Rechargez la page et ajoutez les photos à nouveau.",
+        "photos_rejected": "Une photo n'a pas été acceptée (5 au plus, chacune en JPEG, PNG ou WebP de 1 Mo maximum, envoyée depuis cette page). Retirez-la et ajoutez-la à nouveau.",
+        "minQuantity_invalid": "Saisissez un nombre de 1 à 50, ou laissez vide.",
+        "optionGroups_too_many": "Un produit a au plus 10 groupes d'options. Retirez-en un.",
+        "optionGroups_invalid": "Les options n'ont pas pu être lues. Rechargez la page et réessayez.",
+        "option": {
+          "group_invalid": "{{group}} : vérifiez ce groupe.",
+          "name_en_missing": "{{group}} : saisissez le nom du groupe en anglais.",
+          "name_en_invalid": "{{group}} : le nom anglais fait au plus 120 caractères.",
+          "name_fr_invalid": "{{group}} : le nom français fait au plus 120 caractères.",
+          "kind_invalid": "{{group}} : choisissez ce que font les clients.",
+          "choices_none": "{{group}} : ajoutez au moins un choix.",
+          "choices_too_many": "{{group}} : un groupe a au plus 30 choix.",
+          "textMaxLength_invalid": "{{group}} : le message le plus long est un nombre de 1 à 200, ou vide.",
+          "quantity_invalid": "{{group}} : saisissez les deux nombres de 0 à 99, le minimum pas plus grand que le maximum, ou laissez les deux vides.",
+          "choice_name_en_missing": "{{group}}, choix {{n}} : saisissez le nom du choix en anglais.",
+          "choice_name_en_invalid": "{{group}}, choix {{n}} : le nom anglais fait au plus 120 caractères.",
+          "choice_name_fr_invalid": "{{group}}, choix {{n}} : le nom français fait au plus 120 caractères.",
+          "choice_priceDeltaRs_invalid": "{{group}}, choix {{n}} : saisissez la différence de prix en roupies entières, jusqu'à 100 000."
+        }
       },
-      "loading": "Chargement du produit…"
+      "loading": "Chargement du produit…",
+      "photos": {
+        "legend": "Photos",
+        "hint": "Jusqu'à {{max}}. La première photo est celle que les clients voient sur le menu. Les photos sont réduites sur votre téléphone avant l'envoi.",
+        "listLabel": "Photos du produit, dans l'ordre",
+        "add": "Ajouter des photos",
+        "full": "Ce produit a {{max}} photos, le maximum. Retirez-en une pour en ajouter une autre.",
+        "photoN": "Photo {{n}}",
+        "main": "Photo principale",
+        "unnamed": "Nouveau produit",
+        "preparing": "Préparation de la photo…",
+        "uploading": "Envoi…",
+        "uploadingPercent": "Envoi… {{percent}} %",
+        "progressLabel": "Envoi de {{name}}",
+        "retry": "Réessayer",
+        "retryN": "Réessayer la photo {{n}}",
+        "moveEarlier": "Avancer la photo {{n}}",
+        "moveLater": "Reculer la photo {{n}}",
+        "removeN": "Retirer la photo {{n}}",
+        "failed": {
+          "heic": "Cette photo n'a pas pu être ouverte. Essayez un JPEG ou une capture d'écran, puis retirez celle-ci.",
+          "unreadable": "Ce fichier n'a pas pu être ouvert comme photo. Retirez-le et choisissez-en un autre.",
+          "too_big_after": "Cette photo reste trop lourde après réduction. Retirez-la et choisissez-en une autre.",
+          "signed_out": "Non envoyée : vous avez été déconnectée. Reconnectez-vous dans un nouvel onglet, puis appuyez sur Réessayer. Vos modifications ici sont gardées.",
+          "refused": "Non envoyée. Appuyez sur Réessayer ou retirez la photo.",
+          "network": "Non envoyée. Vérifiez la connexion et appuyez sur Réessayer."
+        },
+        "rejected": {
+          "type": "{{name}} n'est pas une photo utilisable. Choisissez une photo JPEG, PNG, WebP ou HEIC.",
+          "too_big": "{{name}} dépasse 10 Mo. Choisissez une photo plus légère.",
+          "full": "{{name}} n'a pas été ajoutée : un produit a {{max}} photos au plus."
+        },
+        "announceMoved": "Photo déplacée en position {{n}} sur {{count}}.",
+        "announceRemoved": "Photo {{n}} retirée. Il en reste {{count}}.",
+        "announceUploaded": "{{name}} envoyée.",
+        "announceFailed": "{{name}} n'a pas été envoyée.",
+        "blockedSave": "Une photo n'a pas été envoyée. Réessayez ou retirez-la, puis enregistrez.",
+        "waitingSave": "Enregistrement dès que les photos sont envoyées…",
+        "waitingSaveLabel": "Attente des photos…"
+      },
+      "minQuantity": "Minimum par commande",
+      "minQuantityHint": "Pour ce qui se vend par plusieurs, comme 6 verrines. Laissez vide pour aucun minimum.",
+      "options": {
+        "heading": "Options",
+        "hint": "Les choix ajoutent ou retirent un montant au prix de base ({{price}}). Pour les tailles de gâteau, mettez le prix de la plus petite taille comme prix de base et ajoutez la différence pour les plus grandes.",
+        "listLabel": "Groupes d'options, dans l'ordre",
+        "groupN": "Groupe {{n}}",
+        "groupNameEn": "Nom du groupe (anglais)",
+        "groupNameFr": "Nom du groupe (français)",
+        "kind": "Ce que font les clients",
+        "kindName": {
+          "single": "Un seul choix",
+          "multiple": "Plusieurs choix",
+          "text": "Écrire un texte",
+          "quantity": "Combien de chaque"
+        },
+        "required": "Réponse obligatoire",
+        "textMax": "Message le plus long (caractères)",
+        "textMaxHint": "Jusqu'à {{max}}. Laissez vide pour la longueur du message gâteau des Réglages.",
+        "textMaxDefault": "Par défaut ({{n}})",
+        "qtyMin": "Minimum au total",
+        "qtyMax": "Maximum au total",
+        "choices": "Choix",
+        "choicesOf": "Choix de {{group}}, dans l'ordre",
+        "choiceLegend": "Choix {{n}} de {{group}}",
+        "choiceNameEn": "Nom du choix (anglais)",
+        "choiceNameFr": "Nom du choix (français)",
+        "priceChange": "Différence de prix",
+        "priceChangeHint": "Laissez vide pour aucune différence.",
+        "customerPays": "Les clients paient {{price}} avec ce choix.",
+        "signLabel": "Ajoute ou retire, choix {{n}} de {{group}}",
+        "signAdd": "+ ajoute",
+        "signTake": "− retire",
+        "moveChoiceEarlier": "Avancer le choix {{n}} de {{group}}",
+        "moveChoiceLater": "Reculer le choix {{n}} de {{group}}",
+        "removeChoice": "Retirer le choix {{n}} de {{group}}",
+        "addChoice": "Ajouter un choix à {{group}}",
+        "choicesFull": "Un groupe a au plus {{max}} choix. Retirez-en un pour en ajouter un autre.",
+        "moveGroupEarlier": "Avancer le groupe {{group}}",
+        "moveGroupLater": "Reculer le groupe {{group}}",
+        "removeGroup": "Retirer le groupe {{group}}",
+        "quick": {
+          "size": "+ Taille",
+          "flavour": "+ Parfum",
+          "addons": "+ Suppléments",
+          "message": "+ Message"
+        },
+        "addGroup": "Ajouter un groupe",
+        "groupsFull": "Un produit a au plus {{max}} groupes d'options. Retirez-en un pour en ajouter un autre.",
+        "belowZero": "Cette option peut faire passer le prix sous Rs 0. Vous pouvez enregistrer ; l'étape de commande vérifie le total.",
+        "announceGroupAdded": "Groupe {{group}} ajouté.",
+        "announceGroupRemoved": "Groupe {{group}} retiré.",
+        "announceGroupMoved": "Groupe déplacé en position {{n}} sur {{count}}.",
+        "announceChoiceAdded": "Choix {{n}} ajouté à {{group}}.",
+        "announceChoiceRemoved": "Choix {{n}} de {{group}} retiré. Il en reste {{count}}.",
+        "announceChoiceMoved": "Choix déplacé en position {{n}} sur {{count}} dans {{group}}."
+      }
     }
   }
 }

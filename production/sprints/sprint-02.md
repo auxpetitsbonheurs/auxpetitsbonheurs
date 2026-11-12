@@ -27,8 +27,8 @@ Milestone: MVP (E-02 Admin access and team, E-03 Menu and content management) ·
 | S-043 | Hide a product or mark it sold out | 2 | remix-specialist, api-engineer, ui-engineer | review |
 | S-045 | Delete a product safely | 2 | remix-specialist, postgres-specialist, ui-engineer | review |
 | S-046 | Create and edit a product's basic details | 5 | remix-specialist, ui-engineer, tailwind-shadcn-specialist, api-engineer | review |
-| S-047 | Add up to five product photos from the phone | 5 | baas-specialist, ui-engineer, remix-specialist, api-engineer | ready |
-| S-048 | Add sizes, flavours, add-ons and a message field to a product | 5 | remix-specialist, ui-engineer, tailwind-shadcn-specialist, api-engineer | ready |
+| S-047 | Add up to five product photos from the phone | 5 | baas-specialist, ui-engineer, remix-specialist, api-engineer | review |
+| S-048 | Add sizes, flavours, add-ons and a message field to a product | 5 | remix-specialist, ui-engineer, tailwind-shadcn-specialist, api-engineer | review (AC9 manual session open) |
 | S-049 | Set seasonal dates on a product | 2 | remix-specialist, ui-engineer, api-engineer | ready |
 | S-050 | Renamed product links keep working | 3 | remix-specialist, postgres-specialist, api-engineer | ready |
 | S-051 | Preview a product as a customer would see it | 3 | remix-specialist, ui-engineer | ready |

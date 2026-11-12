@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import {
   type RouteManifest,
@@ -115,5 +116,21 @@ budgets:
   test("throws when the budget is missing or not a positive number", () => {
     expect(() => readBudgetKb("budgets:\n  image_max_kb: 300\n")).toThrow(/js_initial_kb/);
     expect(() => readBudgetKb(yaml("lots"))).toThrow(/js_initial_kb/);
+  });
+});
+
+describe("photo compression stays out of the editor's initial JavaScript (S-047 AC8)", () => {
+  // The editor's modules may only reach image-compress and heic-to through `import()`, so the
+  // build puts them in chunks loaded when the first photo is chosen (the e2e spec checks the
+  // network too). A static import anywhere on that path would pull them into the route chunk.
+  const files = ["../routes/admin/product.tsx", "../components/admin/photo-manager.tsx", "../components/admin/use-photo-uploads.ts", "./photo-upload.ts", "./use-drag-sort.ts"];
+
+  test.each(files)("%s imports image-compress and heic-to only dynamically (or as types)", (file) => {
+    const source = readFileSync(new URL(file, import.meta.url), "utf8");
+    const staticImports = [...source.matchAll(/^import\s+(?!type\b)[^;]*?from\s+["']([^"']+)["']/gms)].map((m) => m[1]);
+
+    expect(staticImports).not.toContain("~/lib/image-compress");
+    expect(staticImports).not.toContain("./image-compress");
+    expect(staticImports).not.toContain("heic-to");
   });
 });

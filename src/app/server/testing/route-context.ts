@@ -7,7 +7,7 @@ import type { TestDatabase } from "~/db/testing/pglite";
 import { clockContext } from "~/server/clock.server";
 import { type RequestDb, requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
-import { type StorageGateway, storageContext } from "~/server/storage.server";
+import { type StorageGateway, type UploadGateway, storageContext, uploadContext } from "~/server/storage.server";
 import { FakeAuth } from "./fake-auth";
 
 export const TEST_SUPABASE_URL = "https://storage.test";
@@ -15,7 +15,8 @@ export const TEST_SUPABASE_URL = "https://storage.test";
 export interface RouteArgsOptions {
   path: string;
   params?: Record<string, string>;
-  form?: Record<string, string>;
+  /** POST body; an array posts the field once per value. */
+  form?: Record<string, string | string[]>;
   cookie?: string;
   now?: string;
   auth?: FakeAuth;
@@ -24,9 +25,17 @@ export interface RouteArgsOptions {
   headers?: Record<string, string>;
   /** Storage double; defaults to one that accepts every removal. */
   storage?: StorageGateway | null;
+  /** Upload double; defaults to none (uploads refused as INTERNAL). */
+  uploads?: UploadGateway | null;
 }
 
 const acceptingStorage: StorageGateway = { remove: async () => {} };
+
+function formBody(form: Record<string, string | string[]>): URLSearchParams {
+  const body = new URLSearchParams();
+  for (const [name, value] of Object.entries(form)) for (const v of Array.isArray(value) ? value : [value]) body.append(name, v);
+  return body;
+}
 
 export function routeArgs(database: TestDatabase, options: RouteArgsOptions) {
   const url = new URL(options.path, "http://localhost");
@@ -34,7 +43,7 @@ export function routeArgs(database: TestDatabase, options: RouteArgsOptions) {
   const origin = options.origin === undefined ? url.origin : options.origin;
   if (options.form && origin !== null) headers.set("origin", origin);
   const request = options.form
-    ? new Request(url, { method: "POST", headers, body: new URLSearchParams(options.form) })
+    ? new Request(url, { method: "POST", headers, body: formBody(options.form) })
     : new Request(url, { headers });
   const context = new RouterContextProvider();
   context.set(requestDbContext, { db: database.db as unknown as RequestDb["db"], close: async () => {} });
@@ -43,6 +52,7 @@ export function routeArgs(database: TestDatabase, options: RouteArgsOptions) {
   context.set(authContext, (options.auth ?? new FakeAuth()).gateway(request, () => now));
   context.set(publicConfigContext, { supabaseUrl: TEST_SUPABASE_URL, supabaseAnonKey: "test-anon-key" });
   context.set(storageContext, options.storage === undefined ? acceptingStorage : options.storage);
+  context.set(uploadContext, options.uploads ?? null);
   return { request, url, params: options.params ?? {}, context, pattern: "" };
 }
 

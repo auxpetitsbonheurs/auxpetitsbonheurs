@@ -5,7 +5,7 @@ import { admin, product, productPhoto, settings } from "~/db/schema";
 import { PRODUCT_TYPES, type ProductStatusValue, type ProductType, type SeasonalTag, seasonalTag } from "~/domain/product";
 import { publicImageUrl } from "~/lib/images";
 import type { Database } from "~/server/db.server";
-import type { Localized } from "./catalogue.server";
+import { type Localized, type OptionGroupRecord, optionGroupsJson, parseJsonColumn } from "./catalogue.server";
 
 export interface AdminMenuRow {
   id: string;
@@ -39,14 +39,26 @@ export interface AdminProduct {
   basePriceRs: number;
   allergens: string[];
   noticeDays: number | null;
+  minQuantity: number | null;
   status: ProductStatusValue;
+  /** Groups and choices in order, with their ids (posted back so baskets keep working). */
+  optionGroups: OptionGroupRecord[];
   photoCount: number;
+  /** In card order; `url` is the public CDN address. */
+  photos: { path: string; url: string; width: number; height: number }[];
   /** Who saved it last and when (ISO instant); null before anyone saved it in the editor. */
   updated: { name: string; at: string } | null;
 }
 
+const photosJson = sql<{ path: string; width: number; height: number }[] | string>`coalesce((
+  select json_agg(json_build_object('path', pp.storage_path, 'width', pp.width, 'height', pp.height) order by pp.sort_order)
+  from ${productPhoto} pp where pp.product_id = ${productId}
+), '[]'::json)`;
+
+const parseJson = <T>(value: T | string): T => (typeof value === "string" ? (JSON.parse(value) as T) : value);
+
 /** One product for the editor, whatever its status. */
-export async function findAdminProduct(db: Database, id: string): Promise<AdminProduct | undefined> {
+export async function findAdminProduct(db: Database, id: string, supabaseUrl: string): Promise<AdminProduct | undefined> {
   const [row] = await db
     .select({
       id: product.id,
@@ -60,19 +72,24 @@ export async function findAdminProduct(db: Database, id: string): Promise<AdminP
       basePriceRs: product.basePriceRs,
       allergens: product.allergens,
       noticeDays: product.noticeDays,
+      minQuantity: product.minQuantity,
       status: product.status,
+      optionGroups: optionGroupsJson,
       updatedAt: product.updatedAt,
       updatedByName: admin.name,
-      photoCount: sql<number>`(select count(*)::int from ${productPhoto} pp where pp.product_id = ${productId})`,
+      photos: photosJson,
     })
     .from(product)
     .leftJoin(admin, eq(admin.id, product.updatedBy))
     .where(eq(product.id, id));
   if (!row) return undefined;
-  const { nameEn, nameFr, descriptionEn, descriptionFr, updatedAt, updatedByName, ...rest } = row;
+  const { nameEn, nameFr, descriptionEn, descriptionFr, updatedAt, updatedByName, photos: rawPhotos, optionGroups, ...rest } = row;
+  const photos = parseJson(rawPhotos).map((p) => ({ ...p, url: publicImageUrl(p.path, supabaseUrl) }));
   return {
     ...rest,
-    photoCount: Number(rest.photoCount),
+    photoCount: photos.length,
+    photos,
+    optionGroups: parseJsonColumn(optionGroups),
     name: { en: nameEn, fr: nameFr },
     description: { en: descriptionEn, fr: descriptionFr },
     updated: updatedByName ? { name: updatedByName, at: updatedAt.toISOString() } : null,

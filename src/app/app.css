@@ -217,6 +217,10 @@ html:has([data-editor-bar]) {
   * {
     @apply border-border;
   }
+  /* A fieldset is as wide as its widest content by default; let it shrink like a div (320 px at 200%). */
+  fieldset {
+    min-inline-size: 0;
+  }
   html {
     @apply font-sans;
     -webkit-text-size-adjust: 100%;

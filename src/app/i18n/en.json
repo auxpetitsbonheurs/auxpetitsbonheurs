@@ -120,7 +120,8 @@
       "ORDER_CHANGED": "This order changed. Reload",
       "INVALID_TRANSITION": "This order can no longer be changed this way. Reload.",
       "RATE_LIMITED": "Too many attempts, wait a few minutes.",
-      "SLUG_TAKEN": "This web address is already used by another product. Please choose another."
+      "SLUG_TAKEN": "This web address is already used by another product. Please choose another.",
+      "UPLOAD_REJECTED": "A photo could not be used. The product keeps its previous photos."
     }
   },
   "product": {
@@ -464,9 +465,125 @@
         "slug_invalid": "Use lowercase letters, numbers and dashes only.",
         "slug_taken": "This web address is already used. Choose another.",
         "allergens_invalid": "Choose allergens from the list.",
-        "id_invalid": "This product could not be found. Go back to the menu."
+        "id_invalid": "This product could not be found. Go back to the menu.",
+        "photos_invalid": "The photo list could not be read. Reload the page and add the photos again.",
+        "photos_rejected": "A photo was not accepted (at most 5, each a JPEG, PNG or WebP of 1 MB or less, uploaded from this page). Remove it and add it again.",
+        "minQuantity_invalid": "Enter a number from 1 to 50, or leave it blank.",
+        "optionGroups_too_many": "A product can have at most 10 option groups. Remove one.",
+        "optionGroups_invalid": "The options could not be read. Reload the page and try again.",
+        "option": {
+          "group_invalid": "{{group}}: check this group.",
+          "name_en_missing": "{{group}}: enter the group name in English.",
+          "name_en_invalid": "{{group}}: keep the English name to 120 characters or fewer.",
+          "name_fr_invalid": "{{group}}: keep the French name to 120 characters or fewer.",
+          "kind_invalid": "{{group}}: choose what customers do.",
+          "choices_none": "{{group}}: add at least one choice.",
+          "choices_too_many": "{{group}}: a group has at most 30 choices.",
+          "textMaxLength_invalid": "{{group}}: the longest message is a number from 1 to 200, or blank.",
+          "quantity_invalid": "{{group}}: enter both numbers from 0 to 99 with the fewest not above the most, or leave both blank.",
+          "choice_name_en_missing": "{{group}}, choice {{n}}: enter the choice name in English.",
+          "choice_name_en_invalid": "{{group}}, choice {{n}}: keep the English name to 120 characters or fewer.",
+          "choice_name_fr_invalid": "{{group}}, choice {{n}}: keep the French name to 120 characters or fewer.",
+          "choice_priceDeltaRs_invalid": "{{group}}, choice {{n}}: enter the price change in whole rupees, up to 100,000."
+        }
       },
-      "loading": "Loading the product…"
+      "loading": "Loading the product…",
+      "photos": {
+        "legend": "Photos",
+        "hint": "Up to {{max}}. The first photo is the one customers see on the menu. Photos are made smaller on your phone before they are sent.",
+        "listLabel": "Product photos, in order",
+        "add": "Add photos",
+        "full": "This product has {{max}} photos, the most it can have. Remove one to add another.",
+        "photoN": "Photo {{n}}",
+        "main": "Main photo",
+        "unnamed": "New product",
+        "preparing": "Getting the photo ready…",
+        "uploading": "Uploading…",
+        "uploadingPercent": "Uploading… {{percent}}%",
+        "progressLabel": "Upload of {{name}}",
+        "retry": "Retry",
+        "retryN": "Retry photo {{n}}",
+        "moveEarlier": "Move photo {{n}} earlier",
+        "moveLater": "Move photo {{n}} later",
+        "removeN": "Remove photo {{n}}",
+        "failed": {
+          "heic": "This photo could not be opened. Try a JPEG, or take a screenshot of it, then remove this one.",
+          "unreadable": "This file could not be opened as a photo. Remove it and choose another.",
+          "too_big_after": "This photo is still too large after shrinking. Remove it and choose another.",
+          "signed_out": "Not uploaded: you were signed out. Sign in again in a new tab, then press Retry. Your changes here are kept.",
+          "refused": "Not uploaded. Press Retry, or remove the photo.",
+          "network": "Not uploaded. Check the connection and press Retry."
+        },
+        "rejected": {
+          "type": "{{name}} is not a photo we can use. Choose a JPEG, PNG, WebP or HEIC photo.",
+          "too_big": "{{name}} is over 10 MB. Choose a smaller photo.",
+          "full": "{{name}} was not added: a product has at most {{max}} photos."
+        },
+        "announceMoved": "Photo moved to position {{n}} of {{count}}.",
+        "announceRemoved": "Photo {{n}} removed. {{count}} left.",
+        "announceUploaded": "{{name}} uploaded.",
+        "announceFailed": "{{name}} did not upload.",
+        "blockedSave": "A photo did not upload. Retry it or remove it, then save.",
+        "waitingSave": "Saving as soon as the photos are uploaded…",
+        "waitingSaveLabel": "Waiting for photos…"
+      },
+      "minQuantity": "Fewest per order",
+      "minQuantityHint": "For items sold by several, such as 6 dessert cups. Leave blank for no minimum.",
+      "options": {
+        "heading": "Options",
+        "hint": "Choices add to or take off the base price ({{price}}). For cake sizes, set the base price to the smallest size and add the difference for the bigger ones.",
+        "listLabel": "Option groups, in order",
+        "groupN": "Group {{n}}",
+        "groupNameEn": "Group name (English)",
+        "groupNameFr": "Group name (French)",
+        "kind": "What customers do",
+        "kindName": {
+          "single": "Pick one",
+          "multiple": "Pick several",
+          "text": "Write a text",
+          "quantity": "Choose how many of each"
+        },
+        "required": "Customers must answer",
+        "textMax": "Longest message (characters)",
+        "textMaxHint": "Up to {{max}}. Leave blank to use the cake message length from Settings.",
+        "textMaxDefault": "Use default ({{n}})",
+        "qtyMin": "Fewest in total",
+        "qtyMax": "Most in total",
+        "choices": "Choices",
+        "choicesOf": "Choices of {{group}}, in order",
+        "choiceLegend": "Choice {{n}} of {{group}}",
+        "choiceNameEn": "Choice name (English)",
+        "choiceNameFr": "Choice name (French)",
+        "priceChange": "Price change",
+        "priceChangeHint": "Leave blank for no change.",
+        "customerPays": "Customers pay {{price}} with this choice.",
+        "signLabel": "Adds or takes off, choice {{n}} of {{group}}",
+        "signAdd": "+ adds",
+        "signTake": "− takes off",
+        "moveChoiceEarlier": "Move choice {{n}} of {{group}} earlier",
+        "moveChoiceLater": "Move choice {{n}} of {{group}} later",
+        "removeChoice": "Remove choice {{n}} of {{group}}",
+        "addChoice": "Add choice to {{group}}",
+        "choicesFull": "A group has at most {{max}} choices. Remove one to add another.",
+        "moveGroupEarlier": "Move group {{group}} earlier",
+        "moveGroupLater": "Move group {{group}} later",
+        "removeGroup": "Remove group {{group}}",
+        "quick": {
+          "size": "+ Size",
+          "flavour": "+ Flavour",
+          "addons": "+ Add-ons",
+          "message": "+ Message"
+        },
+        "addGroup": "Add group",
+        "groupsFull": "A product has at most {{max}} option groups. Remove one to add another.",
+        "belowZero": "This option can make the price below Rs 0. You can still save; the order step checks the total.",
+        "announceGroupAdded": "Group {{group}} added.",
+        "announceGroupRemoved": "Group {{group}} removed.",
+        "announceGroupMoved": "Group moved to position {{n}} of {{count}}.",
+        "announceChoiceAdded": "Choice {{n}} added to {{group}}.",
+        "announceChoiceRemoved": "Choice {{n}} of {{group}} removed. {{count}} left.",
+        "announceChoiceMoved": "Choice moved to position {{n}} of {{count}} in {{group}}."
+      }
     }
   }
 }

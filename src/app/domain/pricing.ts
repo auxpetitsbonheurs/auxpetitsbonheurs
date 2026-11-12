@@ -81,3 +81,49 @@ export function checkoutTotals(lines: readonly PricedLine[], fulfilment: Fulfilm
   const deliveryFeeRs = deliveryFeeFor(fulfilment, settingsFeeRs);
   return { itemsTotalRs, deliveryFeeRs, totalRs: itemsTotalRs + deliveryFeeRs };
 }
+
+// ---------------------------------------------------------------------------
+// Option groups (S-048). The editor warns, the order step decides (line total >= 0).
+
+/** What the price rules need from an option group (editor state or stored record). */
+export interface PricedOptionGroup {
+  kind: "single" | "multiple" | "text" | "quantity";
+  required: boolean;
+  quantityMin?: number | null;
+  quantityMax?: number | null;
+  choices: readonly { priceDeltaRs: number }[];
+}
+
+/** The most a group can take off the price (0 or negative). */
+function lowestContribution(group: PricedOptionGroup): number {
+  const deltas = group.choices.map((c) => c.priceDeltaRs);
+  if (deltas.length === 0 || group.kind === "text") return 0;
+  const lowest = Math.min(...deltas);
+  const negatives = deltas.filter((d) => d < 0).reduce((sum, d) => sum + d, 0);
+  if (group.kind === "single") return group.required ? lowest : Math.min(0, lowest);
+  if (group.kind === "multiple") return negatives < 0 ? negatives : group.required ? lowest : 0;
+  // quantity: every unit may be the cheapest choice
+  const units = lowest < 0 ? (group.quantityMax ?? 1) : (group.quantityMin ?? 0);
+  return lowest * units;
+}
+
+/** The lowest unit price the choices allow: base plus the most every group can take off. */
+export function lowestOptionPrice(basePriceRs: number, groups: readonly PricedOptionGroup[]): number {
+  return groups.reduce((price, group) => price + lowestContribution(group), basePriceRs);
+}
+
+/** AC7: "This option can make the price below Rs 0" (a warning; saving is allowed). */
+export function optionsCanGoBelowZero(basePriceRs: number, groups: readonly PricedOptionGroup[]): boolean {
+  return lowestOptionPrice(basePriceRs, groups) < 0;
+}
+
+/**
+ * A customer's text for a text group (FR-008): `missing` when required and blank, `too_long`
+ * over the group's limit or, when blank, the Settings cake message length. Shared by the
+ * browser (basket form) and the server (addToBasket / placeOrder, E-04/E-05).
+ */
+export function textOptionProblem(text: string | undefined, group: { required: boolean; textMaxLength: number | null }, settingsMax: number): "missing" | "too_long" | null {
+  const value = (text ?? "").trim();
+  if (value === "") return group.required ? "missing" : null;
+  return [...value].length > (group.textMaxLength ?? settingsMax) ? "too_long" : null;
+}

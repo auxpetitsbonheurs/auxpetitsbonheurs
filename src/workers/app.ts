@@ -8,7 +8,7 @@ import { refuseCrossSiteAdminRequest } from "~/server/origin.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { withDbTiming } from "~/server/db-timing.server";
 import { ServerTiming, serverTimingContext } from "~/server/server-timing.server";
-import { storageContext, supabaseStorage } from "~/server/storage.server";
+import { storageContext, supabaseStorage, uploadContext } from "~/server/storage.server";
 import { createSupabaseAuth } from "~/server/supabase-auth.server";
 import { withEnvironmentHeaders, withServerTiming } from "./headers";
 import { requestLogLine } from "./log-redact";
@@ -30,8 +30,11 @@ async function respond(request: Request, settings: ServerEnv, ctx: ExecutionCont
     context.set(clockContext, createClock({ testClock: settings.TEST_CLOCK === "on" }, request));
     // Supabase Auth for this request (lazy: no client until a guard or sign-in needs it).
     context.set(authContext, createSupabaseAuth({ url: settings.SUPABASE_URL, anonKey: settings.SUPABASE_ANON_KEY }, request));
-    // Storage with the service key, server side only (removing a deleted product's photos).
-    context.set(storageContext, supabaseStorage({ url: settings.SUPABASE_URL, serviceRoleKey: settings.SUPABASE_SERVICE_ROLE_KEY }));
+    // Storage with the service key, server side only: removing photos of deleted products,
+    // signing upload URLs and checking stored uploads (the key never reaches the browser).
+    const storage = supabaseStorage({ url: settings.SUPABASE_URL, serviceRoleKey: settings.SUPABASE_SERVICE_ROLE_KEY });
+    context.set(storageContext, storage);
+    context.set(uploadContext, storage);
     return requestHandler(request, context);
   }, undefined, { idempotent: request.method === "GET" || request.method === "HEAD" });
 }

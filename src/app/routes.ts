@@ -24,6 +24,8 @@ function customerPages(locale: "en" | "fr") {
 const adminPages = [
   route("admin/login", "routes/admin/login.tsx"),
   route("admin/sign-out", "routes/admin/sign-out.tsx"),
+  // Signed upload URLs as JSON (resource route, guarded like any admin module; S-047).
+  route("admin/uploads", "routes/admin/uploads.tsx"),
   route("admin", "routes/admin/layout.tsx", [
     index("routes/admin/home.tsx"),
     route("orders", "routes/admin/orders.tsx"),

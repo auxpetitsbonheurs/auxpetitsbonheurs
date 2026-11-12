@@ -53,6 +53,8 @@ describe("loader", () => {
 
     expect(page.product).toMatchObject({ id, slug: "chocolate-cake", name: { en: "Chocolate cake" }, basePriceRs: 850, noticeDays: 5, allergens: ["eggless"], photoCount: 1, updated: null });
     expect(page.categories).toEqual(["Birthday"]);
+    // S-047: photos in card order with their public URL (bundled sample paths are used as is).
+    expect(page.product!.photos).toEqual([{ path: "/images/sample/chocolate-cake.svg", url: "/images/sample/chocolate-cake.svg", width: 800, height: 600 }]);
   });
 
   test("shows who saved last and when (S-046 AC7)", async () => {

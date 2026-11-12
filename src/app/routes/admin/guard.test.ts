@@ -92,9 +92,12 @@ describe.each(modules)("%s", (_path, module) => {
   test("action: a signed-in customer gets FORBIDDEN 403 (AC3)", async () => {
     if (!module.action) return;
     const form = { intent: "approve", version: "1" };
-    const refusal = (await thrown(() =>
+    const thrownRefusal = await thrown(() =>
       module.action!(routeArgs(database, { path: `/admin/orders/${params.id}`, params, auth, cookie: customerCookie, form }) as never),
-    )) as Envelope;
+    );
+    // Resource routes (admin/uploads) throw the same envelope as a JSON Response.
+    const refusal: Envelope =
+      thrownRefusal instanceof Response ? { init: { status: thrownRefusal.status }, data: (await thrownRefusal.json()) as Envelope["data"] } : (thrownRefusal as Envelope);
 
     expect(refusal.init.status).toBe(403);
     expect(refusal.data).toEqual({ ok: false, error: { code: "FORBIDDEN", message: "You cannot do this." } });
