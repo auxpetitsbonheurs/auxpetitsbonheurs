@@ -46,9 +46,9 @@ A customer on a 375 px phone reaches any of the 7 pages in at most 2 taps from a
 | S-248 | Our story page | ready | 3 |
 | S-249 | Workshops page | ready | 2 |
 | S-250 | Gallery page | ready | 3 |
-| S-251 | Contact us page | ready | 3 |
-| S-252 | Custom order page (interim, until the request form) | ready | 2 |
-| S-253 | Titles, descriptions, hreflang, share previews and sitemap for the new pages | ready | 3 |
+| S-251 | Contact us page | review | 3 |
+| S-252 | Custom order page (interim, until the request form) | review | 2 |
+| S-253 | Titles, descriptions, hreflang, share previews and sitemap for the new pages | review | 3 |
 | S-254 | Navigation and pages accessibility, performance and journey sweep | ready | 3 |
 
 Total: 45 pts. Files: `production/stories/E-13/`. Story numbers S-242 to S-260 are reserved for this epic (S-255 to S-260 spare); next free number after the block: S-261.

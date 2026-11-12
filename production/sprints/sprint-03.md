@@ -15,9 +15,9 @@ Milestone: MVP (customer site, brand v0.3) · Goal: **E-13 site navigation and b
 | C | S-248 | Our story page | 3 | remix-specialist, tailwind-shadcn-specialist, copywriter | ready |
 | C | S-249 | Workshops page | 2 | remix-specialist, tailwind-shadcn-specialist, copywriter | ready |
 | C | S-250 | Gallery page | 3 | remix-specialist, tailwind-shadcn-specialist, accessibility-specialist | ready |
-| D | S-251 | Contact us page | 3 | remix-specialist, tailwind-shadcn-specialist, copywriter | ready |
-| D | S-252 | Custom order page (interim, until the request form) | 2 | remix-specialist, tailwind-shadcn-specialist, copywriter | ready |
-| D | S-253 | Titles, descriptions, hreflang, share previews and sitemap for the new pages | 3 | seo-specialist, remix-specialist, copywriter | ready |
+| D | S-251 | Contact us page | 3 | remix-specialist, tailwind-shadcn-specialist, copywriter | review |
+| D | S-252 | Custom order page (interim, until the request form) | 2 | remix-specialist, tailwind-shadcn-specialist, copywriter | review |
+| D | S-253 | Titles, descriptions, hreflang, share previews and sitemap for the new pages | 3 | seo-specialist, remix-specialist, copywriter | review |
 | D | S-254 | Navigation and pages accessibility, performance and journey sweep | 3 | test-engineer, accessibility-specialist, remix-specialist | ready |
 
 ## Build order (batches; each batch is built, reviewed and pushed to staging before the next)
@@ -32,3 +32,4 @@ Milestone: MVP (customer site, brand v0.3) · Goal: **E-13 site navigation and b
 
 ## Daily log
 - 2026-11-12: sprint started with E-13. Batch A built (S-242, S-243, S-244 → review): laptop nav bar from 1024 px, phone Menu button opening a full-screen modal dialog (no-JavaScript fallback `/menu-links`), `/menu` collection page from the cached menu, `GET /api/menu` products carry their season window (contracts v0.33), placeholder routes for the five pages not built yet.
+- 2026-11-12: batch D part built (S-251, S-252, S-253 → review): Contact us and the interim Custom order page replace their placeholders; shared head helper `seoMeta`, `/sitemap.xml` and `/robots.txt`; placeholder pages stay noindex and out of the sitemap through `contentPagePlaceholders` (server/seo-pages.server.ts), the seam S-245 fills. S-254 waits for batches B/C and D.
