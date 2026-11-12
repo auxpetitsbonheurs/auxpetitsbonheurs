@@ -124,7 +124,8 @@
       "UPLOAD_REJECTED": "A photo could not be used. The product keeps its previous photos.",
       "LINK_EXPIRED": "This link has expired. Request a new one.",
       "EMAIL_IN_USE": "This email already has an account.",
-      "INVITE_INVALID": "This invitation has expired or was already used. Ask the owner for a new one."
+      "INVITE_INVALID": "This invitation has expired or was already used. Ask the owner for a new one.",
+      "LAST_OWNER": "There must always be one active Owner. Make someone else Owner first."
     }
   },
   "product": {
@@ -348,7 +349,8 @@
       "availability": "Availability",
       "settings": "Settings",
       "team": "Team",
-      "label": "Admin"
+      "label": "Admin",
+      "toReview": "{{count}} to review"
     },
     "states": {
       "ownerOnlyTitle": "Owner only",
@@ -358,7 +360,10 @@
       "notYetBody": "This part of the app is coming soon. Everything else works as usual.",
       "retry": "Try again",
       "close": "Close",
-      "dismiss": "Dismiss"
+      "dismiss": "Dismiss",
+      "signedOutTitle": "You are signed out",
+      "signedOutBody": "Your access to the admin app has ended on this device. Sign in again to continue.",
+      "signIn": "Sign in"
     },
     "more": {
       "ownerSection": "For Owners"
@@ -718,7 +723,6 @@
       "validUntil": "valid until {{date}}",
       "emailNotSent": "Email not sent, resend",
       "actionsFor": "Actions for {{name}}",
-      "adminSheetLater": "Changing the role and deactivating are coming soon.",
       "resend": "Resend invitation to {{email}}",
       "revoke": "Revoke invitation for {{email}}",
       "revokeTitle": "Revoke this invitation?",
@@ -752,7 +756,35 @@
         "role": "Choose Admin or Owner.",
         "locale": "Choose English or Français.",
         "emailInUseDeactivated": "This email already has an account. Use Reactivate instead."
-      }
+      },
+      "roleOf": "Role of {{name}}",
+      "changeRole": "Change role of {{name}}",
+      "savingRole": "Saving…",
+      "roleUnchanged": "{{name}} is already {{role}}.",
+      "demoteTitle": "Make {{name}} an Admin?",
+      "demoteBody": "{{name}} will lose access to Settings, Availability and Team.",
+      "demoteSelfBody": "You will lose access to Settings, Availability and Team. Another Owner can give it back.",
+      "demoteConfirm": "Make Admin",
+      "cancel": "Cancel",
+      "roleChanged": "{{name}} is now {{role}}",
+      "roleChangedSelf": "You are now {{role}}",
+      "accessTitle": "Access",
+      "deactivate": "Deactivate {{name}}",
+      "deactivateHint": "Signs them out on every device at once. Their name stays on past orders.",
+      "deactivateTitle": "Deactivate {{name}}?",
+      "deactivateBody": "{{name}} is signed out on every device at once and can no longer open the app. Their name stays on past orders, and you can reactivate them later.",
+      "deactivateSelfBody": "You are signed out on every device at once. Another Owner can reactivate you.",
+      "deactivateConfirm": "Deactivate",
+      "deactivating": "Deactivating…",
+      "deactivated": "{{name}} is deactivated and signed out",
+      "signOutPending": "Deactivated. Signing out their devices will be retried",
+      "signOutPendingBody": "{{name}} can no longer open the app. Signing out their devices did not finish; it is tried again in the background, or press Retry.",
+      "retrying": "Retrying…",
+      "reactivate": "Reactivate {{name}}",
+      "reactivateHint": "They sign in again with their usual password.",
+      "reactivating": "Reactivating…",
+      "reactivated": "{{name}} is active again and can sign in with their password",
+      "reactivateFailed": "{{name}} could not be reactivated. Nothing changed. Try again."
     },
     "invite": {
       "metaTitle": "Join the team",
@@ -773,6 +805,15 @@
         "tooLong": "Use 72 characters or fewer.",
         "locale": "Choose English or Français."
       }
+    },
+    "install": {
+      "title": "Add the app to your home screen",
+      "body": "It opens like a normal app, without the browser bar.",
+      "install": "Install",
+      "notNow": "Not now",
+      "iosHint": "To install: tap Share, then Add to Home Screen",
+      "dismiss": "Hide this tip",
+      "label": "Install the app"
     }
   },
   "email": {

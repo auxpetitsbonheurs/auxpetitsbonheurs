@@ -27,6 +27,9 @@ const adminPages = [
   // Password recovery (S-025, S-026): public like login; reset needs a recovery session.
   route("admin/forgot", "routes/admin/forgot.tsx"),
   route("admin/reset", "routes/admin/reset.tsx"),
+  // Installable admin app (S-035): public manifest and service worker (scope /admin/).
+  route("admin/manifest.webmanifest", "routes/admin/manifest.tsx"),
+  route("admin/sw.js", "routes/admin/sw.tsx"),
   // Accept an invitation (S-029): public, the token in the path is the credential.
   route("admin/invite/:token", "routes/admin/invite.tsx"),
   // Signed upload URLs as JSON (resource route, guarded like any admin module; S-047).

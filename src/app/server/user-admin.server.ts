@@ -13,7 +13,15 @@ export interface UserAdmin {
   createUser(user: { email: string; password: string; name: string; locale: Locale }): Promise<CreateUserResult>;
   /** Removes an Auth user; `false` when it could not (the caller logs it). */
   deleteUser(userId: string): Promise<boolean>;
+  /**
+   * Bans (`true`) or unbans (`false`) an Auth user (S-032): a banned user cannot sign in or
+   * refresh a session. `false` when Auth refused, failed or took longer than 5 s.
+   */
+  setBanned(userId: string, banned: boolean): Promise<boolean>;
 }
+
+/** "Banned until further notice": GoTrue takes a duration; 100 years stands for "forever". */
+export const BAN_DURATION = "876000h";
 
 /** Each Admin API call must answer within 5 seconds (S-029 notes). */
 export const USER_ADMIN_TIMEOUT_MS = 5000;
@@ -57,6 +65,14 @@ export function supabaseUserAdmin(config: SupabaseUserAdminConfig): UserAdmin {
         return false;
       }
     },
+    async setBanned(userId, banned) {
+      try {
+        const { error } = await admin().updateUserById(userId, { ban_duration: banned ? BAN_DURATION : "none" });
+        return !error;
+      } catch {
+        return false;
+      }
+    },
   };
 }
 
@@ -64,6 +80,7 @@ export function supabaseUserAdmin(config: SupabaseUserAdminConfig): UserAdmin {
 const unavailable: UserAdmin = {
   createUser: async () => ({ ok: false, reason: "failed" }),
   deleteUser: async () => false,
+  setBanned: async () => false,
 };
 
 export const userAdminContext = createContext<UserAdmin>(unavailable);

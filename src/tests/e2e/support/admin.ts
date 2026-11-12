@@ -40,21 +40,22 @@ export async function addSessionCookies(context: BrowserContext, baseURL: string
  * A throwaway active admin for specs that change an account (password, name, language):
  * rows in the e2e database and the account in the GoTrue stub, unique per call.
  */
-export async function createE2eAdmin(sql: postgres.Sql, options: { name?: string; locale?: "en" | "fr" } = {}): Promise<E2eAccount> {
+export async function createE2eAdmin(sql: postgres.Sql, options: { name?: string; locale?: "en" | "fr"; role?: "owner" | "admin" } = {}): Promise<E2eAccount> {
   const id = randomUUID();
   const email = `admin-${id.slice(0, 8)}@e2e.test`;
   const password = `e2e-${randomUUID()}`;
   const name = options.name ?? "Temp Admin";
   const locale = options.locale ?? "en";
   await sql`insert into auth.users (id, email, email_confirmed_at) values (${id}, ${email}, now())`;
-  await sql`insert into admin (id, name, email, role, active, locale) values (${id}, ${name}, ${email}, 'admin', true, ${locale})`;
+  const role = options.role ?? "admin";
+  await sql`insert into admin (id, name, email, role, active, locale) values (${id}, ${name}, ${email}, ${role}, true, ${locale})`;
   const response = await fetch(`${GOTRUE_STUB}/__stub/users`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ id, email, password }),
   });
   if (!response.ok) throw new Error("the GoTrue stub refused the new account");
-  return { id, email, password, name, kind: "admin", role: "admin", active: true, locale };
+  return { id, email, password, name, kind: "admin", role, active: true, locale };
 }
 
 /** The recovery email the stub "sent" to `email` (its token, as the hook would link it, S-024), or null. */

@@ -1,8 +1,9 @@
-import { isRouteErrorResponse, useRevalidator, useRouteError } from "react-router";
+import { type ShouldRevalidateFunctionArgs, data, isRouteErrorResponse, useRevalidator, useRouteError } from "react-router";
 import { AdminErrorBoundary } from "~/components/admin/admin-states";
 import { TeamScreen } from "~/components/admin/team-screen";
 import { Alert } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
+import { DomainError } from "~/domain/errors";
 import { formatClockTime, formatDayLabel, todayMU } from "~/domain/time";
 import { t as translate } from "~/i18n/catalog.server";
 import { useI18n } from "~/i18n/react";
@@ -11,13 +12,16 @@ import { actionError } from "~/server/action-result.server";
 import { afterResponseContext } from "~/server/after-response.server";
 import { type AdminUser, requireAdmin } from "~/server/auth.server";
 import { clockContext } from "~/server/clock.server";
-import { InviteIdInput, InviteInput } from "~/server/contracts/admin";
+import { AdminIdInput, ChangeRoleInput, InviteIdInput, InviteInput } from "~/server/contracts/admin";
 import { requestDbContext } from "~/server/db.server";
 import { emailContext } from "~/server/email/context.server";
 import { deliverInvitation } from "~/server/email/outbox.server";
 import { listTeam } from "~/server/repos/invitations.server";
 import { timed } from "~/server/server-timing.server";
+import { changeRole } from "~/server/services/change-role.server";
+import { banUser, deactivateAdmin, reactivateAdmin } from "~/server/services/deactivate-admin.server";
 import { type InviteContext, type Queued, inviteAdmin, resendInvite, revokeInvite } from "~/server/services/invite-admin.server";
+import { userAdminContext } from "~/server/user-admin.server";
 import type { Route } from "./+types/team";
 
 /** `admin/team` (**owner**, FR-042): admins and open invitations (S-027), invite (S-028), resend and revoke (S-030). */
@@ -44,7 +48,7 @@ export async function loader(args: Route.LoaderArgs) {
   };
 }
 
-type Intent = "invite" | "resendInvite" | "revokeInvite";
+type Intent = "invite" | "resendInvite" | "revokeInvite" | "changeRole" | "deactivate" | "reactivate";
 const FIELD_KEYS = { name: "admin.team.errors.name", email: "admin.team.errors.email", role: "admin.team.errors.role", locale: "admin.team.errors.locale" } as const;
 
 const refusal = (code: Parameters<typeof actionError>[0], intent: Intent, locale: Locale, fields?: Record<string, string>) =>
@@ -101,14 +105,81 @@ async function changeInvite(args: Route.ActionArgs, me: AdminUser, form: FormDat
   return { ok: true as const, intent, email: resent.email, emailQueued: sendAfterResponse(args, resent) };
 }
 
-/** Owners only: an Admin gets FORBIDDEN before the form is read (S-022). Role changes and deactivation arrive with S-031/S-032. */
+/** NOT_FOUND / LAST_OWNER / FORBIDDEN from a Team change, as the envelope plus `intent`; anything else is rethrown. */
+function teamRefusal(error: unknown, intent: Intent, locale: Locale) {
+  if (error instanceof DomainError && (error.code === "NOT_FOUND" || error.code === "LAST_OWNER" || error.code === "FORBIDDEN")) return refusal(error.code, intent, locale);
+  throw error;
+}
+
+/** changeRole (S-031): `{ ok, intent, adminId, name, role, self }`; `self` lets the page leave Team after a self-demotion. */
+async function changeRoleOf(args: Route.ActionArgs, me: AdminUser, form: FormData) {
+  const parsed = ChangeRoleInput.safeParse({ adminId: form.get("adminId"), role: form.get("role") });
+  if (!parsed.success) return refusal("VALIDATION_FAILED", "changeRole", me.locale);
+  try {
+    const changed = await changeRole(args.context.get(requestDbContext).db, { actorId: me.id, ...parsed.data });
+    return { ok: true as const, intent: "changeRole" as const, adminId: parsed.data.adminId, name: changed.name, role: changed.to, self: changed.self };
+  } catch (error) {
+    return teamRefusal(error, "changeRole", me.locale);
+  }
+}
+
+/**
+ * deactivate (S-032): `{ ok, intent, adminId, name, self, signOutPending }`. Access is blocked
+ * in the database before the Auth ban; when the ban fails (AC8) it is tried once more after
+ * the response, `signOutPending` tells the Owner, and Retry repeats the action safely.
+ */
+async function deactivate(args: Route.ActionArgs, me: AdminUser, adminId: string) {
+  const { context } = args;
+  const users = context.get(userAdminContext);
+  try {
+    const done = await deactivateAdmin(context.get(requestDbContext).db, users, { actorId: me.id, adminId, now: context.get(clockContext).now() });
+    if (!done.banned) context.get(afterResponseContext).defer("admin_ban_retry", async () => void (await banUser(users, adminId)));
+    return { ok: true as const, intent: "deactivate" as const, adminId, name: done.name, self: done.self, signOutPending: !done.banned };
+  } catch (error) {
+    return teamRefusal(error, "deactivate", me.locale);
+  }
+}
+
+/** reactivate (S-032 AC6): `{ ok, intent, adminId, name }`; Auth unreachable → INTERNAL 500, nothing changed. */
+async function reactivate(args: Route.ActionArgs, me: AdminUser, adminId: string) {
+  const { context } = args;
+  try {
+    const done = await reactivateAdmin(context.get(requestDbContext).db, context.get(userAdminContext), { actorId: me.id, adminId, now: context.get(clockContext).now() });
+    if (done.ok) return { ok: true as const, intent: "reactivate" as const, adminId, name: done.name };
+    const message = translate("admin.team.reactivateFailed", me.locale, { name: done.name });
+    return data({ ok: false as const, intent: "reactivate" as const, error: { code: "INTERNAL" as const, message } }, { status: 500 });
+  } catch (error) {
+    return teamRefusal(error, "reactivate", me.locale);
+  }
+}
+
+async function changeAccess(args: Route.ActionArgs, me: AdminUser, form: FormData, intent: "deactivate" | "reactivate") {
+  const parsed = AdminIdInput.safeParse({ adminId: form.get("adminId") });
+  if (!parsed.success) return refusal("VALIDATION_FAILED", intent, me.locale);
+  return intent === "deactivate" ? deactivate(args, me, parsed.data.adminId) : reactivate(args, me, parsed.data.adminId);
+}
+
+/** Owners only: an Admin gets FORBIDDEN before the form is read (S-022). */
 export async function action(args: Route.ActionArgs) {
   const me = await requireAdmin(args, { role: "owner" });
   const form = await args.request.formData();
   const intent = form.get("intent");
   if (intent === "invite") return invite(args, me, form);
   if (intent === "resendInvite" || intent === "revokeInvite") return changeInvite(args, me, form, intent);
+  if (intent === "changeRole") return changeRoleOf(args, me, form);
+  if (intent === "deactivate" || intent === "reactivate") return changeAccess(args, me, form, intent);
   return actionError("VALIDATION_FAILED", me.locale);
+}
+
+/**
+ * After an Owner made themselves Admin the Team page is no longer theirs: its loader is not
+ * re-run (it would answer 403 under the open dialog); the frame still refreshes and the
+ * dialog takes them to Today. Everything else keeps the default.
+ */
+export function shouldRevalidate({ actionResult, defaultShouldRevalidate }: ShouldRevalidateFunctionArgs) {
+  const result = actionResult as { intent?: unknown; self?: unknown } | undefined;
+  if (result?.intent === "changeRole" && result.self === true) return false;
+  return defaultShouldRevalidate;
 }
 
 export function meta({ loaderData }: Route.MetaArgs) {
@@ -120,7 +191,7 @@ export function ErrorBoundary(props: Route.ErrorBoundaryProps) {
   const error = useRouteError();
   const { t } = useI18n();
   const revalidator = useRevalidator();
-  if (isRouteErrorResponse(error) && (error.status === 403 || error.status === 404)) return <AdminErrorBoundary error={props.error} />;
+  if (isRouteErrorResponse(error) && [401, 403, 404].includes(error.status)) return <AdminErrorBoundary error={props.error} />;
   return (
     <>
       <h1>{t("admin.team.title")}</h1>

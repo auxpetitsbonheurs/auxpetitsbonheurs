@@ -1,7 +1,8 @@
 // Local stand-in for the Supabase Auth (GoTrue) endpoints the app calls, so e2e runs
 // offline and deterministically against the real @supabase/ssr adapter: password and
-// refresh-token grants, JWKS (ES256 key made at start), logout and health; password
-// recovery (recover, verify, update user: S-025, S-026, S-036); plus the Storage
+// refresh-token grants, JWKS (ES256 key made at start), logout (local and global) and
+// health; password recovery (recover, verify, update user: S-025, S-026, S-036); the Admin
+// API's create, delete and ban (S-029, S-032); plus the Storage
 // endpoints in storage-stub.ts. Started by playwright.config.ts on 127.0.0.1:54321
 // (SUPABASE_URL of the `e2e` environment). Never deployed; holds only placeholder accounts
 // (auth-users.ts, and the throwaway ones specs add through `POST /__stub/users`).
@@ -26,6 +27,9 @@ const refreshTokens = new Map<string, { user: StubUser; signedInAt: Date; method
 /** Recovery emails "sent", newest last per email: what the email would carry. */
 const recoveries = new Map<string, { tokenHash: string; redirectTo: string }>();
 const recoveryTokens = new Map<string, string>();
+/** Banned user ids (S-032): no password grant, no refresh. */
+const banned = new Set<string>();
+const BANNED = { code: "user_banned", error_code: "user_banned", msg: "User is banned" };
 
 async function readJson(request: IncomingMessage): Promise<Record<string, unknown>> {
   const chunks: Buffer[] = [];
@@ -56,12 +60,14 @@ async function token(request: IncomingMessage, url: URL, response: ServerRespons
   const body = await readJson(request);
   if (url.searchParams.get("grant_type") === "password") {
     const user = users.get(String(body.email ?? "").toLowerCase());
-    return user && user.password === body.password ? send(response, 200, await issue(user, new Date())) : send(response, 400, INVALID);
+    if (!user || user.password !== body.password) return send(response, 400, INVALID);
+    return banned.has(user.id) ? send(response, 400, BANNED) : send(response, 200, await issue(user, new Date()));
   }
   if (url.searchParams.get("grant_type") === "refresh_token") {
     const known = refreshTokens.get(String(body.refresh_token));
     if (!known) return send(response, 400, { code: "refresh_token_not_found", error_code: "refresh_token_not_found", msg: "Invalid Refresh Token" });
     refreshTokens.delete(String(body.refresh_token));
+    if (banned.has(known.user.id)) return send(response, 400, BANNED);
     return send(response, 200, await issue(known.user, known.signedInAt, known.method));
   }
   return send(response, 400, { msg: "unsupported grant_type" });
@@ -139,6 +145,29 @@ async function adminDeleteUser(id: string, response: ServerResponse) {
   return send(response, 200, {});
 }
 
+/** Logout: `scope=global` revokes every refresh token of the bearer's user (S-032). */
+function logout(request: IncomingMessage, url: URL, response: ServerResponse) {
+  const user = bearerUser(request);
+  if (user && url.searchParams.get("scope") === "global") {
+    for (const [token, known] of refreshTokens) if (known.user.id === user.id) refreshTokens.delete(token);
+  }
+  return send(response, 204);
+}
+
+/** Admin API update (S-032): only `ban_duration` is read ("none" lifts the ban). */
+async function adminUpdateUser(id: string, request: IncomingMessage, response: ServerResponse) {
+  const body = await readJson(request);
+  const user = [...users.values()].find((candidate) => candidate.id === id);
+  if (!user) return send(response, 404, { code: "user_not_found", error_code: "user_not_found", msg: "User not found" });
+  if (body.ban_duration === "none") banned.delete(id);
+  else if (typeof body.ban_duration === "string") {
+    banned.add(id);
+    // Like GoTrue, a ban stops refreshes; existing refresh tokens are dropped here too.
+    for (const [token, known] of refreshTokens) if (known.user.id === id) refreshTokens.delete(token);
+  }
+  return send(response, 200, sessionBody("unused", "unused", user).user);
+}
+
 /** Test-only: a throwaway account (spec-made admins whose password a spec may change). */
 async function addUser(request: IncomingMessage, response: ServerResponse) {
   const body = await readJson(request);
@@ -154,7 +183,7 @@ createServer((request, response) => {
   if (route === "GET /auth/v1/health") return send(response, 200, { name: "GoTrue stub" });
   if (route === "GET /auth/v1/.well-known/jwks.json") return send(response, 200, { keys: [key.publicJwk] });
   if (route === "POST /auth/v1/token") return void token(request, url, response);
-  if (route === "POST /auth/v1/logout") return send(response, 204);
+  if (route === "POST /auth/v1/logout") return logout(request, url, response);
   if (route === "POST /auth/v1/recover") return void recover(request, url, response);
   if (route === "POST /auth/v1/verify") return void verify(request, response);
   if (route === "PUT /auth/v1/user") return void updateUser(request, response);
@@ -162,6 +191,8 @@ createServer((request, response) => {
   if (route === "POST /auth/v1/admin/users") return void adminCreateUser(request, response);
   const deleting = /^DELETE \/auth\/v1\/admin\/users\/([0-9a-f-]{36})$/.exec(route);
   if (deleting) return void adminDeleteUser(deleting[1]!, response);
+  const updating = /^PUT \/auth\/v1\/admin\/users\/([0-9a-f-]{36})$/.exec(route);
+  if (updating) return void adminUpdateUser(updating[1]!, request, response);
   if (route === "GET /__stub/recovery") {
     const sent = recoveries.get((url.searchParams.get("email") ?? "").toLowerCase());
     return sent ? send(response, 200, sent) : send(response, 404, { msg: "no recovery email" });

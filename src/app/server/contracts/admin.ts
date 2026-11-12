@@ -73,6 +73,12 @@ export type InviteFields = z.infer<typeof InviteInput>;
 /** `admin/team` resendInvite / revokeInvite (S-030). */
 export const InviteIdInput = z.object({ id: Uuid });
 
+/** `admin/team` changeRole (S-031). */
+export const ChangeRoleInput = z.object({ adminId: Uuid, role: z.enum(ADMIN_ROLES) });
+
+/** `admin/team` deactivate / reactivate (S-032). */
+export const AdminIdInput = z.object({ adminId: Uuid });
+
 /** `admin/invite` accept (S-029): the role, name and email come from the invitation, never the form. */
 export const AcceptInviteInput = z.object({
   password: z.string().min(PASSWORD_MIN).max(PASSWORD_MAX),

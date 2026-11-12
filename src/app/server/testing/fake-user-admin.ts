@@ -8,6 +8,12 @@ import type { FakeAuth } from "./fake-auth";
 export class FakeUserAdmin implements UserAdmin {
   readonly created: { id: string; email: string; locale: string; name: string }[] = [];
   readonly deleted: string[] = [];
+  /** Users banned now (S-032). */
+  readonly banned = new Set<string>();
+  /** Every ban / unban call, in order. */
+  readonly banCalls: { userId: string; banned: boolean }[] = [];
+  /** `setBanned` answers `false` while this is true (Auth down or slower than 5 s). */
+  banFails = false;
   /** Next createUser answers this failure. */
   failWith: "failed" | "weak" | null = null;
   /**
@@ -30,6 +36,14 @@ export class FakeUserAdmin implements UserAdmin {
     else await this.database.client.query("insert into auth.users (id, email, email_confirmed_at) values ($1, $2, now())", [id, email]);
     this.created.push({ id, email, locale, name });
     return { ok: true, userId: id };
+  }
+
+  async setBanned(userId: string, banned: boolean): Promise<boolean> {
+    this.banCalls.push({ userId, banned });
+    if (this.banFails) return false;
+    if (banned) this.banned.add(userId);
+    else this.banned.delete(userId);
+    return true;
   }
 
   async deleteUser(userId: string): Promise<boolean> {

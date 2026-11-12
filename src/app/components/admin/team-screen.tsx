@@ -1,4 +1,5 @@
-// Team screen (S-027 list, S-028 invite sheet, S-030 resend / revoke). Every action posts
+// Team screen (S-027 list, S-028 invite sheet, S-030 resend / revoke; a person's sheet with
+// change role and deactivate / reactivate is in team-person.tsx, S-031, S-032). Every action posts
 // through a keyed fetcher: the button shows its pending state at once, the result is a
 // toast (polite live region) and an error also stays in the sheet next to the fields.
 import { Ellipsis, Mail, Plus, RotateCw, Trash2 } from "lucide-react";
@@ -13,15 +14,9 @@ import { TextField } from "~/components/ui/text-field";
 import { showToast } from "~/components/ui/toaster";
 import { ADMIN_ROLES, type AdminRole, PROFILE_NAME_MAX } from "~/domain/admin-account";
 import { useI18n } from "~/i18n/react";
+import { AdminSheet, DeactivateDialog, DemoteDialog, type Refusal, type TeamAdminView, useAnswer } from "./team-person";
 
-export interface TeamAdminView {
-  id: string;
-  name: string;
-  email: string;
-  role: AdminRole;
-  active: boolean;
-  lastSignIn: string | null;
-}
+export type { TeamAdminView } from "./team-person";
 
 export interface TeamInviteView {
   id: string;
@@ -38,22 +33,7 @@ export interface TeamData {
   invites: TeamInviteView[];
 }
 
-type Refusal = { ok: false; intent?: string; error: { code: string; message: string; fields?: Record<string, string> } };
 type TeamAnswer = { ok: true; intent: "invite" | "resendInvite" | "revokeInvite"; email: string; emailQueued?: boolean } | Refusal;
-
-/** Runs `onAnswer` once per new answer of a fetcher (an answer object is never handled twice). */
-function useAnswer(fetcher: { state: string; data?: TeamAnswer }, onAnswer: (answer: TeamAnswer) => void) {
-  const handled = useRef<unknown>(null);
-  const latest = useRef(onAnswer);
-  useEffect(() => {
-    latest.current = onAnswer;
-  });
-  useEffect(() => {
-    if (fetcher.state !== "idle" || !fetcher.data || handled.current === fetcher.data) return;
-    handled.current = fetcher.data;
-    latest.current(fetcher.data);
-  }, [fetcher.state, fetcher.data]);
-}
 
 const tagClass = "rounded-sm border border-input px-1.5 font-semibold";
 
@@ -292,23 +272,6 @@ function RevokeDialog({ invite, onClose }: { invite: TeamInviteView | null; onCl
   );
 }
 
-function AdminSheet({ person, onClose }: { person: TeamAdminView | null; onClose: () => void }) {
-  const { t } = useI18n();
-  return (
-    <Modal open={person !== null} onClose={onClose} title={person?.name ?? ""} closeLabel={t("admin.states.close")}>
-      {person && (
-        <>
-          <p className="wrap-anywhere">{person.email}</p>
-          <p className="text-sm">
-            {t(`admin.shell.role.${person.role}`)} · {t(person.active ? "admin.team.status.active" : "admin.team.status.deactivated")}
-          </p>
-          <p className="mt-4 text-muted-foreground">{t("admin.team.adminSheetLater")}</p>
-        </>
-      )}
-    </Modal>
-  );
-}
-
 /**
  * An invitation's sheet keeps the row it opened with: a Resend replaces the row (new id) in
  * the revalidated list before its answer arrives, and the sheet must stay to report it.
@@ -320,6 +283,9 @@ export function TeamScreen({ team }: { team: TeamData }) {
   const [inviting, setInviting] = useState(false);
   const [selected, setSelected] = useState<Selection>(null);
   const [revoking, setRevoking] = useState<TeamInviteView | null>(null);
+  // Confirm dialogs keep the row they opened with: the list revalidates under them.
+  const [demoting, setDemoting] = useState<TeamAdminView | null>(null);
+  const [deactivating, setDeactivating] = useState<TeamAdminView | null>(null);
   const openAdmin = selected?.kind === "admin" ? (team.admins.find((a) => a.id === selected.id) ?? null) : null;
   const openInvite = selected?.kind === "invite" ? selected.invite : null;
   const alone = team.admins.length === 1;
@@ -353,7 +319,20 @@ export function TeamScreen({ team }: { team: TeamData }) {
         </section>
       )}
       <InviteSheet open={inviting} onClose={() => setInviting(false)} />
-      <AdminSheet person={openAdmin} onClose={() => setSelected(null)} />
+      <AdminSheet
+        person={openAdmin}
+        onClose={() => setSelected(null)}
+        onDemote={(person) => {
+          setSelected(null);
+          setDemoting(person);
+        }}
+        onDeactivate={(person) => {
+          setSelected(null);
+          setDeactivating(person);
+        }}
+      />
+      <DemoteDialog person={demoting} isMe={demoting?.id === team.meId} onClose={() => setDemoting(null)} />
+      <DeactivateDialog person={deactivating} isMe={deactivating?.id === team.meId} onClose={() => setDeactivating(null)} />
       <InviteSheetActions
         invite={openInvite}
         onClose={() => setSelected(null)}

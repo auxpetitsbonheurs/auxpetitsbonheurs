@@ -20,6 +20,8 @@ const STATUS = {
   SLUG_TAKEN: 409,
   /** Invite or accept: the email already has an admin or customer account (S-028, S-029). */
   EMAIL_IN_USE: 409,
+  /** changeRole / deactivate would leave no active Owner (S-031, S-032). */
+  LAST_OWNER: 409,
   /** Invitation expired, revoked, accepted or malformed (S-029, S-030). */
   INVITE_INVALID: 410,
   /** Recovery link expired, used or missing (S-026); also the generic refusal of a reset. */

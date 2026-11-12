@@ -124,7 +124,8 @@
       "UPLOAD_REJECTED": "Une photo n'a pas pu être utilisée. Le produit garde ses photos précédentes.",
       "LINK_EXPIRED": "Ce lien a expiré. Demandez-en un nouveau.",
       "EMAIL_IN_USE": "Cette adresse e-mail a déjà un compte.",
-      "INVITE_INVALID": "Cette invitation a expiré ou a déjà été utilisée. Demandez-en une nouvelle à la propriétaire."
+      "INVITE_INVALID": "Cette invitation a expiré ou a déjà été utilisée. Demandez-en une nouvelle à la propriétaire.",
+      "LAST_OWNER": "Il doit toujours y avoir une Propriétaire active. Nommez d'abord quelqu'un d'autre Propriétaire."
     }
   },
   "product": {
@@ -348,7 +349,8 @@
       "availability": "Disponibilités",
       "settings": "Réglages",
       "team": "Équipe",
-      "label": "Admin"
+      "label": "Admin",
+      "toReview": "{{count}} à valider"
     },
     "states": {
       "ownerOnlyTitle": "Réservé aux propriétaires",
@@ -358,7 +360,10 @@
       "notYetBody": "Cette partie de l'application arrive bientôt. Tout le reste fonctionne normalement.",
       "retry": "Réessayer",
       "close": "Fermer",
-      "dismiss": "Masquer le message"
+      "dismiss": "Masquer le message",
+      "signedOutTitle": "Vous êtes déconnecté·e",
+      "signedOutBody": "Votre accès à l'application est terminé sur cet appareil. Reconnectez-vous pour continuer.",
+      "signIn": "Se connecter"
     },
     "more": {
       "ownerSection": "Pour les propriétaires"
@@ -718,7 +723,6 @@
       "validUntil": "valable jusqu'au {{date}}",
       "emailNotSent": "E-mail non envoyé, renvoyez",
       "actionsFor": "Actions pour {{name}}",
-      "adminSheetLater": "Changer le rôle et désactiver arrivent bientôt.",
       "resend": "Renvoyer l'invitation à {{email}}",
       "revoke": "Annuler l'invitation de {{email}}",
       "revokeTitle": "Annuler cette invitation ?",
@@ -752,7 +756,35 @@
         "role": "Choisissez Administrateur ou Propriétaire.",
         "locale": "Choisissez English ou Français.",
         "emailInUseDeactivated": "Cette adresse e-mail a déjà un compte. Utilisez plutôt Réactiver."
-      }
+      },
+      "roleOf": "Rôle de {{name}}",
+      "changeRole": "Changer le rôle de {{name}}",
+      "savingRole": "Enregistrement…",
+      "roleUnchanged": "{{name}} est déjà {{role}}.",
+      "demoteTitle": "Faire de {{name}} un Administrateur ?",
+      "demoteBody": "{{name}} perdra l'accès aux Réglages, aux Disponibilités et à l'Équipe.",
+      "demoteSelfBody": "Vous perdrez l'accès aux Réglages, aux Disponibilités et à l'Équipe. Une autre Propriétaire pourra vous le rendre.",
+      "demoteConfirm": "Faire Administrateur",
+      "cancel": "Annuler",
+      "roleChanged": "{{name}} est maintenant {{role}}",
+      "roleChangedSelf": "Vous êtes maintenant {{role}}",
+      "accessTitle": "Accès",
+      "deactivate": "Désactiver {{name}}",
+      "deactivateHint": "Déconnecte la personne de tous ses appareils tout de suite. Son nom reste sur les commandes passées.",
+      "deactivateTitle": "Désactiver {{name}} ?",
+      "deactivateBody": "{{name}} est déconnecté·e de tous ses appareils tout de suite et ne peut plus ouvrir l'application. Son nom reste sur les commandes passées, et vous pourrez réactiver cette personne plus tard.",
+      "deactivateSelfBody": "Vous êtes déconnectée de tous vos appareils tout de suite. Une autre Propriétaire pourra vous réactiver.",
+      "deactivateConfirm": "Désactiver",
+      "deactivating": "Désactivation…",
+      "deactivated": "{{name}} est désactivé·e et déconnecté·e",
+      "signOutPending": "Désactivé. La déconnexion de ses appareils sera réessayée",
+      "signOutPendingBody": "{{name}} ne peut plus ouvrir l'application. La déconnexion de ses appareils n'a pas abouti ; elle est réessayée en arrière-plan, ou appuyez sur Réessayer.",
+      "retrying": "Nouvel essai…",
+      "reactivate": "Réactiver {{name}}",
+      "reactivateHint": "La personne se reconnecte avec son mot de passe habituel.",
+      "reactivating": "Réactivation…",
+      "reactivated": "{{name}} est de nouveau actif·ve et peut se connecter avec son mot de passe",
+      "reactivateFailed": "{{name}} n'a pas pu être réactivé·e. Rien n'a changé. Réessayez."
     },
     "invite": {
       "metaTitle": "Rejoindre l'équipe",
@@ -773,6 +805,15 @@
         "tooLong": "72 caractères au plus.",
         "locale": "Choisissez English ou Français."
       }
+    },
+    "install": {
+      "title": "Ajoutez l'application à votre écran d'accueil",
+      "body": "Elle s'ouvre comme une application normale, sans la barre du navigateur.",
+      "install": "Installer",
+      "notNow": "Plus tard",
+      "iosHint": "Pour installer : touchez Partager, puis Sur l'écran d'accueil",
+      "dismiss": "Masquer ce conseil",
+      "label": "Installer l'application"
     }
   },
   "email": {

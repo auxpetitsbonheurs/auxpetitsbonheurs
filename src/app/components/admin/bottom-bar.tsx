@@ -27,13 +27,35 @@ function currentState(item: BarItem, pathname: string): "page" | "true" | undefi
   return item.section?.test(path) ? "true" : undefined;
 }
 
+/** The visible count on Orders: the real number up to 9, then "9+" (S-034 AC5). */
+export function reviewDotLabel(count: number): string {
+  return count > 9 ? "9+" : String(count);
+}
+
+/**
+ * Count dot on Orders (S-034, design-system "with count dot"): a number, never colour alone,
+ * on the icon's corner so the 44 px column and its label keep their size. The visible
+ * number is hidden from screen readers, which hear "3 to review" with the link's name.
+ */
+function ReviewDot({ count }: { count: number }) {
+  return (
+    <span
+      aria-hidden="true"
+      data-review-dot=""
+      className="absolute -top-1.5 left-[calc(50%+0.375rem)] inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-strong px-1 text-xs leading-none font-bold text-primary-foreground ring-2 ring-card"
+    >
+      {reviewDotLabel(count)}
+    </span>
+  );
+}
+
 /**
  * The one-handed bottom bar (FR-047, design-system "Admin one-handed patterns"): five
  * labelled places, fixed to the bottom on phones; static and wrapping below 20rem (200%
  * zoom) so it never covers content. Hidden while the on-screen keyboard or a full-screen
  * sheet is open (app.css, `data-bottom-bar`).
  */
-export function AdminBottomBar() {
+export function AdminBottomBar({ toReview = 0 }: { toReview?: number }) {
   const { t } = useI18n();
   const { pathname } = useLocation();
   return (
@@ -59,8 +81,15 @@ export function AdminBottomBar() {
                 data-active={current ? "" : undefined}
                 className="relative flex min-h-14 w-full flex-col items-center justify-center gap-0.5 py-1 text-center text-xs leading-tight min-[22.5rem]:text-[0.8125rem] font-semibold text-muted-foreground transition-colors duration-(--motion-fast) hover:text-foreground data-active:text-primary-strong before:absolute before:inset-x-2 before:top-0 before:h-0.5 before:rounded-full data-active:before:bg-primary-strong"
               >
-                <Icon aria-hidden="true" className="size-6 shrink-0" />
-                <span className="hyphens-auto [overflow-wrap:anywhere]">{t(`admin.nav.${item.key}`)}</span>
+                <span className="relative">
+                  <Icon aria-hidden="true" className="size-6 shrink-0" />
+                  {item.key === "orders" && toReview > 0 && <ReviewDot count={toReview} />}
+                </span>
+                <span data-bar-label="" className="hyphens-auto [overflow-wrap:anywhere]">
+                  {t(`admin.nav.${item.key}`)}
+                </span>
+                {/* After the label, so the link reads "Orders, 3 to review". */}
+                {item.key === "orders" && toReview > 0 && <span className="sr-only">{`, ${t("admin.nav.toReview", { count: toReview })}`}</span>}
               </Link>
             </li>
           );

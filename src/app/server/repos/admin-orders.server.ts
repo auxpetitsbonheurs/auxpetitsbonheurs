@@ -1,7 +1,7 @@
 // Order reads for the admin app (contracts.md `admin/orders`, `admin/order`). Lists are
 // keyset-paginated on the gap-free order number (oldest first for the review queue), which is unique and
 // increases with creation, so a cursor never skips or repeats a row.
-import { and, asc, eq, getTableName, gt, inArray, sql } from "drizzle-orm";
+import { and, asc, count, eq, getTableName, gt, inArray, sql } from "drizzle-orm";
 import { type LocalizedText, type OrderItemOption, type TimeWindow, orderItem, orders } from "~/db/schema";
 import type { OrderStatus } from "~/domain/status";
 import type { Locale } from "~/lib/locale";
@@ -48,6 +48,12 @@ export async function listReviewOrders(db: Executor, page: { after: number | nul
     .orderBy(asc(orders.number))
     .limit(page.limit + 1);
   return { rows: rows.slice(0, page.limit), more: rows.length > page.limit };
+}
+
+/** How many orders wait for review (S-034, `admin/layout` `badges.toReview`): uncapped; one count on `orders (status, fulfil_on)`. */
+export async function countReviewOrders(db: Executor): Promise<number> {
+  const [row] = await db.select({ n: count() }).from(orders).where(inArray(orders.status, [...REVIEW_STATUSES]));
+  return Number(row?.n ?? 0);
 }
 
 export interface AdminOrderItem {

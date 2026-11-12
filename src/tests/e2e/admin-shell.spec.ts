@@ -9,7 +9,7 @@ import {
   withZoom,
 } from "./support/a11y";
 import { signIn } from "./support/admin";
-import { E2E_ACCOUNTS } from "./support/database";
+import { E2E_ACCOUNTS, createOrder } from "./support/database";
 import { type Page, expect, test } from "./support/fixtures";
 
 const bar = (page: Page) => page.getByRole("navigation", { name: "Admin" });
@@ -18,7 +18,7 @@ const hydrated = (page: Page) => expect(page.locator("html")).toHaveAttribute("d
 /** Each label is fully shown: nothing overflows its box. */
 async function expectLabelsFit(page: Page) {
   const overflowing = await bar(page)
-    .locator("a span")
+    .locator("a [data-bar-label]")
     .evaluateAll((spans) => spans.filter((s) => s.scrollWidth > s.clientWidth + 1 || s.getBoundingClientRect().right > window.innerWidth).map((s) => s.textContent));
   expect(overflowing).toEqual([]);
 }
@@ -29,7 +29,8 @@ test.describe("S-033 admin frame", () => {
     await signIn(page, E2E_ACCOUNTS.owner, "/admin");
 
     const links = bar(page).getByRole("link");
-    await expect(links).toHaveText(["Today", "Orders", "Calendar", "Menu", "More"]);
+    // Orders may carry the review count (S-034) after its label.
+    await expect(links).toHaveText(["Today", /^Orders/, "Calendar", "Menu", "More"]);
     await expect(bar(page).getByRole("link", { name: "Today" })).toHaveAttribute("aria-current", "page");
     await expect(bar(page).locator('[aria-current="page"]')).toHaveCount(1);
     for (const box of await links.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON() as DOMRect))) {
@@ -49,7 +50,7 @@ test.describe("S-033 admin frame", () => {
     await page.setViewportSize({ width: 320, height: 640 });
     await signIn(page, E2E_ACCOUNTS.french, "/admin");
 
-    await expect(bar(page).getByRole("link")).toHaveText(["Aujourd'hui", "Commandes", "Calendrier", "Carte", "Plus"]);
+    await expect(bar(page).getByRole("link")).toHaveText(["Aujourd'hui", /^Commandes/, "Calendrier", "Carte", "Plus"]);
     await expectLabelsFit(page);
     await expectNoHorizontalScroll(page);
   });
@@ -159,6 +160,36 @@ test.describe("S-033 admin frame", () => {
           await expectLabelsFit(page);
         });
       }
+    }
+  });
+
+  test("S-034 AC1, AC6: Orders shows a count dot named 'N to review', not clipped, 44 px target, at 320 px and 200%", async ({ page, db }) => {
+    await createOrder(db, "Badge check");
+    await page.setViewportSize({ width: 320, height: 640 });
+    await signIn(page, E2E_ACCOUNTS.helper, "/admin/more");
+    await hydrated(page);
+
+    const orders = bar(page).getByRole("link", { name: /^Orders, \d+ to review$/ });
+    await expect(orders).toBeVisible();
+    const dot = orders.locator("[data-review-dot]");
+    await expect(dot).toHaveText(/^([1-9]|9\+)$/);
+    for (const zoom of [1, 2]) {
+      await withZoom(page, zoom, async () => {
+        const link = (await orders.boundingBox())!;
+        const mark = (await dot.boundingBox())!;
+        expect(link.width).toBeGreaterThanOrEqual(44);
+        expect(link.height).toBeGreaterThanOrEqual(44);
+        // The dot sits inside its column: never clipped, never off screen.
+        expect(mark.x).toBeGreaterThanOrEqual(link.x - 0.5);
+        expect(mark.x + mark.width).toBeLessThanOrEqual(link.x + link.width + 0.5);
+        expect(mark.y).toBeGreaterThanOrEqual(link.y - 0.5);
+        await expectNothingClipped(page);
+        await expectNoHorizontalScroll(page);
+      });
+    }
+    for (const colorScheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+      await expectNoA11yViolations(page);
     }
   });
 

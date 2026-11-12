@@ -1,10 +1,13 @@
 // The order activity log (S-018 AC1, AC3): append and read only, names by join on the
 // admin row (which is never deleted), and the database's actor rule.
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { insertAdmin } from "~/server/testing/admins";
 import { FakeAuth } from "~/server/testing/fake-auth";
 import { placeTestOrder } from "~/server/testing/orders";
+import type { Database } from "~/server/db.server";
+import { deactivateAdmin } from "~/server/services/deactivate-admin.server";
+import { FakeUserAdmin } from "~/server/testing/fake-user-admin";
 import * as repo from "./order-events.server";
 
 let database: TestDatabase;
@@ -65,5 +68,22 @@ describe("reading the log (S-018 AC1)", () => {
       ["approved", { type: "admin", name: "Sarah" }],
     ]);
     expect(events[1]).toMatchObject({ at: "2099-11-12T10:05:00.000Z", fromStatus: "pending_approval", toStatus: "approved", details: null });
+  });
+});
+
+describe("deactivation keeps names (S-032 AC3)", () => {
+  test("after the Owner deactivates an admin, the log still names them on their events", async () => {
+    const auth = new FakeAuth();
+    const owner = await insertAdmin(database, auth, { role: "owner", name: "Owner" });
+    const helper = await insertAdmin(database, auth, { role: "admin", name: "Anna" });
+    const at = new Date("2099-11-12T10:05:00Z");
+    await repo.appendOrderEvent(database.db, { orderId, actor: { type: "admin", adminId: helper.id }, type: "approved", fromStatus: "pending_approval", toStatus: "approved", at });
+    const silence = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await deactivateAdmin(database.db as unknown as Database, new FakeUserAdmin(database, auth), { actorId: owner.id, adminId: helper.id, now: at });
+    silence.mockRestore();
+
+    const events = await repo.listOrderEvents(database.db, orderId);
+    expect(events.at(-1)?.actor).toEqual({ type: "admin", name: "Anna" });
   });
 });

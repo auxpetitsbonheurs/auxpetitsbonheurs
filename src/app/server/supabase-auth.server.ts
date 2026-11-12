@@ -107,6 +107,16 @@ export function createSupabaseAuth(config: SupabaseAuthConfig, request: Request)
         return false;
       }
     },
+    async signOutEverywhere() {
+      const ended = await supabase()
+        .auth.signOut({ scope: "global" })
+        .then((result: { error: unknown }) => !result.error)
+        .catch(() => false);
+      // A failed global sign-out keeps the stored session: still clear this device's cookies.
+      if (!ended) await supabase().auth.signOut({ scope: "local" }).catch(() => undefined);
+      claims = Promise.resolve(null);
+      return ended;
+    },
     takeSetCookies() {
       return pending.splice(0, pending.length);
     },

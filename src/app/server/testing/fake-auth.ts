@@ -17,6 +17,8 @@ export class FakeAuth {
   readonly signOuts: string[] = [];
   /** Users whose other devices were signed out (`signOutOthers`, password changes). */
   readonly otherSessionsEnded: string[] = [];
+  /** Users signed out of every device (`signOutEverywhere`, S-032). */
+  readonly everywhereSignOuts: string[] = [];
   /** Recovery emails asked for (S-025). */
   readonly recoveryRequests: { email: string; redirectTo: string }[] = [];
   /** Passwords set, by user id (S-026, S-036). */
@@ -96,6 +98,15 @@ export class FakeAuth {
         if (!session || this.failing) return false;
         this.otherSessionsEnded.push(session.userId);
         return true;
+      },
+      signOutEverywhere: async () => {
+        const session = current();
+        if (session) this.signOuts.push(session.userId);
+        const ended = session !== null && !this.failing;
+        if (ended) this.everywhereSignOuts.push(session.userId);
+        claims = null;
+        pending.push(`${FAKE_SESSION_COOKIE}=; ${COOKIE_ATTRIBUTES}; Max-Age=0`);
+        return ended;
       },
       takeSetCookies: () => pending.splice(0, pending.length),
       requestRecovery: async (email, redirectTo) => {

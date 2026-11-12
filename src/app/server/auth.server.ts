@@ -17,7 +17,7 @@ export const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 export const ADMIN_HOME = "/admin";
 export const LOGIN_PATH = "/admin/login";
 
-export type AdminUser = Omit<AdminRecord, "active">;
+export type AdminUser = Omit<AdminRecord, "active" | "sessionsRevokedAt">;
 
 /** What a loader or action receives (React Router args, narrowed to what the guard reads). */
 export interface GuardArgs {
@@ -31,8 +31,11 @@ export type AdminSession =
   | { status: "anonymous" }
   /** Signed in, but not as an admin (a customer): left intact, never upgraded (FR-039). */
   | { status: "not_admin" }
-  /** An admin whose session must end now: deactivated or older than 30 days. */
-  | { status: "ended"; reason: "inactive" | "expired" };
+  /**
+   * An admin whose session must end now: deactivated, signed in before their sessions were
+   * revoked (S-032 deactivation; kept after reactivation), or older than 30 days.
+   */
+  | { status: "ended"; reason: "inactive" | "revoked" | "expired" };
 
 const sessions = new WeakMap<AuthGateway, Promise<AdminSession>>();
 
@@ -44,10 +47,16 @@ async function readSession(args: GuardArgs, gateway: AuthGateway): Promise<Admin
   const record = await findAdminById(args.context.get(requestDbContext).db, claims.userId);
   if (!record) return { status: "not_admin" };
   if (!record.active) return { status: "ended", reason: "inactive" };
+  // `amr` holds whole seconds: a sign-in in the same second as the revocation is refused too.
+  if (record.sessionsRevokedAt && claims.signedInAt.getTime() <= record.sessionsRevokedAt.getTime()) return { status: "ended", reason: "revoked" };
   const age = args.context.get(clockContext).now().getTime() - claims.signedInAt.getTime();
   if (age > SESSION_MAX_AGE_MS) return { status: "ended", reason: "expired" };
-  const { active: _active, ...admin } = record;
-  return { status: "admin", admin };
+  return { status: "admin", admin: adminUser(record) };
+}
+
+function adminUser(record: AdminRecord): AdminUser {
+  const { active: _active, sessionsRevokedAt: _revoked, ...admin } = record;
+  return admin;
 }
 
 /** The request's admin session, read once per request. */
@@ -89,6 +98,16 @@ function visitorLocale(request: Request): Locale {
 }
 
 /**
+ * A deactivated or revoked admin is signed out of every device with their own token (Auth
+ * scope `global`, S-032); an expired session only on this device. A failed global sign-out
+ * is logged without personal data: the admin row already refuses every request.
+ */
+async function endSession(gateway: AuthGateway, reason: "inactive" | "revoked" | "expired"): Promise<void> {
+  if (reason === "expired") return gateway.signOut();
+  if (!(await gateway.signOutEverywhere())) console.error(JSON.stringify({ level: "error", event: "sign_out_everywhere_failed", reason }));
+}
+
+/**
  * The guard. Returns the active admin, or throws: 403 for a cross-site mutation; 403
  * FORBIDDEN for an Admin when `{ role: "owner" }` is asked (FR-041: the page's
  * ErrorBoundary shows the "Owner only" state, an action gets the envelope); 403
@@ -106,7 +125,11 @@ export async function requireAdmin(args: GuardArgs, options: { role?: "owner" } 
   }
   if (session.status === "not_admin" && isMutation(args.request)) throw actionError("FORBIDDEN", visitorLocale(args.request));
   const gateway = args.context.get(authContext);
-  if (session.status === "ended") await gateway.signOut();
+  if (session.status === "ended") {
+    await endSession(gateway, session.reason);
+    // An ended session's action (a fetcher in a tab left open) gets 401 and no data (S-032 AC2).
+    if (isMutation(args.request)) throw actionError("UNAUTHENTICATED", visitorLocale(args.request), withCookies(gateway));
+  }
   throw redirect(loginRedirectPath(args.url), withCookies(gateway));
 }
 
@@ -132,8 +155,7 @@ export async function signInAdmin(
   }
   sessions.delete(gateway);
   await recordSignIn(db, record.id, args.context.get(clockContext).now());
-  const { active: _active, ...admin } = record;
-  return { ok: true, admin, headers: withCookies(gateway).headers };
+  return { ok: true, admin: adminUser(record), headers: withCookies(gateway).headers };
 }
 
 /** A recovery session lets the admin choose a password for this long after the link was used (S-026). */

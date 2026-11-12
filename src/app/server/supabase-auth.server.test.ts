@@ -118,4 +118,37 @@ describe("Supabase gateway (S-009 AC1, AC3)", () => {
     expect(cleared.length).toBeGreaterThan(0);
     for (const c of cleared) expect(c).toMatch(/Max-Age=0/i);
   });
+
+  test("S-032: signing out everywhere asks Auth for scope global and clears this device", async () => {
+    const gotrue = await fakeGoTrue();
+    const first = createSupabaseAuth({ url: URL_BASE, anonKey: "anon", fetch: gotrue.fetch }, request());
+    await first.signInWithPassword({ email: USER.email, password: "correct horse" });
+    const cookie = asCookieHeader(first.takeSetCookies());
+
+    const next = createSupabaseAuth({ url: URL_BASE, anonKey: "anon", fetch: gotrue.fetch }, request(cookie));
+
+    expect(await next.signOutEverywhere()).toBe(true);
+    expect(gotrue.calls).toContain("POST /auth/v1/logout?scope=global");
+    for (const c of next.takeSetCookies()) expect(c).toMatch(/Max-Age=0/i);
+    expect(await next.claims()).toBeNull();
+  });
+
+  test("S-032: when Auth fails the global sign-out, this device is still cleared and the answer is false", async () => {
+    const gotrue = await fakeGoTrue();
+    const first = createSupabaseAuth({ url: URL_BASE, anonKey: "anon", fetch: gotrue.fetch }, request());
+    await first.signInWithPassword({ email: USER.email, password: "correct horse" });
+    const cookie = asCookieHeader(first.takeSetCookies());
+    const failing = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+      if (url.pathname === "/auth/v1/logout") return Response.json({ msg: "down" }, { status: 500 });
+      return gotrue.fetch(input, init);
+    }) as typeof globalThis.fetch;
+
+    const next = createSupabaseAuth({ url: URL_BASE, anonKey: "anon", fetch: failing }, request(cookie));
+
+    expect(await next.signOutEverywhere()).toBe(false);
+    const cleared = next.takeSetCookies();
+    expect(cleared.length).toBeGreaterThan(0);
+    for (const c of cleared) expect(c).toMatch(/Max-Age=0/i);
+  });
 });

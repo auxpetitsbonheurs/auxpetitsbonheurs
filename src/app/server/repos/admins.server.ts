@@ -11,9 +11,19 @@ export interface AdminRecord {
   role: "owner" | "admin";
   active: boolean;
   locale: Locale;
+  /** Sessions signed in at or before this time are refused (S-032). */
+  sessionsRevokedAt: Date | null;
 }
 
-const RECORD = { id: admin.id, name: admin.name, email: admin.email, role: admin.role, active: admin.active, locale: admin.locale };
+const RECORD = {
+  id: admin.id,
+  name: admin.name,
+  email: admin.email,
+  role: admin.role,
+  active: admin.active,
+  locale: admin.locale,
+  sessionsRevokedAt: admin.sessionsRevokedAt,
+};
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function findAdminById(db: Executor, id: string): Promise<AdminRecord | undefined> {

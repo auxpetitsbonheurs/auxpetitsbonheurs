@@ -12,6 +12,8 @@ export const ADMIN_MODULE_POLICY = {
   invite: "public",
   forgot: "public",
   reset: "public",
+  manifest: "public",
+  sw: "public",
   layout: "admin",
   home: "admin",
   orders: "admin",

@@ -66,6 +66,11 @@ export const admin = pgTable("admin", {
   locale: localeEnum("locale").notNull().default("en"),
   lastSignInAt: timestamp("last_sign_in_at", tz),
   deactivatedAt: timestamp("deactivated_at", tz),
+  /**
+   * Sessions that signed in at or before this time are refused (S-032): set when the admin
+   * is deactivated and kept after reactivation, so every device must sign in again.
+   */
+  sessionsRevokedAt: timestamp("sessions_revoked_at", tz),
   createdAt: timestamp("created_at", tz).notNull().defaultNow(),
 }).enableRLS();
 

@@ -143,6 +143,78 @@ describe("Owner-only guard (S-022)", () => {
   });
 });
 
+describe("deactivated and revoked sessions (S-032 AC2, AC6)", () => {
+  type Envelope = { data: { ok: false; error: { code: string } }; init: { status: number; headers?: HeadersInit } };
+
+  async function refusedPost(cookie: string): Promise<Envelope> {
+    try {
+      await requireAdmin(routeArgs(database, { path: "/admin/orders/x", auth, cookie, now: NOW, form: { intent: "approve" } }));
+    } catch (error) {
+      return error as Envelope;
+    }
+    throw new Error("expected a refusal");
+  }
+
+  test("AC2: a deactivated admin's page request redirects to login and signs them out of every device", async () => {
+    const admin = await insertAdmin(database, auth, { active: false });
+
+    const response = await thrownBy(() => requireAdmin(routeArgs(database, { path: "/admin/orders", auth, cookie: auth.sessionCookie(admin.id, ago(DAY)), now: NOW })));
+
+    expect(response.headers.get("Location")).toBe("/admin/login?next=%2Fadmin%2Forders");
+    expect(auth.everywhereSignOuts).toEqual([admin.id]);
+  });
+
+  test("AC2: a deactivated admin's action gets UNAUTHENTICATED 401, no data, and the session cookie cleared", async () => {
+    const admin = await insertAdmin(database, auth, { active: false });
+
+    const refused = await refusedPost(auth.sessionCookie(admin.id, ago(DAY)));
+
+    expect(refused.init.status).toBe(401);
+    expect(refused.data).toEqual({ ok: false, error: { code: "UNAUTHENTICATED", message: "Please sign in again." } });
+    expect(new Headers(refused.init.headers).get("Set-Cookie")).toMatch(/Max-Age=0/);
+    expect(auth.everywhereSignOuts).toEqual([admin.id]);
+  });
+
+  test("AC6: after reactivation a session from before the deactivation is refused; a new sign-in loads", async () => {
+    const admin = await insertAdmin(database, auth, { active: true });
+    await database.client.query("update admin set sessions_revoked_at = $2 where id = $1", [admin.id, ago(DAY)]);
+
+    const old = await thrownBy(() => requireAdmin(routeArgs(database, { path: "/admin", auth, cookie: auth.sessionCookie(admin.id, ago(2 * DAY)), now: NOW })));
+    const sameSecond = await thrownBy(() => requireAdmin(routeArgs(database, { path: "/admin", auth, cookie: auth.sessionCookie(admin.id, ago(DAY)), now: NOW })));
+    const me = await requireAdmin(routeArgs(database, { path: "/admin", auth, cookie: auth.sessionCookie(admin.id, ago(DAY - 1000)), now: NOW }));
+
+    expect(old.status).toBe(302);
+    expect(sameSecond.status).toBe(302);
+    expect(me.id).toBe(admin.id);
+  });
+
+  test("a failed global sign-out still clears this device and is logged without personal data", async () => {
+    const admin = await insertAdmin(database, auth, { active: false });
+    auth.failing = true;
+    const errors: string[] = [];
+    const original = console.error;
+    console.error = (line: string) => errors.push(line);
+    try {
+      const refused = await refusedPost(auth.sessionCookie(admin.id, ago(DAY)));
+      expect(refused.init.status).toBe(401);
+      expect(new Headers(refused.init.headers).get("Set-Cookie")).toMatch(/Max-Age=0/);
+    } finally {
+      console.error = original;
+    }
+    expect(errors).toEqual([JSON.stringify({ level: "error", event: "sign_out_everywhere_failed", reason: "inactive" })]);
+  });
+
+  test("an expired session's action also gets UNAUTHENTICATED, signed out on this device only", async () => {
+    const admin = await insertAdmin(database, auth);
+
+    const refused = await refusedPost(auth.sessionCookie(admin.id, ago(31 * DAY)));
+
+    expect(refused.init.status).toBe(401);
+    expect(auth.signOuts).toEqual([admin.id]);
+    expect(auth.everywhereSignOuts).toEqual([]);
+  });
+});
+
 describe("safeNext (S-009 AC6)", () => {
   test.each([
     ["/admin/orders?tab=review", "/admin/orders?tab=review"],

@@ -43,6 +43,13 @@
       "when": 1794472061235,
       "tag": "0005_admin_invitation_locale",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794477667513,
+      "tag": "0006_admin_sessions_revoked_at",
+      "breakpoints": true
     }
   ]
 }

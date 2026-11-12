@@ -1,17 +1,20 @@
 // S-027 Team list, S-028 invite (field rules, EMAIL_IN_USE, emailQueued) and S-030
 // resend / revoke through the `admin/team` loader and action.
-import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { emailContext } from "~/server/email/context.server";
 import type { Mailer } from "~/server/email/sender.server";
 import { signedInAdmin } from "~/server/testing/admin-session";
 import { insertAdmin } from "~/server/testing/admins";
 import { FakeAuth } from "~/server/testing/fake-auth";
+import { FakeUserAdmin } from "~/server/testing/fake-user-admin";
 import { type RouteArgsOptions, routeArgs } from "~/server/testing/route-context";
+import { userAdminContext } from "~/server/user-admin.server";
 import { action, loader } from "./team";
 
 let database: TestDatabase;
 let owner: Awaited<ReturnType<typeof signedInAdmin>>;
+let users: FakeUserAdmin;
 
 const NOW = "2026-11-12T06:00:00Z";
 
@@ -20,8 +23,9 @@ beforeAll(async () => {
 }, 60_000);
 
 beforeEach(async () => {
-  await database.client.exec("delete from email_outbox; delete from admin_invitation; delete from admin; delete from customer; delete from auth.users;");
+  await database.client.exec("delete from email_outbox; delete from admin_invitation; delete from push_subscription; delete from admin; delete from customer; delete from auth.users;");
   owner = await signedInAdmin(database, { role: "owner", name: "Sarah", locale: "en" });
+  users = new FakeUserAdmin(database, owner.auth);
 }, 60_000);
 
 afterAll(async () => {
@@ -34,6 +38,7 @@ type TeamPage = Awaited<ReturnType<typeof loader>>;
 function args(options: Partial<RouteArgsOptions> & { mailer?: Mailer | null } = {}) {
   const built = routeArgs(database, { path: "/admin/team", auth: owner.auth, cookie: owner.cookie, now: NOW, ...options });
   built.context.set(emailContext, { mailer: options.mailer ?? null, hookSecret: null, timeoutMs: 50 });
+  built.context.set(userAdminContext, users);
   return built;
 }
 
@@ -195,5 +200,127 @@ describe("resend and revoke (S-030)", () => {
 
   test("an unknown intent is refused", async () => {
     expect(((await post({ intent: "makeMeOwner" })) as Envelope).data.error.code).toBe("VALIDATION_FAILED");
+  });
+});
+
+describe("changeRole (S-031)", () => {
+  const roleOf = async (id: string) => (await database.client.query<{ role: string }>("select role from admin where id = $1", [id])).rows[0]!.role;
+
+  test("AC1: an Admin made Owner: answers ok with the name and new role", async () => {
+    const helper = await insertAdmin(database, new FakeAuth(), { name: "Anna", role: "admin" });
+
+    expect(await post({ intent: "changeRole", adminId: helper.id, role: "owner" })).toEqual({
+      ok: true,
+      intent: "changeRole",
+      adminId: helper.id,
+      name: "Anna",
+      role: "owner",
+      self: false,
+    });
+    expect(await roleOf(helper.id)).toBe("owner");
+  });
+
+  test("AC3: the only Owner demoting themselves gets LAST_OWNER 409 with the message, and the role is unchanged", async () => {
+    const result = (await post({ intent: "changeRole", adminId: owner.admin.id, role: "admin" })) as Envelope;
+
+    expect(result.init.status).toBe(409);
+    expect(result.data).toEqual({
+      ok: false,
+      intent: "changeRole",
+      error: { code: "LAST_OWNER", message: "There must always be one active Owner. Make someone else Owner first." },
+    });
+    expect(await roleOf(owner.admin.id)).toBe("owner");
+  });
+
+  test("AC5: with another Owner, an Owner's own demotion answers self true", async () => {
+    await insertAdmin(database, new FakeAuth(), { role: "owner" });
+
+    expect(await post({ intent: "changeRole", adminId: owner.admin.id, role: "admin" })).toMatchObject({ ok: true, self: true, role: "admin" });
+  });
+
+  test.each([
+    [{ role: "superuser" }, "VALIDATION_FAILED", 400],
+    [{ role: "" }, "VALIDATION_FAILED", 400],
+    [{ adminId: "" }, "VALIDATION_FAILED", 400],
+    [{ adminId: "not-a-uuid" }, "VALIDATION_FAILED", 400],
+    [{ adminId: "00000000-0000-4000-8000-000000000000" }, "NOT_FOUND", 404],
+  ])("AC6: %j is %s and nothing changes", async (form, code, status) => {
+    const helper = await insertAdmin(database, new FakeAuth(), { role: "admin" });
+
+    const result = (await post({ intent: "changeRole", adminId: helper.id, role: "owner", ...form })) as Envelope;
+
+    expect(result.init.status).toBe(status);
+    expect(result.data).toMatchObject({ intent: "changeRole", error: { code } });
+    expect(await roleOf(helper.id)).toBe("admin");
+  });
+});
+
+describe("deactivate and reactivate (S-032)", () => {
+  const activeOf = async (id: string) => (await database.client.query<{ active: boolean }>("select active from admin where id = $1", [id])).rows[0]!.active;
+
+  test("AC1: deactivate answers ok with the name; the Auth user is banned", async () => {
+    const helper = await insertAdmin(database, new FakeAuth(), { name: "Anna", role: "admin" });
+
+    expect(await post({ intent: "deactivate", adminId: helper.id })).toEqual({
+      ok: true,
+      intent: "deactivate",
+      adminId: helper.id,
+      name: "Anna",
+      self: false,
+      signOutPending: false,
+    });
+    expect(await activeOf(helper.id)).toBe(false);
+    expect(users.banned.has(helper.id)).toBe(true);
+  });
+
+  test("AC4: the only Owner deactivating themselves gets LAST_OWNER", async () => {
+    const result = (await post({ intent: "deactivate", adminId: owner.admin.id })) as Envelope;
+
+    expect(result.data.error.code).toBe("LAST_OWNER");
+    expect(await activeOf(owner.admin.id)).toBe(true);
+  });
+
+  test("AC8: a failed ban answers signOutPending, is retried once after the response, and Retry is safe", async () => {
+    const helper = await insertAdmin(database, new FakeAuth(), { role: "admin" });
+    users.banFails = true;
+    const silence = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const first = await post({ intent: "deactivate", adminId: helper.id });
+    expect(first).toMatchObject({ ok: true, signOutPending: true });
+    // The in-request call and the one after the response.
+    expect(users.banCalls.filter((call) => call.userId === helper.id)).toHaveLength(2);
+    expect(await activeOf(helper.id)).toBe(false);
+
+    users.banFails = false;
+    expect(await post({ intent: "deactivate", adminId: helper.id })).toMatchObject({ ok: true, signOutPending: false });
+    expect(users.banned.has(helper.id)).toBe(true);
+    silence.mockRestore();
+  });
+
+  test("AC6: reactivate answers ok; the ban is lifted", async () => {
+    const helper = await insertAdmin(database, new FakeAuth(), { name: "Anna", role: "admin" });
+    await post({ intent: "deactivate", adminId: helper.id });
+
+    expect(await post({ intent: "reactivate", adminId: helper.id })).toEqual({ ok: true, intent: "reactivate", adminId: helper.id, name: "Anna" });
+    expect(await activeOf(helper.id)).toBe(true);
+    expect(users.banned.has(helper.id)).toBe(false);
+  });
+
+  test("reactivate when Auth is down: INTERNAL 500 with a calm message naming the person, nothing changed", async () => {
+    const helper = await insertAdmin(database, new FakeAuth(), { name: "Anna", role: "admin", active: false });
+    users.banFails = true;
+    const silence = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = (await post({ intent: "reactivate", adminId: helper.id })) as Envelope;
+    silence.mockRestore();
+
+    expect(result.init.status).toBe(500);
+    expect(result.data).toEqual({ ok: false, intent: "reactivate", error: { code: "INTERNAL", message: "Anna could not be reactivated. Nothing changed. Try again." } });
+    expect(await activeOf(helper.id)).toBe(false);
+  });
+
+  test.each(["deactivate", "reactivate"])("AC9: %s of an unknown adminId is NOT_FOUND; a malformed one VALIDATION_FAILED", async (intent) => {
+    expect(((await post({ intent, adminId: "00000000-0000-4000-8000-000000000000" })) as Envelope).data.error.code).toBe("NOT_FOUND");
+    expect(((await post({ intent, adminId: "x" })) as Envelope).data.error.code).toBe("VALIDATION_FAILED");
   });
 });

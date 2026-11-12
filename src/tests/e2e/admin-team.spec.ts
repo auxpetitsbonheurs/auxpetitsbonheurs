@@ -1,5 +1,6 @@
-// E-02 Team: list (S-027), invite sheet (S-028), resend and revoke (S-030), as the shared
-// e2e Owner. Every spec invites its own unique address; Resend is not configured in e2e, so
+// E-02 Team: list (S-027), invite sheet (S-028), resend and revoke (S-030), change role
+// (S-031), deactivate and reactivate (S-032), as the shared e2e Owner acting on throwaway
+// admins (never on a shared account). Every spec invites its own unique address; Resend is not configured in e2e, so
 // each invitation shows "Email not sent, resend" (the sender is proven in unit tests).
 import { randomUUID } from "node:crypto";
 import {
@@ -10,7 +11,7 @@ import {
   expectTapTargets,
   withZoom,
 } from "./support/a11y";
-import { signIn } from "./support/admin";
+import { createE2eAdmin, signIn } from "./support/admin";
 import { E2E_ACCOUNTS } from "./support/database";
 import { type Page, expect, test } from "./support/fixtures";
 
@@ -54,7 +55,7 @@ test.describe("S-027 Team list", () => {
 
     await me.getByRole("button", { name: `Actions for ${E2E_ACCOUNTS.owner.name}` }).click();
     const sheet = page.getByRole("dialog", { name: E2E_ACCOUNTS.owner.name });
-    await expect(sheet).toContainText("Changing the role and deactivating are coming soon.");
+    await expect(sheet.getByRole("button", { name: `Change role of ${E2E_ACCOUNTS.owner.name}` })).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(sheet).toBeHidden();
     await expect(me.getByRole("button", { name: `Actions for ${E2E_ACCOUNTS.owner.name}` })).toBeFocused();
@@ -219,5 +220,148 @@ test.describe("S-030 resend or revoke", () => {
 
     await expect(page.getByRole("status").filter({ hasText: `Invitation for ${email} revoked` })).toBeVisible();
     await expect(inviteRow(page, email)).toHaveCount(0);
+  });
+});
+
+const personRow = (page: Page, name: string) => page.getByRole("region", { name: "People with access" }).getByRole("listitem").filter({ hasText: name });
+
+async function openPerson(page: Page, name: string) {
+  await personRow(page, name).getByRole("button", { name: `Actions for ${name}` }).click();
+  const sheet = page.getByRole("dialog", { name });
+  await expect(sheet).toBeVisible();
+  return sheet;
+}
+
+/** The open dialog at 100% and 200%: focus trapped, nothing clipped, no sideways scroll, 44 px targets, axe light and dark. */
+async function expectDialogAccessible(page: Page, dialog: ReturnType<Page["getByRole"]>) {
+  for (let i = 0; i < 8; i += 1) {
+    await page.keyboard.press("Tab");
+    expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+  }
+  for (const zoom of [1, 2]) {
+    await withZoom(page, zoom, async () => {
+      await expectNoHorizontalScroll(page);
+      await expectNothingClipped(page);
+      await expectTapTargets(page);
+    });
+  }
+  for (const colorScheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+    await expectNoA11yViolations(page);
+  }
+}
+
+const shortName = (prefix: string) => `${prefix} ${randomUUID().slice(0, 6)}`;
+
+test.describe("S-031 change role", () => {
+  test("AC1, AC8, AC9, AC10: promoting applies at once; making an Admin asks first, naming the person and the loss", async ({ page, db, browser }) => {
+    test.slow();
+    const name = shortName("Rolf");
+    const helper = await createE2eAdmin(db, { name });
+    await openTeam(page);
+
+    let sheet = await openPerson(page, name);
+    await expect(sheet).toContainText("Admin · Active");
+    await sheet.getByRole("radio", { name: /^Owner/ }).check();
+    await sheet.getByRole("button", { name: `Change role of ${name}` }).click();
+    await expect(sheet).toBeHidden();
+    await expect(page.getByRole("status").filter({ hasText: `${name} is now Owner` })).toBeVisible();
+    await expect(personRow(page, name)).toContainText("Owner");
+
+    // AC1: their very next request to an Owner page is allowed.
+    const theirs = await browser.newContext();
+    const theirPage = await theirs.newPage();
+    await signIn(theirPage, helper, "/admin/team");
+    await expect(theirPage.getByRole("heading", { level: 1, name: "Team" })).toBeVisible();
+    await theirs.close();
+
+    await dismissToasts(page);
+    sheet = await openPerson(page, name);
+    await sheet.getByRole("radio", { name: /^Admin/ }).check();
+    await sheet.getByRole("button", { name: `Change role of ${name}` }).click();
+    const confirm = page.getByRole("dialog", { name: `Make ${name} an Admin?` });
+    await expect(confirm).toContainText(`${name} will lose access to Settings, Availability and Team.`);
+    await expect(confirm.getByRole("heading", { name: `Make ${name} an Admin?` })).toBeFocused();
+    await expectDialogAccessible(page, confirm);
+
+    await confirm.getByRole("button", { name: "Make Admin" }).click();
+    await expect(confirm).toBeHidden();
+    await expect(page.getByRole("status").filter({ hasText: `${name} is now Admin` })).toBeVisible();
+    await expect(personRow(page, name)).toContainText("Admin");
+    await expect(personRow(page, name).getByRole("button", { name: `Actions for ${name}` })).toBeFocused();
+  });
+
+  test("AC9: the role sheet at 100% and 200%: keyboard only, nothing clipped, 44 px targets, axe light and dark", async ({ page, db }) => {
+    const name = shortName("Sheet");
+    await createE2eAdmin(db, { name });
+    await openTeam(page);
+
+    const sheet = await openPerson(page, name);
+    await expectDialogAccessible(page, sheet);
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden();
+    await expect(personRow(page, name).getByRole("button", { name: `Actions for ${name}` })).toBeFocused();
+  });
+});
+
+test.describe("S-032 deactivate and reactivate", () => {
+  test("AC1, AC2, AC6, AC10, AC11: deactivating asks first; their open tab is refused at once; reactivated, they sign in again", async ({ page, db, browser }) => {
+    test.slow();
+    const name = shortName("Dana");
+    const helper = await createE2eAdmin(db, { name });
+    // The helper's phone, signed in before the deactivation.
+    const phone = await browser.newContext({ viewport: { width: 375, height: 667 } });
+    const phonePage = await phone.newPage();
+    await signIn(phonePage, helper, "/admin/menu");
+    await hydrated(phonePage);
+    // A second tab of theirs, for an action posted after the deactivation.
+    const tab = await browser.newContext();
+    const tabPage = await tab.newPage();
+    await signIn(tabPage, helper, "/admin/profile");
+
+    await openTeam(page);
+    const sheet = await openPerson(page, name);
+    await sheet.getByRole("button", { name: `Deactivate ${name}` }).click();
+    const confirm = page.getByRole("dialog", { name: `Deactivate ${name}?` });
+    await expect(confirm).toContainText("signed out on every device at once");
+    await expectDialogAccessible(page, confirm);
+    await confirm.getByRole("button", { name: "Deactivate", exact: true }).click();
+    await expect(confirm).toBeHidden();
+    await expect(page.getByRole("status").filter({ hasText: `${name} is deactivated and signed out` })).toBeVisible();
+    await expect(personRow(page, name)).toContainText("Deactivated");
+    expect((await db`select active, deactivated_at is not null as stamped from admin where id = ${helper.id}`)[0]).toEqual({ active: false, stamped: true });
+
+    // AC2: the phone's very next page request lands on sign-in.
+    await phonePage.getByRole("navigation", { name: "Admin" }).getByRole("link", { name: /^Orders/ }).click();
+    await expect(phonePage).toHaveURL(/\/admin\/login/);
+    // AC2: an action from the other tab gets 401 and no data.
+    const posted = await tabPage.request.post("/admin/profile", {
+      form: { intent: "updateProfile", name: "Still here", locale: "en" },
+      headers: { origin: new URL(tabPage.url()).origin },
+      maxRedirects: 0,
+    });
+    expect(posted.status()).toBe(401);
+    expect((await db`select name from admin where id = ${helper.id}`)[0]!.name).toBe(name);
+    // AC7 (generic refusal) while deactivated.
+    await phonePage.getByRole("textbox", { name: "Email" }).fill(helper.email);
+    await phonePage.getByLabel(/^Password/).fill(helper.password);
+    await phonePage.getByRole("button", { name: "Sign in" }).click();
+    await expect(phonePage.getByText("Email or password is not right")).toBeVisible();
+
+    await dismissToasts(page);
+    const again = await openPerson(page, name);
+    await expect(again).toContainText("Admin · Deactivated");
+    await again.getByRole("button", { name: `Reactivate ${name}` }).click();
+    await expect(again).toBeHidden();
+    await expect(page.getByRole("status").filter({ hasText: `${name} is active again` })).toBeVisible();
+    await expect(personRow(page, name)).toContainText("Active");
+
+    // AC6: they sign in again with their unchanged password; the old tab must sign in too.
+    await signIn(phonePage, helper, "/admin");
+    await expect(phonePage.getByRole("navigation", { name: "Admin" })).toBeVisible();
+    await tabPage.goto("/admin/profile");
+    await expect(tabPage).toHaveURL(/\/admin\/login/);
+    await phone.close();
+    await tab.close();
   });
 });

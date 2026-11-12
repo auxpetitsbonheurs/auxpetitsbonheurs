@@ -54,12 +54,34 @@ export function NotAvailableYet({ title }: { title: string }) {
 }
 
 /**
- * ErrorBoundary for admin pages, rendered inside the frame: 403 is the Owner-only state,
- * 404 the not-found text, anything else says what happened and offers Retry.
+ * An action answered 401 (S-032 AC2: deactivated, or the session ended, in a tab left open):
+ * nothing was done and no data shown; one link back to sign-in (a full page load, so the
+ * cleared session cookie applies).
+ */
+export function SignedOut() {
+  const { t } = useI18n();
+  return (
+    <>
+      <FocusedHeading>{t("admin.states.signedOutTitle")}</FocusedHeading>
+      <p className="mt-3 max-w-measure">{t("admin.states.signedOutBody")}</p>
+      <p className="mt-6">
+        <a href="/admin/login" className="inline-flex min-h-11 items-center font-semibold link">
+          {t("admin.states.signIn")}
+        </a>
+      </p>
+    </>
+  );
+}
+
+/**
+ * ErrorBoundary for admin pages, rendered inside the frame: 401 is the signed-out state,
+ * 403 the Owner-only state, 404 the not-found text, anything else says what happened and
+ * offers Retry.
  */
 export function AdminErrorBoundary({ error }: { error: unknown }) {
   const { t } = useI18n();
   const revalidator = useRevalidator();
+  if (isRouteErrorResponse(error) && error.status === 401) return <SignedOut />;
   if (isRouteErrorResponse(error) && error.status === 403) return <OwnerOnly />;
   const notFound = isRouteErrorResponse(error) && error.status === 404;
   return (

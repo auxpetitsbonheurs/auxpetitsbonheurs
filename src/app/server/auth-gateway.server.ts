@@ -30,6 +30,12 @@ export interface AuthGateway {
    * `false` when Auth refused or failed (the caller logs it; the password is changed anyway).
    */
   signOutOthers(): Promise<boolean>;
+  /**
+   * Ends EVERY session of this request's user, this device included (S-032: a deactivated
+   * or revoked admin). Clears this device's cookies even when Auth refuses or fails; `false`
+   * then (the caller logs it: the admin row already blocks access server-side).
+   */
+  signOutEverywhere(): Promise<boolean>;
   /** Set-Cookie values produced so far that are not yet on a response; returns each once. */
   takeSetCookies(): string[];
   /**

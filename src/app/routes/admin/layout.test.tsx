@@ -4,14 +4,17 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createRoutesStub } from "react-router";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { AdminHeader } from "~/components/admin/admin-header";
+import { AdminBottomBar, reviewDotLabel } from "~/components/admin/bottom-bar";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { messagesFor } from "~/i18n/catalog.server";
 import { I18nProvider } from "~/i18n/react";
 import { signedInAdmin } from "~/server/testing/admin-session";
+import { placeTestOrder } from "~/server/testing/orders";
 import { routeArgs } from "~/server/testing/route-context";
 import * as calendar from "./calendar";
 import * as customers from "./customers";
 import * as gallery from "./gallery";
+import * as layoutModule from "./layout";
 import { clientLoader as layoutClientLoader, loader as layoutLoader } from "./layout";
 import { loader as moreLoader } from "./more";
 import * as sales from "./sales";
@@ -37,13 +40,73 @@ describe("admin/layout loader", () => {
 
     const data = await layoutLoader(args("/admin"));
 
-    expect(data).toEqual({ me: { id: expect.any(String), name: "Sarah", role: "owner", locale: "en" }, nav: { ownerItems: true }, vapidPublicKey: null });
+    expect(data).toEqual({
+      me: { id: expect.any(String), name: "Sarah", role: "owner", locale: "en" },
+      nav: { ownerItems: true },
+      badges: { toReview: 0 },
+      vapidPublicKey: null,
+    });
   });
 
   test("AC4: an Admin gets nav.ownerItems false", async () => {
     const args = await as("admin");
 
     expect(await layoutLoader(args("/admin"))).toMatchObject({ me: { role: "admin" }, nav: { ownerItems: false } });
+  });
+});
+
+describe("Orders badge (S-034)", () => {
+  const setStatus = (status: string, token: string) => database.client.query("update orders set status = $1 where tracking_token = $2", [status, token]);
+
+  test("AC1: 3 orders in Pending approval or Quote needed give toReview 3; other statuses do not count", async () => {
+    const placed = [];
+    for (let i = 0; i < 4; i += 1) placed.push(await placeTestOrder(database));
+    await setStatus("quote_needed", placed[1]!.token);
+    await setStatus("approved", placed[3]!.token);
+    const args = await as("admin");
+
+    expect((await layoutLoader(args("/admin"))).badges).toEqual({ toReview: 3 });
+  });
+
+  test("AC2: no orders to review gives 0, and the bar shows no dot and no extra text", async () => {
+    const args = await as("admin");
+    expect((await layoutLoader(args("/admin"))).badges).toEqual({ toReview: 0 });
+
+    const html = render(<AdminBottomBar toReview={0} />);
+    expect(html).not.toContain("data-review-dot");
+    expect(html).not.toContain("to review");
+  });
+
+  test("AC3: after an order is approved the next load counts one fewer (default revalidation kept)", async () => {
+    const first = await placeTestOrder(database);
+    await placeTestOrder(database);
+    const args = await as("owner");
+    expect((await layoutLoader(args("/admin"))).badges.toReview).toBe(2);
+
+    await setStatus("approved", first.token);
+
+    expect((await layoutLoader(args("/admin/orders"))).badges.toReview).toBe(1);
+    expect(Object.keys(layoutModule)).not.toContain("shouldRevalidate");
+  });
+
+  test("AC1: the dot shows the number and the link says 3 to review", () => {
+    const html = render(<AdminBottomBar toReview={3} />);
+
+    expect(html).toMatch(/data-review-dot=""[^>]*>3<\/span>/);
+    expect(html).toContain(", 3 to review");
+  });
+
+  test("AC4: in French the accessible text reads 3 à valider", () => {
+    expect(render(<AdminBottomBar toReview={3} />, "fr")).toContain(", 3 à valider");
+  });
+
+  test("AC5: 12 shows 9+ and still says 12 to review", () => {
+    const html = render(<AdminBottomBar toReview={12} />);
+
+    expect(html).toMatch(/data-review-dot=""[^>]*>9\+<\/span>/);
+    expect(html).toContain(", 12 to review");
+    expect(reviewDotLabel(9)).toBe("9");
+    expect(reviewDotLabel(10)).toBe("9+");
   });
 });
 
