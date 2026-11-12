@@ -60,6 +60,8 @@ The briefs set no metrics. Targets below are accepted as working targets (2026-1
 - Custom cake requests and quotes with automatic expiry. Value: one flow for bespoke cakes.
 - Guest ordering, tracking by private link, self-cancel while pending. Value: no account friction.
 - Optional customer accounts: saved details, My orders, Reorder, Save my details. Value: faster repeat orders.
+- Site navigation and brand pages (scope addition 2026-11-12, E-13): a 7-item menu (Home, Our story, Our collection, Custom order, Workshops, Gallery, Contact us), a public collection page, and Owner/Admin-editable Our story, Workshops, Gallery and Contact pages. Value: customers find everything in one tap; the client changes words and photos without a developer.
+- Bakery reviews (scope addition 2026-11-12, E-14, Should): signed-in customers leave one 1-5 star review with a comment; nothing shows until an Owner or Admin approves it. Value: trust from real customers, with the bakery in control.
 - Admin app (installable, push): Today, Orders, Add order (manual), Calendar and prep list, Menu, Promotions, Gallery, Customers, Sales summary, Availability, Settings, Team, My profile. Value: run the whole bakery from one phone.
 - Roles (Owner, Admin) with server-side enforcement and an activity log. Value: safe delegation and accountability.
 - Customer emails (EN/FR), admin push + email alerts, evening-before reminder, WhatsApp templates. Value: nobody is left guessing, with no paid messaging.
@@ -76,7 +78,7 @@ The briefs set no metrics. Targets below are accepted as working targets (2026-1
 - Automatic WhatsApp or SMS messages.
 - A daily order cap.
 - Promo codes, gift cards, loyalty points.
-- Customer reviews and ratings.
+- Per-product reviews and ratings. (Scope change 2026-11-12: a general bakery review section by signed-in customers is now in scope, FR-082 to FR-086; per-product reviews stay out.)
 - Delivery fees by area or distance.
 - Taxes, and discounts other than product promotions.
 - Customers editing orders themselves.
@@ -206,6 +208,26 @@ Priority: Must / Should / Could. Persona: P1 customer, P2 Owner, P3 Admin (P2/P3
 | FR-074 | If an email fails, the order is still saved, admins are still alerted, and failed emails are retried. | Must | P1,P2 | Given email provider outage, then order exists and retry succeeds later. |
 | FR-075 | Admin push alert when a website order has been in Pending approval for more than 24 hours, sent once per order to admins with push on (respecting FR-046 preferences). Tapping it opens the order. No auto-expiry or status change. | Should | P2,P3 | Given a website order Pending approval for 24 h 1 min, then each opted-in admin receives exactly one push. Given it is approved or cancelled before 24 h, then no push. Given the check runs again later, then no second push for the same order. |
 
+### 5.10 Site navigation, brand pages and reviews (added 2026-11-12)
+
+Owner decisions of 2026-11-12; epics E-13 (FR-076 to FR-081) and E-14 (FR-082 to FR-086). Slugs are English with the `/fr` prefix for French.
+
+| ID | Requirement | Pri | Persona | Acceptance |
+|---|---|---|---|---|
+| FR-076 | Every customer page has the same 7-item site navigation in this order: Home, Our story, Our collection, Custom order, Workshops, Gallery, Contact us (FR: Accueil, Notre histoire, Notre collection, Gâteau sur mesure, Ateliers, Galerie, Contact), current page marked. From 1024 px wide it is a horizontal bar in the burgundy header (logo left, links centre, language, account and basket right). Below 1024 px the header keeps language, logo and basket and adds a menu button that opens the 7 links full-screen (focus trap, Esc closes, focus returns, 44 px targets). | Must | P1 | Given a 1280 px laptop, then the 7 links show in order in the header. Given a 375 px phone, when the menu button is pressed, then the 7 links show full-screen and Esc closes it and returns focus to the button. |
+| FR-077 | "Our collection" (`/menu`) lists available products grouped by type; each card shows photo, name, "from Rs X" and a link to the product page where options are chosen and the item is added to the basket; sold-out products show a label; hidden products never appear. It reads the cached menu (ADR-0004). Filters and promotion pricing follow in FR-005/FR-016. | Must | P1 | Given available, sold-out and hidden products, then `/menu` shows the first two groups by type and not the third. |
+| FR-078 | Our story, Workshops and Gallery (intro) pages show text and photos in the visitor's language with EN fallback per field. Owner and Admin edit that text and those photos in the admin app (Pages; gallery photos in Gallery, FR-064) with no deployment. Until edited, pages carry neutral placeholder text and are marked "sample text" in admin. Workshops is information only (no booking). | Must | P1, P2, P3 | Given an edited paragraph, then it shows on the page within 60 s. Given a missing FR text, then EN shows. |
+| FR-079 | Contact us shows WhatsApp, phone, pickup area (Beau Bassin) and opening hours, plus a map link when one is set in Settings. No contact form and no email address until a custom domain exists. Contact details come from Settings (Owner only); opening hours and the area note are editable page text (Owner and Admin). | Must | P1 | Given Settings values, then the page shows them; given no map link, then no map button. |
+| FR-080 | Custom order (`/custom-cake`) explains custom cakes and how they work and shows a "Contact us on WhatsApp" button until the request form (FR-028) is live; the form then replaces the button. | Must | P1 | Given the interim page, then the WhatsApp link opens a chat with a pre-filled message in the visitor's language. |
+| FR-081 | Each new page has a unique title and description per language, canonical, hreflang alternates, a share preview and a sitemap entry; pages still holding placeholder text are noindex and left out of the sitemap. | Must | P1 | Given each page in EN and FR, then title, description and hreflang are present and correct. |
+| FR-082 | A signed-in customer can post one review of the bakery: 1 to 5 stars and a comment of 1 to 1000 characters (plain text, escaped). The review can be edited; an edit goes back to approval. Posting and editing are rate-limited. Visitors who are not signed in are offered sign-in. | Should | P1 | Given a signed-in customer with no review, then they can post; given one already, then the form edits it. Given a 1001-character comment, then it is refused. |
+| FR-083 | A review is public only after an Owner or Admin approves it. Admin has a "Reviews to approve" list with Approve and Reject and a count badge like To review. | Should | P2, P3 | Given a new review, then it is absent from the site and counted in the badge; after Approve it shows and the count drops. |
+| FR-084 | An Admin or Owner can hide a published review later (and show it again). | Should | P2, P3 | Given a published review, when hidden, then it disappears from Home and the Reviews page and the average is recalculated. |
+| FR-085 | Home shows a Reviews section (average rating and the latest approved reviews) when at least one approved review exists, with a link to a public Reviews page (`/reviews`), which is also linked from the footer. Reviews is not a navigation item. Each review shows the first name, last initial and date. No rating structured data is published unless it is allowed by search-engine policy for a business's own reviews. | Should | P1 | Given 2 approved reviews of 5 and 4 stars, then Home shows 4.5 average from 2 reviews and the page lists both with "Anna K." and a date. |
+| FR-086 | A customer can delete their own review at any time; deleting their account removes their reviews. Reviews store only what is shown plus the account link (Mauritius Data Protection Act 2017 `[TO CONFIRM]`, NFR-004). | Should | P1 | Given a delete, then the review is gone from the site and the database. |
+
+Dependency: FR-082 to FR-086 need customer sign-in (E-11, FR-034: S-206 sign-up, S-207 sign-in, S-210 profile with name). E-11 does provide it. If customer accounts are cut (section 11), reviews are cut with them.
+
 ## 6. Non-functional requirements
 
 | ID | Area | Requirement |
@@ -295,7 +317,7 @@ Seven build phases, each ending with "done when" checks that must all pass befor
 | 6 Real content and polish | Real products, photos, texts, translations; visual identity; share previews; privacy note; speed and accessibility | Quality requirements (section 6) met on a real mid-range phone. |
 | 7 Testing, launch, handover | Full test pass on the owner's phone (Appendix A), domain, backup, launch, walkthrough, handover list | Owner placed a real test order as a customer and approved it as admin on her own phone, and every Handover item is ticked. |
 
-Milestones: MVP = end of phase 5 on sample data (usable internally); beta = phase 6 with owner and a few trusted customers; launch = phase 7 done. Dates are not fixed. Capacity: one developer with AI agents, built phase by phase. If capacity is tight, cut the Should items in this order: CSV export, Customers list, Reorder, Save my details, customer accounts. The MVP stays usable without them.
+Milestones: MVP = end of phase 5 on sample data (usable internally); beta = phase 6 with owner and a few trusted customers; launch = phase 7 done. Dates are not fixed. Capacity: one developer with AI agents, built phase by phase. If capacity is tight, cut the Should items in this order: CSV export, Customers list, Reorder, Save my details, bakery reviews (FR-082 to FR-086, added 2026-11-12, proposed position [TO CONFIRM by product-director]; also gone if accounts are cut), customer accounts. E-13 (navigation and brand pages) is Must and joins phase 3; E-14 (reviews) joins phase 5 after accounts. The MVP stays usable without them.
 
 Handover checklist (must all be ticked at launch): all service accounts on the bakery's own email; two-step sign-in handed over to the bakery (phone or shared password manager); domain registered to Aux petits bonheurs with auto-renew and the bakery's card; secrets in the bakery's accounts; README (what each service does, run locally, deploy, restore backup, every setting); one-page handover sheet (service, purpose, login location, yearly cost); weekly backups to bakery storage with a tested restore; code, design and content stated to belong to Aux petits bonheurs; builder remains a team member for 3 months aftercare then removable by the Owner.
 
@@ -320,6 +342,8 @@ Gaps found by product-manager (proposed answers in assumptions):
 14. Brand identity (placeholder: cream, one pastel accent, rounded serif headings, sans-serif text). — owner Sabera / design-director
 15. Payment. **RESOLVED 2026-11-10**: no online payment; information only; admins mark paid/unpaid manually (A4).
 16. RESOLVED: project.yaml has `i18n.locales: [en, fr]` and `privacy.regions: [mu]`.
+17. Workshops: how will booking work later (request form, WhatsApp, paid tickets)? Information page only for now (E-13, 2026-11-12). — owner Sabera
+18. Reviews: may Google rating stars be shown for the bakery's own reviews? Proposed no (search-engine policy treats a business's own-site reviews of itself as not eligible); no AggregateRating markup until confirmed (E-14). Retention of reviews and the DPA basis fall under question 12.
 
 ## Appendix A: Launch test checklist (traceability)
 
@@ -365,4 +389,5 @@ Rules: An admin edit that changes an order's date and/or total sends "Your order
 ## Changelog
 - 2026-11-09 v0.1 draft by product-manager from build-brief.md and feature-plan.md.
 - 2026-11-10 v0.2 owner answers applied: notice 3 days, Sunday closed, quote validity 5 days, cancellation policy and storage advice in FAQ, Admin rights confirmed, new FR-075 (24 h pending reminder); fee, address, Juice number, domain still open.
+- 2026-11-12 v0.4 scope change (Owner decisions, product-manager): new section 5.10 with FR-076 to FR-081 (site navigation, collection page, editable brand pages, contact, custom-order interim page, SEO; epic E-13) and FR-082 to FR-086 (bakery reviews by signed-in customers with approval; epic E-14, Should). "Customer reviews and ratings" removed from Non-goals for the general bakery review only; per-product reviews stay out. Release plan and cut order updated; open questions 17 and 18 added. Pending product-director confirmation of the cut-order position.
 - 2026-11-10 v0.3 launch values: fee Rs 200, pickup Beau Bassin, Juice number and exact address set by the owner on deploy day, Cloudflare default address at launch; bakery's Cloudflare, Supabase and Resend accounts created by the owner.
