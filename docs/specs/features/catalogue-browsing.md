@@ -61,6 +61,15 @@ Home or Menu -> filter (chips, URL-driven so the back button and shared links ke
 - Card price: `fromPriceRs`; if a live promotion applies, struck `fromPriceRs` plus `salePriceRs` and a sale/promo badge (`ProductCard` in contracts.md).
 - "Seasonal" filter and the Home seasonal row show products with a seasonal window that contains today (Mauritius).
 
+### Site navigation (FR-076; E-13 S-242, S-243, as built 2026-11-12)
+- One list (`app/lib/site-nav.ts` `SITE_NAV_ITEMS`): Home `/`, Our story `/our-story`, Our collection `/menu`, Custom order `/custom-cake`, Workshops `/workshops`, Gallery `/gallery`, Contact us `/contact`; labels `nav.items.*` (FR Accueil, Notre histoire, Notre collection, Gâteau sur mesure, Ateliers, Galerie, Contact); `/fr` prefix in French. The current page (and `/menu/:slug` for Our collection) has `aria-current="page"` and a gold underline.
+- From 1024 px: burgundy header with logo at the start, the 7 links centred (`<nav aria-label="Main">`), then language switch, account (hidden until E-11) and basket. Below 1024 px the bar is `display: none` and the header keeps language, logo, basket, plus a 44 px Menu button.
+- Menu button: a native modal `<dialog>` full screen (burgundy, cream, title "Menu", Close 44 px, rows ≥ 48 px with 8 px gaps); page behind inert and not scrolling; Tab wraps; Esc and Close return focus to the button; another page's link closes it and focuses that page's `h1`. Before hydration or without JavaScript the button is a link to `/menu-links` (the 7 links on a plain page). Short fade, none under reduced motion.
+- Pages not built yet (S-248..S-252) answer 200 with a calm "coming soon" page, noindex, until their story replaces the route module.
+
+### Our collection (FR-077; S-244, as built 2026-11-12)
+`/menu`: `h1` "Our collection", a short intro, type chips (in-page anchors) when 2+ types, then one `section-title` `h2` per type with products (cake, cupcake box, dessert "Cookies & desserts", seasonal) in `sort_order`. Cards: first photo (4:3, explicit size, eager for the first 4, lazy after), name (the card's one link, stretched over the card; ring on the card), "from Rs X" (`fromPriceRs`, nowrap), "Sold out" with icon, and "Choose options" (required group) or "See details". 1 column below 20rem, 2 on phones, 3 at md, 4 at lg. Empty: "Our collection is being prepared." + WhatsApp; load failure: danger Alert with Try again + WhatsApp. Filters and promotion pricing come with S-064 on the same route.
+
 ### Product page (FR-007, FR-008)
 - Photos 1-5 (carousel, alt = product name in locale), description, allergen tags + fixed kitchen note, one Option picker per group by kind, Message-on-cake field with counter (limit `cakeMessageMax`, from Settings, default 40; text groups use their own `textMaxLength`), Stepper, live Price, "Earliest date: {date}" (this product's notice only; the basket may push it later), sticky bar.
 - Live price = `priceLine` from `app/domain/pricing.ts` run in the browser on the loader's product data; the server price is authoritative (FR-011). Price updates announced politely, debounced.
