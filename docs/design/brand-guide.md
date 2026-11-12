@@ -1,32 +1,37 @@
 <!-- Template: brand-guide | Filled by: /brand-identity (design-director, ui-designer) | Output: docs/design/brand-guide.md -->
 # Brand Guide — Aux petits bonheurs
 
-Version: 0.2 · Updated: 2026-11-10
+Version: 0.3 · Updated: 2026-11-12
 
-> **Chosen direction: D4 · Honey & cream** (Owner decision, 2026-11-10). The Owner
-> found v0.1 ("Salon de thé rose") "far too pink and girly" and chose D4 from
-> 4 directions × 4 palettes. The approved mockup is
-> `docs/design/explorations/2026-11-10-D4-honey-cream.html` (phone home screen); it is
-> the source of truth for look and layout. v0.1 is kept below as **superseded**.
-> Logo files are still pending; the wordmark is text. Assumptions are marked *(assumed)*.
+> **Chosen direction: Burgundy, cream & antique gold** (Owner decisions, 2026-11-12). The Owner
+> supplied the look reference `docs/design/explorations/2026-11-12-burgundy-reference.jpg`
+> (site, cake box, gift box and sticker) and then the logo reference
+> `docs/design/explorations/2026-11-12-logo-badges-reference.jpg` (two round badges:
+> "Crème Brûlée × Cherry Tart × Antique Gold"). The palette is taken from the badges.
+> It replaces v0.2 D4 Honey & cream, kept below as **superseded** with v0.1.
+> Assumptions are marked *(assumed)*.
 
 ## Grounding
 
 - **Subject:** a home bakery in Mauritius: celebration cakes, cupcake boxes, desserts, seasonal specials.
 - **Audience:** Mauritian customers arriving from Instagram on their phones, ordering for a birthday, a family event or a treat; EN or FR.
 - **Primary job:** browse, choose options, and place an order (or ask for a custom cake quote) with confidence about the date.
-- **First feeling:** "This is made by a real person who cares, and ordering is easy."
+- **First feeling:** "This is a real pâtisserie that cares, and ordering is easy."
 - **What not to look like:** generic Shopify bakery templates (stock photos, black-and-gold luxury), or busy Instagram-collage pages with five fonts and neon pinks.
 
-## Chosen direction: D4 · Honey & cream
+## Chosen direction: Burgundy, cream & antique gold (v0.3)
 
-- **Rationale:** Owner feedback 2026-11-10: too pink; chose D4 Honey & cream from 4 directions × 4 palettes.
-- **Idea:** a modern, homey, elegant pâtisserie: warm cream paper, honey and toasted-brown ink, a classic Caslon serif for headings and a clean humanist sans for everything else. Calm, grown-up and inviting; the cakes bring the colour.
-- **What changed from v0.1:** no pink or rose anywhere; one honey accent; Libre Caslon (Display + Text) replaces Fraunces; Source Sans 3 replaces Nunito Sans; buttons are 12 px rounded rectangles, not pills; no gradients, no heavy shadows.
-- **Layout cues (mockup):** header = language link at the start, centred Caslon wordmark, basket icon at the end; centred hero (italic Caslon tagline in the accent colour, big Caslon headline, muted paragraph, honey button); centred section headings; product cards in 2 columns on phones; soft honey band for the custom-cake call-out; centred footer with the wordmark.
-- **Shape:** buttons radius 12 px, min height 48 px (44 px minimum tap target everywhere); cards radius 14 px with a 1 px honey-200 border on a near-white surface; images radius 10–16 px (10 inside cards, 16 for large photos); soft bands radius 16 px. Flat: no gradients, shadows only as a hairline lift on sticky bars.
-- **Sample headline:** "Little joys, baked to order" with tagline *fait maison à Beau Bassin* *(mockup copy; final copy in S-222)*.
-- **Risk:** brown-on-cream can feel dull if photos are weak; keep photos warm and generous, and use the honey accent for one primary action per view.
+- **Rationale (2026-11-12):** the Owner wants the shop to feel like the reference: a boxed, gift-like pâtisserie. Deep cherry-burgundy bands, crème-brûlée paper and fine antique-gold lines read "special occasion" and match the logo and packaging, while cream pages keep the menu calm and readable on a phone.
+- **Owner decisions:**
+  1. Full look on the customer site: burgundy header and footer bands, cream pages, thin gold lines and dividers (gold rules flanking section titles), burgundy primary buttons, a burgundy custom-cake band with a cream outline pill.
+  2. **Logo (revised the same day):** a real logo replaces the text wordmark: the two round badges of the logo reference, redrawn as SVG (see Logo). The palette follows the badges: Cherry Tart burgundy, Crème brûlée cream, antique gold.
+  3. Titles in **Cormorant Garamond**; body stays **Source Sans 3**. Libre Caslon is removed.
+  4. **Admin app:** same palette, calmer: burgundy buttons and accents on cream, no dark bands, no gold lines (the small logo mark in the admin header is the only gold).
+- **Idea:** a classic French pâtisserie box: cream card, a cherry-red ribbon, a fine gold rule. Burgundy frames the page (header, footer, call-outs); the content area is cream and quiet so the cakes bring the colour.
+- **What changed from v0.2:** honey and brown ink are gone; one brand colour (burgundy) plus decorative gold; Cormorant Garamond replaces Libre Caslon Display/Text; header and footer become full-bleed burgundy bands with a 1 px gold rule; the text wordmark becomes the logo; section titles get thin gold rules. Shapes are unchanged (12 px buttons, 14 px cards, 48 px buttons).
+- **Layout cues (reference):** header band = language link, centred logo lockup (cream script, gold mark), basket; cream hero with a large Cormorant headline and a short gold rule; centred titles flanked by gold rules ("Notre collection"); product cards in 2 columns on phones; burgundy custom-cake band with a cream outline pill ("Demander un devis"); burgundy footer with the burgundy logo badge.
+- **Gold is decorative.** Antique gold #BA8430 measures 2.9:1 on cream and 3.9:1 on burgundy, so outside the logo it is used only for hairlines and rules, never for text or as the only edge of a control. Where gold must carry meaning on a band (basket count badge, link hover) the lighter gold #E2B66E is used (6.8:1).
+- **Risk:** burgundy-and-gold can tip into "black-and-gold luxury" cliché; keep gold to 1 px lines and the logo, keep pages cream, and keep the copy warm and plain.
 
 ## Brand core
 - **Purpose:** make small celebrations easy to order and lovely to receive.
@@ -56,118 +61,138 @@ We speak as the bakery ("we"), to one customer ("you"). Short sentences. Prices 
 - **Formatting:** prices as "Rs 1,250" (EN) / "Rs 1 250" (FR, narrow no-break space); dates written out with weekday; 24h time in FR, "2:30 pm" in EN.
 
 ## Logo
-- **Files:** none yet. Placeholder is a **text wordmark**: "Aux petits bonheurs" in Libre Caslon Display 400, sentence case, ink #3A2A1C (light) / cream #F6EEDF (dark); 22 px in the top bar (18 px below 368 px wide), 20 px in the footer.
-- **Short form:** "apb" is not used publicly; on tight spaces (favicon, app icon) use "a" lowercase Libre Caslon Display in cream #FFFDF8 on honey #8C5A1E *(placeholder)*.
-- **Clear space:** at least the cap height of the wordmark on all sides. **Minimum size:** 16 px tall on screen.
-- **When the owner supplies a logo:** it replaces the wordmark; keep the clear-space rule and check it on cream and espresso backgrounds.
-- **Don'ts:** stretch, outline, drop shadow, gradient, recolour to anything but ink, cream or honey-700, place on busy photos without a cream scrim.
+Source: `docs/design/explorations/2026-11-12-logo-badges-reference.jpg`, redrawn by hand as optimised SVG. The script ("Aux Petits / Bonheurs", Great Vibes) and the tagline ("PÂTISSERIE ARTISANALE", Cormorant Garamond 600 caps, tracked) are **converted to outlined paths**, so no logo font loads; the heart-and-whisk mark is a line drawing. Accessible name everywhere: "Aux petits bonheurs" (`alt`, `aria-label`).
+
+| File | Version | Use |
+|---|---|---|
+| `src/public/brand/logo-badge-cream.svg` (15 kB, ~5 kB gzipped) | 1 · Crème brûlée × Cherry Tart × Antique Gold: cream #FCEAD8 fill, burgundy #660C0C script and tagline, gold #BA8430 ring, mark and rules | Light pages (admin sign-in and header mark), emails (`logo-badge-cream-160.png`), OG image (`og-image.png`) |
+| `src/public/brand/logo-badge-burgundy.svg` | 2 · Cherry Tart × Crème brûlée × Antique Gold: burgundy fill, cream script | Footer band; admin app icons (`/admin/icon-*.png`, maskable on burgundy full bleed, Apple touch icon) |
+| `src/public/brand/logo-lockup-cream.svg` (10 kB) | Compact header lockup: two-line cream script, small gold mark, no ring or tagline | The burgundy header band, 52 px tall (44 px below 368 px) |
+| `src/public/brand/logo-lockup-burgundy.svg` | Same lockup in burgundy | Light surfaces where a badge is too large |
+| `src/public/favicon.svg` / `favicon.ico` | Version 1 colours reduced for 16–48 px: cream disc, gold ring, burgundy heart-and-whisk (text is illegible that small) | Browser tab |
+
+- **Clear space:** at least 1/8 of the badge diameter on all sides. **Minimum size:** badge 32 px (tagline is decorative below 96 px); lockup 40 px tall.
+- **Contrast:** logos are exempt from WCAG 1.4.3, but both versions still pass: burgundy script on cream 11.0:1, cream on burgundy 11.0:1. The gold ring and mark are decorative.
+- **Don'ts:** recolour outside the three logo colours, stretch, add shadows or gradients, place the cream badge on a busy photo without a cream scrim, retype the script in a live font.
 
 ## Colour
 
-Values live in `docs/design/tokens.json`; this section explains usage. One accent only: honey. Everything else is cream and warm brown ink. Ratios computed per WCAG 2.x relative luminance (rounded down) and re-checked by `src/app/lib/tokens.test.ts`.
+Values live in `docs/design/tokens.json`; this section explains usage. One brand colour (Cherry Tart burgundy), crème-brûlée paper, wine-brown ink, and decorative antique-gold lines. Ratios computed per WCAG 2.x relative luminance on 2026-11-12 (rounded down) and re-checked by `src/app/lib/tokens.test.ts`.
 
 ### Light theme
 
 | Role | Token | Light | Use |
 |---|---|---|---|
-| Background | color.bg | #FAF5EC cream | Page background |
-| Surface | color.surface | #FFFDF8 | Cards (1 px border), inputs, sticky bars |
-| Soft band | color.muted | #F1E3C8 honey-200 | Footer-style bands, order summaries, custom-cake call-out |
-| Surface accent | color.accent | #F7ECD9 honey-100 | Selected radio card / chip, hover on outline buttons |
-| Image placeholder | color.decorative | #EFDDBD honey-300 | Photo backdrop and placeholder only. **Never text** |
-| Text | color.fg | #3A2A1C ink | Body and headings |
-| Text muted | color.muted-fg | #5E4C3A | Secondary text, captions, hero paragraph |
-| Primary | color.primary | #8C5A1E honey-600 | Buttons (text #FFFDF8), focus ring, count badge |
-| Link / accent text | color.primary-strong | #7D4F17 honey-700 | Links, italic tagline, prices; button hover |
-| Link hover | color.link-hover | #5C390F honey-800 | Link hover |
-| Border (UI) | color.border-input | #8C7862 | Input, checkbox, radio outlines |
-| Border (decor) | color.border | #F1E3C8 | Card hairlines (not relied on for meaning) |
+| Background | color.bg | #FBF3E8 cream | Page background |
+| Surface | color.surface | #FFFBF5 | Cards (1 px hairline), inputs, sticky bars |
+| Soft band | color.muted | #F6EAD8 cream | Order summaries, confirmation number |
+| Surface accent | color.accent | #F3E2D0 | Selected radio card / chip, hover on outline buttons |
+| Image placeholder | color.decorative | #EFDCC6 | Photo backdrop and placeholder only. **Never text** |
+| Text | color.fg | #3B1512 wine ink | Body and headings |
+| Text muted | color.muted-fg | #6E4A44 | Secondary text, captions, hero paragraph |
+| Primary | color.primary | #660C0C Cherry Tart | Buttons (cream #FCEAD8 text), focus ring, selected controls |
+| Link / accent text | color.primary-strong | #520909 | Links, prices; button hover |
+| Link hover | color.link-hover | #3D0707 | Link hover |
+| Band | color.band | #660C0C Cherry Tart (= logo badge 2) | Customer header, footer, call-out bands (not admin) |
+| Text on band | color.band-fg | #FCEAD8 Crème brûlée (= logo cream) | Links, icons, focus ring on bands |
+| Muted text on band | color.band-muted-fg | #EBD3BE | Pickup address, copyright on bands |
+| Light gold on band | color.band-gold | #E2B66E | Basket count badge (burgundy text), link hover on bands |
+| Gold line | color.gold | #BA8430 antique gold (= logo ring) | 1 px rules: header bottom, footer top, section titles. **Decorative only** (customer site) |
+| Border (UI) | color.border-input | #8C6E66 | Input, checkbox, radio outlines |
+| Border (decor) | color.border | #EAD6BC | Card hairlines (not relied on for meaning) |
 | Success / Warning / Danger / Info | color.* | #2F6B4F / #8A5A00 / #A8322D / #2E5E7E | Status, always with a word and an icon |
 
-### Dark theme (espresso)
+### Dark theme (cellar)
 
-Derived for D4: warm dark-brown surfaces, honey and cream accents.
+Not in the reference; derived so dark-mode phones keep the same identity: deep wine-black surfaces, cream text, a **cream** primary button with burgundy text, champagne links. Bands and logos stay the same.
 
 | Role | Token | Dark | Use |
 |---|---|---|---|
-| Background | color.bg | #1C1510 | Page |
-| Surface | color.surface | #271E17 | Cards, inputs, sticky bars |
-| Soft band | color.muted | #2E241B | Bands, summaries |
-| Surface accent | color.accent | #3A2C1E | Selected card |
-| Image placeholder | color.decorative | #3F3123 | Photo backdrop only |
-| Text / muted | color.fg / color.muted-fg | #F6EEDF / #D4C3AA | Body / secondary |
-| Primary | color.primary | #E2B26A honey-400 | Buttons with #1C1510 text, focus ring |
-| Link / accent text | color.primary-strong | #EBC487 | Links, tagline, prices; button hover |
-| Link hover | color.link-hover | #F5DDB3 | Link hover |
-| Border (UI) / decor | color.border-input / color.border | #9C8670 / #3E3125 | Inputs / card hairlines |
+| Background | color.bg | #1A0D0B | Page |
+| Surface | color.surface | #24120F | Cards, inputs, sticky bars |
+| Soft band | color.muted | #2D1714 | Summaries |
+| Surface accent | color.accent | #3B1D19 | Selected card |
+| Image placeholder | color.decorative | #40221D | Photo backdrop only |
+| Text / muted | color.fg / color.muted-fg | #F6EAD8 / #DCC3B4 | Body / secondary |
+| Primary | color.primary | #F6EAD8 cream | Buttons with #520909 text |
+| Link / accent text | color.primary-strong | #E3C08A champagne | Links, prices; button hover; focus ring |
+| Link hover | color.link-hover | #F3DDB8 | Link hover |
+| Band / on band | color.band / band-fg / band-muted-fg / band-gold | #660C0C / #FCEAD8 / #EBD3BE / #E2B66E | Same as light |
+| Gold line | color.gold | #BA8430 | Decorative rules |
+| Border (UI) / decor | color.border-input / color.border | #A5877C / #47291F | Inputs / card hairlines |
 | Success / Warning / Danger / Info | color.* | #7FC8A0 / #E8B860 / #F08A80 / #8EC1E0 | Same roles as light |
 
 ### Contrast checks (WCAG 2.2 AA)
 
-Every text/background pair in the approved mockup passes as drawn; no mockup colour had to change. `border-input` (not in the mockup) was chosen at #8C7862 so outlines reach 3:1 on bg, surface and the soft band.
+Text needs 4.5:1, large text and UI parts (outlines, focus ring) 3:1. Every pair below is recomputed by `src/app/lib/tokens.test.ts`.
 
 | Pair (light) | Ratio | Result |
 |---|---|---|
-| Ink #3A2A1C on cream #FAF5EC / surface #FFFDF8 / band #F1E3C8 | 12.6 / 13.5 / 10.8:1 | Pass |
-| Muted #5E4C3A on cream / surface / band / placeholder #EFDDBD | 7.5 / 8.0 / 6.4 / 6.1:1 | Pass |
-| #FFFDF8 on honey #8C5A1E (button) / on #7D4F17 (hover) | 5.7 / 6.8:1 | Pass |
-| Honey #8C5A1E on cream / surface / band | 5.3 / 5.7 / 4.6:1 | Pass |
-| Link #7D4F17 on cream / surface / band / accent #F7ECD9 | 6.4 / 6.8 / 5.5 / 5.9:1 | Pass |
-| Link hover #5C390F on cream / band | 9.4 / 8.0:1 | Pass |
-| Input border #8C7862 on cream / surface / band | 3.8 / 4.1 / 3.3:1 | Pass (UI 3:1) |
-| Focus ring #8C5A1E on cream | 5.3:1 | Pass (UI 3:1) |
-| Success / Warning / Danger / Info on cream | 5.7 / 5.4 / 6.1 / 6.4:1 | Pass |
-| Success / Warning / Danger / Info on band | 4.9 / 4.6 / 5.2 / 5.4:1 | Pass |
-| Placeholder #EFDDBD on cream | 1.2:1 | Surface only, never text |
+| Ink #3B1512 on cream / surface / soft band / accent | 14.6 / 15.6 / 13.5 / 12.7:1 | Pass |
+| Muted #6E4A44 on cream / surface / soft band / accent / placeholder | 7.0 / 7.4 / 6.4 / 6.0 / 5.7:1 | Pass |
+| Cream #FCEAD8 on burgundy #660C0C (button) / on #520909 (hover) | 11.0 / 12.7:1 | Pass |
+| Burgundy #660C0C on cream / surface / soft band | 11.7 / 12.5 / 10.8:1 | Pass |
+| Link #520909 on cream / surface / soft band / accent | 13.6 / 14.5 / 12.6 / 11.8:1 | Pass |
+| Link hover #3D0707 on cream / soft band | 15.4 / 14.3:1 | Pass |
+| Cream #FCEAD8 on band #660C0C (links, focus ring, logo script) | 11.0:1 | Pass |
+| Muted #EBD3BE on band | 8.9:1 | Pass |
+| Light gold #E2B66E on band (badge, link hover); burgundy #660C0C on light gold (badge text) | 6.8:1 | Pass |
+| Input border #8C6E66 on cream / surface / soft band | 4.2 / 4.4 / 3.8:1 | Pass (UI 3:1) |
+| Focus ring #660C0C on cream / surface / soft band | 11.7 / 12.5 / 10.8:1 | Pass (UI 3:1) |
+| Success / Warning / Danger / Info on cream | 5.7 / 5.3 / 6.0 / 6.3:1 | Pass |
+| Success / Warning / Danger / Info on soft band | 5.2 / 4.9 / 5.5 / 5.8:1 | Pass |
+| #FFFBF5 on danger #A8322D | 6.4:1 | Pass |
+| Gold #BA8430 on cream / on band | 2.9 / 3.9:1 | **Decorative only**, never text or a control edge |
+| Placeholder #EFDCC6 on cream | 1.2:1 | Surface only, never text |
 
 | Pair (dark) | Ratio | Result |
 |---|---|---|
-| Cream #F6EEDF on #1C1510 / surface #271E17 / band #2E241B | 15.6 / 14.1 / 13.1:1 | Pass |
-| Muted #D4C3AA on bg / surface / band | 10.4 / 9.4 / 8.8:1 | Pass |
-| #1C1510 on honey #E2B26A (button) / on #EBC487 (hover) | 9.2 / 10.9:1 | Pass |
-| Link #EBC487 on bg / band / accent #3A2C1E | 10.9 / 9.2 / 8.1:1 | Pass |
-| Input border #9C8670 on bg / surface / band | 5.2 / 4.7 / 4.3:1 | Pass |
-| Status colours on bg | 9.1 / 9.8 / 7.4 / 9.3:1 | Pass |
+| Cream #F6EAD8 on #1A0D0B / surface / soft band / accent | 15.9 / 15.1 / 14.2 / 12.8:1 | Pass |
+| Muted #DCC3B4 on bg / surface / band / accent / placeholder | 11.3 / 10.7 / 10.0 / 9.0 / 8.5:1 | Pass |
+| #520909 on cream button #F6EAD8 / on hover #E3C08A | 12.6 / 8.6:1 | Pass |
+| Link #E3C08A on bg / surface / band / accent | 11.0 / 10.4 / 9.7 / 8.8:1 | Pass |
+| Input border #A5877C on bg / surface / band | 5.7 / 5.4 / 5.1:1 | Pass |
+| Focus ring #E3C08A on bg / surface | 11.0 / 10.4:1 | Pass |
+| Status colours on bg | 9.6 / 10.3 / 7.8 / 9.8:1 | Pass |
+| Bands | as light | Pass |
 
-Colour is never the only signal: status always carries a word and an icon.
+**Focus:** a 2 px ring, 2 px offset: burgundy #660C0C on cream (11.7:1), switching to cream inside any burgundy band (11.0:1), champagne #E3C08A in dark (11.0:1). Colour is never the only signal: status always carries a word and an icon.
 
 ## Typography
-- **Headings: Libre Caslon Display** (OFL), weight 400 only, for h1, h2 and the wordmark. Why: a high-contrast classic Caslon that reads "pâtisserie" and elegant without being precious; full French accent coverage. Never faux-bolded.
-- **Sub-headings: Libre Caslon Text** (OFL), 400 and 400 italic, for h3, card and product names, and the italic tagline in the accent colour.
-- **Body and UI: Source Sans 3** (OFL), 400 and 600. Why: clean, humanist, very legible at 14–16 px on phones.
-- Self-hosted through `@fontsource` packages (no Google Fonts request at runtime), `font-display: swap`, unicode-range subsets so EN/FR pages download latin (+ latin-ext only when needed). Five faces in total.
+- **Titles: Cormorant Garamond** (OFL), weights **500** (display, h1, h2) and **600** (h3, card and product names). Why: the high-contrast, elegant Garamond of the reference; it reads "pâtisserie" at large sizes, has full French accent coverage, and 600 keeps thin strokes legible at 17–22 px. Never faux-bolded; no italic shipped.
+- **Body and UI: Source Sans 3** (OFL), 400 and 600. Unchanged.
+- Self-hosted through `@fontsource` (no Google Fonts request at runtime), `font-display: swap`. Cormorant ships **only latin + latin-ext woff2** (declared in `src/app/app.css` with unicode-range, so EN/FR pages fetch latin and latin-ext only when a character needs it). Four Cormorant files (~87 kB on disk, ~23 kB per face on an EN/FR page) plus Source Sans 400/600.
 - **Scale (mobile → ≥768 px), rem based:**
 
 | Step | Use | Mobile | Desktop | Family / weight | Line height |
 |---|---|---|---|---|---|
-| display | Home hero headline | 42 px | 56 px | Caslon Display 400 | 1.08 |
-| tagline | Hero tagline | 16 px | 16 px | Caslon Text 400 italic, honey-700 | 1.4 |
-| h1 | Page title | 34 px | 44 px | Caslon Display 400 | 1.12 |
-| h2 | Section | 28 px | 28 px | Caslon Display 400 | 1.2 |
-| h3 | Card / product name | 17–20 px | 22 px | Caslon Text 400 | 1.3 |
-| wordmark | Top bar | 22 px (18 px < 368 px) | 22 px | Caslon Display 400 | 1.15 |
+| display | Home hero headline | 42 px | 56 px | Cormorant 500 | 1.08 |
+| tagline | Hero tagline (prototype) | 18 px | 18 px | Cormorant 500, burgundy | 1.4 |
+| h1 | Page title | 34 px | 44 px | Cormorant 500 | 1.12 |
+| h2 | Section (gold rules on customer pages) | 28 px | 32 px | Cormorant 500 | 1.2 |
+| h3 | Card / product name | 17–20 px | 22 px | Cormorant 600 | 1.3 |
 | body-lg | Intro, product description | 18 px | 18 px | Source Sans 3 400 | 1.6 |
 | body | Default; all inputs | 16 px | 16 px | Source Sans 3 400 | 1.55 |
 | small | Captions, helper, allergens | 14 px | 14 px | Source Sans 3 400/600 | 1.45 |
 | price | Prices | 18 px | 20 px | Source Sans 3 600, tabular figures | 1.2 |
 
-- Rules: inputs never below 16 px (prevents iOS zoom); body text never below 14 px; sentence case everywhere, no all-caps eyebrows; line length 60–75 characters; French runs ~15% longer, so buttons and chips must wrap gracefully.
+- Rules: inputs never below 16 px (prevents iOS zoom); body text never below 14 px; sentence case everywhere, no all-caps eyebrows (the logo's "PÂTISSERIE ARTISANALE" caps line lives only inside the logo); line length 60–75 characters; French runs ~15% longer, so buttons and chips must wrap gracefully.
 
 ## Imagery & illustration
 - **Photography first.** Real products from the owner's kitchen/Instagram: natural daylight, soft shadows, warm white balance, the cake as the hero, shot slightly above or straight on.
-- **Backgrounds:** cream, linen, light wood, marble; one prop at most (a fork, ribbon, candle).
+- **Backgrounds:** cream, linen, marble, a burgundy ribbon or cloth; one prop at most (a fork, ribbon, candle).
 - **Framing:** square (1:1) for product cards (radius 10 px inside the card), 4:5 for product pages, 3:2 for banners (radius 16 px).
 - **People:** hands, candles being blown out, a box being opened; faces only with consent.
-- **Illustration:** none beyond a thin honey hairline; no clip-art cupcakes, no gradients.
+- **Illustration:** none beyond thin gold hairlines; no clip-art cupcakes, no gradients.
 - **Do:** consistent warm grade across the menu; show what's actually in a cupcake box.
 - **Don't:** stock photos, heavy filters, text baked into images (breaks EN/FR), busy collages.
-- Placeholder images until the owner supplies photos: honey-300 #EFDDBD blocks with a short caption in muted text, never stock.
+- Placeholder images until the owner supplies photos: cream-300 #EFDCC6 blocks with a short caption in muted text, never stock.
 
 ## Iconography
 - **Set:** Lucide (open source, ISC), outline style.
 - **Stroke:** 1.5–1.75 px at 24 px; round caps and joins.
 - **Sizes:** 20 px inline, 22–24 px in the top bar and buttons; tap targets at least 44 × 44 px (above WCAG 2.2's 24 px minimum).
-- **Colour:** inherits text colour (ink); honey only for the active state and the basket count badge (honey-600 with #FFFDF8 text).
+- **Colour:** inherits text colour (wine ink on cream, cream on burgundy bands); the basket count badge is light gold #E2B66E with burgundy #660C0C text on the header band (6.8:1); in the admin app active states use burgundy.
 - WhatsApp and Instagram use their official glyphs, monochrome.
 
 ## Motion principles
@@ -179,14 +204,25 @@ Colour is never the only signal: status always carries a word and an icon.
 - **Reduced motion:** with `prefers-reduced-motion: reduce`, replace movement with opacity changes ≤ 150 ms or none; no scale bumps; carousels never auto-advance in any mode.
 
 ## Accessibility commitments
-- WCAG 2.2 AA in light and dark (tables above); visible 2 px focus ring in the primary colour, 2 px offset.
+- WCAG 2.2 AA in light and dark (tables above); visible 2 px focus ring, 2 px offset, burgundy on cream and cream on burgundy bands.
+- Gold never carries text or meaning on its own; section-title rules are CSS pseudo-elements (never read out).
 - Tap targets ≥ 44 px (buttons 48 px); works from 320 px wide; text resizes to 200% without loss.
-- The header keeps DOM order = visual order (language, wordmark, basket); the language link keeps `lang`/`hreflang` and is named in its own language ("Français" / "English").
+- Every logo image is named "Aux petits bonheurs" (the header logo is the home link's name); the small admin mark next to the brand text is decorative (`alt=""`).
+- The header keeps DOM order = visual order (language, logo, basket); the language link keeps `lang`/`hreflang` and is named in its own language ("Français" / "English").
 - `lang` set per page (`en` / `fr`); product photos carry EN/FR alt text.
 
 ## Examples
-- Approved mockup: `docs/design/explorations/2026-11-10-D4-honey-cream.html`.
-- Applied in `src/` (tokens in `src/app/app.css`, checked against `tokens.json` by `src/app/lib/tokens.test.ts`).
+- Owner's references: `docs/design/explorations/2026-11-12-burgundy-reference.jpg` (look) and `2026-11-12-logo-badges-reference.jpg` (logo, palette).
+- Applied in `src/` (tokens in `src/app/app.css`, checked against `tokens.json` by `src/app/lib/tokens.test.ts`; bands and gold rules are the `band`, `section-title` and `section-title-start` utilities) and in `prototypes/apb-v1`.
+
+## Superseded: v0.2 "D4 · Honey & cream" (2026-11-10, replaced 2026-11-12)
+
+Kept for the record. Do not use these values; tokens and code no longer contain them. Mockup: `docs/design/explorations/2026-11-10-D4-honey-cream.html`.
+
+- **Why replaced:** the Owner chose the burgundy, cream and gold references (v0.3) on 2026-11-12.
+- **Palette:** cream #FAF5EC, surface #FFFDF8, honey band #F1E3C8, ink #3A2A1C, muted #5E4C3A, honey primary #8C5A1E, links #7D4F17; dark "espresso" #1C1510 with honey #E2B26A.
+- **Type:** Libre Caslon Display 400 (h1, h2, wordmark), Libre Caslon Text 400 + italic (h3, tagline), Source Sans 3 400/600.
+- **Layout:** cream header and footer, honey soft band for the custom-cake call-out; shapes as v0.3.
 
 ## Superseded: v0.1 "Salon de thé rose" (2026-11-10, replaced the same day)
 

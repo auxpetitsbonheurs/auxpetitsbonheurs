@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 import { Slot } from "radix-ui"
 
-// shadcn Button adapted to tokens.json (S-007, D4 Honey & cream): every size is at
+// shadcn Button adapted to tokens.json (S-007, brand v0.3 burgundy / cream / antique gold): every size is at
 // least 44 px tall (size.tap-target), default and lg are 48 px (component.button.height),
 // height grows so FR labels wrap instead of truncating, radius 12 px
 // (component.button.radius = radius.md), flat (no gradient, no shadow), and focus uses

@@ -63,6 +63,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
+        {/* Brand v0.3: the cream logo badge (version 1) as favicon and share image; favicon.ico stays the fallback. */}
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        {data?.origin && <meta property="og:image" content={`${data.origin}/brand/og-image.png`} />}
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
         {alternates && (
           <>
             <link rel="alternate" hrefLang="en" href={alternates.en} />

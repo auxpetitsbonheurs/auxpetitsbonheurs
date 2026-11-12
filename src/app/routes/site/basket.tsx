@@ -333,7 +333,7 @@ function BasketSection({ lines, itemsTotalRs, showSubtotal, lineError, onRemoved
   const { t } = useI18n();
   return (
     <section aria-labelledby="basket-heading" className="mt-8">
-      <h2 id="basket-heading" tabIndex={-1} className="text-h2 outline-none">
+      <h2 id="basket-heading" tabIndex={-1} className="section-title-start text-h2 outline-none">
         {t("checkout.sections.basket")}
       </h2>
       {lineError && (

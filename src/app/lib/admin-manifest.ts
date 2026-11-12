@@ -4,8 +4,8 @@
 // docs/design/tokens.json (admin-manifest.test.ts keeps them in step).
 
 export const ADMIN_THEME = {
-  light: { surface: "#FFFDF8", bg: "#FAF5EC" },
-  dark: { surface: "#271E17", bg: "#1C1510" },
+  light: { surface: "#FFFBF5", bg: "#FBF3E8" },
+  dark: { surface: "#24120F", bg: "#1A0D0B" },
 } as const;
 
 export const ADMIN_ICONS = [

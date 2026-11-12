@@ -4,23 +4,54 @@
 @import "tailwindcss" source(".");
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-/* Self-hosted fonts (brand guide D4): Libre Caslon Display (h1, h2, wordmark), Libre Caslon
-   Text 400 + italic (h3, tagline), Source Sans 3 400/600 (body, UI). Each file keeps
-   font-display: swap and unicode-range subsets, so EN/FR pages fetch latin only. */
-@import "@fontsource/libre-caslon-display/400.css";
-@import "@fontsource/libre-caslon-text/400.css";
-@import "@fontsource/libre-caslon-text/400-italic.css";
+/* Self-hosted fonts (brand guide v0.3): Cormorant Garamond 500 (h1, h2, wordmark) and 600
+   (h3, card and product names), Source Sans 3 400/600 (body, UI). Every face keeps
+   font-display: swap and a unicode-range, so EN/FR pages fetch latin, and latin-ext only
+   when a page needs it. Cormorant ships only latin + latin-ext woff2 (declared below). */
 @import "@fontsource/source-sans-3/400.css";
 @import "@fontsource/source-sans-3/600.css";
+
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url("@fontsource/cormorant-garamond/files/cormorant-garamond-latin-ext-500-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url("@fontsource/cormorant-garamond/files/cormorant-garamond-latin-500-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url("@fontsource/cormorant-garamond/files/cormorant-garamond-latin-ext-600-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url("@fontsource/cormorant-garamond/files/cormorant-garamond-latin-600-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
 /* Light/dark follows the OS setting; no manual toggle in the MVP (design-system). */
 @custom-variant dark (@media (prefers-color-scheme: dark));
 
 @theme inline {
   --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
-  --font-heading: "Libre Caslon Display", ui-serif, Georgia, serif;
-  --font-display: "Libre Caslon Display", ui-serif, Georgia, serif;
-  --font-subheading: "Libre Caslon Text", ui-serif, Georgia, serif;
+  --font-heading: "Cormorant Garamond", ui-serif, Georgia, serif;
+  --font-display: "Cormorant Garamond", ui-serif, Georgia, serif;
+  --font-subheading: "Cormorant Garamond", ui-serif, Georgia, serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -46,13 +77,18 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-band: var(--band);
+  --color-band-foreground: var(--band-fg);
+  --color-band-muted-foreground: var(--band-muted-fg);
+  --color-band-gold: var(--band-gold);
+  --color-gold: var(--gold);
   --text-display: 2.625rem; /* type.scale.display: home hero */
   --text-display--line-height: 1.08;
   --text-display-lg: 3.5rem; /* type.scale.display, desktop */
   --text-display-lg--line-height: 1.08;
   --text-h2: 1.75rem; /* type.scale.h2 */
   --text-h2--line-height: 1.2;
-  --text-wordmark: 1.375rem; /* type.scale.wordmark */
+  --text-wordmark: 1.5rem; /* type.scale.wordmark */
   --text-wordmark--line-height: 1.15;
   --radius-xs: 0.375rem; /* checkbox box */
   --radius-sm: 0.625rem; /* photos in cards, thumbnails (10 px) */
@@ -63,9 +99,9 @@
   --spacing-tap: 2.75rem; /* size.tap-target, 44 px */
   --container-content: 72rem; /* size.container-max */
   --container-measure: 70ch; /* size.measure: 60-75 characters per line */
-  --shadow-sm: 0 1px 2px 0 #3a2a1c0f;
-  --shadow-md: 0 2px 10px -4px #3a2a1c1a;
-  --shadow-lg: 0 8px 24px -8px #3a2a1c24;
+  --shadow-sm: 0 1px 2px 0 #3b15120f;
+  --shadow-md: 0 2px 10px -4px #3b15121a;
+  --shadow-lg: 0 8px 24px -8px #3b151224;
   --ease-enter: cubic-bezier(0.2, 0.8, 0.2, 1);
   --animate-basket-bump: basket-bump var(--motion-bump) var(--ease-enter);
 
@@ -95,28 +131,33 @@
 
 :root {
   color-scheme: light;
-  --background: #faf5ec;
-  --foreground: #3a2a1c;
-  --card: #fffdf8;
-  --card-foreground: #3a2a1c;
-  --popover: #fffdf8;
-  --popover-foreground: #3a2a1c;
-  --muted: #f1e3c8;
-  --muted-foreground: #5e4c3a;
-  --primary: #8c5a1e;
-  --primary-foreground: #fffdf8;
-  --primary-strong: #7d4f17;
-  --link-hover: #5c390f;
-  --accent: #f7ecd9;
-  --accent-foreground: #3a2a1c;
-  --decorative: #efddbd;
-  --border: #f1e3c8;
-  --input: #8c7862;
-  --ring: #8c5a1e;
+  --background: #fbf3e8;
+  --foreground: #3b1512;
+  --card: #fffbf5;
+  --card-foreground: #3b1512;
+  --popover: #fffbf5;
+  --popover-foreground: #3b1512;
+  --muted: #f6ead8;
+  --muted-foreground: #6e4a44;
+  --primary: #660c0c;
+  --primary-foreground: #fcead8;
+  --primary-strong: #520909;
+  --link-hover: #3d0707;
+  --accent: #f3e2d0;
+  --accent-foreground: #3b1512;
+  --decorative: #efdcc6;
+  --border: #ead6bc;
+  --input: #8c6e66;
+  --ring: #660c0c;
+  --band: #660c0c;
+  --band-fg: #fcead8;
+  --band-muted-fg: #ebd3be;
+  --band-gold: #e2b66e;
+  --gold: #ba8430;
   --success: #2f6b4f;
   --warning: #8a5a00;
   --destructive: #a8322d;
-  --destructive-foreground: #fffdf8;
+  --destructive-foreground: #fffbf5;
   --info: #2e5e7e;
   --radius: 0.75rem;
   --motion-fast: 120ms;
@@ -128,33 +169,38 @@
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --background: #1c1510;
-    --foreground: #f6eedf;
-    --card: #271e17;
-    --card-foreground: #f6eedf;
-    --popover: #271e17;
-    --popover-foreground: #f6eedf;
-    --muted: #2e241b;
-    --muted-foreground: #d4c3aa;
-    --primary: #e2b26a;
-    --primary-foreground: #1c1510;
-    --primary-strong: #ebc487;
-    --link-hover: #f5ddb3;
-    --accent: #3a2c1e;
-    --accent-foreground: #f6eedf;
-    --decorative: #3f3123;
-    --border: #3e3125;
-    --input: #9c8670;
-    --ring: #e2b26a;
+    --background: #1a0d0b;
+    --foreground: #f6ead8;
+    --card: #24120f;
+    --card-foreground: #f6ead8;
+    --popover: #24120f;
+    --popover-foreground: #f6ead8;
+    --muted: #2d1714;
+    --muted-foreground: #dcc3b4;
+    --primary: #f6ead8;
+    --primary-foreground: #520909;
+    --primary-strong: #e3c08a;
+    --link-hover: #f3ddb8;
+    --accent: #3b1d19;
+    --accent-foreground: #f6ead8;
+    --decorative: #40221d;
+    --border: #47291f;
+    --input: #a5877c;
+    --ring: #e3c08a;
+    --band: #660c0c;
+    --band-fg: #fcead8;
+    --band-muted-fg: #ebd3be;
+    --band-gold: #e2b66e;
+    --gold: #ba8430;
     --success: #7fc8a0;
     --warning: #e8b860;
     --destructive: #f08a80;
-    --destructive-foreground: #1c1510;
+    --destructive-foreground: #1a0d0b;
     --info: #8ec1e0;
   }
 }
 
-/* Link style (design system): honey-700 text, underlined, darker on hover. */
+/* Link style (design system): burgundy (primary-strong) text, underlined, darker on hover. */
 @utility link {
   color: var(--primary-strong);
   text-decoration-line: underline;
@@ -162,6 +208,51 @@
   text-decoration-thickness: 1px;
   &:hover {
     color: var(--link-hover);
+  }
+}
+
+/*
+ * Burgundy band (brand v0.3, customer site only: header, footer, call-outs). Cream text,
+ * light-gold link hover, and a cream focus ring so focus stays visible on burgundy
+ * (cream on band 11.0:1). The admin app never uses it.
+ */
+@utility band {
+  background-color: var(--band);
+  color: var(--band-fg);
+  --ring: var(--band-fg);
+  --primary-strong: var(--band-fg);
+  --link-hover: var(--band-gold);
+  --muted-foreground: var(--band-muted-fg);
+}
+
+/* Section title flanked by thin gold rules ("Notre collection"). Decorative only: the rules are pseudo-elements, never text. */
+@utility section-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-align: center;
+  &::before,
+  &::after {
+    content: "";
+    flex: 1 1 1.5rem;
+    max-width: 4rem;
+    height: 1px;
+    background-color: var(--gold);
+  }
+}
+
+/* Start-aligned section title with one gold rule running to the end (form and summary sections). */
+@utility section-title-start {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  &::after {
+    content: "";
+    flex: 1 1 1.5rem;
+    min-width: 1.5rem;
+    height: 1px;
+    background-color: var(--gold);
   }
 }
 
@@ -240,16 +331,22 @@ html:has([data-editor-bar]) {
     line-height: 1.55;
     overflow-wrap: break-word;
   }
+  /* Cormorant Garamond: 500 for h1, h2 and the wordmark, 600 for h3 (thin strokes need the
+     extra weight at 17-22 px). Only these two weights ship; never faux-bolded. */
   h1,
   h2 {
     font-family: var(--font-heading);
-    font-weight: 400;
+    font-weight: 500;
     text-wrap: balance;
   }
   h3 {
     font-family: var(--font-subheading);
-    font-weight: 400;
+    font-weight: 600;
     text-wrap: balance;
+  }
+  .font-display,
+  .font-heading {
+    font-weight: 500;
   }
   h1 {
     font-size: 2.125rem;

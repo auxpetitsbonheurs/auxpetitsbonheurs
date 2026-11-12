@@ -37,18 +37,19 @@ function ContactLink({ href, icon, label, value, keepTogether = false }: Contact
 
 const iconProps = { "aria-hidden": true, className: "size-5", strokeWidth: 1.75 } as const;
 
-/** Centred footer (brand D4): wordmark, contacts, pickup; items with an empty Settings value are omitted (catalogue spec). */
+/** Centred footer (brand v0.3): burgundy band under a thin gold rule; the burgundy logo badge, a gold-flanked heading, contacts, pickup; items with an empty Settings value are omitted (catalogue spec). */
 export function SiteFooter({ contacts, year }: { contacts: FooterContacts; year: string }) {
   const { t } = useI18n();
   const { whatsapp, phone, email, pickupAddress } = contacts;
   const hasContacts = Boolean(whatsapp || phone || email);
   return (
-    <footer className="border-t border-border">
+    <footer className="band border-t border-gold">
       <div className="mx-auto flex max-w-content flex-col items-center px-4 py-8 text-center md:px-6">
-        <p className="font-display text-xl text-foreground">{t("shell.bakeryName")}</p>
+        {/* Logo badge, version 2 (burgundy fill, cream script, gold ring). */}
+        <img src="/brand/logo-badge-burgundy.svg" alt={t("shell.bakeryName")} width={112} height={112} loading="lazy" className="size-28" />
         {hasContacts && (
           <>
-            <h2 className="mt-4 text-xl">{t("shell.footer.heading")}</h2>
+            <h2 className="mt-4 section-title w-full max-w-sm text-xl">{t("shell.footer.heading")}</h2>
             <ul className="mt-2 flex flex-col items-center gap-1 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-6">
               {whatsapp && (
                 <ContactLink href={whatsappHref(whatsapp)} icon={<MessageCircle {...iconProps} />} label={t("shell.footer.whatsapp")} value={whatsapp} keepTogether />

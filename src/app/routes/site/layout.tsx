@@ -39,6 +39,9 @@ export const middleware: Route.MiddlewareFunction[] = [
   },
 ];
 
+/** The header band's colour (tokens.json color.band, the same in light and dark). */
+const SITE_BAND = "#660C0C";
+
 /** Customer page frame (S-007): skip link, header, one main landmark, footer. */
 export async function loader({ request, context }: Route.LoaderArgs) {
   // Cached per isolate: most page loads make no database round trip for the frame.
@@ -84,6 +87,8 @@ export default function SiteLayout({ loaderData }: Route.ComponentProps) {
   useBrowserBasket(loaderData.basketCount);
   return (
     <div className="flex min-h-dvh flex-col">
+      {/* React hoists this into <head>: the phone's browser bar matches the burgundy header band (tokens color.band). */}
+      <meta name="theme-color" content={SITE_BAND} />
       <NavProgress />
       <SkipLink />
       <SiteHeader

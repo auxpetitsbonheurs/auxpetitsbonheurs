@@ -22,7 +22,7 @@ export function LanguageSwitch({ href }: { href: string }) {
       lang={other}
       hrefLang={other}
       aria-busy={pending || undefined}
-      className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-md px-1.5 py-2 text-sm text-foreground underline underline-offset-4 hover:text-link-hover"
+      className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-md px-1.5 py-2 text-sm text-current underline underline-offset-4 hover:text-link-hover"
     >
       {t("language.other")}
       {pending && <LoaderCircle aria-hidden="true" className="size-4 motion-safe:animate-spin" />}

@@ -80,3 +80,19 @@ describe("content limits (AC7)", () => {
     expect(email.html).not.toContain("<script>");
   });
 });
+
+// Brand v0.3: the cream logo badge heads both emails, served as a PNG from the site itself.
+describe("email logo (brand v0.3)", () => {
+  test("shows the cream logo badge from the link's origin, named after the bakery", () => {
+    const email = recoveryEmail("en", "https://shop.test/auth/confirm?token_hash=abc&type=recovery");
+
+    expect(email.html).toContain(`<img src="https://shop.test/brand/logo-badge-cream-160.png" width="80" height="80" alt="${BAKERY_NAME}"`);
+  });
+
+  test("falls back to the bakery name as text when the link has no origin", () => {
+    const email = recoveryEmail("en", "not a url");
+
+    expect(email.html).not.toContain("<img");
+    expect(email.html).toContain(`${BAKERY_NAME}</p>`);
+  });
+});

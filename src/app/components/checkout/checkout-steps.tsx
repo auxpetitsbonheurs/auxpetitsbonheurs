@@ -15,7 +15,7 @@ type Initial = Record<string, string | undefined>;
 
 function Heading({ id, text }: { id: string; text: string }) {
   return (
-    <h2 id={id} className="text-h2">
+    <h2 id={id} className="section-title-start text-h2">
       {text}
     </h2>
   );

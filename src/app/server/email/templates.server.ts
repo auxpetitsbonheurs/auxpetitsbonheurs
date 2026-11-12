@@ -20,18 +20,33 @@ const escapeHtml = (value: string) =>
 /** Recovery links last as long as Supabase's email OTP expiry (default 1 hour). */
 export const RECOVERY_LINK_MINUTES = 60;
 
-/** Inline styles only (email clients drop <style>); colours from the light theme tokens. */
+/**
+ * The cream logo badge (brand v0.3, version 1) as a PNG on the site's own origin: email clients
+ * do not render SVG. Both emails link to the site, so the link's origin is the site; without a
+ * usable origin the bakery name is written out instead.
+ */
+function logoHtml(link: string): string {
+  let origin: string;
+  try {
+    origin = new URL(link).origin;
+  } catch {
+    return `<p style="font-family:Georgia,serif;font-size:22px;margin:0;color:#660c0c">${escapeHtml(BAKERY_NAME)}</p>`;
+  }
+  return `<img src="${escapeHtml(origin)}/brand/logo-badge-cream-160.png" width="80" height="80" alt="${escapeHtml(BAKERY_NAME)}" style="display:block;margin:0 auto;border:0">`;
+}
+
+/** Inline styles only (email clients drop <style>); colours from the light theme tokens (brand v0.3). */
 function layout(locale: Locale, parts: { heading: string; reason: string; button: string; link: string; expiry: string; ignore: string }): string {
   const link = escapeHtml(parts.link);
   return `<!doctype html>
 <html lang="${locale}">
-<body style="margin:0;padding:24px;background:#faf5ec;color:#3a2a1c;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5">
+<body style="margin:0;padding:24px;background:#fbf3e8;color:#3b1512;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5">
 <div style="max-width:520px;margin:0 auto">
-<p style="font-family:Georgia,serif;font-size:22px;margin:0 0 16px">${escapeHtml(BAKERY_NAME)}</p>
+<div style="margin:0 0 20px;padding-bottom:16px;border-bottom:1px solid #ba8430;text-align:center">${logoHtml(parts.link)}</div>
 <h1 style="font-size:20px;margin:0 0 12px">${escapeHtml(parts.heading)}</h1>
 <p style="margin:0 0 20px">${escapeHtml(parts.reason)}</p>
-<p style="margin:0 0 20px"><a href="${link}" style="display:inline-block;padding:12px 20px;background:#8c5a1e;color:#fffdf8;text-decoration:none;border-radius:8px;font-weight:bold">${escapeHtml(parts.button)}</a></p>
-<p style="margin:0 0 12px;word-break:break-all;font-size:14px"><a href="${link}" style="color:#8c5a1e">${link}</a></p>
+<p style="margin:0 0 20px"><a href="${link}" style="display:inline-block;padding:12px 20px;background:#660c0c;color:#fcead8;text-decoration:none;border-radius:8px;font-weight:bold">${escapeHtml(parts.button)}</a></p>
+<p style="margin:0 0 12px;word-break:break-all;font-size:14px"><a href="${link}" style="color:#520909">${link}</a></p>
 <p style="margin:0 0 12px">${escapeHtml(parts.expiry)}</p>
 <p style="margin:0;font-size:14px">${escapeHtml(parts.ignore)}</p>
 </div>

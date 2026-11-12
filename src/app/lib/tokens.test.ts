@@ -93,10 +93,10 @@ describe.each(["light", "dark"] as const)("%s contrast table ratios are the reco
 describe("contrastRatio", () => {
   test("black on white is 21:1 and a colour on itself is 1:1", () => {
     expect(contrastRatio("#000000", "#FFFFFF")).toBeCloseTo(21, 5);
-    expect(contrastRatio("#8C5A1E", "#8C5A1E")).toBeCloseTo(1, 5);
+    expect(contrastRatio("#660C0C", "#660C0C")).toBeCloseTo(1, 5);
   });
 
-  test("matches the brand guide's fg on bg value (12.6)", () => {
-    expect(contrastRatio("#3A2A1C", "#FAF5EC")).toBeCloseTo(12.66, 1);
+  test("matches the brand guide's fg on bg value (14.6)", () => {
+    expect(contrastRatio("#3B1512", "#FBF3E8")).toBeCloseTo(14.66, 1);
   });
 });

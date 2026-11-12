@@ -114,7 +114,7 @@ export default function OrderConfirmed({ loaderData }: Route.ComponentProps) {
         <p>{t("order.confirmed.notConfirmedBody")}</p>
       </Alert>
       <section aria-labelledby="tracking-label" className="mt-8">
-        <h2 id="tracking-label" className="text-h2">
+        <h2 id="tracking-label" className="section-title-start text-h2">
           {t("order.confirmed.trackingTitle")}
         </h2>
         <p className="mt-2 max-w-measure">{t("order.confirmed.trackingHint")}</p>

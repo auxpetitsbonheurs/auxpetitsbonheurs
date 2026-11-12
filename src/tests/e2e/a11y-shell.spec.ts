@@ -78,7 +78,7 @@ test.describe("page shell", () => {
       await page.goto("/");
 
       const background = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-      expect(background).toBe(colorScheme === "light" ? "rgb(250, 245, 236)" : "rgb(28, 21, 16)");
+      expect(background).toBe(colorScheme === "light" ? "rgb(251, 243, 232)" : "rgb(26, 13, 11)");
       await expectNoA11yViolations(page);
       await expectNoA11yViolations(page, { zoom: 2 });
     });

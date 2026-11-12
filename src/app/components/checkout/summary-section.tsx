@@ -89,7 +89,7 @@ export function SummarySection({ items, leftOut = [], itemsTotalRs, deliveryFeeR
   const { t } = useI18n();
   return (
     <section aria-labelledby="summary-heading" className="mt-10">
-      <h2 id="summary-heading" className="text-h2">
+      <h2 id="summary-heading" className="section-title-start text-h2">
         {t("checkout.sections.summary")}
       </h2>
       <div className="mt-4 grid gap-2 rounded-lg bg-muted p-5">

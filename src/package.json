@@ -28,8 +28,7 @@
     "make:owner": "tsx scripts/make-owner.ts"
   },
   "dependencies": {
-    "@fontsource/libre-caslon-display": "5.3.0",
-    "@fontsource/libre-caslon-text": "5.3.0",
+    "@fontsource/cormorant-garamond": "5.3.0",
     "@fontsource/source-sans-3": "5.3.1",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.119.0",
