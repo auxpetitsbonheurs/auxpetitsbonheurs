@@ -7,6 +7,7 @@ import {
   ScrollRestoration,
   type ShouldRevalidateFunctionArgs,
   useLocation,
+  useMatches,
   useRouteLoaderData,
 } from "react-router";
 import { useEffect } from "react";
@@ -17,6 +18,7 @@ import { messagesFor } from "~/i18n/catalog.server";
 import { I18nProvider, useI18n } from "~/i18n/react";
 import { localeFromPathname } from "~/lib/locale";
 import { twinPath } from "~/lib/locale-detect";
+import { BRAND_SHARE_IMAGE, handlesOwnShareImage } from "~/lib/seo";
 import { adminLocaleContext } from "~/server/admin-page.server";
 
 export function loader({ url, context }: Route.LoaderArgs) {
@@ -56,6 +58,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const data = useRouteLoaderData<typeof loader>("root");
   const locale = data?.locale ?? "en";
   const alternates = useAlternates(data?.origin);
+  // Pages using seoMeta (lib/seo) emit their own share image (S-253 AC3): never two og:image tags.
+  const ownShareImage = useMatches().some((match) => handlesOwnShareImage(match.handle));
   return (
     <html lang={locale}>
       <head>
@@ -65,9 +69,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
         {/* Brand v0.3: the cream logo badge (version 1) as favicon and share image; favicon.ico stays the fallback. */}
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        {data?.origin && <meta property="og:image" content={`${data.origin}/brand/og-image.png`} />}
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
+        {data?.origin && !ownShareImage && (
+          <>
+            <meta property="og:image" content={`${data.origin}${BRAND_SHARE_IMAGE.path}`} />
+            <meta property="og:image:width" content={String(BRAND_SHARE_IMAGE.width)} />
+            <meta property="og:image:height" content={String(BRAND_SHARE_IMAGE.height)} />
+          </>
+        )}
         {alternates && (
           <>
             <link rel="alternate" hrefLang="en" href={alternates.en} />

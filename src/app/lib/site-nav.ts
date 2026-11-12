@@ -22,7 +22,7 @@ export const siteNavItems = SITE_NAV_ITEMS;
  * Pages the nav points at that later stories build (S-248 to S-252). Until then each answers
  * 200 with a calm "coming soon" page (noindex), so no nav link is ever a 404.
  */
-export const PLACEHOLDER_PAGES = ["ourStory", "customOrder", "workshops", "gallery", "contact"] as const satisfies readonly SiteNavKey[];
+export const PLACEHOLDER_PAGES = ["ourStory", "workshops", "gallery"] as const satisfies readonly SiteNavKey[];
 export type PlaceholderPage = (typeof PLACEHOLDER_PAGES)[number];
 
 /** The no-JavaScript fallback of the phone menu button (S-243 AC8). */

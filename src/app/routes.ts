@@ -1,7 +1,7 @@
 import { type RouteConfig, index, layout, route } from "@react-router/dev/routes";
 
 /** Placeholder nav pages (E-13): each later story points its path at its own module. */
-const comingSoonPages = ["our-story", "custom-cake", "workshops", "gallery", "contact"] as const;
+const comingSoonPages = ["our-story", "workshops", "gallery"] as const;
 
 /**
  * Customer pages exist twice: English unprefixed and French under /fr (FR-001),
@@ -16,6 +16,9 @@ function customerPages(locale: "en" | "fr") {
     route("menu", "routes/site/menu.tsx", { id: `menu-${locale}` }),
     route("menu-links", "routes/site/menu-links.tsx", { id: `menu-links-${locale}` }),
     // Nav pages later E-13 stories build (S-248..S-252): "coming soon" until then, never a 404.
+    // Contact us (S-251) and Custom order, interim until the E-08 request form (S-252).
+    route("contact", "routes/site/contact.tsx", { id: `contact-${locale}` }),
+    route("custom-cake", "routes/site/custom-order.tsx", { id: `custom-cake-${locale}` }),
     ...comingSoonPages.map((path) => route(path, "routes/site/coming-soon.tsx", { id: `${path}-${locale}` })),
     route("menu/:slug", "routes/site/product.tsx", { id: `product-${locale}` }),
     route("basket", "routes/site/basket.tsx", { id: `basket-${locale}` }),
@@ -70,6 +73,9 @@ const adminPages = [
 const resourceRoutes = [
   route("healthz", "routes/hooks/healthz.ts"),
   route("api/menu", "routes/hooks/menu.ts"),
+  // Search engines (S-253): indexable pages with hreflang alternates, and the crawl rules.
+  route("sitemap.xml", "routes/hooks/sitemap.ts"),
+  route("robots.txt", "routes/hooks/robots.ts"),
   route("api/basket/reissue", "routes/hooks/basket-reissue.ts"),
   // Supabase Auth Send Email hook (S-024) and the emailed link's landing (S-026).
   route("hooks/supabase/send-email", "routes/hooks/send-email.ts"),

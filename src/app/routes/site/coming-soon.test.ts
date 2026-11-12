@@ -7,11 +7,9 @@ const load = (path: string) => loader({ url: new URL(path, "http://localhost") }
 describe("coming-soon pages", () => {
   test.each([
     ["/our-story", "ourStory", "Our story"],
-    ["/custom-cake", "customOrder", "Custom order"],
     ["/workshops", "workshops", "Workshops"],
     ["/gallery", "gallery", "Gallery"],
-    ["/contact", "contact", "Contact us"],
-    ["/fr/custom-cake", "customOrder", "Gâteau sur mesure"],
+    ["/fr/our-story", "ourStory", "Notre histoire"],
   ])("%s answers its page and localised title", (path, page, title) => {
     expect(load(path)).toEqual({ page, title });
   });

@@ -29,7 +29,7 @@ export default function ComingSoon({ loaderData }: Route.ComponentProps) {
       <h1>{t(`nav.items.${loaderData.page}`)}</h1>
       <span aria-hidden="true" className="h-px w-16 bg-gold" />
       <p className="max-w-measure text-lg">{t("comingSoon.body")}</p>
-      <p className="max-w-measure text-muted-foreground">{t(loaderData.page === "contact" ? "comingSoon.contactHint" : "comingSoon.hint")}</p>
+      <p className="max-w-measure text-muted-foreground">{t("comingSoon.hint")}</p>
       <Link to={localePath(locale, "/menu")} className="inline-flex min-h-11 items-center font-semibold link">
         {t("comingSoon.collectionLink")}
       </Link>

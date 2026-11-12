@@ -71,6 +71,8 @@ export async function getCheckoutSettings(db: Database): Promise<CheckoutSetting
 export interface SiteSettings {
   footer: FooterContacts;
   checkout: CheckoutSettings;
+  /** Default notice in days, shown on the Custom order page (S-252 AC5): never typed twice. */
+  noticeDays: number;
 }
 
 /** Per isolate, for SETTINGS_TTL_MS: pages that only display Settings skip the round trip. */
@@ -84,6 +86,6 @@ export const siteSettingsCache = createTtlCache<SiteSettings>(SETTINGS_TTL_MS);
 export function getSiteSettings(db: Database): Promise<SiteSettings> {
   return siteSettingsCache.get(async () => {
     const row = await settingsRow(db);
-    return { footer: footerFrom(row), checkout: checkoutFrom(row) };
+    return { footer: footerFrom(row), checkout: checkoutFrom(row), noticeDays: row.defaultNoticeDays };
   });
 }

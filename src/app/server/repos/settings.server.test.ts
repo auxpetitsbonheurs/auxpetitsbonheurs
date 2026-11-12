@@ -48,6 +48,7 @@ describe("getSiteSettings (cached for display)", () => {
     expect(second).toBe(first);
     expect(first.footer).toEqual(await getFooterContacts(database.db));
     expect(first.checkout).toEqual(await getCheckoutSettings(database.db));
+    expect(first.noticeDays).toBe(3); // S-252 AC5: the Settings default, shown on Custom order
     siteSettingsCache.clear();
   });
 });

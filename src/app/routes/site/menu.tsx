@@ -12,12 +12,16 @@ import { useI18n } from "~/i18n/react";
 import { whatsappHref } from "~/lib/contact";
 import { formatRupees, localeFromPathname, localePath } from "~/lib/locale";
 import { menuStore, useMenuState } from "~/lib/menu-cache";
+import { SEO_HANDLE, rootOrigin, seoMeta } from "~/lib/seo";
 import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
 import { loadMenu } from "~/server/menu.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { timed } from "~/server/server-timing.server";
 import type { Route } from "./+types/menu";
+
+/** Its meta uses seoMeta: the root Layout leaves the brand share image to it. */
+export const handle = SEO_HANDLE;
 
 /**
  * `site/menu` loader ("Our collection", FR-077, S-244): the public menu read by the same code as
@@ -43,12 +47,13 @@ export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
   return { menu: entry, title: null, description: null };
 }
 
-export function meta({ loaderData, matches }: Route.MetaArgs) {
+export function meta({ loaderData, matches, location }: Route.MetaArgs) {
   // A client navigation from the cache carries no title: keep the one the root messages give.
   const root = matches.find((m) => m?.id === "root")?.loaderData as { messages?: { collection?: { title?: string; metaDescription?: string } } } | undefined;
   const title = loaderData?.title ?? root?.messages?.collection?.title ?? "";
-  const description = loaderData?.description ?? root?.messages?.collection?.metaDescription;
-  return [{ title: `${title} | Aux petits bonheurs` }, ...(description ? [{ name: "description", content: description }] : [])];
+  const description = loaderData?.description ?? root?.messages?.collection?.metaDescription ?? "";
+  // S-253 AC1, AC5: canonical without filters or anchors, never noindex.
+  return seoMeta({ origin: rootOrigin(matches), locale: localeFromPathname(location.pathname), path: "/menu", title, description });
 }
 
 /** The footer's contacts (layout loader), for the WhatsApp links of the empty and error states. */

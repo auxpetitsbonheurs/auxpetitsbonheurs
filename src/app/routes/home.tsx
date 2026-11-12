@@ -1,18 +1,20 @@
 import { t } from "~/i18n/catalog.server";
 import { useI18n } from "~/i18n/react";
 import { localeFromPathname } from "~/lib/locale";
+import { SEO_HANDLE, rootOrigin, seoMeta } from "~/lib/seo";
 import type { Route } from "./+types/home";
+
+/** Its meta uses seoMeta: the root Layout leaves the brand share image to it. */
+export const handle = SEO_HANDLE;
 
 export function loader({ request }: Route.LoaderArgs) {
   const locale = localeFromPathname(new URL(request.url).pathname);
   return { title: t("home.title", locale), description: t("home.metaDescription", locale) };
 }
 
-export function meta({ loaderData }: Route.MetaArgs) {
-  return [
-    { title: `${loaderData?.title ?? ""} | Aux petits bonheurs` },
-    { name: "description", content: loaderData?.description },
-  ];
+export function meta({ loaderData, matches, location }: Route.MetaArgs) {
+  if (!loaderData) return [];
+  return seoMeta({ origin: rootOrigin(matches), locale: localeFromPathname(location.pathname), path: "/", ...loaderData });
 }
 
 export default function Home() {

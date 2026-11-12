@@ -16,7 +16,8 @@ describe("siteNavItems (S-242 AC1)", () => {
   });
 
   test("every page not built yet has a placeholder", () => {
-    expect([...PLACEHOLDER_PAGES]).toEqual(["ourStory", "customOrder", "workshops", "gallery", "contact"]);
+    // Contact us (S-251) and Custom order (S-252) have their own pages.
+    expect([...PLACEHOLDER_PAGES]).toEqual(["ourStory", "workshops", "gallery"]);
   });
 });
 

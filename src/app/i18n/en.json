@@ -1150,8 +1150,7 @@
   "comingSoon": {
     "body": "We are preparing this page. It will be here soon.",
     "hint": "In the meantime, you can browse our collection and order online.",
-    "collectionLink": "See our collection",
-    "contactHint": "Our WhatsApp and phone number are at the bottom of every page."
+    "collectionLink": "See our collection"
   },
   "collection": {
     "title": "Our collection",
@@ -1174,5 +1173,46 @@
     "errorTitle": "We could not load our collection.",
     "errorBody": "Check your connection and try again, or message us on WhatsApp.",
     "retry": "Try again"
+  },
+  "sitePage": {
+    "errorTitle": "We could not load this page.",
+    "errorBody": "Check your connection and try again, or message us on WhatsApp.",
+    "retry": "Try again",
+    "whatsapp": "Message us on WhatsApp",
+    "call": "Call {{number}}",
+    "newTab": "(opens in a new tab)"
+  },
+  "contactPage": {
+    "title": "Contact us",
+    "metaDescription": "Message or call Aux petits bonheurs, a bakery in Beau Bassin, Mauritius: WhatsApp, phone, pickup area and opening hours.",
+    "intro": "A question about a cake or an order? Message us on WhatsApp or give us a call, we will be happy to help.",
+    "reachHeading": "Message or call us",
+    "greeting": "Hello, I have a question.",
+    "pickupHeading": "Pickup",
+    "pickupArea": "Pickup in Beau Bassin",
+    "pickupNote": "You choose your pickup time when you order, and we confirm the details with you.",
+    "mapLink": "View on map",
+    "hoursHeading": "Opening hours",
+    "hours": "Our opening hours will be shown here soon. Message us to check before you come."
+  },
+  "customOrderPage": {
+    "title": "Custom order",
+    "metaDescription": "A custom cake from Aux petits bonheurs in Beau Bassin, Mauritius: tell us your occasion and ideas on WhatsApp and we plan it together.",
+    "intro": "A cake made for your celebration, from the flavours to the decoration.",
+    "whatHeading": "What is a custom cake?",
+    "what": "A custom cake is designed around your occasion: a birthday, a wedding, a baptism or any moment you want to celebrate. You share your ideas, and we suggest flavours, size and decoration.",
+    "howHeading": "How it works",
+    "steps": {
+      "share": "Message us with your date, the number of guests and your ideas. A photo of what you like helps.",
+      "reply": "We reply with suggestions and a price.",
+      "bake": "Once you agree, we bake your cake for your date."
+    },
+    "noticeHeading": "When to ask",
+    "notice_one": "Please contact us at least {{count}} day before your date.",
+    "notice_other": "Please contact us at least {{count}} days before your date.",
+    "noticeSoon": "Please contact us as early as you can before your date.",
+    "cta": "Contact us on WhatsApp",
+    "greeting": "Hello, I'd like a custom cake.",
+    "contactLink": "See all the ways to contact us"
   }
 }

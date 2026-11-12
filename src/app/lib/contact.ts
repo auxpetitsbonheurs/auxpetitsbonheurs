@@ -1,6 +1,7 @@
-/** wa.me wants the international number as digits only. */
-export function whatsappHref(number: string): string {
-  return `https://wa.me/${number.replace(/\D/g, "")}`;
+/** wa.me wants the international number as digits only; `text` pre-fills the chat (S-251, S-252). */
+export function whatsappHref(number: string, text?: string): string {
+  const base = `https://wa.me/${number.replace(/\D/g, "")}`;
+  return text ? `${base}?text=${encodeURIComponent(text)}` : base;
 }
 
 export function telHref(number: string): string {
@@ -9,4 +10,16 @@ export function telHref(number: string): string {
 
 export function mailHref(email: string): string {
   return `mailto:${email.trim()}`;
+}
+
+/** An Owner-entered link (map, Instagram) only when it is http or https; anything else is dropped. */
+export function safeWebUrl(value: string | null | undefined): string | null {
+  const raw = value?.trim();
+  if (!raw) return null;
+  try {
+    const url = new URL(raw);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.href : null;
+  } catch {
+    return null;
+  }
 }

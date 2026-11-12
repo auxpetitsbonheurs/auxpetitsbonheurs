@@ -1150,8 +1150,7 @@
   "comingSoon": {
     "body": "Nous préparons cette page. Elle arrive bientôt.",
     "hint": "En attendant, découvrez notre collection et commandez en ligne.",
-    "collectionLink": "Voir notre collection",
-    "contactHint": "Notre WhatsApp et notre numéro de téléphone sont en bas de chaque page."
+    "collectionLink": "Voir notre collection"
   },
   "collection": {
     "title": "Notre collection",
@@ -1174,5 +1173,46 @@
     "errorTitle": "Impossible d’afficher notre collection.",
     "errorBody": "Vérifiez votre connexion et réessayez, ou écrivez-nous sur WhatsApp.",
     "retry": "Réessayer"
+  },
+  "sitePage": {
+    "errorTitle": "Nous n'avons pas pu charger cette page.",
+    "errorBody": "Vérifiez votre connexion et réessayez, ou écrivez-nous sur WhatsApp.",
+    "retry": "Réessayer",
+    "whatsapp": "Nous écrire sur WhatsApp",
+    "call": "Appeler le {{number}}",
+    "newTab": "(s'ouvre dans un nouvel onglet)"
+  },
+  "contactPage": {
+    "title": "Contact",
+    "metaDescription": "Écrivez ou appelez Aux petits bonheurs, pâtisserie à Beau Bassin, Maurice : WhatsApp, téléphone, lieu de retrait et horaires.",
+    "intro": "Une question sur un gâteau ou une commande ? Écrivez-nous sur WhatsApp ou appelez-nous, nous serons ravis de vous aider.",
+    "reachHeading": "Écrivez-nous ou appelez-nous",
+    "greeting": "Bonjour, j'ai une question.",
+    "pickupHeading": "Retrait",
+    "pickupArea": "Retrait à Beau Bassin",
+    "pickupNote": "Vous choisissez l'heure de retrait en commandant, et nous vous confirmons les détails.",
+    "mapLink": "Voir sur la carte",
+    "hoursHeading": "Horaires",
+    "hours": "Nos horaires seront bientôt indiqués ici. Écrivez-nous pour vérifier avant de passer."
+  },
+  "customOrderPage": {
+    "title": "Gâteau sur mesure",
+    "metaDescription": "Un gâteau sur mesure chez Aux petits bonheurs à Beau Bassin, Maurice : parlez-nous de votre occasion sur WhatsApp et créons-le ensemble.",
+    "intro": "Un gâteau pensé pour votre fête, des saveurs à la décoration.",
+    "whatHeading": "Qu'est-ce qu'un gâteau sur mesure ?",
+    "what": "Un gâteau sur mesure est créé pour votre occasion : un anniversaire, un mariage, un baptême ou tout moment à fêter. Vous partagez vos idées, et nous vous proposons saveurs, taille et décoration.",
+    "howHeading": "Comment ça marche",
+    "steps": {
+      "share": "Écrivez-nous avec votre date, le nombre d'invités et vos idées. Une photo de ce qui vous plaît nous aide.",
+      "reply": "Nous vous répondons avec des propositions et un prix.",
+      "bake": "Une fois d'accord, nous préparons votre gâteau pour votre date."
+    },
+    "noticeHeading": "Quand demander",
+    "notice_one": "Contactez-nous au moins {{count}} jour avant votre date.",
+    "notice_other": "Contactez-nous au moins {{count}} jours avant votre date.",
+    "noticeSoon": "Contactez-nous le plus tôt possible avant votre date.",
+    "cta": "Nous contacter sur WhatsApp",
+    "greeting": "Bonjour, je voudrais un gâteau sur mesure.",
+    "contactLink": "Voir tous les moyens de nous contacter"
   }
 }
