@@ -2,7 +2,7 @@
 ## From review of S-001/S-003/S-004/S-010 (2026-11-10)
 - [x] DONE 2026-11-10 (reset password + confirm email via Auth Admin API before reuse; tests in seed-owner.server.test.ts). TD: seed-owner reuses any existing auth.users row with the owner email without resetting password / checking email_confirmed_at (src/app/server/services/seed-owner.server.ts:80-83). Fix before running seed on production. Medium.
 - TD: db.server.ts closes the client when the Response returns; streamed loader promises would query after close. Add a guard/test before any streaming loader. Medium.
-- TD: threat-model G-19 — add gitleaks + client-bundle secret-name check to CI. Medium. Scheduled: sprint 02 batch 4.
+- [x] DONE 2026-11-12 (ci.yml: `secret-scan` job runs a pinned, SHA-256-verified gitleaks over the whole history with reviewed false positives in .gitleaksignore; `npm run check:client-secrets` after the build fails on any server secret name or known value in build/client). TD: threat-model G-19 — add gitleaks + client-bundle secret-name check to CI. Medium. Pre-commit hook not added (CI is the gate; Owner works from the browser).
 - Low: `.catch` on waitUntil(close()); CI cancel-in-progress also cancels main runs.
 - [x] DONE 2026-11-10 (top level is not deployable + scripts/check-deploy.ts in the deploy scripts; deployed envs require https SUPABASE_URL; tests in deploy-guard.test.ts, env.server.test.ts). Low: refuse APP_ENV=development on production Worker.
 

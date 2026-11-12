@@ -26,6 +26,20 @@ describe("CI workflow (.github/workflows/ci.yml)", () => {
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
   });
 
+  test("G-19: checks the client bundle for server secrets after the build", () => {
+    expect(ci.indexOf("run: npm run check:client-secrets")).toBeGreaterThan(ci.indexOf("run: npm run build"));
+  });
+
+  test("G-19: scans the whole history with a pinned, checksum-verified gitleaks", () => {
+    const scan = ci.slice(ci.indexOf("\n  secret-scan:"), ci.indexOf("\n  e2e:"));
+    expect(scan).toContain("fetch-depth: 0");
+    expect(scan).toMatch(/GITLEAKS_VERSION: \d+\.\d+\.\d+/);
+    expect(scan).toMatch(/GITLEAKS_SHA256: [0-9a-f]{64}/);
+    expect(scan.indexOf("sha256sum -c")).toBeLessThan(scan.indexOf("gitleaks\" git"));
+    expect(scan).toContain("--redact");
+    expect(scan).not.toMatch(/uses: (?!actions\/checkout@v5)/);
+  });
+
   test("references no secrets, so a clean fork can run it", () => {
     expect(ci).not.toMatch(/secrets\./);
   });

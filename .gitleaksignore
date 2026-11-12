@@ -1,0 +1,12 @@
+# gitleaks false positives (threat model G-19), by fingerprint (commit:file:rule:line).
+# Each was reviewed: a test fixture or a documented e2e placeholder, never a real secret.
+# Add a line only after checking the finding is not a secret; a real leak is rotated, not ignored.
+# basket.test.ts: idempotency keys and a constant named KEY in unit tests
+98563e8ad6acec2ed3e2439078dac9c9dcc34d20:src/app/routes/site/basket.test.ts:generic-api-key:140
+7581effc7d19afbd62f0f3259b97fc89b158a707:src/app/routes/site/basket.test.ts:generic-api-key:200
+eed22d57e7b4f19f4a33bf4acbc44aa44e64d5bd:src/app/routes/site/basket.test.ts:generic-api-key:223
+4d8134a3140e72c67400d4fef180aaf9b6723f75:src/app/routes/site/basket.test.ts:generic-api-key:260
+# cpu-measure.test.ts: a fake token the redaction test must hide
+cd2a903c4cd82cf00d69b4d1d5168729d3bb6889:src/app/lib/cpu-measure.test.ts:generic-api-key:13
+# wrangler.jsonc env "e2e": the "e2e-placeholder-…" anon key for the local GoTrue stub
+c234d0a824854c27e232ce426a5b8b6abc525afa:src/wrangler.jsonc:generic-api-key:40

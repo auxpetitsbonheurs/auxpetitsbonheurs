@@ -117,7 +117,7 @@ Threats modelled: **83** · specified: 48 · partial: 18 · gap: 17. Gap items: 
 ## J. Secrets, vendor accounts, CI and backups
 | ID | S/T/R/I/D/E | Threat | L | I | Mitigation | Where | Status |
 |---|---|---|---|---|---|---|---|
-| J1 | I | Secrets committed to git or bundled into the client | M | H | `env.server.ts` server-only, `wrangler secret`, `.dev.vars.example`; no secret scanning in CI or hooks | arch Security, Environments | partial (G-19) |
+| J1 | I | Secrets committed to git or bundled into the client | M | H | `env.server.ts` server-only, `wrangler secret`, `.dev.vars.example`; gitleaks over the history and a client-bundle secret check in CI (G-19, 2026-11-12) | arch Security, Environments | mitigated (G-19); rotation G-20 |
 | J2 | S/E | Takeover of a bakery vendor account (Cloudflare, Supabase, GitHub, Resend, Google, registrar) gives full compromise | M | H | Accounts are owned by the bakery (NFR-012). MFA and recovery codes are not required | [architecture Security](architecture.md#security) "Vendor account protection"; NFR-012 | specified (G-03; Owner MFA in-app still G-10) |
 | J3 | I | High-value secrets (pooler/direct DB URL, service-role key, Storage S3 keys, Drive OAuth token) over-privileged or never rotated | L | H | Separate per environment. No inventory, rotation runbook, or least-privilege scopes (Drive full scope versus `drive.file`) | arch Backups | gap (G-20) |
 | J4 | T | Compromised GitHub Action or workflow exfiltrates backup secrets | L | H | Private repo. Actions not pinned to SHA; default `GITHUB_TOKEN` permissions not reduced | arch Backups | gap (G-20) |
@@ -183,7 +183,7 @@ Priority: **H** must be fixed before launch; **M** should be fixed before launch
 - [~] Rate limits on auth and expensive endpoints (gaps G-08, G-09, G-12, G-15)
 - [x] Security headers (K6); [~] extend `no-referrer` to all token routes (G-07): done for `/t/*` and `/order/*` (S-015/S-016, `token-page.server.ts`); save-details, auth and invite routes follow with their stories
 - [x] CORS: no cross-origin API; send no CORS headers
-- [~] Secrets: Worker secrets only; scanning and rotation missing (G-19, G-20)
+- [~] Secrets: Worker secrets only; scanning in CI (G-19 done 2026-11-12); rotation missing (G-20)
 - [x] Webhooks signature-verified and idempotent (F1, F2); [ ] redirect allowlist (G-04)
 - [~] Uploads: type and size limits, private bucket; session binding and magic bytes missing (G-13)
 - [~] SSRF: push endpoint allowlist missing (G-17)

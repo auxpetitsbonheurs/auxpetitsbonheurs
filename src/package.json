@@ -17,6 +17,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "check:js-budget": "node scripts/check-js-budget.ts",
+    "check:client-secrets": "node scripts/check-client-secrets.ts",
     "seed:owner": "tsx scripts/seed-owner.ts",
     "test:e2e": "playwright test",
     "seed:sample": "tsx scripts/seed-sample.ts",
