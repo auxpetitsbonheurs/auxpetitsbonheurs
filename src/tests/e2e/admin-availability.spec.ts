@@ -89,6 +89,8 @@ test.describe("S-056, S-057 Availability", () => {
       await expect(dialog.locator(":focus")).toHaveCount(1);
       await dialog.getByRole("button", { name: "Remove block" }).click();
       await expect(blocked.getByText("No blocked dates.")).toBeVisible();
+      // The row leaves at once (optimistic); wait for the server's answer before reloading.
+      await expect(blocked.getByRole("status").filter({ hasText: "Block removed." })).toBeAttached();
       await page.reload();
       await expect(page.getByText("No blocked dates.")).toBeVisible();
     });
