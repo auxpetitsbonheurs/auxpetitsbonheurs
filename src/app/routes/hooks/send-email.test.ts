@@ -1,5 +1,6 @@
 // S-024: the Supabase Auth Send Email hook, with a fake mailer (no network).
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { randomUUID } from "node:crypto";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { emailContext } from "~/server/email/context.server";
 import type { EmailMessage, Mailer } from "~/server/email/sender.server";
@@ -16,13 +17,15 @@ const SECRET = `v1,whsec_${SECRET_BYTES}`;
 
 let database: TestDatabase;
 
-beforeEach(async () => {
+beforeAll(async () => {
   database = await createTestDatabase();
 }, 60_000);
 
-afterEach(async () => {
+
+afterAll(async () => {
   await database.close();
 });
+
 
 class FakeMailer implements Mailer {
   readonly sent: EmailMessage[] = [];
@@ -67,7 +70,7 @@ function payload(overrides: { locale?: unknown; redirectTo?: string; type?: stri
 
 async function deliver(delivery: Delivery = {}) {
   const body = JSON.stringify(delivery.payload ?? payload());
-  const id = delivery.id ?? "msg_1";
+  const id = delivery.id ?? `msg_${randomUUID()}`;
   const timestamp = delivery.timestamp ?? Math.floor(NOW.getTime() / 1000);
   const signature = delivery.signature ?? (await sign(id, timestamp, body));
   const args = routeArgs(database, { path: "/hooks/supabase/send-email", auth: new FakeAuth(), now: NOW.toISOString() });
@@ -122,9 +125,9 @@ describe("signature and freshness (AC2)", () => {
     const body = JSON.stringify(payload());
     const timestamp = (delivery as Delivery).timestamp ?? Math.floor(NOW.getTime() / 1000);
     // A stale delivery is still correctly signed: only its age is wrong.
-    const signature = (delivery as Delivery).signature ?? (await sign("msg_1", timestamp, body));
+    const signature = (delivery as Delivery).signature ?? (await sign("msg_stale", timestamp, body));
 
-    const result = await deliver({ ...delivery, timestamp, signature, mailer });
+    const result = await deliver({ ...delivery, id: "msg_stale", timestamp, signature, mailer });
 
     expect(result.status).toBe(401);
     expect(mailer.sent).toEqual([]);
@@ -178,10 +181,10 @@ describe("provider failure (AC5)", () => {
   test("a failed send can be retried with the same webhook-id", async () => {
     const mailer = new FakeMailer();
     mailer.mode = "fail";
-    await deliver({ mailer });
+    await deliver({ mailer, id: "msg_retry" });
     mailer.mode = "ok";
 
-    expect((await deliver({ mailer })).status).toBe(200);
+    expect((await deliver({ mailer, id: "msg_retry" })).status).toBe(200);
     expect(mailer.sent).toHaveLength(1);
   });
 });
@@ -190,8 +193,8 @@ describe("dedupe (AC6)", () => {
   test("the same webhook-id twice sends one email and answers 200 both times", async () => {
     const mailer = new FakeMailer();
 
-    const first = await deliver({ mailer });
-    const second = await deliver({ mailer });
+    const first = await deliver({ mailer, id: "msg_1" });
+    const second = await deliver({ mailer, id: "msg_1" });
 
     expect([first.status, second.status]).toEqual([200, 200]);
     expect(mailer.sent).toHaveLength(1);

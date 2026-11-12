@@ -1,5 +1,5 @@
 // S-025: ask for a password reset link (`admin/forgot` requestReset).
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { insertAdmin, insertCustomerAccount } from "~/server/testing/admins";
 import { FakeAuth } from "~/server/testing/fake-auth";
@@ -9,13 +9,19 @@ import { action, loader } from "./forgot";
 let database: TestDatabase;
 let auth: FakeAuth;
 
-beforeEach(async () => {
+beforeAll(async () => {
   database = await createTestDatabase();
-  auth = new FakeAuth();
 }, 60_000);
 
-afterEach(async () => {
+beforeEach(() => {
+  auth = new FakeAuth();
+});
+
+afterAll(async () => {
   await database.close();
+});
+
+afterEach(() => {
   vi.restoreAllMocks();
 });
 
@@ -71,14 +77,15 @@ describe("field errors (AC3)", () => {
     ["", "Enter your email address."],
     ["sarah@", "Enter an email address, for example name@example.com."],
   ])("%j shows only a field error and requests nothing", async (email, message) => {
+    const before = await database.client.query("select 1 from rate_limit_bucket");
     const result = (await post(email)) as Envelope;
 
     expect(result.init.status).toBe(400);
     expect(result.data.error.code).toBe("VALIDATION_FAILED");
     expect(result.data.error.fields).toEqual({ email: message });
     expect(auth.recoveryRequests).toEqual([]);
-    const buckets = await database.client.query("select 1 from rate_limit_bucket");
-    expect(buckets.rows).toEqual([]);
+    const after = await database.client.query("select 1 from rate_limit_bucket");
+    expect(after.rows.length).toBe(before.rows.length);
   });
 });
 

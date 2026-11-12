@@ -1,5 +1,5 @@
 // S-036: My profile (`admin/profile` updateProfile, changePassword, setAlerts).
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vitest";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { signedInAdmin } from "~/server/testing/admin-session";
 import { TEST_PASSWORD, insertAdmin } from "~/server/testing/admins";
@@ -9,14 +9,18 @@ import { action, loader } from "./profile";
 let database: TestDatabase;
 let session: Awaited<ReturnType<typeof signedInAdmin>>;
 
-beforeEach(async () => {
+beforeAll(async () => {
   database = await createTestDatabase();
+}, 60_000);
+
+beforeEach(async () => {
   session = await signedInAdmin(database, { role: "admin", name: "Sarah", locale: "en" });
 }, 60_000);
 
-afterEach(async () => {
+afterAll(async () => {
   await database.close();
 });
+
 
 type Envelope = { data: { ok: false; error: { code: string; message: string; fields?: Record<string, string> } }; init: { status: number } };
 
