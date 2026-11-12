@@ -40,6 +40,8 @@ export interface AdminProduct {
   allergens: string[];
   noticeDays: number | null;
   minQuantity: number | null;
+  /** Both dates inclusive (Mauritius calendar), or null when not seasonal (S-049). */
+  seasonal: { startsOn: string; endsOn: string } | null;
   status: ProductStatusValue;
   /** Groups and choices in order, with their ids (posted back so baskets keep working). */
   optionGroups: OptionGroupRecord[];
@@ -73,6 +75,8 @@ export async function findAdminProduct(db: Database, id: string, supabaseUrl: st
       allergens: product.allergens,
       noticeDays: product.noticeDays,
       minQuantity: product.minQuantity,
+      seasonalStartsOn: product.seasonalStartsOn,
+      seasonalEndsOn: product.seasonalEndsOn,
       status: product.status,
       optionGroups: optionGroupsJson,
       updatedAt: product.updatedAt,
@@ -83,13 +87,14 @@ export async function findAdminProduct(db: Database, id: string, supabaseUrl: st
     .leftJoin(admin, eq(admin.id, product.updatedBy))
     .where(eq(product.id, id));
   if (!row) return undefined;
-  const { nameEn, nameFr, descriptionEn, descriptionFr, updatedAt, updatedByName, photos: rawPhotos, optionGroups, ...rest } = row;
+  const { nameEn, nameFr, descriptionEn, descriptionFr, updatedAt, updatedByName, photos: rawPhotos, optionGroups, seasonalStartsOn, seasonalEndsOn, ...rest } = row;
   const photos = parseJson(rawPhotos).map((p) => ({ ...p, url: publicImageUrl(p.path, supabaseUrl) }));
   return {
     ...rest,
     photoCount: photos.length,
     photos,
     optionGroups: parseJsonColumn(optionGroups),
+    seasonal: seasonalStartsOn && seasonalEndsOn ? { startsOn: seasonalStartsOn, endsOn: seasonalEndsOn } : null,
     name: { en: nameEn, fr: nameFr },
     description: { en: descriptionEn, fr: descriptionFr },
     updated: updatedByName ? { name: updatedByName, at: updatedAt.toISOString() } : null,

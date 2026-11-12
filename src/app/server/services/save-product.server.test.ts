@@ -1,4 +1,4 @@
-// `admin/product` save (S-046 basics, S-047 photos, S-048 option groups).
+// `admin/product` save (S-046 basics, S-047 photos, S-048 option groups, S-049 seasonal dates).
 import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { insertProduct } from "~/db/testing/catalogue";
@@ -6,7 +6,7 @@ import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { parseProductForm } from "~/server/contracts/admin";
 import type { StorageGateway, StoredObject, UploadGateway } from "~/server/storage.server";
 import { signedInAdmin } from "~/server/testing/admin-session";
-import { findAdminProduct } from "~/server/repos/admin-menu.server";
+import { findAdminProduct, listAdminMenu } from "~/server/repos/admin-menu.server";
 import { saveProduct } from "./save-product.server";
 
 let database: TestDatabase;
@@ -497,5 +497,61 @@ describe("option groups (S-048)", () => {
     const six = (await save({ ...BASE, "name.en": "Dessert cups", minQuantity: "6" })) as { id: string };
     expect((await row(six.id)).min_quantity).toBe(6);
     expect(await save({ ...BASE, "name.en": "Too many", minQuantity: "51" })).toMatchObject({ fields: { minQuantity: "invalid" } });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// S-049 seasonal dates.
+
+const CHRISTMAS = { "seasonal.startsOn": "2026-12-01", "seasonal.endsOn": "2026-12-24" };
+
+async function menuTag(id: string, today: string) {
+  const byType = await listAdminMenu(database.db, { today, supabaseUrl: "https://storage.test" });
+  return Object.values(byType).flat().find((r) => r.id === id)!.seasonal;
+}
+
+describe("seasonal dates (S-049)", () => {
+  test("AC1: both dates are stored; the menu row says Seasonal inside the window and Scheduled seasonal before it", async () => {
+    const result = (await save({ ...BASE, ...CHRISTMAS })) as { id: string };
+
+    const saved = await row(result.id);
+    expect([saved.seasonal_starts_on, saved.seasonal_ends_on].map((d) => (d instanceof Date ? d.toISOString().slice(0, 10) : d))).toEqual(["2026-12-01", "2026-12-24"]);
+    expect((await findAdminProduct(database.db, result.id, "https://storage.test"))!.seasonal).toEqual({ startsOn: "2026-12-01", endsOn: "2026-12-24" });
+    expect(await menuTag(result.id, "2026-11-12")).toBe("scheduled");
+    expect(await menuTag(result.id, "2026-12-24")).toBe("current");
+  });
+
+  test.each([
+    ["a start after the end", { "seasonal.startsOn": "2026-12-24", "seasonal.endsOn": "2026-12-01" }, "order"],
+    ["only a start", { "seasonal.startsOn": "2026-12-01", "seasonal.endsOn": "" }, "pair"],
+    ["only an end", { "seasonal.startsOn": "", "seasonal.endsOn": "2026-12-24" }, "pair"],
+    ["a date that does not exist", { "seasonal.startsOn": "2026-02-30", "seasonal.endsOn": "2026-03-02" }, "invalid"],
+  ])("AC2: %s is VALIDATION_FAILED on the dates and nothing is saved", async (_label, dates, problem) => {
+    expect(await save({ ...BASE, ...dates })).toEqual({ ok: false, code: "VALIDATION_FAILED", fields: { seasonal: problem } });
+    expect((await database.client.query("select count(*)::int as n from product")).rows[0]).toEqual({ n: 0 });
+  });
+
+  test("AC3: clearing both dates makes the product not seasonal", async () => {
+    const created = (await save({ ...BASE, ...CHRISTMAS })) as { id: string };
+
+    await save({ ...BASE, id: created.id, "seasonal.startsOn": "", "seasonal.endsOn": "" });
+
+    expect((await findAdminProduct(database.db, created.id, "https://storage.test"))!.seasonal).toBeNull();
+    expect(await menuTag(created.id, "2026-12-10")).toBeNull();
+  });
+
+  test("AC5: one day (start equal to end) is valid", async () => {
+    const result = (await save({ ...BASE, "seasonal.startsOn": "2027-02-14", "seasonal.endsOn": "2027-02-14" })) as { ok: boolean; id: string };
+
+    expect(result.ok).toBe(true);
+    expect((await findAdminProduct(database.db, result.id, "https://storage.test"))!.seasonal).toEqual({ startsOn: "2027-02-14", endsOn: "2027-02-14" });
+  });
+
+  test("a form without the date fields keeps the stored window", async () => {
+    const created = (await save({ ...BASE, ...CHRISTMAS })) as { id: string };
+
+    await save({ ...BASE, id: created.id, basePriceRs: "900" });
+
+    expect((await findAdminProduct(database.db, created.id, "https://storage.test"))!.seasonal).toEqual({ startsOn: "2026-12-01", endsOn: "2026-12-24" });
   });
 });

@@ -17,6 +17,7 @@ import {
   SLUG_PATTERN,
 } from "~/domain/product";
 import { type OptionGroupInput, type OptionProblem, checkOptionGroups } from "~/domain/options";
+import { type SeasonProblem, type SeasonWindow, checkSeason } from "~/domain/season";
 import { Email, Uuid, Version } from "./shared";
 
 /** `admin/login` signIn. Field problems are reported per field; the password is never echoed. */
@@ -82,7 +83,8 @@ export const MenuActionInput = z.discriminatedUnion("intent", [
 // dotted names (`name.en`, `description.fr`, repeated `allergens`); `parseProductForm`
 // checks each field and builds the nested ProductInput. Option groups (S-048) come as one
 // JSON field `optionGroups` checked by domain/options (every problem keyed by its path); a
-// form without it keeps the product's groups. The editor's photo list (S-047) is
+// form without it keeps the product's groups. Seasonal dates (S-049) are `seasonal.startsOn`
+// and `seasonal.endsOn` (`YYYY-MM-DD`, both or neither); a form with neither keeps them. The editor's photo list (S-047) is
 // posted as one JSON field `photos` ([{ path, width, height }], in card order) with the
 // `uploadSessionId` its uploads were issued under; a form without `photos` keeps the
 // product's photos as they are.
@@ -129,12 +131,12 @@ function parseJsonField(value: FormDataEntryValue | null): unknown {
   }
 }
 
-export type ProductField = keyof typeof PRODUCT_FIELDS | "photos" | "optionGroups";
+export type ProductField = keyof typeof PRODUCT_FIELDS | "photos" | "optionGroups" | "seasonal";
 /**
  * `missing` for an empty English name; `invalid` for anything else; `taken`/`photo`/`rejected`
  * come from the service; `none`/`too_many` for option groups and their choices.
  */
-export type ProductProblem = "missing" | "invalid" | "taken" | "photo" | "rejected" | OptionProblem;
+export type ProductProblem = "missing" | "invalid" | "taken" | "photo" | "rejected" | OptionProblem | SeasonProblem;
 /** Field -> problem. Option group fields are paths such as `optionGroups.1.choices.0.name.en`. */
 export type ProductProblems = Partial<Record<ProductField | "id", ProductProblem>> & Record<string, ProductProblem | undefined>;
 
@@ -151,6 +153,8 @@ export interface ProductInput {
   /** Minimum units per basket line (dessert cups by 6); null = none. */
   minQuantity: number | null;
   status: ProductStatusValue;
+  /** Absent: keep the stored window. null: not seasonal. Both dates inclusive (Mauritius). */
+  seasonal?: SeasonWindow | null;
   /** Absent: keep the product's option groups. Present: exactly these, in this order. */
   optionGroups?: OptionGroupInput[];
   /** Absent: keep the product's photos. Present: exactly these, first = card image. */
@@ -177,6 +181,8 @@ export function parseProductForm(form: FormData): ProductFormResult {
   const photos = form.has("photos") ? PostedPhotos.safeParse(parseJsonField(form.get("photos"))) : null;
   const uploadSession = Uuid.safeParse(raw("uploadSessionId"));
   if (photos && !photos.success) problems.photos = "invalid";
+  const season = form.has("seasonal.startsOn") || form.has("seasonal.endsOn") ? checkSeason(String(raw("seasonal.startsOn")), String(raw("seasonal.endsOn"))) : null;
+  if (season && !season.ok) problems.seasonal = season.problem;
   const options = form.has("optionGroups") ? checkOptionGroups(parseJsonField(form.get("optionGroups"))) : null;
   if (options) Object.assign(problems, options.problems);
   if (Object.keys(problems).length > 0) return { ok: false, problems };
@@ -196,6 +202,7 @@ export function parseProductForm(form: FormData): ProductFormResult {
       minQuantity: (values.minQuantity as number | undefined) ?? null,
       status: values.status as ProductStatusValue,
       ...(options ? { optionGroups: options.groups } : {}),
+      ...(season?.ok ? { seasonal: season.window } : {}),
       ...(photos?.success ? { photos: photos.data } : {}),
       ...(uploadSession.success ? { uploadSessionId: uploadSession.data.toLowerCase() } : {}),
     },

@@ -485,7 +485,10 @@
           "choice_name_en_invalid": "{{group}}, choix {{n}} : le nom anglais fait au plus 120 caractères.",
           "choice_name_fr_invalid": "{{group}}, choix {{n}} : le nom français fait au plus 120 caractères.",
           "choice_priceDeltaRs_invalid": "{{group}}, choix {{n}} : saisissez la différence de prix en roupies entières, jusqu'à 100 000."
-        }
+        },
+        "seasonal_pair": "Saisissez les deux dates de saison, ou effacez les deux.",
+        "seasonal_order": "Le dernier jour doit être le même jour que le premier ou après.",
+        "seasonal_invalid": "Saisissez de vraies dates, par exemple 01/12/2026."
       },
       "loading": "Chargement du produit…",
       "photos": {
@@ -583,6 +586,13 @@
         "announceChoiceAdded": "Choix {{n}} ajouté à {{group}}.",
         "announceChoiceRemoved": "Choix {{n}} de {{group}} retiré. Il en reste {{count}}.",
         "announceChoiceMoved": "Choix déplacé en position {{n}} sur {{count}} dans {{group}}."
+      },
+      "season": {
+        "legend": "Dates de saison",
+        "hint": "Les clients peuvent choisir ce produit seulement pour un retrait ou une livraison dans cette période, les deux jours compris. Laissez les deux vides pour toute l'année.",
+        "format": "Jour, mois et année, par exemple 01/12/2026.",
+        "starts": "Premier jour",
+        "ends": "Dernier jour"
       }
     }
   }

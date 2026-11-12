@@ -1,5 +1,5 @@
 # S-049: Set seasonal dates on a product
-Status: ready
+Status: review
 Epic: E-03-menu-content-management
 Spec: docs/specs/features/admin-menu-content.md#acceptance-criteria
 Estimate: 2 pts
@@ -9,20 +9,21 @@ Owner: remix-specialist, ui-engineer, api-engineer
 As a bakery admin, I want to give a product start and end dates, so that a Christmas log is only offered in the Christmas window.
 
 ## Acceptance Criteria
-- [ ] AC1 (FR-062): Given start 1 Dec and end 24 Dec, when I save, then the product stores both dates and the row shows the tag "Seasonal" (or "Scheduled seasonal" before the start).
-- [ ] AC2 (FR-062): Given a start after the end, or only one of the two dates, when I save, then `VALIDATION_FAILED` on the dates with a plain message and nothing is saved.
-- [ ] AC3 (FR-062): Given both dates cleared, then the product is not seasonal.
-- [ ] AC4 (FR-062, FR-006): Given the window 1 to 24 Dec, then the pure function `isInSeason(window, date)` returns true for 24 Dec and false for 25 Dec (inclusive end, Mauritius calendar dates) and true for any date when there is no window.
-- [ ] AC5 (FR-062): Given start equal to end (one day), then it is valid.
-- [ ] AC6 (NFR-002): Given the two date fields at 320 px and 375 px wide and at 200% zoom, when I use only the keyboard, then every control is reachable with a visible focus indicator, nothing is clipped, tap targets are at least 44 x 44 px, each field has a visible label and a text format hint, errors are linked, and light and dark mode pairs meet WCAG AA contrast per docs/design/tokens.json with no serious or critical axe violations.
+- [x] AC1 (FR-062): Given start 1 Dec and end 24 Dec, when I save, then the product stores both dates and the row shows the tag "Seasonal" (or "Scheduled seasonal" before the start).
+- [x] AC2 (FR-062): Given a start after the end, or only one of the two dates, when I save, then `VALIDATION_FAILED` on the dates with a plain message and nothing is saved.
+- [x] AC3 (FR-062): Given both dates cleared, then the product is not seasonal.
+- [x] AC4 (FR-062, FR-006): Given the window 1 to 24 Dec, then the pure function `isInSeason(window, date)` returns true for 24 Dec and false for 25 Dec (inclusive end, Mauritius calendar dates) and true for any date when there is no window.
+- [x] AC5 (FR-062): Given start equal to end (one day), then it is valid.
+- [x] AC6 (NFR-002): Given the two date fields at 320 px and 375 px wide and at 200% zoom, when I use only the keyboard, then every control is reachable with a visible focus indicator, nothing is clipped, tap targets are at least 44 x 44 px, each field has a visible label and a text format hint, errors are linked, and light and dark mode pairs meet WCAG AA contrast per docs/design/tokens.json with no serious or critical axe violations.
 
 ## Tests
-- AC1 → src/app/server/services/save-product.server.test.ts
-- AC2 → src/app/server/services/save-product.server.test.ts
+- AC1 → src/app/server/services/save-product.server.test.ts "seasonal dates (S-049)" (both dates stored; the admin menu row's tag is `scheduled` before and `current` inside the window) and src/tests/e2e/admin-menu.spec.ts (row shows "Scheduled seasonal")
+- AC2 → src/app/server/services/save-product.server.test.ts (start after end, one date only, a date that does not exist) and src/tests/e2e/admin-menu.spec.ts (summary link focuses the field)
 - AC3 → src/app/server/services/save-product.server.test.ts
-- AC4 → src/app/domain/season.test.ts
-- AC5 → src/app/domain/season.test.ts
-- AC6 → src/tests/e2e/admin-menu.spec.ts
+- AC4 → src/app/domain/season.test.ts (`isInSeason`: 24 Dec true, 25 Dec false, no window always true)
+- AC5 → src/app/domain/season.test.ts and src/app/server/services/save-product.server.test.ts
+- AC6 → src/tests/e2e/admin-menu.spec.ts (320, 375, 1280 at 100% and 200%; format hint and error in each field's description; axe light and dark)
+- Note: native date fields (the phone's own date picker); the hint gives the text format for typing.
 
 ## Notes
 - Depends on: S-046, S-006 (E-01 time helpers).

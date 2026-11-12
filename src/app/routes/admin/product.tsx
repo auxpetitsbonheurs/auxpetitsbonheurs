@@ -148,6 +148,7 @@ const ANCHORS: Record<ProductField | "id", string> = {
   photos: "photos",
   minQuantity: "min-quantity",
   optionGroups: "options",
+  seasonal: "season-starts",
   id: "name-en",
 };
 
@@ -329,6 +330,50 @@ function LeaveDialog({ blocker }: { blocker: ReturnType<typeof useBlocker> }) {
   );
 }
 
+/** Seasonal dates (S-049): optional, both or neither, both days included. */
+function SeasonFields({ window, error }: { window: { startsOn: string; endsOn: string } | null; error?: string }) {
+  const { t } = useI18n();
+  const describedBy = (id: string) => [`${id}-hint`, "season-hint", error ? "season-error" : ""].filter(Boolean).join(" ");
+  const field = (id: string, name: string, label: string, value: string | undefined) => (
+    <div className="min-w-0">
+      <label htmlFor={id} className="block font-semibold">
+        {label}
+      </label>
+      <p id={`${id}-hint`} className="text-sm text-muted-foreground">
+        {t("admin.product.season.format")}
+      </p>
+      <input
+        id={id}
+        name={name}
+        type="date"
+        defaultValue={value ?? ""}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(id)}
+        className="mt-2 block min-h-12 w-full max-w-60 min-w-0 rounded-md border-2 border-input bg-card px-3 py-2 text-base aria-invalid:border-destructive"
+      />
+    </div>
+  );
+  return (
+    <fieldset>
+      <legend className="font-semibold">
+        {t("admin.product.season.legend")} <span className="font-normal">{t("admin.product.optional")}</span>
+      </legend>
+      <p id="season-hint" className="text-sm text-muted-foreground">
+        {t("admin.product.season.hint")}
+      </p>
+      <div className="mt-2 grid gap-4 min-[30rem]:grid-cols-2 md:max-w-xl">
+        {field("season-starts", "seasonal.startsOn", t("admin.product.season.starts"), window?.startsOn)}
+        {field("season-ends", "seasonal.endsOn", t("admin.product.season.ends"), window?.endsOn)}
+      </div>
+      {error && (
+        <p id="season-error" className="mt-1 font-semibold text-destructive">
+          {error}
+        </p>
+      )}
+    </fieldset>
+  );
+}
+
 function OtherFields({ loaderData, errors, onPrice, children }: { loaderData: LoaderData; errors: Fields; onPrice: (value: number | null) => void; children?: ReactNode }) {
   const { t } = useI18n();
   const { product, settingsDefaults, categories } = loaderData;
@@ -372,6 +417,7 @@ function OtherFields({ loaderData, errors, onPrice, children }: { loaderData: Lo
         ))}
       </datalist>
       {children}
+      <SeasonFields window={product?.seasonal ?? null} error={errors.seasonal} />
       <ChoiceGroup
         id="status"
         legend={t("admin.product.status")}

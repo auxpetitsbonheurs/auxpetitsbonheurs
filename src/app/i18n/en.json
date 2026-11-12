@@ -485,7 +485,10 @@
           "choice_name_en_invalid": "{{group}}, choice {{n}}: keep the English name to 120 characters or fewer.",
           "choice_name_fr_invalid": "{{group}}, choice {{n}}: keep the French name to 120 characters or fewer.",
           "choice_priceDeltaRs_invalid": "{{group}}, choice {{n}}: enter the price change in whole rupees, up to 100,000."
-        }
+        },
+        "seasonal_pair": "Enter both seasonal dates, or clear both.",
+        "seasonal_order": "The last day must be on or after the first day.",
+        "seasonal_invalid": "Enter real dates, for example 01/12/2026."
       },
       "loading": "Loading the product…",
       "photos": {
@@ -583,6 +586,13 @@
         "announceChoiceAdded": "Choice {{n}} added to {{group}}.",
         "announceChoiceRemoved": "Choice {{n}} of {{group}} removed. {{count}} left.",
         "announceChoiceMoved": "Choice moved to position {{n}} of {{count}} in {{group}}."
+      },
+      "season": {
+        "legend": "Seasonal dates",
+        "hint": "Customers can choose this product only for pickup or delivery days in this window, both days included. Leave both blank for all year.",
+        "format": "Day, month and year, for example 01/12/2026.",
+        "starts": "First day",
+        "ends": "Last day"
       }
     }
   }

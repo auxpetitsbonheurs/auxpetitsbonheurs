@@ -84,6 +84,7 @@ function columns(input: ProductInput, slug: string, context: SaveProductContext)
     allergens: input.allergens,
     noticeDays: input.noticeDays,
     minQuantity: input.minQuantity,
+    ...(input.seasonal === undefined ? {} : { seasonalStartsOn: input.seasonal?.startsOn ?? null, seasonalEndsOn: input.seasonal?.endsOn ?? null }),
     status: input.status,
     updatedAt: context.now,
     updatedBy: context.adminId,

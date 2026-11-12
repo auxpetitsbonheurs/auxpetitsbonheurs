@@ -1,5 +1,5 @@
 // E-03 admin menu: list (S-041), editor (S-046), hide / sold out (S-043), delete (S-045),
-// photos (S-047), option groups (S-048). Every spec makes its own products (unique names), so parallel projects
+// photos (S-047), option groups (S-048), seasonal dates (S-049). Every spec makes its own products (unique names), so parallel projects
 // never share one.
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -891,6 +891,64 @@ test.describe("S-048 option groups", () => {
       await page.getByRole("button", { name: "Save" }).click();
       await expect(page.getByRole("alert").filter({ hasText: "Please check the product" })).toBeFocused();
       await expect(groupCard(page, "Size").getByLabel("Choice name (English)")).toHaveAccessibleDescription("Size, choice 1: enter the choice name in English.");
+      await expectNoA11yViolations(page);
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// S-049 seasonal dates.
+
+test.describe("S-049 seasonal dates", () => {
+  test("AC1, AC2: dates save and the menu row says Scheduled seasonal; a start after the end is refused with a linked message", async ({ page, db }) => {
+    const product = await createProduct(db, { status: "hidden" });
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+    await hydrated(page);
+    const first = page.getByLabel("First day");
+    const last = page.getByLabel("Last day");
+    await expect(first).toHaveAccessibleDescription(/Day, month and year, for example 01\/12\/2026\./);
+
+    await first.fill("2099-12-24");
+    await last.fill("2099-12-01");
+    await page.getByRole("button", { name: "Save" }).click();
+    const summary = page.getByRole("alert").filter({ hasText: "Please check the product" });
+    await expect(summary).toBeFocused();
+    await summary.getByRole("link", { name: "The last day must be on or after the first day." }).click();
+    await expect(first).toBeFocused();
+    await expect(first).toHaveAccessibleDescription(/The last day must be on or after the first day\./);
+
+    await first.fill("2099-12-01");
+    await last.fill("2099-12-24");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+    await page.getByRole("link", { name: "Back to the menu" }).click();
+    await expect(rowOf(page, product.name)).toContainText("Scheduled seasonal");
+  });
+
+  test("AC6: the date fields by keyboard, 44 px targets, nothing clipped, at 100% and 200%", async ({ page, db }) => {
+    const product = await createProduct(db, { status: "hidden" });
+    await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+    await hydrated(page);
+    for (const zoom of [1, 2]) {
+      await withZoom(page, zoom, async () => {
+        await expectNoHorizontalScroll(page);
+        await expectNothingClipped(page);
+        await expectTapTargets(page);
+        await expectFormKeyboardOperable(page, 120);
+        await expectBarsHideNothing(page);
+      });
+    }
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`AC6: labelled date fields with a format hint and a linked error, axe clean in ${colorScheme} mode`, async ({ page, db }) => {
+      await page.emulateMedia({ colorScheme });
+      const product = await createProduct(db, { status: "hidden" });
+      await signIn(page, E2E_ACCOUNTS.owner, `/admin/menu/${product.id}`);
+      await hydrated(page);
+      await page.getByLabel("First day").fill("2099-12-01");
+      await page.getByRole("button", { name: "Save" }).click();
+      await expect(page.getByLabel("Last day")).toHaveAccessibleDescription(/Enter both seasonal dates, or clear both\./);
       await expectNoA11yViolations(page);
     });
   }
