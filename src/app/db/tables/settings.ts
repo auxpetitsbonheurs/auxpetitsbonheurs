@@ -44,7 +44,7 @@ export const settings = pgTable(
     featuredProductIds: uuid("featured_product_ids").array().notNull().default(sql`'{}'::uuid[]`),
     about: jsonb("about").$type<LocalizedText>(),
     aboutImagePath: text("about_image_path"),
-    faq: jsonb("faq").$type<FaqEntry[]>().notNull().default(sql`'[]'::jsonb`),
+    faq: jsonb("faq").$type<LocalizedText | FaqEntry[]>().notNull().default(sql`'[]'::jsonb`),
     policies: jsonb("policies").$type<LocalizedText>(),
     privacyNote: jsonb("privacy_note").$type<LocalizedText>(),
     whatsappTemplates: jsonb("whatsapp_templates").$type<WhatsappTemplates>(),

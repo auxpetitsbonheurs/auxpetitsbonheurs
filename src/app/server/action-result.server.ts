@@ -18,6 +18,8 @@ const STATUS = {
   PRICE_CHANGED: 409,
   PRODUCT_UNAVAILABLE: 409,
   SLUG_TAKEN: 409,
+  /** Settings or availability saved from a stale page (S-056..S-059). */
+  SETTINGS_CHANGED: 409,
   /** Invite or accept: the email already has an admin or customer account (S-028, S-029). */
   EMAIL_IN_USE: 409,
   /** changeRole / deactivate would leave no active Owner (S-031, S-032). */

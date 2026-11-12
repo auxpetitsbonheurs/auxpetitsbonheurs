@@ -27,13 +27,13 @@ export interface OrderConfirmation {
 }
 
 /**
- * The order behind a tracking token, the Settings number prefix and the names of the
+ * The order behind a tracking token, its number prefix (stored at placement) and the names of the
  * left-out products (ids from the cookie, already checked as UUIDs). Callers check the token
  * format first.
  */
 export async function findOrderConfirmation(db: Executor, token: string, leftOutIds: readonly string[]): Promise<OrderConfirmation | undefined> {
   const { rows } = (await db.execute(sql`
-    select o.id as "orderId", o.number, o.tracking_token as "trackingToken", o.locale, s.order_number_prefix as "orderNumberPrefix",
+    select o.id as "orderId", o.number, o.tracking_token as "trackingToken", o.locale, coalesce(o.number_prefix, s.order_number_prefix) as "orderNumberPrefix",
       coalesce((
         select json_agg(json_build_object('id', p.id, 'name', json_build_object('en', p.name_en, 'fr', p.name_fr)))
         from product p where p.id in (select value::uuid from json_array_elements_text(${JSON.stringify(leftOutIds)}::json))
@@ -95,7 +95,7 @@ export async function findTrackedOrder(db: Executor, token: string): Promise<Tra
   const { rows } = (await db.execute(sql`
     select o.id, o.number, o.locale, o.status, o.fulfilment, to_char(o.fulfil_on, 'YYYY-MM-DD') as "fulfilOn", o.time_window as "window",
       o.address, o.landmark, o.items_total_rs as "itemsTotalRs", o.delivery_fee_rs as "deliveryFeeRs", o.total_rs as "totalRs",
-      o.paid, o.version, s.order_number_prefix as "orderNumberPrefix", s.juice_number as "juiceNumber",
+      o.paid, o.version, coalesce(o.number_prefix, s.order_number_prefix) as "orderNumberPrefix", s.juice_number as "juiceNumber",
       coalesce((
         select json_agg(json_build_object('nameEn', i.name_en, 'nameFr', i.name_fr, 'quantity', i.quantity, 'lineTotalRs', i.line_total_rs,
           'options', i.options, 'cakeMessage', i.cake_message) order by i.sort_order)

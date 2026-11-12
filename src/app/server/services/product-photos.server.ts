@@ -29,7 +29,7 @@ export async function storedPhotos(db: Reader, productId: string | undefined): P
   return new Map(rows.map((r) => [r.path, r]));
 }
 
-async function isStoredImage(uploads: UploadGateway, path: string): Promise<boolean> {
+export async function isStoredImage(uploads: UploadGateway, path: string): Promise<boolean> {
   const object = await uploads.inspect(PUBLIC_IMAGES_BUCKET, path).catch(() => null);
   if (!object) return false;
   const sniffed = sniffImageType(object.head);

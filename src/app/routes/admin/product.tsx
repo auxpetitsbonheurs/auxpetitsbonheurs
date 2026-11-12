@@ -1,13 +1,12 @@
 import { Check, ChevronLeft } from "lucide-react";
-import { type FocusEvent, type FormEvent, type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from "react";
-import { Link, data, useBlocker, useFetcher, useNavigate } from "react-router";
+import { type FormEvent, type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from "react";
+import { Link, data, useFetcher, useNavigate } from "react-router";
 import { AdminErrorBoundary } from "~/components/admin/admin-states";
+import { LeaveDialog, keepAboveSaveBar, useUnsavedGuard } from "~/components/admin/unsaved-guard";
 import { OptionGroupsEditor, optionAnchor } from "~/components/admin/option-groups-editor";
 import { PhotoManager } from "~/components/admin/photo-manager";
 import { usePhotoUploads } from "~/components/admin/use-photo-uploads";
 import { ErrorSummary } from "~/components/checkout/error-summary";
-import { Button } from "~/components/ui/button";
-import { Modal } from "~/components/ui/modal";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { TextField } from "~/components/ui/text-field";
 import { showToast } from "~/components/ui/toaster";
@@ -298,40 +297,6 @@ function AllergenChips({ tags, selected, error }: { tags: string[]; selected: st
   );
 }
 
-/** Asks before leaving with unsaved changes (S-046 AC6): in-app links and closing the tab. */
-function useUnsavedGuard(dirty: boolean) {
-  const dirtyRef = useRef(dirty);
-  useEffect(() => {
-    dirtyRef.current = dirty;
-  }, [dirty]);
-  const blocker = useBlocker(({ currentLocation, nextLocation }) => dirtyRef.current && currentLocation.pathname !== nextLocation.pathname);
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
-  return { blocker, dirtyRef };
-}
-
-function LeaveDialog({ blocker }: { blocker: ReturnType<typeof useBlocker> }) {
-  const { t } = useI18n();
-  const open = blocker.state === "blocked";
-  return (
-    <Modal open={open} onClose={() => blocker.reset?.()} title={t("admin.product.leaveTitle")} closeLabel={t("admin.states.close")} variant="dialog">
-      <p>{t("admin.product.leaveBody")}</p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Button type="button" onClick={() => blocker.reset?.()} className="flex-1">
-          {t("admin.product.stay")}
-        </Button>
-        <Button type="button" variant="outline" onClick={() => blocker.proceed?.()} className="flex-1 border-destructive">
-          {t("admin.product.leave")}
-        </Button>
-      </div>
-    </Modal>
-  );
-}
-
 /** Seasonal dates (S-049): optional, both or neither, both days included. */
 function SeasonFields({ window, error }: { window: { startsOn: string; endsOn: string } | null; error?: string }) {
   const { t } = useI18n();
@@ -484,22 +449,6 @@ function useSaveWithPhotos(fetcher: ReturnType<typeof useFetcher<ActionData>>, f
     /** Any change to the photo list cancels a save that was waiting for uploads. */
     cancel: () => setPendingSave(false),
   };
-}
-
-/**
- * A focused control never stays under the sticky Save bar (WCAG 2.4.11). Browsers do not
- * scroll a control that is already partly visible, so `scroll-padding` alone leaves a tall
- * field's lower edge under the bar; this scrolls by the overlap.
- */
-function keepAboveSaveBar(event: FocusEvent<HTMLFormElement>) {
-  const bar = event.currentTarget.querySelector<HTMLElement>("[data-editor-bar]");
-  if (!bar || getComputedStyle(bar).position !== "sticky") return;
-  const target = event.target as HTMLElement;
-  // Fields only, typed into: a button is pressed where it is (scrolling would move it from under the finger).
-  if (!target.matches("input:not([type=checkbox], [type=radio], [type=file]), textarea, select") || bar.contains(target)) return;
-  const box = (target.closest("label") ?? target).getBoundingClientRect();
-  const overlap = box.bottom - bar.getBoundingClientRect().top;
-  if (overlap > 0 && box.top - overlap - 16 >= 0) window.scrollBy({ top: overlap + 16, behavior: "instant" });
 }
 
 /**

@@ -108,3 +108,32 @@ describe("refusals", () => {
     expect(((await response.json()) as { error: { code: string } }).error.code).toBe("INTERNAL");
   });
 });
+
+describe("Settings images (S-059 AC6, AC8): scope site", () => {
+  test("an Owner gets paths under site/<owner>/<page session>/", async () => {
+    const owner = await signedInAdmin(database, { role: "owner" });
+    const uploads = gateway();
+
+    const response = await post({ uploadSessionId: SESSION, scope: "site", type: "image/webp", size: "1000" }, owner, uploads);
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { uploads: { path: string }[] };
+    expect(body.uploads[0]!.path).toMatch(new RegExp(`^site/${owner.admin.id}/${SESSION}/[0-9a-f-]{36}\\.webp$`));
+  });
+
+  test("an Admin asking for site images gets FORBIDDEN and nothing is signed", async () => {
+    const helper = await signedInAdmin(database, { role: "admin" });
+    const uploads = gateway();
+
+    const response = await post({ uploadSessionId: SESSION, scope: "site", type: "image/webp", size: "1000" }, helper, uploads);
+
+    expect(response.status).toBe(403);
+    expect(uploads.signUpload).not.toHaveBeenCalled();
+  });
+
+  test("an unknown scope is VALIDATION_FAILED", async () => {
+    const response = await post({ uploadSessionId: SESSION, scope: "../x", type: "image/webp", size: "1000" });
+
+    expect(response.status).toBe(400);
+  });
+});

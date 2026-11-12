@@ -1,6 +1,7 @@
 import { Check, CircleSlash } from "lucide-react";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { useI18n } from "~/i18n/react";
+import { PlainText } from "~/components/site/plain-text";
 import { formatRupees } from "~/lib/locale";
 import type { FieldErrors } from "./fulfilment-section";
 
@@ -65,7 +66,7 @@ function PolicyAcceptance({ policies, error, initial }: { policies: string; erro
         <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold link">
           {t("checkout.readPolicies")}
         </summary>
-        <p className="mt-2 max-w-measure whitespace-pre-line">{policies}</p>
+        <PlainText text={policies} className="mt-2" />
       </details>
     </div>
   );

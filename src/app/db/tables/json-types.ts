@@ -34,4 +34,5 @@ export type WhatsappTemplates = Record<WhatsappTemplateKey, LocalizedText>;
 
 export type HeroContent = { tagline: LocalizedText; imagePath: string | null };
 
+/** Legacy shape of `settings.faq` (never written); the FAQ is one text per language (S-059). */
 export type FaqEntry = { question: LocalizedText; answer: LocalizedText };

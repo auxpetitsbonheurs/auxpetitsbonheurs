@@ -55,6 +55,41 @@ test.each(["invite", "resendInvite", "revokeInvite", "changeRole", "deactivate",
   expect((await database.client.query("select role, active from admin where id = $1", [owner.admin.id])).rows).toEqual([{ role: "owner", active: true }]);
 });
 
+// S-056 AC8, S-057 AC7, S-058 AC8, S-059 AC8: every Availability and Settings intent refuses an
+// Admin before reading the form, and nothing changes.
+test.each([
+  ["/admin/availability", availability, "addBlock"],
+  ["/admin/availability", availability, "removeBlock"],
+  ["/admin/availability", availability, "saveRules"],
+  ["/admin/settings", settings, "save"],
+] as const)("an Admin posting to %s %s gets FORBIDDEN and nothing changes", async (path, module, intent) => {
+  await database.client.query("insert into blocked_date (starts_on, ends_on) values ('2026-12-24', '2026-12-26')");
+  const { id } = (await database.client.query<{ id: string }>("select id from blocked_date")).rows[0]!;
+  const session = await signedInAdmin(database, { role: "admin" });
+  const form = { intent, id, startsOn: "2026-12-01", endsOn: "2026-12-02", version: "1", deliveryFeeRs: "999", defaultNoticeDays: "9" };
+
+  const refused = await refusal(() => module.action(routeArgs(database, { path, auth: session.auth, cookie: session.cookie, form }) as never));
+
+  expect(refused.init.status).toBe(403);
+  expect(refused.data.error.code).toBe("FORBIDDEN");
+  expect((await database.client.query("select count(*)::int as n from blocked_date")).rows).toEqual([{ n: 1 }]);
+  expect((await database.client.query("select version, delivery_fee_rs from settings")).rows).toEqual([{ version: 1, delivery_fee_rs: 200 }]);
+});
+
+test.each([
+  ["/admin/availability", availability, "addBlock"],
+  ["/admin/settings", settings, "save"],
+] as const)("an anonymous post to %s %s is sent to the login page and nothing changes", async (path, module, intent) => {
+  const thrown = await Promise.resolve(module.action(routeArgs(database, { path, form: { intent, startsOn: "2026-12-01", endsOn: "2026-12-02", version: "1" } }) as never)).then(
+    () => null,
+    (error: unknown) => error,
+  );
+
+  expect(thrown).toBeInstanceOf(Response);
+  expect((thrown as Response).headers.get("Location")).toMatch(/^\/admin\/login\?next=/);
+  expect((await database.client.query("select count(*)::int as n from blocked_date")).rows).toEqual([{ n: 0 }]);
+});
+
 describe.each(PAGES)("%s", (path, module, intent) => {
   test("AC1: an Admin gets 403 with the Owner-only state and no Owner data", async () => {
     const session = await signedInAdmin(database, { role: "admin" });

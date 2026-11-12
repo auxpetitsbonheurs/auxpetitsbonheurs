@@ -13,6 +13,8 @@ export const REVIEW_STATUSES = ["pending_approval", "quote_needed"] as const sat
 export interface AdminOrderRow {
   id: string;
   number: number;
+  /** Prefix stored at placement (S-058 AC6); null only for a row the trigger never saw. */
+  numberPrefix: string | null;
   status: OrderStatus;
   source: "website" | "custom_request" | "manual";
   fulfilment: "delivery" | "pickup";
@@ -27,6 +29,7 @@ export interface AdminOrderRow {
 const summaryColumns = {
   id: orders.id,
   number: orders.number,
+  numberPrefix: orders.numberPrefix,
   status: orders.status,
   source: orders.source,
   fulfilment: orders.fulfilment,

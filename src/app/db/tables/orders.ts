@@ -36,6 +36,11 @@ export const orders = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     number: integer("number").notNull().unique(),
+    /**
+     * The Settings prefix at placement ("APB-"), so a later prefix change leaves this order's
+     * number as it was (S-058 AC6). Filled by the `orders_number_prefix` trigger when not given.
+     */
+    numberPrefix: text("number_prefix"),
     source: orderSourceEnum("source").notNull(),
     status: orderStatusEnum("status").notNull(),
     customerId: uuid("customer_id")

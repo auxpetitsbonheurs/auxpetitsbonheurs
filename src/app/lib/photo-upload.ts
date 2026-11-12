@@ -18,9 +18,10 @@ export interface IssuedUpload {
 }
 
 /** One signed URL for a file of `type` and `size` bytes, under this editor session's prefix. */
-export async function requestUpload(uploadSessionId: string, type: string, size: number, signal?: AbortSignal): Promise<IssuedUpload> {
+export async function requestUpload(uploadSessionId: string, type: string, size: number, signal?: AbortSignal, scope: "products" | "site" = "products"): Promise<IssuedUpload> {
   const body = new FormData();
   body.set("uploadSessionId", uploadSessionId);
+  if (scope !== "products") body.set("scope", scope);
   body.append("type", type);
   body.append("size", String(size));
   let response: Response;

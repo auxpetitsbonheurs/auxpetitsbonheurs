@@ -73,3 +73,18 @@ export function isIssuedPhotoPath(path: string, adminId: string, uploadSessionId
   const match = PRODUCT_PHOTO_PATH.exec(path);
   return match !== null && match[1] === adminId.toLowerCase() && match[2] === uploadSessionId.toLowerCase();
 }
+
+/** Hero and About images (S-059 AC6): `site/<adminId>/<uploadSessionId>/<uuid>.<ext>`, same rules as product photos. */
+const SITE_PHOTO_PATH = new RegExp(`^site/(${UUID})/(${UUID})/${UUID}\\.(webp|jpg|png)$`);
+
+export type UploadScope = "products" | "site";
+
+export function uploadPrefix(scope: UploadScope, adminId: string, uploadSessionId: string): string {
+  return `${scope}/${adminId}/${uploadSessionId}/`;
+}
+
+/** True when `path` is exactly a site image path issued to this admin for this Settings session. */
+export function isIssuedSitePath(path: string, adminId: string, uploadSessionId: string): boolean {
+  const match = SITE_PHOTO_PATH.exec(path);
+  return match !== null && match[1] === adminId.toLowerCase() && match[2] === uploadSessionId.toLowerCase();
+}

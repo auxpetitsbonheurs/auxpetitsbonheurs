@@ -125,7 +125,8 @@
       "LINK_EXPIRED": "This link has expired. Request a new one.",
       "EMAIL_IN_USE": "This email already has an account.",
       "INVITE_INVALID": "This invitation has expired or was already used. Ask the owner for a new one.",
-      "LAST_OWNER": "There must always be one active Owner. Make someone else Owner first."
+      "LAST_OWNER": "There must always be one active Owner. Make someone else Owner first.",
+      "SETTINGS_CHANGED": "Someone changed this. Reload."
     }
   },
   "product": {
@@ -814,6 +815,292 @@
       "iosHint": "To install: tap Share, then Add to Home Screen",
       "dismiss": "Hide this tip",
       "label": "Install the app"
+    },
+    "settings": {
+      "title": "Settings",
+      "intro": "What customers see on the site, in checkout and in messages. Changes show on the site within a minute, without a developer.",
+      "deliveryTitle": "Delivery and pickup",
+      "deliveryFee": "Delivery fee (Rs)",
+      "deliveryFeeHint": "Whole rupees, 0 to {{max}}. New delivery orders use it; orders already placed keep their fee.",
+      "pickupAddress": "Pickup address",
+      "pickupAddressHint": "Shown at checkout and in the footer.",
+      "pickupMap": "Map link for pickup",
+      "urlHint": "A full web address starting with https://",
+      "contactTitle": "Contact",
+      "contactIntro": "Shown in the footer of every page. Leave a field empty to hide it.",
+      "contactPhone": "Phone",
+      "contactWhatsapp": "WhatsApp number",
+      "phoneHint": "For example 5712 3456 or +230 5712 3456.",
+      "contactEmail": "Email",
+      "instagram": "Instagram link",
+      "paymentTitle": "Payment",
+      "juice": "Juice number",
+      "juiceHint": "Shown at checkout and on the tracking page. 30 characters at most.",
+      "ordersTitle": "Orders and messages",
+      "quoteValidity": "Quote valid for (days)",
+      "cakeMessageMax": "Cake message length (characters)",
+      "rangeHint": "A whole number from {{min}} to {{max}}.",
+      "eveningReminder": "Evening reminder time",
+      "timeHint": "24-hour time as HH:mm, for example 18:00.",
+      "orderPrefix": "Order number prefix",
+      "orderPrefixHint": "1 to 5 capital letters and an optional dash, for example APB-. Only new orders use it; earlier orders keep their number.",
+      "homepageTitle": "Homepage",
+      "contentIntro": "Plain text: line breaks are kept, nothing else is formatted. French left empty shows the English on French pages.",
+      "heroTagline": "Tagline",
+      "heroImage": "Homepage photo",
+      "featured": "Featured products",
+      "featuredHint": "Up to {{max}}. A hidden or sold-out product is not shown on the homepage until it is available again.",
+      "featuredCount": "{{count}} of {{max}} chosen",
+      "featuredFull": "{{max}} of {{max}} chosen. Untick one to choose another.",
+      "featuredNone": "No products yet. Add them in Menu.",
+      "flagHidden": "hidden",
+      "flagSoldOut": "sold out",
+      "aboutTitle": "About",
+      "about": "About text",
+      "aboutImage": "About photo",
+      "textsTitle": "FAQ, policies and privacy",
+      "textsIntro": "Plain text: line breaks are kept, nothing else is formatted.",
+      "faq": "FAQ",
+      "faqHint": "Questions and answers, one after the other.",
+      "policies": "Policies",
+      "policiesHint": "Keep the cancellation and storage entries: customers accept these at checkout.",
+      "privacy": "Privacy note",
+      "emailTitle": "Email sending",
+      "emailUsage": "{{sentToday}} of {{dailyLimit}} emails sent today.",
+      "emailUsageLater": "Daily email usage: not available yet.",
+      "inEnglish": "{{label}} (English)",
+      "inFrench": "{{label}} (French)",
+      "charsLeft_one": "{{count}} character left",
+      "charsLeft_other": "{{count}} characters left",
+      "language": {
+        "en": "English",
+        "fr": "French"
+      },
+      "save": "Save settings",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "waitingPhoto": "Waiting for the photo…",
+      "errorSummaryTitle": "Check these fields",
+      "changedBody": "Someone saved this page after you opened it. Reload to see their changes, then make yours again.",
+      "reload": "Reload",
+      "policiesWarningTitle": "Saved, with a warning",
+      "policiesWarning": "Keep the cancellation and storage entries in the policies (English and French).",
+      "image": {
+        "hint": "A photo from your phone; it is made smaller before it is sent.",
+        "none": "No photo",
+        "alt": "{{label}}, current",
+        "choose": "Choose {{label}}",
+        "replace": "Replace {{label}}",
+        "remove": "Remove {{label}}",
+        "removed": "Photo removed. Save to keep the change.",
+        "working": "Preparing photo…",
+        "uploaded": "Photo ready. Save to use it.",
+        "failedShort": "The photo could not be added.",
+        "failed": {
+          "type": "This file is not a photo we can use (JPEG, PNG, WebP or HEIC).",
+          "too_big": "This photo is over 10 MB. Choose a smaller one.",
+          "unreadable": "This photo could not be read. Try another one.",
+          "heic": "This iPhone photo could not be converted. Try another one.",
+          "too_big_after": "This photo stays too large after shrinking. Try another one.",
+          "signed_out": "You are signed out. Sign in again, then add the photo.",
+          "refused": "The photo was refused. Try another one.",
+          "network": "No connection. Check it and try again."
+        }
+      },
+      "errors": {
+        "version": {
+          "invalid": "This page is out of date. Reload it."
+        },
+        "deliveryFeeRs": {
+          "invalid": "Enter the delivery fee as whole rupees from 0 to 100,000."
+        },
+        "pickupAddress": {
+          "invalid": "The pickup address is too long (300 characters at most)."
+        },
+        "pickupMapUrl": {
+          "invalid": "Enter the map link as a full web address starting with https://"
+        },
+        "contactPhone": {
+          "invalid": "Enter a phone number, for example 5712 3456."
+        },
+        "contactWhatsapp": {
+          "invalid": "Enter a WhatsApp number, for example 5712 3456."
+        },
+        "contactEmail": {
+          "invalid": "Enter an email address like name@example.com."
+        },
+        "juiceNumber": {
+          "invalid": "The Juice number is too long (30 characters at most)."
+        },
+        "instagramUrl": {
+          "invalid": "Enter the Instagram link as a full web address starting with https://"
+        },
+        "quoteValidityDays": {
+          "invalid": "Enter the quote validity as a whole number of days from 1 to 60."
+        },
+        "cakeMessageMax": {
+          "invalid": "Enter the cake message length as a whole number from 10 to 200."
+        },
+        "eveningReminderAt": {
+          "invalid": "Enter the reminder time as HH:mm, for example 18:00."
+        },
+        "orderNumberPrefix": {
+          "invalid": "Use 1 to 5 capital letters and an optional dash, for example APB-."
+        },
+        "heroTagline": {
+          "tooLong": "The tagline in {{language}} is too long (200 characters at most).",
+          "missingEn": "The tagline: write the English text too (French alone cannot be saved)."
+        },
+        "about": {
+          "tooLong": "The About text in {{language}} is too long (10,000 characters at most).",
+          "missingEn": "The About text: write the English text too (French alone cannot be saved)."
+        },
+        "faq": {
+          "tooLong": "The FAQ text in {{language}} is too long (10,000 characters at most).",
+          "missingEn": "The FAQ text: write the English text too (French alone cannot be saved)."
+        },
+        "policies": {
+          "tooLong": "The policies text in {{language}} is too long (10,000 characters at most).",
+          "missingEn": "The policies text: write the English text too (French alone cannot be saved)."
+        },
+        "privacyNote": {
+          "tooLong": "The privacy note in {{language}} is too long (10,000 characters at most).",
+          "missingEn": "The privacy note: write the English text too (French alone cannot be saved)."
+        },
+        "heroImagePath": {
+          "invalid": "The homepage photo could not be used. Choose it again.",
+          "rejected": "The homepage photo could not be used. Choose it again."
+        },
+        "aboutImagePath": {
+          "invalid": "The About photo could not be used. Choose it again.",
+          "rejected": "The About photo could not be used. Choose it again."
+        },
+        "featuredProductIds": {
+          "tooMany": "Choose 6 featured products at most.",
+          "invalid": "The featured products could not be read. Reload the page.",
+          "unknown": "A featured product no longer exists. Reload the page."
+        }
+      }
+    },
+    "availability": {
+      "title": "Availability",
+      "intro": "How much notice you need, the days you are closed and the times customers can choose. Orders already placed never change.",
+      "rulesTitle": "Notice and closed days",
+      "notice": "Notice needed (days)",
+      "noticeHint": "A whole number from 0 to {{max}}. A product can ask for more.",
+      "closedDays": "Closed days",
+      "closedDaysHint": "Tick the days you never deliver or hand over orders. At least one day stays open.",
+      "closedOn": "Closed on",
+      "weekday": {
+        "1": "Monday",
+        "2": "Tuesday",
+        "3": "Wednesday",
+        "4": "Thursday",
+        "5": "Friday",
+        "6": "Saturday",
+        "7": "Sunday"
+      },
+      "windowsTitle": "Time windows",
+      "windowsIntro": "Customers choose one at checkout. Windows in a list must not overlap.",
+      "deliveryTitle": "Delivery windows",
+      "pickupTitle": "Pickup windows",
+      "timeHint": "Times as HH:mm, 24-hour, for example 09:00.",
+      "windowName": {
+        "deliveryWindows": "Delivery window {{n}}",
+        "pickupWindows": "Pickup window {{n}}"
+      },
+      "labelEn": "Name (English)",
+      "labelFr": "Name (French)",
+      "start": "Start",
+      "end": "End",
+      "removeWindow": "Remove {{window}}",
+      "windowAdded": "{{window}} added.",
+      "windowRemoved": "{{window}} removed. Save to keep the change.",
+      "add": {
+        "deliveryWindows": "Add a delivery window",
+        "pickupWindows": "Add a pickup window"
+      },
+      "windowsFull": "{{max}} windows at most.",
+      "saveRules": "Save availability",
+      "saved": "Saved",
+      "affectedTitle": "Orders on a day you just closed",
+      "affectedBody": "These orders are unchanged. Contact the customers if you cannot serve them.",
+      "orderLine": "{{number}}, {{name}}, {{date}}",
+      "blockedTitle": "Blocked dates",
+      "blockedIntro": "Block a day or a holiday. The reason is private: customers only see that the date is unavailable.",
+      "blockStart": "First day",
+      "blockEnd": "Last day",
+      "dateHint": "Date as YYYY-MM-DD.",
+      "reason": "Reason",
+      "reasonHint": "Only admins see it. {{max}} characters at most.",
+      "addBlock": "Block these dates",
+      "blocking": "Blocking…",
+      "blockAdded": "Blocked {{range}}.",
+      "existingTitle": "Orders already booked on these dates",
+      "existingBody": "The dates are blocked for new orders. These orders are unchanged: contact the customers if needed.",
+      "blockedListTitle": "Blocked now",
+      "noBlocks": "No blocked dates.",
+      "range": "{{start}} to {{end}}",
+      "remove": "Remove",
+      "removeBlockLabel": "Remove block {{range}}",
+      "removeTitle": "Remove this block?",
+      "removeBody": "Customers will be able to choose {{range}} again.",
+      "keep": "Keep it",
+      "confirmRemove": "Remove block",
+      "blockRemoved": "Block removed.",
+      "removeFailed": "This block was already removed. The list is up to date.",
+      "errors": {
+        "version": {
+          "invalid": "This page is out of date. Reload it."
+        },
+        "defaultNoticeDays": {
+          "invalid": "Enter the notice as a whole number of days from 0 to 60."
+        },
+        "closedWeekdays": {
+          "invalid": "The closed days could not be read. Reload the page.",
+          "allClosed": "Keep at least one day open."
+        },
+        "deliveryWindows": {
+          "none": "Add at least one delivery window.",
+          "tooMany": "Keep 6 delivery windows at most.",
+          "overlap": "Delivery windows overlap. Change the times so they do not.",
+          "invalid": "Two delivery windows are the same. Reload the page."
+        },
+        "pickupWindows": {
+          "none": "Add at least one pickup window.",
+          "tooMany": "Keep 6 pickup windows at most.",
+          "overlap": "Pickup windows overlap. Change the times so they do not.",
+          "invalid": "Two pickup windows are the same. Reload the page."
+        },
+        "window": {
+          "id": {
+            "invalid": "{{window}}: this window could not be read. Reload the page."
+          },
+          "label": {
+            "missing": "{{window}}: enter a name in English.",
+            "tooLong": "{{window}}: the name in {{language}} is too long (40 characters at most)."
+          },
+          "start": {
+            "time": "{{window}}: enter the start as HH:mm, for example 09:00."
+          },
+          "end": {
+            "time": "{{window}}: enter the end as HH:mm, for example 12:00.",
+            "order": "{{window}}: the end must be after the start."
+          }
+        },
+        "startsOn": {
+          "missing": "Enter the first day.",
+          "invalid": "Enter the first day as a date, YYYY-MM-DD."
+        },
+        "endsOn": {
+          "missing": "Enter the last day.",
+          "invalid": "Enter the last day as a date, YYYY-MM-DD.",
+          "beforeStart": "The last day cannot be before the first day."
+        },
+        "reason": {
+          "tooLong": "The reason is too long (200 characters at most)."
+        }
+      }
     }
   },
   "email": {

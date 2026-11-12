@@ -16,9 +16,13 @@ const projectFlag = process.argv.indexOf("--project");
 const projectPath = resolve(projectFlag > 0 ? (process.argv[projectFlag + 1] ?? "") : "../project.yaml");
 
 function readManifest(): RouteManifest {
-  const file = readdirSync(join(clientDir, "assets")).find((f) => /^manifest-.*\.js$/.test(f));
-  if (!file) throw new Error("No React Router manifest in build/client/assets; run `npm run build` first");
-  const source = readFileSync(join(clientDir, "assets", file), "utf8");
+  // The route module `routes/admin/manifest.tsx` also builds to an (empty) `manifest-<hash>.js`
+  // chunk: pick the file that really is React Router's manifest, whatever the directory order.
+  const source = readdirSync(join(clientDir, "assets"))
+    .filter((f) => /^manifest-.*\.js$/.test(f))
+    .map((f) => readFileSync(join(clientDir, "assets", f), "utf8"))
+    .find((text) => text.includes("__reactRouterManifest"));
+  if (!source) throw new Error("No React Router manifest in build/client/assets; run `npm run build` first");
   const json = source.slice(source.indexOf("=") + 1).replace(/;\s*$/, "");
   return JSON.parse(json) as RouteManifest;
 }

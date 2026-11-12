@@ -36,10 +36,11 @@ export async function loader(args: Route.LoaderArgs) {
   const limit = pageLimit(search.get("limit"));
   const { rows, more } = await listReviewOrders(db, { after: decodeCursor(search.get("cursor")), limit });
   const items = await itemsOfOrders(db, rows.map((row) => row.id));
-  const { orderNumberPrefix } = await getCheckoutSettings(db);
-  const data = rows.map((row) => ({
+  // Each order shows the prefix stored at placement (S-058 AC6); Settings only for a row without one.
+  const orderNumberPrefix = rows.some((row) => row.numberPrefix === null) ? (await getCheckoutSettings(db)).orderNumberPrefix : "";
+  const data = rows.map(({ numberPrefix, ...row }) => ({
     ...row,
-    number: formatOrderNumber(orderNumberPrefix, row.number),
+    number: formatOrderNumber(numberPrefix ?? orderNumberPrefix, row.number),
     dateLabel: formatDayLabel(row.fulfilOn, me.locale),
     itemsPreview: itemsPreview(items.get(row.id), me.locale),
   }));

@@ -125,7 +125,8 @@
       "LINK_EXPIRED": "Ce lien a expiré. Demandez-en un nouveau.",
       "EMAIL_IN_USE": "Cette adresse e-mail a déjà un compte.",
       "INVITE_INVALID": "Cette invitation a expiré ou a déjà été utilisée. Demandez-en une nouvelle à la propriétaire.",
-      "LAST_OWNER": "Il doit toujours y avoir une Propriétaire active. Nommez d'abord quelqu'un d'autre Propriétaire."
+      "LAST_OWNER": "Il doit toujours y avoir une Propriétaire active. Nommez d'abord quelqu'un d'autre Propriétaire.",
+      "SETTINGS_CHANGED": "Quelqu'un a modifié ceci. Rechargez."
     }
   },
   "product": {
@@ -814,6 +815,292 @@
       "iosHint": "Pour installer : touchez Partager, puis Sur l'écran d'accueil",
       "dismiss": "Masquer ce conseil",
       "label": "Installer l'application"
+    },
+    "settings": {
+      "title": "Paramètres",
+      "intro": "Ce que voient les clients sur le site, à la commande et dans les messages. Les changements apparaissent sur le site en une minute, sans développeur.",
+      "deliveryTitle": "Livraison et retrait",
+      "deliveryFee": "Frais de livraison (Rs)",
+      "deliveryFeeHint": "Roupies entières, de 0 à {{max}}. Les nouvelles livraisons l'utilisent ; les commandes déjà passées gardent leurs frais.",
+      "pickupAddress": "Adresse de retrait",
+      "pickupAddressHint": "Affichée à la commande et en bas de page.",
+      "pickupMap": "Lien de carte pour le retrait",
+      "urlHint": "Une adresse web complète commençant par https://",
+      "contactTitle": "Contact",
+      "contactIntro": "Affiché en bas de chaque page. Laissez un champ vide pour le masquer.",
+      "contactPhone": "Téléphone",
+      "contactWhatsapp": "Numéro WhatsApp",
+      "phoneHint": "Par exemple 5712 3456 ou +230 5712 3456.",
+      "contactEmail": "E-mail",
+      "instagram": "Lien Instagram",
+      "paymentTitle": "Paiement",
+      "juice": "Numéro Juice",
+      "juiceHint": "Affiché à la commande et sur la page de suivi. 30 caractères au plus.",
+      "ordersTitle": "Commandes et messages",
+      "quoteValidity": "Validité d'un devis (jours)",
+      "cakeMessageMax": "Longueur du message sur gâteau (caractères)",
+      "rangeHint": "Un nombre entier de {{min}} à {{max}}.",
+      "eveningReminder": "Heure du rappel du soir",
+      "timeHint": "Heure sur 24 h au format HH:mm, par exemple 18:00.",
+      "orderPrefix": "Préfixe des numéros de commande",
+      "orderPrefixHint": "1 à 5 majuscules et un tiret facultatif, par exemple APB-. Seules les nouvelles commandes l'utilisent ; les précédentes gardent leur numéro.",
+      "homepageTitle": "Page d'accueil",
+      "contentIntro": "Texte simple : les retours à la ligne sont gardés, rien d'autre n'est mis en forme. Un français vide affiche l'anglais sur les pages françaises.",
+      "heroTagline": "Accroche",
+      "heroImage": "Photo d'accueil",
+      "featured": "Produits mis en avant",
+      "featuredHint": "Jusqu'à {{max}}. Un produit masqué ou épuisé n'apparaît pas sur l'accueil tant qu'il n'est pas de nouveau disponible.",
+      "featuredCount": "{{count}} sur {{max}} choisis",
+      "featuredFull": "{{max}} sur {{max}} choisis. Décochez-en un pour en choisir un autre.",
+      "featuredNone": "Aucun produit pour l'instant. Ajoutez-en dans Menu.",
+      "flagHidden": "masqué",
+      "flagSoldOut": "épuisé",
+      "aboutTitle": "À propos",
+      "about": "Texte À propos",
+      "aboutImage": "Photo À propos",
+      "textsTitle": "FAQ, conditions et confidentialité",
+      "textsIntro": "Texte simple : les retours à la ligne sont gardés, rien d'autre n'est mis en forme.",
+      "faq": "FAQ",
+      "faqHint": "Questions et réponses, les unes après les autres.",
+      "policies": "Conditions",
+      "policiesHint": "Gardez les parties annulation et conservation : les clients les acceptent à la commande.",
+      "privacy": "Note de confidentialité",
+      "emailTitle": "Envoi des e-mails",
+      "emailUsage": "{{sentToday}} e-mails envoyés aujourd'hui sur {{dailyLimit}}.",
+      "emailUsageLater": "Utilisation quotidienne des e-mails : pas encore disponible.",
+      "inEnglish": "{{label}} (anglais)",
+      "inFrench": "{{label}} (français)",
+      "charsLeft_one": "{{count}} caractère restant",
+      "charsLeft_other": "{{count}} caractères restants",
+      "language": {
+        "en": "anglais",
+        "fr": "français"
+      },
+      "save": "Enregistrer les paramètres",
+      "saving": "Enregistrement…",
+      "saved": "Enregistré",
+      "waitingPhoto": "En attente de la photo…",
+      "errorSummaryTitle": "Vérifiez ces champs",
+      "changedBody": "Quelqu'un a enregistré cette page après votre ouverture. Rechargez pour voir ses changements, puis refaites les vôtres.",
+      "reload": "Recharger",
+      "policiesWarningTitle": "Enregistré, avec un avertissement",
+      "policiesWarning": "Gardez les parties annulation et conservation dans les conditions (anglais et français).",
+      "image": {
+        "hint": "Une photo de votre téléphone ; elle est réduite avant l'envoi.",
+        "none": "Aucune photo",
+        "alt": "{{label}}, actuelle",
+        "choose": "Choisir : {{label}}",
+        "replace": "Remplacer : {{label}}",
+        "remove": "Retirer : {{label}}",
+        "removed": "Photo retirée. Enregistrez pour garder ce changement.",
+        "working": "Préparation de la photo…",
+        "uploaded": "Photo prête. Enregistrez pour l'utiliser.",
+        "failedShort": "La photo n'a pas pu être ajoutée.",
+        "failed": {
+          "type": "Ce fichier n'est pas une photo utilisable (JPEG, PNG, WebP ou HEIC).",
+          "too_big": "Cette photo dépasse 10 Mo. Choisissez-en une plus petite.",
+          "unreadable": "Cette photo est illisible. Essayez-en une autre.",
+          "heic": "Cette photo d'iPhone n'a pas pu être convertie. Essayez-en une autre.",
+          "too_big_after": "Cette photo reste trop lourde après réduction. Essayez-en une autre.",
+          "signed_out": "Vous êtes déconnecté. Reconnectez-vous, puis ajoutez la photo.",
+          "refused": "La photo a été refusée. Essayez-en une autre.",
+          "network": "Pas de connexion. Vérifiez-la et réessayez."
+        }
+      },
+      "errors": {
+        "version": {
+          "invalid": "Cette page n'est plus à jour. Rechargez-la."
+        },
+        "deliveryFeeRs": {
+          "invalid": "Saisissez des frais de livraison en roupies entières, de 0 à 100 000."
+        },
+        "pickupAddress": {
+          "invalid": "L'adresse de retrait est trop longue (300 caractères au plus)."
+        },
+        "pickupMapUrl": {
+          "invalid": "Saisissez le lien de carte comme une adresse web complète commençant par https://"
+        },
+        "contactPhone": {
+          "invalid": "Saisissez un numéro de téléphone, par exemple 5712 3456."
+        },
+        "contactWhatsapp": {
+          "invalid": "Saisissez un numéro WhatsApp, par exemple 5712 3456."
+        },
+        "contactEmail": {
+          "invalid": "Saisissez une adresse e-mail comme nom@exemple.com."
+        },
+        "juiceNumber": {
+          "invalid": "Le numéro Juice est trop long (30 caractères au plus)."
+        },
+        "instagramUrl": {
+          "invalid": "Saisissez le lien Instagram comme une adresse web complète commençant par https://"
+        },
+        "quoteValidityDays": {
+          "invalid": "Saisissez une validité de devis en jours entiers, de 1 à 60."
+        },
+        "cakeMessageMax": {
+          "invalid": "Saisissez une longueur de message en nombre entier, de 10 à 200."
+        },
+        "eveningReminderAt": {
+          "invalid": "Saisissez l'heure du rappel au format HH:mm, par exemple 18:00."
+        },
+        "orderNumberPrefix": {
+          "invalid": "Utilisez 1 à 5 majuscules et un tiret facultatif, par exemple APB-."
+        },
+        "heroTagline": {
+          "tooLong": "Le texte de l'accroche en {{language}} est trop long (200 caractères au plus).",
+          "missingEn": "Le texte de l'accroche : écrivez aussi le texte anglais (le français seul ne peut pas être enregistré)."
+        },
+        "about": {
+          "tooLong": "Le texte À propos en {{language}} est trop long (10 000 caractères au plus).",
+          "missingEn": "Le texte À propos : écrivez aussi le texte anglais (le français seul ne peut pas être enregistré)."
+        },
+        "faq": {
+          "tooLong": "Le texte de la FAQ en {{language}} est trop long (10 000 caractères au plus).",
+          "missingEn": "Le texte de la FAQ : écrivez aussi le texte anglais (le français seul ne peut pas être enregistré)."
+        },
+        "policies": {
+          "tooLong": "Le texte des conditions en {{language}} est trop long (10 000 caractères au plus).",
+          "missingEn": "Le texte des conditions : écrivez aussi le texte anglais (le français seul ne peut pas être enregistré)."
+        },
+        "privacyNote": {
+          "tooLong": "Le texte de la note de confidentialité en {{language}} est trop long (10 000 caractères au plus).",
+          "missingEn": "Le texte de la note de confidentialité : écrivez aussi le texte anglais (le français seul ne peut pas être enregistré)."
+        },
+        "heroImagePath": {
+          "invalid": "La photo d'accueil n'a pas pu être utilisée. Choisissez-la de nouveau.",
+          "rejected": "La photo d'accueil n'a pas pu être utilisée. Choisissez-la de nouveau."
+        },
+        "aboutImagePath": {
+          "invalid": "La photo À propos n'a pas pu être utilisée. Choisissez-la de nouveau.",
+          "rejected": "La photo À propos n'a pas pu être utilisée. Choisissez-la de nouveau."
+        },
+        "featuredProductIds": {
+          "tooMany": "Choisissez 6 produits mis en avant au plus.",
+          "invalid": "Les produits mis en avant sont illisibles. Rechargez la page.",
+          "unknown": "Un produit mis en avant n'existe plus. Rechargez la page."
+        }
+      }
+    },
+    "availability": {
+      "title": "Disponibilités",
+      "intro": "Le délai qu'il vous faut, vos jours de fermeture et les horaires proposés aux clients. Les commandes déjà passées ne changent jamais.",
+      "rulesTitle": "Délai et jours de fermeture",
+      "notice": "Délai nécessaire (jours)",
+      "noticeHint": "Un nombre entier de 0 à {{max}}. Un produit peut demander plus.",
+      "closedDays": "Jours de fermeture",
+      "closedDaysHint": "Cochez les jours où vous ne livrez pas et ne remettez pas de commandes. Au moins un jour reste ouvert.",
+      "closedOn": "Fermé le",
+      "weekday": {
+        "1": "lundi",
+        "2": "mardi",
+        "3": "mercredi",
+        "4": "jeudi",
+        "5": "vendredi",
+        "6": "samedi",
+        "7": "dimanche"
+      },
+      "windowsTitle": "Créneaux horaires",
+      "windowsIntro": "Les clients en choisissent un à la commande. Les créneaux d'une liste ne doivent pas se chevaucher.",
+      "deliveryTitle": "Créneaux de livraison",
+      "pickupTitle": "Créneaux de retrait",
+      "timeHint": "Heures au format HH:mm sur 24 h, par exemple 09:00.",
+      "windowName": {
+        "deliveryWindows": "Créneau de livraison {{n}}",
+        "pickupWindows": "Créneau de retrait {{n}}"
+      },
+      "labelEn": "Nom (anglais)",
+      "labelFr": "Nom (français)",
+      "start": "Début",
+      "end": "Fin",
+      "removeWindow": "Retirer : {{window}}",
+      "windowAdded": "{{window}} ajouté.",
+      "windowRemoved": "{{window}} retiré. Enregistrez pour garder ce changement.",
+      "add": {
+        "deliveryWindows": "Ajouter un créneau de livraison",
+        "pickupWindows": "Ajouter un créneau de retrait"
+      },
+      "windowsFull": "{{max}} créneaux au plus.",
+      "saveRules": "Enregistrer les disponibilités",
+      "saved": "Enregistré",
+      "affectedTitle": "Commandes sur un jour que vous venez de fermer",
+      "affectedBody": "Ces commandes ne changent pas. Contactez les clients si vous ne pouvez pas les servir.",
+      "orderLine": "{{number}}, {{name}}, {{date}}",
+      "blockedTitle": "Dates bloquées",
+      "blockedIntro": "Bloquez un jour ou des vacances. Le motif est privé : les clients voient seulement que la date n'est pas disponible.",
+      "blockStart": "Premier jour",
+      "blockEnd": "Dernier jour",
+      "dateHint": "Date au format AAAA-MM-JJ.",
+      "reason": "Motif",
+      "reasonHint": "Seuls les admins le voient. {{max}} caractères au plus.",
+      "addBlock": "Bloquer ces dates",
+      "blocking": "Blocage…",
+      "blockAdded": "Bloqué : {{range}}.",
+      "existingTitle": "Commandes déjà prévues à ces dates",
+      "existingBody": "Les dates sont bloquées pour les nouvelles commandes. Ces commandes ne changent pas : contactez les clients si besoin.",
+      "blockedListTitle": "Bloqué actuellement",
+      "noBlocks": "Aucune date bloquée.",
+      "range": "{{start}} au {{end}}",
+      "remove": "Retirer",
+      "removeBlockLabel": "Retirer le blocage {{range}}",
+      "removeTitle": "Retirer ce blocage ?",
+      "removeBody": "Les clients pourront de nouveau choisir {{range}}.",
+      "keep": "Le garder",
+      "confirmRemove": "Retirer le blocage",
+      "blockRemoved": "Blocage retiré.",
+      "removeFailed": "Ce blocage avait déjà été retiré. La liste est à jour.",
+      "errors": {
+        "version": {
+          "invalid": "Cette page n'est plus à jour. Rechargez-la."
+        },
+        "defaultNoticeDays": {
+          "invalid": "Saisissez un délai en jours entiers, de 0 à 60."
+        },
+        "closedWeekdays": {
+          "invalid": "Les jours de fermeture sont illisibles. Rechargez la page.",
+          "allClosed": "Gardez au moins un jour ouvert."
+        },
+        "deliveryWindows": {
+          "none": "Ajoutez au moins un créneau de livraison.",
+          "tooMany": "Gardez 6 créneaux de livraison au plus.",
+          "overlap": "Des créneaux de livraison se chevauchent. Changez les heures.",
+          "invalid": "Deux créneaux de livraison sont identiques. Rechargez la page."
+        },
+        "pickupWindows": {
+          "none": "Ajoutez au moins un créneau de retrait.",
+          "tooMany": "Gardez 6 créneaux de retrait au plus.",
+          "overlap": "Des créneaux de retrait se chevauchent. Changez les heures.",
+          "invalid": "Deux créneaux de retrait sont identiques. Rechargez la page."
+        },
+        "window": {
+          "id": {
+            "invalid": "{{window}} : ce créneau est illisible. Rechargez la page."
+          },
+          "label": {
+            "missing": "{{window}} : saisissez un nom en anglais.",
+            "tooLong": "{{window}} : le nom en {{language}} est trop long (40 caractères au plus)."
+          },
+          "start": {
+            "time": "{{window}} : saisissez le début au format HH:mm, par exemple 09:00."
+          },
+          "end": {
+            "time": "{{window}} : saisissez la fin au format HH:mm, par exemple 12:00.",
+            "order": "{{window}} : la fin doit être après le début."
+          }
+        },
+        "startsOn": {
+          "missing": "Saisissez le premier jour.",
+          "invalid": "Saisissez le premier jour comme une date, AAAA-MM-JJ."
+        },
+        "endsOn": {
+          "missing": "Saisissez le dernier jour.",
+          "invalid": "Saisissez le dernier jour comme une date, AAAA-MM-JJ.",
+          "beforeStart": "Le dernier jour ne peut pas être avant le premier."
+        },
+        "reason": {
+          "tooLong": "Le motif est trop long (200 caractères au plus)."
+        }
+      }
     }
   },
   "email": {

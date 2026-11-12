@@ -47,10 +47,9 @@ export async function loader(args: Route.LoaderArgs) {
   const db = args.context.get(requestDbContext).db;
   const order = await findAdminOrder(db, id.data);
   if (!order) throw data(null, { status: 404 });
-  // Display only: the prefix comes from the per-isolate Settings cache (usually no query).
-  const { orderNumberPrefix } = (await getSiteSettings(db)).checkout;
-  const number = formatOrderNumber(orderNumberPrefix, order.number);
-  const { contactName, contactPhone, contactEmail, createdAt, ...rest } = order;
+  // The prefix stored at placement (S-058 AC6); the Settings one only for a row without it.
+  const number = formatOrderNumber(order.numberPrefix ?? (await getSiteSettings(db)).checkout.orderNumberPrefix, order.number);
+  const { contactName, contactPhone, contactEmail, createdAt, numberPrefix: _prefix, ...rest } = order;
   return {
     title: translate("admin.order.metaTitle", me.locale, { number }),
     order: { ...rest, number, dateLabel: formatDayLabel(order.fulfilOn, me.locale), placedAt: formatLogTime(createdAt, me.locale) },
