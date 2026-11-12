@@ -4,7 +4,7 @@ import { localeFromPathname } from "~/lib/locale";
 import { SEO_HANDLE, rootOrigin, seoMeta } from "~/lib/seo";
 import type { Route } from "./+types/home";
 
-/** Its meta uses seoMeta: the root Layout leaves the brand share image to it. */
+/** Its meta uses seoMeta: the site layout leaves the brand share image to it. */
 export const handle = SEO_HANDLE;
 
 export function loader({ request }: Route.LoaderArgs) {

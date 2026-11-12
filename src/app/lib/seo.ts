@@ -2,7 +2,7 @@
 // canonical, robots and share-preview tags from one call, so every page says the same things the
 // same way. Pure: no React, no server. hreflang alternates come from the root Layout (S-008 AC5),
 // which builds them from the URL for every customer page. The share image is the page's photo,
-// else the brand image; a route using seoMeta exports `handle = SEO_HANDLE` so the root Layout
+// else the brand image; a route using seoMeta exports `handle = SEO_HANDLE` so the site layout
 // leaves out its own brand `og:image` (one share image per page, never two).
 //
 // Placeholder pages (S-245 `is_placeholder`): pass `noindex: isPlaceholder`. The same flag keeps
@@ -15,7 +15,7 @@ export const SITE_NAME = "Aux petits bonheurs";
 /** Search engines cut descriptions outside this range; the catalogue test holds every page to it. */
 export const DESCRIPTION_LENGTH = { min: 50, max: 160 } as const;
 
-/** `export const handle = SEO_HANDLE` on a route whose `meta` uses seoMeta (read by the root Layout). */
+/** `export const handle = SEO_HANDLE` on a route whose `meta` uses seoMeta (read by the customer layout). */
 export const SEO_HANDLE = { seo: true } as const;
 
 /** The brand share image (brand v0.3 cream logo badge on burgundy), 1200 x 630. */

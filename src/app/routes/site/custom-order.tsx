@@ -23,7 +23,7 @@ export interface CustomOrderText {
 }
 
 
-/** Its meta uses seoMeta: the root Layout leaves the brand share image to it. */
+/** Its meta uses seoMeta: the site layout leaves the brand share image to it. */
 export const handle = SEO_HANDLE;
 
 /**

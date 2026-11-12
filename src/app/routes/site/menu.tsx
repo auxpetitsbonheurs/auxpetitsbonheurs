@@ -20,7 +20,7 @@ import { publicConfigContext } from "~/server/public-config.server";
 import { timed } from "~/server/server-timing.server";
 import type { Route } from "./+types/menu";
 
-/** Its meta uses seoMeta: the root Layout leaves the brand share image to it. */
+/** Its meta uses seoMeta: the site layout leaves the brand share image to it. */
 export const handle = SEO_HANDLE;
 
 /**

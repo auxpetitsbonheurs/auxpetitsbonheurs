@@ -32,7 +32,7 @@ function exactAddress(address: string | null): string | null {
   return address && address.trim().toLowerCase() !== PICKUP_AREA ? address : null;
 }
 
-/** Its meta uses seoMeta: the root Layout leaves the brand share image to it. */
+/** Its meta uses seoMeta: the site layout leaves the brand share image to it. */
 export const handle = SEO_HANDLE;
 
 /**

@@ -81,8 +81,8 @@ describe("seoMeta (AC1, AC3, AC5)", () => {
     expect(brand).toContainEqual({ property: "og:image:width", content: "1200" });
   });
 
-  test("AC3: routes using seoMeta tell the root Layout to leave out its own brand image (one og:image)", async () => {
-    const routes = await Promise.all([import("./contact"), import("./custom-order"), import("./menu"), import("../home")]);
+  test("AC3: routes using seoMeta tell the site layout to leave out its brand image (one og:image)", async () => {
+    const routes = await Promise.all([import("./contact"), import("./custom-order"), import("./menu"), import("../home"), import("./our-story"), import("./workshops"), import("./gallery")]);
 
     for (const route of routes) expect(handlesOwnShareImage(route.handle)).toBe(true);
     expect(handlesOwnShareImage(undefined)).toBe(false);

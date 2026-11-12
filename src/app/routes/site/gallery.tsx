@@ -38,7 +38,7 @@ export async function loader({ context, url }: Route.LoaderArgs) {
   return { ...seo, page: read.page, photos, total: gallery.photos.length, indexable: !read.page.isPlaceholder };
 }
 
-/** Its meta uses seoMeta (S-253): the root Layout leaves the share image to it. */
+/** Its meta uses seoMeta (S-253): the site layout leaves the share image to it. */
 export const handle = SEO_HANDLE;
 
 export function meta(args: Route.MetaArgs) {
