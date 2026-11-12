@@ -3,6 +3,11 @@ name: ci
 # Lint, typecheck, unit tests, build and the JS budget (NFR-001, NFR-012).
 # Needs no secrets: deploys run in Workers Builds (S-002). The e2e job (S-005) runs
 # Playwright against a local build and a throwaway Postgres service (test-only password).
+#
+# Runner minutes matter (private repo, free plan): a commit that changes only docs/**,
+# production/**, prototypes/** or *.md outside src/ (minus the docs unit tests read) skips
+# app and e2e (the `changes` job decides), yet the run still ends green, so deploy.yml
+# (which waits for a green ci on the commit) is never blocked. secret-scan always runs.
 on:
   pull_request:
   push:
@@ -10,18 +15,65 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  app:
+  changes:
+    # Compares against the last commit whose ci passed on this branch (not just the pushed
+    # range): a docs-only push that cancels a code push's run must still test that code.
+    # A pull request compares against its base. When in doubt it says "code".
     runs-on: ubuntu-latest
-    # The unit suite (one PGlite database per test) passed 15 minutes on 2026-11-12 (run
-    # 43144000030 timed out in `npm test`), then took 19 (run 43157429961) and outgrew 25 with
-    # batch 5 (run 43172461462 cut at 24 min in `npm test`); tech-debt.md tracks making it faster.
-    timeout-minutes: 35
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: diff
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          BRANCH: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ "$EVENT" = pull_request ]; then
+            base=$(git merge-base "$PR_BASE" HEAD) || base=""
+          else
+            base=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?branch=$BRANCH&event=push&status=success&per_page=1" --jq '.workflow_runs[0].head_sha // empty') || base=""
+          fi
+          if [ -z "$base" ] || ! git merge-base --is-ancestor "$base" HEAD 2>/dev/null; then
+            echo "No tested base found: running everything."
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Docs that unit tests read (tokens, runbooks, CPU evidence, src/README.md) count as code.
+          code=$(git diff --name-only "$base" HEAD | awk '
+            /^docs\/(design|runbooks)\// || /^docs\/architecture\/cpu-measurements\.md$/ { print; next }
+            /^(docs|production|prototypes)\// { next }
+            /\.md$/ && !/^src\// { next }
+            { print }')
+          if [ -n "$code" ]; then
+            echo "Code changed since $base:"; echo "$code" | head -20
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Only docs changed since $base: app and e2e are skipped."
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  app:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    # `npm test` took 31 min while every test migrated its own PGlite (run 43239965095); the
+    # suite now migrates once per run and resets between tests (app/db/testing/pglite.ts).
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: src
@@ -65,10 +117,17 @@ jobs:
         run: '"$RUNNER_TEMP/gitleaks" git --redact --no-banner --exit-code 1 .'
 
   e2e:
-    needs: app
+    # Runs beside `app`, not after it: it builds the app itself. Two shards, each with its own
+    # Postgres and one worker (a 2-core runner gains nothing from a second worker). 817 tests on
+    # one runner took 24 min (run 43239965095); each shard runs the skeleton project first.
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
-    # 703 specs on one worker reached ~19 min in batch 5 (run 43167358551, cut off at 20).
-    timeout-minutes: 35
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     services:
       postgres:
         image: postgres:16
@@ -101,11 +160,11 @@ jobs:
       - run: npx playwright install chromium
       - run: scripts/ensure-browser-deps.sh
         timeout-minutes: 8
-      - run: npm run test:e2e
+      - run: npm run test:e2e -- --shard=${{ matrix.shard }}/2
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-traces
+          name: playwright-traces-${{ matrix.shard }}
           path: |
             src/test-results
             src/playwright-report

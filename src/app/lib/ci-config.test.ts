@@ -50,13 +50,42 @@ describe("CI workflow (.github/workflows/ci.yml)", () => {
   });
 });
 
+describe("docs-only commits (runner minutes)", () => {
+  const job = (name: string, next: string) => ci.slice(ci.indexOf(`\n  ${name}:`), ci.indexOf(`\n  ${next}:`));
+  const changes = job("changes", "app");
+
+  test("every push still gets a ci run, so deploy.yml's green-ci gate is never left waiting", () => {
+    expect(ci).not.toMatch(/paths(-ignore)?:/);
+  });
+
+  test("app and e2e run only when code changed; secret-scan always runs", () => {
+    const gate = "if: needs.changes.outputs.code == 'true'";
+    expect(job("app", "secret-scan")).toContain(gate);
+    expect(ci.slice(ci.indexOf("\n  e2e:"))).toContain(gate);
+    expect(job("secret-scan", "e2e")).not.toContain("needs:");
+  });
+
+  test("compares with the last commit whose ci passed, and runs everything when it cannot tell", () => {
+    expect(changes).toContain("status=success");
+    expect(changes).toContain("git merge-base --is-ancestor");
+    expect(changes).toMatch(/No tested base found: running everything\."\n\s+echo "code=true"/);
+  });
+
+  test("docs that unit tests read count as code", () => {
+    expect(changes).toContain(String.raw`/^docs\/(design|runbooks)\// || /^docs\/architecture\/cpu-measurements\.md$/ { print; next }`);
+    expect(changes).toContain(String.raw`/\.md$/ && !/^src\// { next }`);
+  });
+});
+
 describe("CI e2e job (S-005 AC5)", () => {
   const e2e = ci.slice(ci.indexOf("\n  e2e:"));
 
-  test("runs Playwright after the unit-test job, on the same triggers", () => {
+  test("runs Playwright beside the unit-test job (it builds the app itself), on the same triggers, in shards", () => {
     expect(ci).toMatch(/\n {2}e2e:\n/);
-    expect(e2e).toMatch(/needs:\s*app/);
-    expect(e2e).toContain("run: npm run test:e2e");
+    expect(e2e).not.toMatch(/needs:\s*\[?\s*app/);
+    expect(e2e).toMatch(/needs:\s*changes/);
+    expect(e2e).toMatch(/shard: \[1, 2\]/);
+    expect(e2e).toContain("run: npm run test:e2e -- --shard=${{ matrix.shard }}/2");
   });
 
   test("gets a throwaway Postgres service matching the e2e wrangler environment", () => {
