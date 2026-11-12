@@ -69,3 +69,4 @@
 - Move every environment to the new keys: `sb_publishable_…` in place of the anon key (SUPABASE_ANON_KEY) and `sb_secret_…` in place of service_role (SUPABASE_SERVICE_ROLE_KEY), in Cloudflare and GitHub. Variable names stay the same.
 - Code check done: supabase-js 2.119 and @supabase/ssr 0.12 accept the new keys, and nothing verifies JWTs with the legacy JWT secret. `storage.server.ts` sends the key as both `apikey` and `Authorization: Bearer`, which the gateway accepts when the two match. Confirm with the first seed-menu run on staging that uses an `sb_secret_` key.
 - Production must start on the new keys.
+- 2026-11-12: Owner swapped the staging Cloudflare keys to the new format; GitHub STAGING_SUPABASE_SERVICE_ROLE_KEY uses sb_secret_ (seed-menu green).
