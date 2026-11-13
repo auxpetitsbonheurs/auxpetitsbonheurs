@@ -1,7 +1,7 @@
 // The product page ordering area (S-066, S-067): one picker per option group, the message on
 // the cake, quantity, the live price and Add to basket. Prices come from domain/pricing run
 // on the loader's product data; the server prices again at checkout (FR-011).
-import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useFetcher } from "react-router";
 import { Alert } from "~/components/ui/alert";
 import { SubmitButton } from "~/components/ui/submit-button";
@@ -12,6 +12,7 @@ import { localized } from "~/i18n/localized";
 import { useI18n } from "~/i18n/react";
 import { basketStore } from "~/lib/basket-store";
 import { formatRupees, localePath } from "~/lib/locale";
+import { readFormSelection } from "./form-selection";
 import { MessageField } from "./message-field";
 import { CLEAR_OF_BAR, OptionPicker, Stepper } from "./option-picker";
 import { issueFields } from "./selection-messages";
@@ -74,8 +75,23 @@ function useSelection(product: OrderFormProduct, echoed?: Omit<LineInput, "produ
     ...(message ? { cakeMessage: message } : {}),
     quantity,
   };
+  // The page can hydrate seconds after it is shown (S-276 AC7): adopt what was picked or typed in
+  // the plain form meanwhile, so the Add button and the price agree with what the customer sees.
+  const groups = product.optionGroups;
+  const adopt = useCallback(
+    (form: HTMLFormElement) => {
+      const read = readFormSelection(new FormData(form), groups);
+      setPicks((current) => {
+        const next = Object.fromEntries(read.options.map((p) => [p.groupId, p]));
+        return JSON.stringify(next) === JSON.stringify(current) ? current : next;
+      });
+      setQuantity(read.quantity);
+      setMessage(read.cakeMessage);
+    },
+    [groups],
+  );
   const pick = (next: OptionPick) => setPicks((current) => ({ ...current, [next.groupId]: next }));
-  return { picks, pick, quantity, setQuantity, message, setMessage, input };
+  return { picks, pick, adopt, quantity, setQuantity, message, setMessage, input };
 }
 
 /** The live price: exact once every required group is chosen, else "From Rs X". */
@@ -102,6 +118,7 @@ export function ProductOrderForm({ product, cakeMessageMax, takesMessage, refusa
   const [added, setAdded] = useState(0);
   const [inBasket, setInBasket] = useState(1);
   const [localError, setLocalError] = useState<string>();
+  const form = useRef<HTMLFormElement>(null);
   const live = useLivePrice(product, selection.input, cakeMessageMax);
   const announced = usePriceAnnouncement(t("productOptions.priceAnnounce", { price: live.price }));
   const busy = fetcher.state !== "idle";
@@ -111,6 +128,11 @@ export function ProductOrderForm({ product, cakeMessageMax, takesMessage, refusa
   const shownErrors = { ...errors, ...serverFields };
   const formError = localError ?? (result && !result.ok && !serverFields ? result.error.message : refusal && !refusal.fields ? refusal.message : undefined);
   const name = localized(product.name, locale);
+
+  const { adopt } = selection;
+  useEffect(() => {
+    if (form.current) adopt(form.current);
+  }, [adopt]);
 
   useEffect(() => {
     if (serverAdded) basketStore.refresh();
@@ -162,7 +184,7 @@ export function ProductOrderForm({ product, cakeMessageMax, takesMessage, refusa
           <p>{formError}</p>
         </Alert>
       )}
-      <form method="post" onSubmit={submit} noValidate className="mt-2">
+      <form ref={form} method="post" onSubmit={submit} noValidate className="mt-2">
         <input type="hidden" name="intent" value="addToBasket" />
         <input type="hidden" name="productId" value={product.id} />
         {product.optionGroups.map((group) => (
