@@ -305,7 +305,48 @@ describe("placeOrder from the basket page (S-013 AC11, AC2 envelope)", () => {
     expect(refused.init.headers).toBeUndefined();
   });
 
-  type DateRefusal = { data: { error: { code: string; fields: Record<string, string> }; reason: string; availability: unknown; values: Record<string, string> }; init: { status: number } };
+  type GuardRefusal = { data: { error: { code: string; message: string; fields: Record<string, string> }; values: Record<string, string> }; init: { status: number; headers?: Record<string, string> } };
+
+  test("S-091 AC8: the 6th order attempt from one IP in 10 minutes is RATE_LIMITED 429, calm, with the form and its key kept", async () => {
+    const id = await insertProduct(database.db);
+    const cookie = cookieWith([{ lineId: "a", productId: id, quantity: 1 }]);
+    const headers = { "cf-connecting-ip": "203.0.113.5" };
+    const attempt = (path = "/basket") => action(routeArgs(database, { path, cookie, headers, form: form({ "contact.phone": "12345" }) }) as never);
+    for (let i = 0; i < 5; i += 1) expect(((await attempt()) as unknown as GuardRefusal).data.error.code).toBe("VALIDATION_FAILED");
+
+    const refused = (await attempt("/fr/basket")) as unknown as GuardRefusal;
+
+    expect(refused.init.status).toBe(429);
+    expect(refused.init.headers).toEqual({ "Retry-After": "600" });
+    expect(refused.data.error.fields.form).toBe("Plusieurs commandes ont été envoyées d'ici en quelques minutes. Votre panier et vos informations sont gardés : réessayez dans 10 min ou écrivez-nous sur WhatsApp.");
+    expect(refused.data.values).toMatchObject({ "contact.name": "Aisha", idempotencyKey: form().idempotencyKey });
+  });
+
+  test("S-091 AC8: a token Turnstile refuses is BOT_CHECK_FAILED with a calm retry message and the form kept; nothing is written", async () => {
+    const id = await insertProduct(database.db);
+    const cookie = cookieWith([{ lineId: "a", productId: id, quantity: 1 }]);
+    const turnstile = { siteKey: "site", verify: async () => "failed" as const };
+
+    const refused = (await action(routeArgs(database, { path: "/basket", cookie, turnstile, form: form({ turnstileToken: "forged" }) }) as never)) as unknown as GuardRefusal;
+
+    expect(refused.init.status).toBe(400);
+    expect(refused.data.error.fields.form).toBe("We could not confirm this order came from you. Your order has not been sent yet: press Place order again.");
+    expect(refused.data.values).toMatchObject({ "contact.email": "aisha@example.com", idempotencyKey: form().idempotencyKey });
+    const { rows } = await database.client.query<{ n: number }>("select count(*)::int as n from orders");
+    expect(rows[0]!.n).toBe(0);
+  });
+
+  test("S-091 AC8: a no-JavaScript post without a token still places the order when Turnstile is configured", async () => {
+    const id = await insertProduct(database.db);
+    const cookie = cookieWith([{ lineId: "a", productId: id, quantity: 1 }]);
+    const turnstile = { siteKey: "site", verify: async () => "failed" as const };
+
+    const response = (await action(routeArgs(database, { path: "/basket", cookie, turnstile, form: form() }) as never)) as Response;
+
+    expect(response.status).toBe(302);
+  });
+
+  type DateRefusal ={ data: { error: { code: string; fields: Record<string, string> }; reason: string; availability: unknown; values: Record<string, string> }; init: { status: number } };
 
   test("S-087 AC5: a date blocked after the page opened is DATE_UNAVAILABLE 409 on the date, with the fresh rules and the typed values", async () => {
     const id = await insertProduct(database.db);

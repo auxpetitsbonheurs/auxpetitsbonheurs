@@ -120,6 +120,13 @@
       "when": 1794585056680,
       "tag": "0018_reviews",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794587000000,
+      "tag": "0019_place_order_rate_limit",
+      "breakpoints": true
     }
   ]
 }

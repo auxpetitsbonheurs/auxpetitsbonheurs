@@ -28,6 +28,8 @@ export const DELIVERY_ORDER = {
  */
 export const TEST_ORDER_PLACED_AT = "2026-11-05T08:00:00Z";
 
+let testOrderCount = 0;
+
 /** A pickup order of one sample cake for aisha@example.com unless `overrides` say otherwise. */
 export async function placeTestOrder(
   database: TestDatabase,
@@ -50,7 +52,9 @@ export async function placeTestOrder(
     ...options.overrides,
   };
   const now = options.now ?? TEST_ORDER_PLACED_AT;
-  const response: unknown = await basketAction(routeArgs(database, { path: options.basketPath ?? "/basket", cookie, form, now }) as never);
+  // Each test order is its own customer (RL-order counts per IP, S-091 AC8).
+  const headers = { "cf-connecting-ip": `203.0.113.${(testOrderCount += 1) % 250}` };
+  const response: unknown = await basketAction(routeArgs(database, { path: options.basketPath ?? "/basket", cookie, form, now, headers }) as never);
   const path = response instanceof Response ? response.headers.get("Location") : null;
   const token = path ? /\/order\/([^/]+)\/confirmed$/.exec(path)?.[1] : undefined;
   if (!path || !token) throw new Error(`placing the test order was refused: ${JSON.stringify((response as { data?: unknown }).data)}`);

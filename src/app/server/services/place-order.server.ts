@@ -3,8 +3,10 @@
 // date by domain/availability.ts, the same module as the date picker), 6
 // (server prices vs displayed total), 7 (one transaction) and 9 (caller redirects).
 // S-014 adds step 2 (idempotency: a known key returns the original order, also when a
-// race is lost on the unique index), bound to the submitter's email (threat-model G-21). Later: step 3 rate limit + Turnstile and the full
-// assertOrderable rules (E-05), step 8 sending after commit (E-10, through afterResponse).
+// race is lost on the unique index), bound to the submitter's email (threat-model G-21). S-091 AC8
+// adds step 3 (RL-order and Turnstile, `guard`): the count is taken inside the same CALL
+// (place_order_limited, drizzle/0019), so a guarded submit is still one round trip. Step 8
+// sending after commit (E-10, through afterResponse).
 //
 // One database round trip (ADR-0003 amendment 3): everything the database decides (replay,
 // Settings, products, the checked write) is one CALL of the `place_order` procedure
@@ -26,6 +28,15 @@ import { type PlaceOrderInput, parsePlaceOrder } from "~/server/contracts/site";
 import { Uuid } from "~/server/contracts/shared";
 import type { Database } from "~/server/db.server";
 import type { PlacedOrderRef } from "~/server/repos/orders.server";
+import { RL_ORDER, RL_ORDER_UNVERIFIED, type RateLimitClass, rateLimitBucketFor, rateLimitVerdict } from "~/server/rate-limit.server";
+import type { TurnstileCheck, TurnstileVerdict } from "~/server/turnstile.server";
+
+/** Step 3's inputs (S-091 AC8): who is posting and the bot check. Without it (internal callers, tests) no limit applies. */
+export interface OrderGuard {
+  /** `cf-connecting-ip`, or "unknown"; only ever stored hashed. */
+  ip: string;
+  turnstile: TurnstileCheck;
+}
 
 export interface PlaceOrderContext {
   db: Database;
@@ -33,6 +44,7 @@ export interface PlaceOrderContext {
   /** The page locale; stored on the order and used for its emails. */
   locale: Locale;
   basket: BasketLine[];
+  guard?: OrderGuard;
 }
 
 /**
@@ -67,7 +79,11 @@ export type PlaceOrderResult =
   | { ok: false; code: "VALIDATION_FAILED"; fields: []; keyReused: true }
   /** `availability`: the fresh public rules, so the picker re-renders with the new statuses (S-087 AC5). */
   | { ok: false; code: "DATE_UNAVAILABLE"; reason: DayReason; availability: AvailabilityRules }
-  | ({ ok: false; code: "PRICE_CHANGED"; lines: PricedLine[] } & CheckoutTotals);
+  | ({ ok: false; code: "PRICE_CHANGED"; lines: PricedLine[] } & CheckoutTotals)
+  /** Step 3: RL-order (S-091 AC8); the form is kept, nothing is written. */
+  | { ok: false; code: "RATE_LIMITED"; retryAfterSeconds: number }
+  /** Step 3: Turnstile refused the posted token (a forged one; a stale one only lowers the limit). */
+  | { ok: false; code: "BOT_CHECK_FAILED" };
 
 /** The Settings values the procedure returns (only what checkout decides with). */
 interface SnapshotSettings {
@@ -165,10 +181,26 @@ interface ProcedureInput {
 
 /** One statement, one round trip. The input travels as one jsonb parameter (never spliced). */
 export async function callPlaceOrder(db: Database, input: ProcedureInput): Promise<ProcedureResult> {
-  const { rows } = (await db.execute(sql`call place_order(${JSON.stringify(input)}::jsonb, null)`)) as unknown as { rows: { result: ProcedureResult | string }[] };
-  const result = rows[0]?.result;
+  return procedureResult(await db.execute(sql`call place_order(${JSON.stringify(input)}::jsonb, null)`));
+}
+
+/** The RL-order bucket for this attempt and whether the procedure may write at all (drizzle/0019). */
+export interface ProcedureLimit {
+  key: string;
+  windowStart: Date;
+  max: number;
+  insert: boolean;
+}
+
+/** `place_order` behind the RL-order count, still one statement: the answer plus this window's `attempts`. */
+export async function callPlaceOrderLimited(db: Database, input: ProcedureInput, limit: ProcedureLimit): Promise<ProcedureResult & { attempts: number }> {
+  return procedureResult(await db.execute(sql`call place_order_limited(${JSON.stringify(input)}::jsonb, ${JSON.stringify(limit)}::jsonb, null)`));
+}
+
+function procedureResult<R>(answer: unknown): R {
+  const result = (answer as { rows: { result: R | string }[] }).rows[0]?.result;
   if (result === undefined) throw new Error("place_order returned no result");
-  return typeof result === "string" ? (JSON.parse(result) as ProcedureResult) : result;
+  return typeof result === "string" ? (JSON.parse(result) as R) : result;
 }
 
 const normaliseEmail = (email: string) => email.trim().toLowerCase();
@@ -343,13 +375,52 @@ function decide(form: Record<string, unknown>, ctx: PlaceOrderContext, parsed: R
 
 const logDrift = (kind: string) => console.error(JSON.stringify({ level: "error", event: "place_order_rule_drift", kind }));
 
+/**
+ * Step 3's bot check (S-091 AC8). No token while Turnstile is configured means the widget never
+ * ran (no JavaScript, a blocked script, a tap before it finished): such a customer is never
+ * refused for it, only held to the stricter limit, as is a Cloudflare outage or a stale token.
+ */
+async function botVerdict(form: Record<string, unknown>, guard: OrderGuard): Promise<TurnstileVerdict> {
+  const token = typeof form.turnstileToken === "string" && form.turnstileToken !== "" ? form.turnstileToken : undefined;
+  if (!token && guard.turnstile.siteKey !== null) {
+    logUnverified("no_token");
+    return "unverified";
+  }
+  const verdict = await guard.turnstile.verify(token, guard.ip);
+  if (verdict === "unverified") logUnverified("cloudflare");
+  return verdict;
+}
+
+/** Code-level log only: no IP, token or form data (NFR-004). */
+const logUnverified = (reason: "no_token" | "cloudflare") => console.log(JSON.stringify({ level: "warn", event: "place_order_unverified", reason }));
+
+interface Guarded {
+  result: ProcedureResult;
+  refusal?: Exclude<PlaceOrderResult, { ok: true }>;
+}
+
+/** Steps 2 and 3 in one CALL: the replay answer wins, then RL-order, then the bot check. */
+async function guardedCall(form: Record<string, unknown>, ctx: PlaceOrderContext, guard: OrderGuard, input: ProcedureInput): Promise<Guarded> {
+  const verdict = await botVerdict(form, guard);
+  const limit: RateLimitClass = verdict === "ok" ? RL_ORDER : RL_ORDER_UNVERIFIED;
+  const bucket = rateLimitBucketFor(limit, { action: "site.placeOrder", parts: [guard.ip] }, ctx.now);
+  const result = await callPlaceOrderLimited(ctx.db, input, { ...bucket, max: limit.max, insert: verdict !== "failed" });
+  if (result.kind === "existing") return { result };
+  const allowed = rateLimitVerdict(limit, bucket.windowStart, result.attempts, ctx.now);
+  if (!allowed.ok) return { result, refusal: { ok: false, code: "RATE_LIMITED", retryAfterSeconds: allowed.retryAfterSeconds } };
+  if (verdict === "failed") return { result, refusal: { ok: false, code: "BOT_CHECK_FAILED" } };
+  return { result };
+}
+
 export async function placeOrder(form: Record<string, unknown>, ctx: PlaceOrderContext): Promise<PlaceOrderResult> {
   const { parsed, insert } = preflight(form, ctx.basket, ctx.now);
-  const result = await callPlaceOrder(ctx.db, procedureInput(form, ctx, parsed, insert));
+  const input = procedureInput(form, ctx, parsed, insert);
+  const { result, refusal }: Guarded = ctx.guard ? await guardedCall(form, ctx, ctx.guard, input) : { result: await callPlaceOrder(ctx.db, input) };
   // Step 2 ran first in the procedure, on the key alone: a replay after success posts with an
   // emptied basket (cookie cleared) or a changed payload, and the key wins, but only for the
   // submitter who placed the order (G-21). The prefix of a replay is read from the next page.
   if (result.kind === "existing") return replayFor(form, result.existing);
+  if (refusal) return refusal;
   const decision = decide(form, ctx, parsed, result);
   if (result.kind === "placed") {
     // The order is committed. The procedure and domain/pricing must agree; a difference is a bug to fix, never the customer's problem.
