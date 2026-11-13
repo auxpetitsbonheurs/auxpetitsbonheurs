@@ -27,7 +27,7 @@ export interface AdminOrderRow {
   version: number;
 }
 
-const summaryColumns = {
+export const summaryColumns = {
   id: orders.id,
   number: orders.number,
   numberPrefix: orders.numberPrefix,

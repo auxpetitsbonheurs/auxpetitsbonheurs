@@ -47,13 +47,13 @@ test.describe("S-017 orders to review and Approve", () => {
     const order = await pendingOrder(db, `List ${test.info().project.name}`);
     await signIn(page, E2E_ACCOUNTS.owner, "/admin/orders?tab=review");
 
-    await expect(page.getByRole("heading", { level: 1, name: "Orders to review" })).toBeVisible();
-    const link = page.getByRole("link", { name: `Order ${orderNumber(order.number)}`, exact: true });
-    for (let pageNo = 0; pageNo < 20 && (await link.count()) === 0; pageNo += 1) {
-      await page.getByRole("link", { name: "More orders to review" }).click();
-    }
+    await expect(page.getByRole("heading", { level: 1, name: "Orders" })).toBeVisible();
+    // Other specs add orders to the same database: find this one by its number (E-06 search; paging is in admin-orders-list.spec).
+    await page.getByRole("searchbox", { name: "Search orders" }).fill(orderNumber(order.number));
+    await page.getByRole("button", { name: "Search" }).click();
+    const link = page.getByRole("link", { name: new RegExp(`^${orderNumber(order.number)}, List ${test.info().project.name}, Fri 20 Nov, Pending approval, unpaid$`) });
     const card = page.getByRole("listitem").filter({ has: link });
-    await expect(card).toContainText(`Customer:List ${test.info().project.name}`);
+    await expect(card).toContainText(`List ${test.info().project.name}`);
     await expect(card).toContainText("Fri 20 Nov");
     await expect(card).toContainText("Morning · 09:00–12:00");
     await expect(card).toContainText("Rs 850");

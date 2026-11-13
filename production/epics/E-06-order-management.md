@@ -17,8 +17,8 @@ J4: Owner goes from alert to Approve to Completed and paid, each step logged. Tw
 ## Stories
 | ID | Title | Status | Estimate |
 |---|---|---|---|
-| S-111 | Orders list with tabs, counts and Load more | ready | 3 |
-| S-112 | Search and filter orders | ready | 3 |
+| S-111 | Orders list with tabs, counts and Load more | done | 3 |
+| S-112 | Search and filter orders | done | 3 |
 | S-113 | Order detail with Maps, Call and WhatsApp | done | 3 |
 | S-114 | Private note autosave and reference photos on the order | in-progress | 2 |
 | S-115 | Status transitions enforced on the server per Appendix B | done | 3 |
