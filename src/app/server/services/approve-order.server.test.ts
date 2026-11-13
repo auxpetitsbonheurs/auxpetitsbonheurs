@@ -40,7 +40,7 @@ describe("approve (S-017 AC3)", () => {
   test("pending_approval becomes approved, version + 1, with an approved event and an order_confirmed outbox row", async () => {
     const result = await approve(1);
 
-    expect(result).toEqual({ ok: true, order: { status: "approved", version: 2 } });
+    expect(result).toEqual({ ok: true, order: { status: "approved", version: 2, paid: false } });
     expect(await orderRow()).toEqual({ status: "approved", version: 2 });
     const events = await rows("select actor_type, actor_admin_id, type, from_status, to_status from order_event where order_id = $1 and type = 'approved'");
     expect(events).toEqual([{ actor_type: "admin", actor_admin_id: adminId, type: "approved", from_status: "pending_approval", to_status: "approved" }]);

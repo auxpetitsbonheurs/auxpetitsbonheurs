@@ -1,5 +1,5 @@
 # S-119: Mark paid or unpaid and cancel an order
-Status: ready
+Status: done
 Epic: E-06-order-management
 Spec: docs/specs/features/admin-orders.md#transition-table-enforced-by-domainorderstatus-appendix-b-is-authoritative
 Estimate: 3 pts
@@ -32,3 +32,7 @@ As an admin, I want to record that an order was paid and to cancel an order with
 
 ## Notes
 - Unpaid counts and sales (E-09) depend on the `paid` flag set here. Depends on S-115.
+
+## Implementation notes (2026-11-13)
+- Adjusted (Juice payment): Mark paid/unpaid is a flag for orders paid outside Juice and is refused while `awaiting_payment` (Payment received is the way there). AC5: a cancelled paid order keeps `paid` and now records `refund_due_rs` so Refunded and "Refunds to send" track the refund (instead of "off-system").
+- Awaiting-payment orders are refused, not cancelled, by an admin.

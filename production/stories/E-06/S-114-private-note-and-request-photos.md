@@ -1,5 +1,5 @@
 # S-114: Private note autosave and reference photos on the order
-Status: ready
+Status: in-progress
 Epic: E-06-order-management
 Spec: docs/specs/features/admin-orders.md#acceptance-criteria
 Estimate: 2 pts
@@ -29,3 +29,7 @@ As an admin, I want to keep a private note on an order and see the customer's re
 ## Notes
 - Photos exist only for custom requests (E-08 creates them); this story renders any present. Until E-08 lands AC4 uses seeded fixtures.
 - Depends on S-113.
+
+## Implementation notes (2026-11-13)
+- AC1-AC3, AC6, AC7 (note) built: 1 s idle autosave and on blur, `saveNote` without version or event, "Saved" in a polite status, >2000 keeps the text with an error.
+- AC4, AC5 (reference photos with signed URLs) not built yet: E-08 creates the photos; to do once its storage paths land.

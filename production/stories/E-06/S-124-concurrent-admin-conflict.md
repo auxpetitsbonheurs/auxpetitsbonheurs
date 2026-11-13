@@ -1,5 +1,5 @@
 # S-124: Two admins on one order get "this order changed, reload"
-Status: ready
+Status: done
 Epic: E-06-order-management
 Spec: docs/specs/features/admin-orders.md#edge-cases
 Estimate: 3 pts
@@ -29,3 +29,6 @@ As an admin, I want to be told when someone else changed the order I am looking 
 ## Notes
 - Success-measure check for the epic. Single-statement compare-and-set update (`WHERE version = :v`) is the intended approach; postgres-specialist reviews.
 - Depends on S-116..S-119, S-122.
+
+## Implementation notes (2026-11-13)
+- AC3: edit save is S-122 (not built yet); every built mutation is covered. AC6: `order_conflict` JSON line with action, orderId, adminId.

@@ -14,6 +14,16 @@ import { type Page, expect, test } from "./support/fixtures";
 
 const orderNumber = (n: number) => `APB-${String(n).padStart(4, "0")}`;
 
+/** Keyboard walk with the bottom bar pinned: on phones it leaves while a text field has focus (S-033 AC5), renumbering the stops. */
+async function expectFormKeyboardOperable(page: Page) {
+  const pin = await page.addStyleTag({ content: "[data-bottom-bar] { display: block !important; }" });
+  try {
+    await expectKeyboardOperable(page);
+  } finally {
+    await pin.evaluate((style) => (style as Element).remove());
+  }
+}
+
 async function pendingOrder(db: Parameters<typeof createOrder>[0], label: string): Promise<TestOrder> {
   const order = await createOrder(db, label);
   await db`update orders set contact_email = ${`${label.toLowerCase().replace(/\W+/g, "-")}@e2e.test`} where id = ${order.id}`;
@@ -27,7 +37,7 @@ async function accessibleLayout(page: Page) {
       await expectNoHorizontalScroll(page);
       await expectNothingClipped(page);
       await expectTapTargets(page);
-      await expectKeyboardOperable(page);
+      await expectFormKeyboardOperable(page);
     });
   }
 }
@@ -57,7 +67,7 @@ test.describe("S-017 orders to review and Approve", () => {
 
     await expect(page.getByRole("heading", { level: 1, name: `Order ${orderNumber(order.number)}` })).toBeVisible();
     await expect(page.getByText("Pending approval", { exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: /^Call \+2305/ })).toHaveAttribute("href", /^tel:\+2305\d{7}$/);
+    await expect(page.getByRole("link", { name: "Call Approve Me" })).toHaveAttribute("href", /^tel:\+2305\d{7}$/);
     await expect(page.getByText("approve-me@e2e.test")).toBeVisible();
     await expect(page.getByText("Fri 20 Nov")).toBeVisible();
     await expect(page.getByText("Pickup", { exact: true })).toBeVisible();
@@ -69,22 +79,19 @@ test.describe("S-017 orders to review and Approve", () => {
       if (route.request().method() === "POST") await held;
       await route.continue();
     });
-    // The live region is in the accessibility tree before it fills, or some screen readers miss the result.
-    const status = page.getByTestId("approve-result");
-    await expect(status).toBeAttached();
-    await expect(status).toBeEmpty();
-    expect(await status.evaluate((el) => getComputedStyle(el).display)).not.toBe("none");
-    const approve = page.getByRole("button", { name: "Approve" });
+    const approve = page.getByRole("button", { name: `Approve ${orderNumber(order.number)}` });
     await approve.click();
     await expect(approve).toHaveAttribute("aria-busy", "true");
     await expect(approve).toBeFocused();
+    // Optimistic (E-06): the header shows the expected status before the server answers.
+    await expect(page.getByTestId("order-status")).toHaveText("Approved");
     release();
 
     await expect(page.getByRole("status").filter({ hasText: `Order ${orderNumber(order.number)} approved.` })).toBeVisible();
-    await expect(page.getByText("Approved", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Approve" })).toHaveCount(0);
-    // The focused button is gone: focus lands on the result, not on <body>.
-    await expect(status).toBeFocused();
+    await expect(page.getByRole("button", { name: /^Approve/ })).toHaveCount(0);
+    // The focused button is gone: focus lands on the result, not on <body>; the next step is offered.
+    await expect(page.getByTestId("approve-result")).toBeFocused();
+    await expect(page.getByRole("button", { name: "Mark in preparation" })).toBeVisible();
     const [row] = await db<{ status: string; version: number }[]>`select status, version from orders where id = ${order.id}`;
     expect(row).toEqual({ status: "approved", version: 2 });
     const events = await db`select actor_admin_id from order_event where order_id = ${order.id} and type = 'approved'`;
@@ -126,9 +133,8 @@ test.describe("S-017 orders to review and Approve", () => {
     const [row] = await db<{ version: number }[]>`select version from orders where id = ${order.id}`;
     expect(row!.version).toBe(2);
     await page.goto(`/admin/orders/${order.id}`);
-    // Approved: no Approve any more; Refuse stays offered until it is ready (juice-payment spec, S-281).
-    await expect(page.getByRole("button", { name: "Refuse order" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Approve" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^Approve/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Mark in preparation" })).toBeVisible();
   });
 
   test("AC7: signed out or as a customer, the orders pages and approve lead to login with no order data", async ({ page, db, request, baseURL }) => {

@@ -53,7 +53,8 @@ All commands run in `src/`.
 A commit that changes only `docs/**`, `production/**`, `prototypes/**` or `*.md` outside
 `src/` skips `app` and `e2e` but still ends green, so the staging deploy (which waits for a
 green ci on the commit) still runs. Docs that unit tests read (`docs/design/**`,
-`docs/runbooks/**`, `docs/architecture/cpu-measurements.md`) count as code.
+`docs/runbooks/**`, `docs/architecture/cpu-measurements.md`, `docs/product/prd.md` for the Appendix B
+transition test) count as code.
 
 ## How the unit suite stays fast
 

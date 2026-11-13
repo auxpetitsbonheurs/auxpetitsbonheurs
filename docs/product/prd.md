@@ -368,6 +368,11 @@ Gaps found by product-manager (proposed answers in assumptions):
 | From | To | Who | Customer email |
 |---|---|---|---|
 | (new website order) | Pending approval | Customer | Order received |
+| (new website order, since 2026-11-13) | Awaiting payment | Customer | Order received (with the Juice payment details) |
+| Awaiting payment | Approved | Admin (Payment received; juice-payment spec) | Order confirmed |
+| Awaiting payment | Cancelled | Customer (tracking page, before paying) or system (unpaid 24 h after placing) | Cancellation confirmed / Cancelled: unpaid |
+| Awaiting payment | Declined | Admin (Refuse) | Order declined |
+| Approved / In preparation | Declined | Admin (Refuse; a paid order then owes a refund) | Order declined |
 | Pending approval | Approved | Admin | Order confirmed |
 | Pending approval | Declined | Admin (optional reason) | Order declined |
 | Pending approval | Cancelled | Customer (tracking page) or admin | Cancellation confirmed |
@@ -384,7 +389,7 @@ Gaps found by product-manager (proposed answers in assumptions):
 | Ready / Out for delivery | Completed | Admin | Thank you |
 | Approved or later (not Completed) | Cancelled | Admin only | Cancellation confirmed |
 
-Rules: An admin edit that changes an order's date and/or total sends "Your order was updated" (FR-070). Back one step by an admin sends no email. Paid/unpaid is a separate flag at any status. Every change is an order event.
+Rules: An admin edit that changes an order's date and/or total sends "Your order was updated" (FR-070). Back one step by an admin sends no email. Undo of Payment received (right after it, nothing since) moves Approved back to Awaiting payment and withdraws the confirmation email. An admin cancel of a paid order owes a refund like a refusal (E-06, 2026-11-13). Paid/unpaid is a separate flag at any status. Every change is an order event.
 
 ## Changelog
 - 2026-11-09 v0.1 draft by product-manager from build-brief.md and feature-plan.md.

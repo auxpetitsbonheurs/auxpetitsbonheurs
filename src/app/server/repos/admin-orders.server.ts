@@ -2,7 +2,7 @@
 // keyset-paginated on the gap-free order number (oldest first for the review queue), which is unique and
 // increases with creation, so a cursor never skips or repeats a row.
 import { and, asc, count, desc, eq, getTableName, gt, gte, inArray, isNotNull, isNull, sql } from "drizzle-orm";
-import { type LocalizedText, type OrderItemOption, type TimeWindow, orderItem, orders } from "~/db/schema";
+import { type LocalizedText, type OrderItemOption, type TimeWindow, customRequest, orderItem, orders } from "~/db/schema";
 import type { OrderStatus } from "~/domain/status";
 import type { Locale } from "~/lib/locale";
 import type { Executor } from "~/server/db.server";
@@ -85,7 +85,8 @@ export async function listPaymentOrders(db: Executor, now: Date): Promise<Paymen
   const refunds = await db
     .select(paymentColumns)
     .from(orders)
-    .where(and(eq(orders.status, "declined"), isNotNull(orders.refundDueRs), isNull(orders.refundedAt)))
+    // Refused (S-281) or cancelled by an admin (E-06 S-119) after payment.
+    .where(and(inArray(orders.status, ["declined", "cancelled"]), isNotNull(orders.refundDueRs), isNull(orders.refundedAt)))
     .orderBy(asc(orders.number))
     .limit(LIST_CAP);
   const cancelled = await db
@@ -156,6 +157,25 @@ export interface AdminOrder extends AdminOrderRow {
   refundDueRs: number | null;
   refundedAt: Date | null;
   items: AdminOrderItem[];
+  /** "Total set by hand" (S-113 AC5). */
+  totalOverridden: boolean;
+  /** Private note (S-114): admins only, never on the tracking page or in an email. */
+  adminNote: string | null;
+  /** The request fields of a custom request (S-113 AC8), else null. */
+  customRequest: AdminCustomRequest | null;
+}
+
+export interface AdminCustomRequest {
+  occasion: string | null;
+  servings: number | null;
+  flavours: string | null;
+  theme: string | null;
+  cakeText: string | null;
+  budgetRs: number | null;
+  details: string | null;
+  quoteAmountRs: number | null;
+  quoteNote: string | null;
+  quoteExpiresOn: string | null;
 }
 
 type ItemJson = { nameEn: string; nameFr: string | null; quantity: number; unitPriceRs: number; lineTotalRs: number; options: OrderItemOption[]; cakeMessage: string | null };
@@ -166,6 +186,12 @@ const itemsJson = sql<ItemJson[] | string>`coalesce((
     'lineTotalRs', i.line_total_rs, 'options', i.options, 'cakeMessage', i.cake_message) order by i.sort_order)
   from ${orderItem} i where i.order_id = ${sql.raw(`"${getTableName(orders)}"."id"`)}
 ), '[]'::json)`;
+
+const requestJson = sql<AdminCustomRequest | string | null>`(
+  select json_build_object('occasion', r.occasion, 'servings', r.servings, 'flavours', r.flavours, 'theme', r.theme, 'cakeText', r.cake_text,
+    'budgetRs', r.budget_rs, 'details', r.details, 'quoteAmountRs', r.quote_amount_rs, 'quoteNote', r.quote_note, 'quoteExpiresOn', r.quote_expires_on)
+  from ${customRequest} r where r.order_id = ${sql.raw(`"${getTableName(orders)}"."id"`)}
+)`;
 
 /** The full order for the admin order screen, with its items, in one query. */
 export async function findAdminOrder(db: Executor, id: string): Promise<AdminOrder | undefined> {
@@ -186,16 +212,20 @@ export async function findAdminOrder(db: Executor, id: string): Promise<AdminOrd
       declineReason: orders.declineReason,
       refundDueRs: orders.refundDueRs,
       refundedAt: orders.refundedAt,
+      totalOverridden: orders.totalOverridden,
+      adminNote: orders.adminNote,
       items: itemsJson,
+      customRequest: requestJson,
     })
     .from(orders)
     .where(eq(orders.id, id))
     .limit(1);
   if (!row) return undefined;
-  const { items, ...order } = row;
+  const { items, customRequest: request, ...order } = row;
   const parsed = typeof items === "string" ? (JSON.parse(items) as ItemJson[]) : items;
   return {
     ...order,
+    customRequest: typeof request === "string" ? (JSON.parse(request) as AdminCustomRequest) : request,
     items: parsed.map((item) => ({
       name: item.nameFr ? { en: item.nameEn, fr: item.nameFr } : { en: item.nameEn },
       quantity: item.quantity,

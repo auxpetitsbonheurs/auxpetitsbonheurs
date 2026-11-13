@@ -511,7 +511,65 @@
       "markingRefunded": "Enregistrement…",
       "refundedDone": "Remboursement noté. Le client le voit sur sa page de suivi.",
       "refundedAt": "Remboursé {{amount}}, noté le {{time}}",
-      "declineReasonShown": "Raison donnée : {{reason}}"
+      "declineReasonShown": "Raison donnée : {{reason}}",
+      "paidTag": "Payée",
+      "unpaidTag": "Non payée",
+      "totalByHand": "Total fixé à la main",
+      "callName": "Appeler {{name}}",
+      "whatsappName": "WhatsApp {{name}}",
+      "mapsName": "Ouvrir l'adresse de {{name}} dans Maps",
+      "noPhone": "Pas de numéro utilisable sur cette commande : Appeler et WhatsApp sont désactivés.",
+      "whatsappText": "Bonjour {{name}}, au sujet de votre commande {{number}} chez Aux petits bonheurs.",
+      "reasonDeclined": "Motif du refus",
+      "reasonCancelled": "Motif de l'annulation",
+      "requestTitle": "Demande sur mesure",
+      "request": {
+        "occasion": "Occasion",
+        "servings": "Parts",
+        "flavours": "Parfums",
+        "theme": "Thème",
+        "cakeText": "Texte sur le gâteau",
+        "budget": "Budget",
+        "details": "Détails",
+        "quote": "Devis",
+        "quoteLine": "{{amount}}, valable jusqu'au {{date}}"
+      },
+      "noteTitle": "Note privée",
+      "noteHint": "Visible uniquement par l'équipe. Elle s'enregistre toute seule.",
+      "noteSaving": "Enregistrement…",
+      "noteSaved": "Enregistrée",
+      "noteTooLong": "La note est trop longue : {{max}} caractères au maximum. Votre texte est conservé.",
+      "noteFailed": "La note n'a pas pu être enregistrée. Votre texte est conservé et sera enregistré à la prochaine saisie.",
+      "approveNamed": "Valider {{number}}",
+      "next": {
+        "in_preparation": "Passer en préparation",
+        "ready_for_pickup": "Marquer prête à retirer",
+        "out_for_delivery": "Marquer en cours de livraison",
+        "completed": "Marquer terminée"
+      },
+      "working": "Enregistrement de la modification…",
+      "moreActions": "Plus d'actions",
+      "moreTitle": "Commande {{number}}",
+      "revert": "Revenir d'une étape ({{status}})",
+      "cancel": "Annuler la commande",
+      "keep": "Garder la commande",
+      "reasonLabel": "Motif (facultatif, envoyé au client)",
+      "reasonTooLong": "500 caractères au maximum.",
+      "cancelTitle": "Annuler cette commande ?",
+      "cancelBody": "Le client recevra un e-mail. Le motif est facultatif.",
+      "cancelPaid": "Cette commande est payée : après l'annulation, vous rembourserez {{amount}} par Juice.",
+      "confirmCancel": "Annuler {{number}}",
+      "done": {
+        "advance": "La commande {{number}} est maintenant « {{status}} ».",
+        "revert": "La commande {{number}} est revenue à « {{status}} ».",
+        "cancel": "Commande {{number}} annulée.",
+        "paid": "Commande {{number}} marquée payée.",
+        "unpaid": "Commande {{number}} marquée non payée."
+      },
+      "backToOrders": "Retour aux commandes",
+      "noteSave": "Enregistrer la note",
+      "flagPaid": "Marquer payée",
+      "flagUnpaid": "Marquer non payée"
     },
     "log": {
       "title": "Historique",
@@ -529,8 +587,22 @@
         "payment_reminder_sent": "Rappel de paiement envoyé par {{actor}}, {{time}}",
         "declined": "Refusée par {{actor}}, {{time}}",
         "refunded": "Remboursement noté par {{actor}}, {{time}}",
-        "cancelled": "Annulée par {{actor}}, {{time}}"
-      }
+        "cancelled": "Annulée par {{actor}}, {{time}}",
+        "quote_sent": "Devis envoyé par {{actor}}, {{time}}",
+        "quote_accepted": "Devis accepté par {{actor}}, {{time}}",
+        "quote_declined": "Devis refusé par {{actor}}, {{time}}",
+        "quote_expired": "Devis expiré, {{time}}",
+        "status_advanced": "Passée à « {{status}} » par {{actor}}, {{time}}",
+        "status_reverted": "Revenue à « {{status}} » par {{actor}}, {{time}}",
+        "marked_paid": "Marquée payée par {{actor}}, {{time}}",
+        "marked_unpaid": "Marquée non payée par {{actor}}, {{time}}",
+        "edited": "Modifiée par {{actor}}, {{time}}",
+        "email_failed": "Un e-mail n'a pas encore pu être envoyé ; nouvel essai prévu, {{time}}",
+        "pending_alert_sent": "Rappel envoyé à l'équipe, {{time}}"
+      },
+      "reason": "Motif : {{reason}}",
+      "paidRefund": "La commande était payée : remboursement hors site.",
+      "total": "Total : {{from}} → {{to}}"
     },
     "nav": {
       "today": "Aujourd'hui",
@@ -1515,6 +1587,20 @@
       "missingBody": "Tant que le nom Juice, le numéro Juice et le WhatsApp de paiement ne sont pas renseignés, les clients lisent « Nous vous enverrons les informations de paiement sur WhatsApp ».",
       "missingLink": "Les ajouter dans Réglages → Paiement",
       "missingAdmin": "Demandez à une personne Propriétaire de les ajouter dans Réglages → Paiement."
+    },
+    "status": {
+      "pending_approval": "En attente d'acceptation",
+      "quote_needed": "Devis à faire",
+      "quote_sent": "En attente du client",
+      "approved": "Acceptée",
+      "in_preparation": "En préparation",
+      "ready_for_pickup": "Prête à retirer",
+      "out_for_delivery": "En cours de livraison",
+      "completed": "Terminée",
+      "declined": "Refusée",
+      "cancelled": "Annulée",
+      "closed": "Clôturée",
+      "awaiting_payment": "En attente de paiement"
     }
   },
   "email": {

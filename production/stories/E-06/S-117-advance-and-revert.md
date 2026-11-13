@@ -1,5 +1,5 @@
 # S-117: Move an order forward or back one step
-Status: ready
+Status: done
 Epic: E-06-order-management
 Spec: docs/specs/features/admin-orders.md#transition-table-enforced-by-domainorderstatus-appendix-b-is-authoritative
 Estimate: 3 pts
@@ -32,3 +32,6 @@ As an admin, I want to move an order to its next status, or back one step if I t
 
 ## Notes
 - Depends on S-115, S-116 (action bar). Emails content E-10.
+
+## Implementation notes (2026-11-13)
+- AC9: the result is announced by the bar's focused `role=status` line rather than a floating toast (matches S-017 and the Juice payment screen).

@@ -511,7 +511,65 @@
       "markingRefunded": "Saving…",
       "refundedDone": "Refund recorded. The customer sees it on the tracking page.",
       "refundedAt": "Refunded {{amount}}, marked {{time}}",
-      "declineReasonShown": "Reason given: {{reason}}"
+      "declineReasonShown": "Reason given: {{reason}}",
+      "paidTag": "Paid",
+      "unpaidTag": "Unpaid",
+      "totalByHand": "Total set by hand",
+      "callName": "Call {{name}}",
+      "whatsappName": "WhatsApp {{name}}",
+      "mapsName": "Open {{name}}'s address in Maps",
+      "noPhone": "No usable phone number on this order: Call and WhatsApp are off.",
+      "whatsappText": "Hello {{name}}, about your order {{number}} at Aux petits bonheurs.",
+      "reasonDeclined": "Decline reason",
+      "reasonCancelled": "Cancellation reason",
+      "requestTitle": "Custom request",
+      "request": {
+        "occasion": "Occasion",
+        "servings": "Servings",
+        "flavours": "Flavours",
+        "theme": "Theme",
+        "cakeText": "Text on the cake",
+        "budget": "Budget",
+        "details": "Details",
+        "quote": "Quote",
+        "quoteLine": "{{amount}}, valid until {{date}}"
+      },
+      "noteTitle": "Private note",
+      "noteHint": "Only admins see this. It saves by itself.",
+      "noteSaving": "Saving…",
+      "noteSaved": "Saved",
+      "noteTooLong": "The note is too long: {{max}} characters at most. Your text is kept.",
+      "noteFailed": "The note could not be saved. Your text is kept and saves again when you type.",
+      "approveNamed": "Approve {{number}}",
+      "next": {
+        "in_preparation": "Mark in preparation",
+        "ready_for_pickup": "Mark ready for pickup",
+        "out_for_delivery": "Mark out for delivery",
+        "completed": "Mark completed"
+      },
+      "working": "Saving the change…",
+      "moreActions": "More actions",
+      "moreTitle": "Order {{number}}",
+      "revert": "Back one step (to {{status}})",
+      "cancel": "Cancel order",
+      "keep": "Keep the order",
+      "reasonLabel": "Reason (optional, sent to the customer)",
+      "reasonTooLong": "500 characters at most.",
+      "cancelTitle": "Cancel this order?",
+      "cancelBody": "The customer will be emailed. The reason is optional.",
+      "cancelPaid": "This order is paid: after cancelling it you will refund {{amount}} by Juice.",
+      "confirmCancel": "Cancel {{number}}",
+      "done": {
+        "advance": "Order {{number}} is now {{status}}.",
+        "revert": "Order {{number}} is back to {{status}}.",
+        "cancel": "Order {{number}} cancelled.",
+        "paid": "Order {{number}} marked paid.",
+        "unpaid": "Order {{number}} marked unpaid."
+      },
+      "backToOrders": "Back to orders",
+      "noteSave": "Save note",
+      "flagPaid": "Mark paid",
+      "flagUnpaid": "Mark unpaid"
     },
     "log": {
       "title": "Activity",
@@ -529,8 +587,22 @@
         "payment_reminder_sent": "Payment reminder queued by {{actor}}, {{time}}",
         "declined": "Refused by {{actor}}, {{time}}",
         "refunded": "Refund sent, marked by {{actor}}, {{time}}",
-        "cancelled": "Cancelled by {{actor}}, {{time}}"
-      }
+        "cancelled": "Cancelled by {{actor}}, {{time}}",
+        "quote_sent": "Quote sent by {{actor}}, {{time}}",
+        "quote_accepted": "Quote accepted by {{actor}}, {{time}}",
+        "quote_declined": "Quote declined by {{actor}}, {{time}}",
+        "quote_expired": "Quote expired, {{time}}",
+        "status_advanced": "Moved to {{status}} by {{actor}}, {{time}}",
+        "status_reverted": "Moved back to {{status}} by {{actor}}, {{time}}",
+        "marked_paid": "Marked paid by {{actor}}, {{time}}",
+        "marked_unpaid": "Marked unpaid by {{actor}}, {{time}}",
+        "edited": "Edited by {{actor}}, {{time}}",
+        "email_failed": "An email could not be sent yet; it will be retried, {{time}}",
+        "pending_alert_sent": "Reminder sent to the team, {{time}}"
+      },
+      "reason": "Reason: {{reason}}",
+      "paidRefund": "The order was paid: refund outside the site.",
+      "total": "Total: {{from}} → {{to}}"
     },
     "nav": {
       "today": "Today",
@@ -1515,6 +1587,20 @@
       "missingBody": "Until the Juice name, Juice number and payment WhatsApp are set, customers are told “We'll send you the payment details on WhatsApp”.",
       "missingLink": "Add them in Settings → Payment",
       "missingAdmin": "Ask an Owner to add them in Settings → Payment."
+    },
+    "status": {
+      "pending_approval": "Pending approval",
+      "quote_needed": "Quote needed",
+      "quote_sent": "Waiting for customer",
+      "approved": "Approved",
+      "in_preparation": "In preparation",
+      "ready_for_pickup": "Ready for pickup",
+      "out_for_delivery": "Out for delivery",
+      "completed": "Completed",
+      "declined": "Refused",
+      "cancelled": "Cancelled",
+      "closed": "Closed",
+      "awaiting_payment": "Awaiting payment"
     }
   },
   "email": {

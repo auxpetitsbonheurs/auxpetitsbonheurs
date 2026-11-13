@@ -2,6 +2,8 @@
 // Conventions), the progress path per fulfilment (checkout spec "Tracking page content")
 // and the badge tone group (design-system "Status badge").
 
+import { anyTransition, customerRules } from "./order-transitions";
+
 export const ORDER_STATUSES = [
   // A website order waits here until the client sees the Juice payment (juice-payment spec, 2026-11-13).
   "awaiting_payment",
@@ -72,7 +74,7 @@ export function customerProgress(status: OrderStatus, fulfilment: Fulfilment, so
  * actions"). Since Juice payment a new website order waits in Awaiting payment, the unpaid
  * pending state, so it is cancellable too (S-096 note).
  */
-export const CUSTOMER_CANCELLABLE: ReadonlySet<OrderStatus> = new Set<OrderStatus>(["awaiting_payment", "pending_approval", "quote_needed"]);
+export const CUSTOMER_CANCELLABLE: ReadonlySet<OrderStatus> = new Set<OrderStatus>(customerRules("cancel").map((rule) => rule.from));
 
 /**
  * `canCancel` of the tracking page (S-096). A paid order is never cancelled by the button:
@@ -95,25 +97,14 @@ export function statusTone(status: OrderStatus): StatusTone {
 }
 
 /**
- * Admin status actions (admin-orders "Transition table"; PRD Appendix B is authoritative).
- * Juice payment (2026-11-13): `markPaid` confirms a paid order, `undoPaid` reverses a mistaken
- * tap (the service also requires the order to be paid and unchanged since), `decline` refuses
- * an order before it is ready (a paid one then owes a refund). Quote, advance, revert and
- * cancel arrive with E-06.
+ * Admin status actions: the table lives in `order-transitions.ts` (S-115: one table for every
+ * action, compared with PRD Appendix B). These two keep the payment services' API.
  */
-const ADMIN_TRANSITIONS = {
-  approve: { from: ["pending_approval"], to: "approved" },
-  markPaid: { from: ["awaiting_payment"], to: "approved" },
-  undoPaid: { from: ["approved"], to: "awaiting_payment" },
-  decline: { from: ["awaiting_payment", "pending_approval", "approved", "in_preparation"], to: "declined" },
-} as const satisfies Record<string, { from: readonly OrderStatus[]; to: OrderStatus }>;
-
-export type AdminAction = keyof typeof ADMIN_TRANSITIONS;
+export type AdminAction = "approve" | "markPaid" | "undoPaid" | "decline";
 
 /** The status `action` moves an order in `from` to, or null when the table does not allow it. */
 export function transitionTarget(action: AdminAction, from: OrderStatus): OrderStatus | null {
-  const rule = ADMIN_TRANSITIONS[action];
-  return (rule.from as readonly OrderStatus[]).includes(from) ? rule.to : null;
+  return anyTransition(action, from)?.to ?? null;
 }
 
 export interface AllowedActions {
@@ -125,8 +116,8 @@ export interface AllowedActions {
 }
 
 /**
- * `allowed` of the admin order screen: the UI offers only these, the server re-checks. Undo
- * is offered only right after Payment received, so it is not listed here.
+ * The Juice payment part of `allowed` (the admin screen uses `adminAllowed`, a superset). Undo is
+ * offered only right after Payment received, so it is not listed here.
  */
 export function allowedActions(status: OrderStatus, refund: { refundPending: boolean } = { refundPending: false }): AllowedActions {
   return {
