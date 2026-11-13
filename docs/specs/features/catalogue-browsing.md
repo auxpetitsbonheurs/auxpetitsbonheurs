@@ -169,7 +169,7 @@ Optional, cookieless (NFR-011); a `track()` seam that is a no-op until a provide
 - AC32: Given token and admin routes, then `robots` is `noindex` and they are excluded from the sitemap.
 
 ## Non-functional
-- Performance: Home and Menu < 3 s on mid-range 4G (NFR-001); Lighthouse perf >= 90, LCP <= 2.5 s, INP <= 200 ms, CLS <= 0.1, initial JS <= 170 kB gz per route. Hero image `fetchpriority=high`, other images lazy; carousel and lightbox `lazy()`; images <= 300 kB (aligned with brief 2026-11-10).
+- Performance: Home and Menu < 3 s on mid-range 4G (NFR-001); Lighthouse perf >= 90, LCP <= 2.5 s, INP <= 200 ms, CLS <= 0.1, initial JS <= 170 kB gz per route. Hero image `fetchpriority=high`, other images lazy; carousel and lightbox `lazy()`; images <= 300 kB (aligned with brief 2026-11-10). As built (S-254, 2026-11-13): hashed `/assets/*` are `immutable` for a year and brand files cached a day (`src/public/_headers`); customer pages ship only customer i18n namespaces; the basket code prefetch waits for idle; the first visible photo is `fetchpriority=high`. Open: smaller photo variants with `srcset` (LCP on photo pages).
 - Accessibility: WCAG 2.2 AA, Lighthouse a11y >= 95; chips and language switch are 44 px; selection not colour-only; live regions for price and basket count; `prefers-reduced-motion` honoured; 320 px / 200% zoom without clipping.
 - Security: all reads public; hidden products never serialised to the client; output escaping for Settings rich text (plain text + line breaks only, no HTML).
 - Privacy: no personal data collected; only functional cookies (`apb_locale`, `apb_basket`, `apb_banner_dismissed`) and the functional localStorage menu cache `apb_menu` (public data, ADR-0004); no consent banner.

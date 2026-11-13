@@ -100,6 +100,8 @@ function ProductCard({ product, index }: { product: MenuProduct; index: number }
           width={photo.width}
           height={photo.height}
           loading={index < EAGER_CARDS ? "eager" : "lazy"}
+          // The first card photo is the LCP image on phones (S-254): ask for it before the scripts.
+          fetchPriority={index === 0 ? "high" : undefined}
           decoding="async"
           className="aspect-4/3 h-auto w-full bg-decorative object-cover"
         />

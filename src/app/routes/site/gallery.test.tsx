@@ -98,6 +98,18 @@ describe("loader", () => {
     expect(after.photos[0]!.url).toMatch(/gallery\/p1\.webp$/);
   });
 
+  test("S-254: a cold isolate reads the page text and the photos in one query, then none", async () => {
+    clearSitePageCache();
+    const query = vi.spyOn(database.client, "query");
+
+    const first = await load("/gallery");
+    expect(query).toHaveBeenCalledTimes(1);
+    await load("/fr/gallery");
+    expect(query).toHaveBeenCalledTimes(1);
+    expect(first.total).toBeGreaterThan(24);
+    query.mockRestore();
+  });
+
   test("FR-081: the seeded intro is sample text: noindex", async () => {
     expect((await load("/gallery")).indexable).toBe(false);
   });

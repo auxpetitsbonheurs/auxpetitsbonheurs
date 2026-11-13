@@ -1,9 +1,27 @@
 import { ShoppingBasket } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { cn } from "~/lib/utils";
 import { useI18n } from "~/i18n/react";
 import { useBasketCount } from "~/lib/basket-store";
+
+/**
+ * True once the browser is idle after load (S-254): work that can wait (prefetching the basket's
+ * code) then no longer competes with the page's own first paint on a slow phone connection.
+ */
+function useIdleAfterLoad(): boolean {
+  const [idle, setIdle] = useState(false);
+  useEffect(() => {
+    const done = () => setIdle(true);
+    if ("requestIdleCallback" in window) {
+      const id = window.requestIdleCallback(done, { timeout: 3000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const timer = setTimeout(done, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+  return idle;
+}
 
 /**
  * Header basket link (design-system "Basket button + count"). Its accessible name
@@ -17,13 +35,15 @@ export function BasketLink({ href, count: serverCount }: { href: string; count: 
   const count = useBasketCount(serverCount);
   const [countAtLoad] = useState(count);
   const changed = count !== countAtLoad;
+  const idle = useIdleAfterLoad();
   return (
     <>
       <Link
         to={href}
         // ADR-0004: load the basket's code ahead, so opening it needs no request at all (no
         // data is prefetched: the root and layout skip revalidation, the basket has a clientLoader).
-        prefetch="render"
+        // Only once idle (S-254): the server HTML carries no basket modulepreloads.
+        prefetch={idle ? "render" : "none"}
         aria-label={t("shell.basketLink", { count })}
         className="relative inline-flex size-11 items-center justify-center rounded-md text-current transition-colors duration-(--motion-fast) hover:text-link-hover"
       >

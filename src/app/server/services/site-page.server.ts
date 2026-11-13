@@ -3,7 +3,7 @@
 // left-joined with its photos), cached per isolate like Settings (60 s, cleared by a save in
 // that isolate). Only published columns leave here (never `updated_by`). Text is returned as
 // stored: pages render it only through `PlainText` (escaped, paragraphs kept).
-import { asc, eq } from "drizzle-orm";
+import { type SQL, asc, eq, sql } from "drizzle-orm";
 import { galleryPhoto, sitePage, sitePagePhoto } from "~/db/schema";
 import { type PageContent, type PageEvent, SITE_PAGE_FIELDS, type SitePageField, type SitePageKey, isPagePhotoPath } from "~/domain/site-pages";
 import { localized } from "~/i18n/localized";
@@ -50,9 +50,9 @@ export type SitePageRead = { ok: true; page: PublicSitePage } | { ok: false; cod
 /** A row is shown only when its path is a page photo of this page (or a bundled sample image). */
 const usablePath = (path: string, key: SitePageKey) => path.startsWith("/images/") || isPagePhotoPath(path, key);
 
-/** One query: the page and its photos in role, then slot order. */
-export async function readStoredSitePage(db: Database, key: SitePageKey): Promise<StoredSitePage | null> {
-  const rows = await db
+/** The page row left-joined with its photos; `extra` adds columns to the same statement. */
+function selectStoredPage<E extends Record<string, SQL>>(db: Database, key: SitePageKey, extra: E) {
+  return db
     .select({
       content: sitePage.content,
       event: sitePage.event,
@@ -63,17 +63,38 @@ export async function readStoredSitePage(db: Database, key: SitePageKey): Promis
       height: sitePagePhoto.height,
       altEn: sitePagePhoto.altEn,
       altFr: sitePagePhoto.altFr,
+      ...extra,
     })
     .from(sitePage)
     .leftJoin(sitePagePhoto, eq(sitePagePhoto.pageKey, sitePage.key))
     .where(eq(sitePage.key, key))
     .orderBy(asc(sitePagePhoto.role), asc(sitePagePhoto.sortOrder));
+}
+
+interface StoredPageRow {
+  content: PageContent;
+  event: PageEvent | null;
+  isPlaceholder: boolean;
+  role: string | null;
+  path: string | null;
+  width: number | null;
+  height: number | null;
+  altEn: string | null;
+  altFr: string | null;
+}
+
+function storedPageFrom(key: SitePageKey, rows: StoredPageRow[]): StoredSitePage | null {
   const first = rows[0];
   if (!first) return null;
   const photos: StoredPagePhoto[] = rows
     .filter((r) => r.path !== null && r.width !== null && r.height !== null && (r.role === "page" || r.role === "event"))
     .map((r) => ({ role: r.role as "page" | "event", path: r.path!, width: r.width!, height: r.height!, alt: { en: r.altEn ?? "", fr: r.altFr } }));
   return { key, content: first.content, event: first.event, isPlaceholder: first.isPlaceholder, photos };
+}
+
+/** One query: the page and its photos in role, then slot order. */
+export async function readStoredSitePage(db: Database, key: SitePageKey): Promise<StoredSitePage | null> {
+  return storedPageFrom(key, await selectStoredPage(db, key, {}));
 }
 
 const caches = new Map<SitePageKey, TtlCache<StoredSitePage | null>>();
@@ -175,25 +196,62 @@ function galleryView(photo: StoredGalleryPhoto, locale: Locale, supabaseUrl: str
   return { url: publicImageUrl(photo.path, supabaseUrl), width: photo.width, height: photo.height, alt: caption ?? occasion ?? fallbackAlt, caption };
 }
 
+/** Gallery rows as JSON in sort order, for a column of another statement (S-254 query merge). */
+const galleryJson = sql<StoredGalleryPhoto[] | string | null>`(
+  select json_agg(json_build_object('path', g.storage_path, 'width', g.width, 'height', g.height,
+    'captionEn', g.caption_en, 'captionFr', g.caption_fr, 'occasion', g.occasion) order by g.sort_order, g.created_at)
+  from ${galleryPhoto} g
+)`;
+
+function readGalleryRows(db: Database): Promise<StoredGalleryPhoto[]> {
+  return db
+    .select({
+      path: galleryPhoto.storagePath,
+      width: galleryPhoto.width,
+      height: galleryPhoto.height,
+      captionEn: galleryPhoto.captionEn,
+      captionFr: galleryPhoto.captionFr,
+      occasion: galleryPhoto.occasion,
+    })
+    .from(galleryPhoto)
+    .orderBy(asc(galleryPhoto.sortOrder), asc(galleryPhoto.createdAt));
+}
+
+function galleryRead(rows: StoredGalleryPhoto[], locale: Locale, supabaseUrl: string, fallbackAlt: string): GalleryRead {
+  return { ok: true, photos: rows.filter((r) => r.width > 0 && r.height > 0).map((r) => galleryView(r, locale, supabaseUrl, fallbackAlt)) };
+}
+
+const logGalleryFailure = (error: unknown) =>
+  console.log(JSON.stringify({ level: "warn", event: "gallery_read_failed", error: error instanceof Error ? error.message.slice(0, 200) : "unknown" }));
+
 /** Every gallery photo in sort order, localised; `fallbackAlt` names a photo with no caption or occasion. */
 export async function getGalleryPhotos(db: Database, locale: Locale, supabaseUrl: string, fallbackAlt: string): Promise<GalleryRead> {
   try {
-    const rows = await galleryCache.get(() =>
-      db
-        .select({
-          path: galleryPhoto.storagePath,
-          width: galleryPhoto.width,
-          height: galleryPhoto.height,
-          captionEn: galleryPhoto.captionEn,
-          captionFr: galleryPhoto.captionFr,
-          occasion: galleryPhoto.occasion,
-        })
-        .from(galleryPhoto)
-        .orderBy(asc(galleryPhoto.sortOrder), asc(galleryPhoto.createdAt)),
-    );
-    return { ok: true, photos: rows.filter((r) => r.width > 0 && r.height > 0).map((r) => galleryView(r, locale, supabaseUrl, fallbackAlt)) };
+    return galleryRead(await galleryCache.get(() => readGalleryRows(db)), locale, supabaseUrl, fallbackAlt);
   } catch (error) {
-    console.log(JSON.stringify({ level: "warn", event: "gallery_read_failed", error: error instanceof Error ? error.message.slice(0, 200) : "unknown" }));
+    logGalleryFailure(error);
     return { ok: false, code: "PAGE_UNAVAILABLE" };
+  }
+}
+
+/**
+ * The Gallery page (S-250): its text and the gallery photos. On a cold isolate both come from
+ * ONE statement (S-254: one database round trip instead of two) and fill both caches.
+ */
+export async function getGalleryPage(db: Database, locale: Locale, supabaseUrl: string, fallbackAlt: string): Promise<{ read: SitePageRead; gallery: GalleryRead }> {
+  let merged: StoredGalleryPhoto[] | undefined;
+  try {
+    const stored = await cacheFor("gallery").get(async () => {
+      const rows = await selectStoredPage(db, "gallery", { gallery: galleryJson });
+      const json = rows[0]?.gallery;
+      merged = (typeof json === "string" ? (JSON.parse(json) as StoredGalleryPhoto[]) : json) ?? [];
+      return storedPageFrom("gallery", rows);
+    });
+    const read: SitePageRead = stored ? { ok: true, page: localizeSitePage(stored, locale, supabaseUrl) } : { ok: false, code: "PAGE_UNAVAILABLE" };
+    const rows = await galleryCache.get(async () => merged ?? (await readGalleryRows(db)));
+    return { read, gallery: galleryRead(rows, locale, supabaseUrl, fallbackAlt) };
+  } catch (error) {
+    logGalleryFailure(error);
+    return { read: { ok: false, code: "PAGE_UNAVAILABLE" }, gallery: { ok: false, code: "PAGE_UNAVAILABLE" } };
   }
 }
