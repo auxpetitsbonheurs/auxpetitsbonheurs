@@ -4,6 +4,8 @@ Status: draft · Owner: product-manager · Updated: 2026-11-12 (AC48: confirmati
 ADRs: ADR-0001 · Epic: TBD (`/create-epics`)
 Related: [pricing-availability-promotions](pricing-availability-promotions.md) (all price/date rules), [catalogue-browsing](catalogue-browsing.md) (Add to basket)
 
+> **Superseded in part (2026-11-13):** payment is now in full by MCB Juice at order. A website order is created as **Awaiting payment** (not Pending approval), the summary no longer shows the Juice number or cash, and the confirmation and tracking pages show the Juice instructions. See [juice-payment](juice-payment.md).
+
 ## Summary
 A P1 customer reviews the basket, picks delivery or pickup, a date and a time window, enters details, accepts the policies and sends one order on a single page. The order is created as Pending approval with a sequential number and a private tracking link; the customer lands on a confirmation page and can later follow the order, or cancel it while it is still Pending approval or Quote needed. No account or online payment is needed (admins mark paid manually; Juice or cash).
 

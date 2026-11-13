@@ -16,6 +16,7 @@ All open contract changes in these specs were applied or answered on 2026-11-10 
 | [admin-calendar-prep](admin-calendar-prep.md) | Calendar, day blocking, prep list | FR-058..060 | draft |
 | [admin-menu-content](admin-menu-content.md) | Menu, product editor, promotions, gallery, availability, settings | FR-061..067, 073 | draft |
 | [admin-sales-customers](admin-sales-customers.md) | Customers, sales summary, CSV | FR-065, 068, 069 | draft |
+| [juice-payment](juice-payment.md) | Full payment by MCB Juice at order: instructions, WhatsApp proof, Payment received, unpaid auto-cancel, refunds | FR-022, FR-024 (amended 2026-11-13) | ready |
 | [notifications](notifications.md) | Customer emails, admin push/email alerts, WhatsApp templates, outbox | FR-070..075 | draft |
 
 ## Decisions made during consolidation (technical-director, 2026-11-10)

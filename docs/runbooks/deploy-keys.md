@@ -139,10 +139,11 @@ Staging first, then production.
 10. The production Owner: step 7 in the Supabase **production** project, then **make-owner**
     with environment `production` (GitHub asks the `production` required reviewer to approve).
     (Alternative from a computer: `npm run seed:owner -- --confirm-production`.)
-11. **Deploy day**: Supabase production project → Table Editor → `settings` (one row):
-    set `juice_number` to the real Juice number (seeded as the fake `5000 0000`) and
-    `pickup_address` to the full street address (seeded as "Beau Bassin" only). Or, in the
-    SQL Editor: `update settings set juice_number = '…', pickup_address = '…';`
+11. **Deploy day**: the Owner signs in to the site's admin → **More → Settings**:
+    in **Payment**, the Juice account name, the Juice number (seeded as the fake `5000 0000`)
+    and the WhatsApp for payment proof (customers pay in full by Juice at order; until the
+    name and number are set they read "We'll send you the payment details on WhatsApp");
+    in **Delivery and pickup**, the full pickup address (seeded as "Beau Bassin" only). Save.
 12. Weekly backups: section 5.
 
 ## 5. Backups: GitHub repository → Settings → Secrets and variables → Actions

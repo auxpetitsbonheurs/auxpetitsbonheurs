@@ -35,8 +35,14 @@ Phase 3 exit: a guest places a 2-item delivery order on a phone, cancels it from
 | S-096 | Customer cancels an order while it is pending | ready | 3 |
 | S-097 | Re-measure Worker CPU on pricing and checkout (risk T3) | ready | 2 |
 | S-098 | Checkout journeys end to end on a phone | ready | 3 |
+| S-277 | Owner sets the Juice payment details | review | 2 |
+| S-278 | Orders start as Awaiting payment, with Juice instructions at once | review | 5 |
+| S-279 | Admin sees orders awaiting payment and marks Payment received | review | 5 |
+| S-280 | Unpaid orders: reminder at 12 h, cancelled at 24 h | review | 3 |
+| S-281 | Refuse an order after payment, with the refund step | review | 3 |
+| S-282 | Juice payment journeys end to end on a phone | review | 2 |
 
-Total: 60 pts. Files: `production/stories/E-05/`.
+Total: 80 pts. S-277..S-282 added 2026-11-13 (Owner/client decision: full payment by MCB Juice at order; spec docs/specs/features/juice-payment.md). Files: `production/stories/E-05/`.
 
 ## Dependencies
 - E-01, E-03 (settings, availability, promotions data), E-04 (product page add-to-basket).
