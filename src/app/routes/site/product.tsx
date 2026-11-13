@@ -15,7 +15,13 @@ import { basketCookie, newLineId, readBasket } from "~/server/basket.server";
 import { AddToBasketInput } from "~/server/contracts/site";
 import { requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
-import { findProductBySlug, findProductsByIds, findRenamedSlug } from "~/server/repos/catalogue.server";
+import { findProductPageBySlug, findProductsByIds, findRenamedSlug } from "~/server/repos/catalogue.server";
+import { getSiteSettings } from "~/server/repos/settings.server";
+import { clockContext } from "~/server/clock.server";
+import { earliestProductDate } from "~/domain/notice";
+import { isInSeason } from "~/domain/season";
+import { todayMU } from "~/domain/time";
+import { PRODUCT_GONE, ProductGone, ProductDetails } from "~/components/site/product-details";
 import { customerProduct } from "~/server/product-view.server";
 import { timed } from "~/server/server-timing.server";
 import type { Route } from "./+types/product";
@@ -37,12 +43,26 @@ async function redirectRenamed(context: Route.LoaderArgs["context"], url: URL, s
   });
 }
 
-/** `site/product` loader (contracts.md, minimal slice: no options, notice date or promotion). */
+/**
+ * `site/product` loader (contracts.md). Hidden, or seasonal outside its window on today's
+ * Mauritius date: 404 "no longer available" with no product data (S-065 AC5). `earliestDate` is
+ * this product's notice (else the Settings default) past closed and blocked days (AC3).
+ */
 export async function loader({ params, context, url }: Route.LoaderArgs) {
-  const record = await timed(context, "product", () => findProductBySlug(context.get(requestDbContext).db, params.slug));
-  if (!record) return redirectRenamed(context, url, params.slug);
-  if (productProblem(record) === "hidden") throw data(null, { status: 404 });
-  return { product: customerProduct(record, context.get(publicConfigContext).supabaseUrl) };
+  const db = context.get(requestDbContext).db;
+  const [found, settings] = await Promise.all([
+    timed(context, "product", () => findProductPageBySlug(db, params.slug)),
+    timed(context, "settings", () => getSiteSettings(db)),
+  ]);
+  if (!found) return redirectRenamed(context, url, params.slug);
+  const { record, availability } = found;
+  const today = todayMU(context.get(clockContext).now());
+  if (productProblem(record) === "hidden" || !isInSeason(availability.season, today)) throw data(PRODUCT_GONE, { status: 404 });
+  return {
+    product: customerProduct(record, context.get(publicConfigContext).supabaseUrl),
+    earliestDate: earliestProductDate({ today, noticeDays: availability.noticeDays ?? settings.noticeDays, ...settings.openDays }),
+    seasonEndsOn: availability.season?.endsOn ?? null,
+  };
 }
 
 export type { ProductData };
@@ -91,7 +111,7 @@ export default function Product({ loaderData, actionData }: Route.ComponentProps
   const { t, locale } = useI18n();
   const shown = productView(loaderData.product, locale);
   return (
-    <ProductArticle shown={shown}>
+    <ProductArticle shown={shown} details={<ProductDetails allergens={loaderData.product.allergens} earliestDate={loaderData.earliestDate} seasonEndsOn={loaderData.seasonEndsOn} />}>
         {shown.addable ? (
           // Remount per product so a confirmation never carries over to another cake.
           <AddToBasketForm key={loaderData.product.id} productId={loaderData.product.id} refusal={actionData && !actionData.ok ? actionData.error.message : undefined} />
@@ -193,7 +213,8 @@ function AddToBasketForm({ productId, refusal }: { productId: string; refusal?: 
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   const { t } = useI18n();
-  if (isRouteErrorResponse(error) && error.status === 404) return <NotFoundContent />;
+  // Hidden or out of season (S-065 AC5): "no longer available" with the menu; unknown (AC6): 404 with Home and WhatsApp.
+  if (isRouteErrorResponse(error) && error.status === 404) return <ProductGone gone={error.data === PRODUCT_GONE} fallback={<NotFoundContent />} />;
   return (
     <>
       <h1>{t("errors.genericTitle")}</h1>

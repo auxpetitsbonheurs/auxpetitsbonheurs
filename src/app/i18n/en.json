@@ -1403,5 +1403,25 @@
       "listLabel": "Photos",
       "photoAlt": "A cake by Aux petits bonheurs"
     }
+  },
+  "productContent": {
+    "carousel": "photo carousel",
+    "photoCount": "Photo {{current}} of {{total}}",
+    "previousPhoto": "Previous photo",
+    "nextPhoto": "Next photo",
+    "photoMissing": "Photo of {{name}} not available",
+    "earliestDate": "Earliest date: {{date}}",
+    "seasonal": "Seasonal: available until {{date}}",
+    "allergensTitle": "Allergens",
+    "tags": {
+      "eggless": "Eggless",
+      "nut_free": "Nut-free",
+      "gluten_free": "Gluten-free",
+      "dairy_free": "Dairy-free"
+    },
+    "kitchenNote": "Our kitchen handles eggs, milk, gluten, nuts and other allergens, so every cake may contain traces. Ask us on WhatsApp if you have an allergy.",
+    "goneTitle": "This product is no longer available",
+    "goneBody": "It may be sold out for the season or taken off the menu. Have a look at what we bake now.",
+    "backToMenu": "Browse our collection"
   }
 }

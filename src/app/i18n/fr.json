@@ -1403,5 +1403,25 @@
       "listLabel": "Photos",
       "photoAlt": "Un gâteau d'Aux petits bonheurs"
     }
+  },
+  "productContent": {
+    "carousel": "carrousel de photos",
+    "photoCount": "Photo {{current}} sur {{total}}",
+    "previousPhoto": "Photo précédente",
+    "nextPhoto": "Photo suivante",
+    "photoMissing": "Photo de {{name}} indisponible",
+    "earliestDate": "Date au plus tôt : {{date}}",
+    "seasonal": "De saison : disponible jusqu'au {{date}}",
+    "allergensTitle": "Allergènes",
+    "tags": {
+      "eggless": "Sans œufs",
+      "nut_free": "Sans fruits à coque",
+      "gluten_free": "Sans gluten",
+      "dairy_free": "Sans produits laitiers"
+    },
+    "kitchenNote": "Notre cuisine utilise des œufs, du lait, du gluten, des fruits à coque et d'autres allergènes : chaque gâteau peut en contenir des traces. Demandez-nous sur WhatsApp en cas d'allergie.",
+    "goneTitle": "Ce produit n'est plus disponible",
+    "goneBody": "Il n'est peut-être plus de saison ou a été retiré de la carte. Découvrez ce que nous préparons en ce moment.",
+    "backToMenu": "Voir notre collection"
   }
 }

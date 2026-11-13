@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { PlainText } from "~/components/site/plain-text";
+import { ProductPhotos } from "~/components/site/product-photos";
 import { localized } from "~/i18n/localized";
 import { type Locale, formatRupees } from "~/lib/locale";
 import type { CustomerProduct } from "~/domain/customer-product";
@@ -29,17 +31,18 @@ export function productView(product: ProductData, locale: Locale): ProductShown 
 /**
  * The customer product page body (S-011), shared by `/menu/:slug` and the admin preview
  * (S-051) so the preview cannot drift from the live page. `children` is the ordering area
- * (Add to basket, or the sold-out note); the preview passes none.
+ * (Add to basket, or the sold-out note); the preview passes none. `details` is the product
+ * content under the description (allergens, earliest date, season; S-065).
  */
-export function ProductArticle({ shown, children }: { shown: ProductShown; children?: ReactNode }) {
-  const photo = shown.photos[0];
+export function ProductArticle({ shown, children, details }: { shown: ProductShown; children?: ReactNode; details?: ReactNode }) {
   return (
-    <article className="grid gap-6 md:grid-cols-2 md:gap-10">
-      {photo && <img src={photo.url} alt={photo.alt} width={photo.width} height={photo.height} className="h-auto w-full rounded-lg bg-decorative" />}
+    <article className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-10">
+      <ProductPhotos photos={shown.photos} name={shown.name} />
       <div className="min-w-0">
-        <h1>{shown.name}</h1>
+        <h1 className="wrap-anywhere">{shown.name}</h1>
         <p className="mt-3 text-2xl font-semibold whitespace-nowrap text-primary-strong">{shown.price}</p>
-        {shown.description && <p className="mt-4 max-w-measure">{shown.description}</p>}
+        {shown.description && <PlainText text={shown.description} className="mt-4" />}
+        {details}
         {children}
       </div>
     </article>

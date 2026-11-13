@@ -111,6 +111,26 @@ export async function findProductPreview(
   return { record: toRecord(rest), season: { seasonalStartsOn, seasonalEndsOn } };
 }
 
+/** A product page's availability facts (S-065): its own notice and its seasonal window. */
+export interface ProductAvailability {
+  /** NULL = the Settings default notice. */
+  noticeDays: number | null;
+  season: { startsOn: string; endsOn: string } | null;
+}
+
+/** The product with this current slug, whatever its status, with its notice and season (one query). */
+export async function findProductPageBySlug(db: Database, slug: string): Promise<{ record: ProductRecord; availability: ProductAvailability } | undefined> {
+  const [row] = await db
+    .select({ ...columns, noticeDays: product.noticeDays, seasonalStartsOn: product.seasonalStartsOn, seasonalEndsOn: product.seasonalEndsOn })
+    .from(product)
+    .where(eq(product.slug, slug));
+  if (!row) return undefined;
+  const { noticeDays, seasonalStartsOn, seasonalEndsOn, ...rest } = row;
+  // The table check keeps both dates set or both null.
+  const season = seasonalStartsOn && seasonalEndsOn ? { startsOn: seasonalStartsOn, endsOn: seasonalEndsOn } : null;
+  return { record: toRecord(rest), availability: { noticeDays, season } };
+}
+
 /** Products by id (any status); ids that do not exist are absent from the map. */
 export async function findProductsByIds(db: Database, ids: readonly string[]): Promise<Map<string, ProductRecord>> {
   const unique = [...new Set(ids)];
