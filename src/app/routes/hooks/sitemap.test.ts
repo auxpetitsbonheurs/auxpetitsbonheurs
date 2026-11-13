@@ -1,5 +1,6 @@
 // S-253 AC4, AC5, AC6: /sitemap.xml and /robots.txt.
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { insertProduct } from "~/db/testing/catalogue";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { sitemapXml } from "~/lib/sitemap";
 import { indexablePaths } from "~/server/seo-pages.server";
@@ -68,6 +69,22 @@ describe("/sitemap.xml (S-253)", () => {
     for (const part of ["/admin", "/basket", "/order/", "/t/", "/account", "/menu-links", "/about"]) expect(xml).not.toContain(part);
   });
 
+  test("S-224 AC4, AC5: lists each visible, in-season product page in both languages under its current slug only", async () => {
+    await insertProduct(database.db); // chocolate-cake, available
+    await insertProduct(database.db, { slug: "lemon-tart", nameEn: "Lemon tart", nameFr: "Tarte au citron", status: "sold_out" });
+    await insertProduct(database.db, { slug: "secret-cake", nameEn: "Secret", nameFr: "Secret", status: "hidden" });
+    await insertProduct(database.db, { slug: "yule-log", nameEn: "Yule log", nameFr: "Bûche", seasonalStartsOn: "2026-12-01", seasonalEndsOn: "2026-12-31" });
+    await database.client.query("insert into product_slug_history (product_id, slug) select id, 'old-chocolate' from product where slug = 'chocolate-cake'");
+
+    const { xml } = await fetchSitemap();
+
+    expect(locs(xml)).toEqual(expect.arrayContaining([
+      "http://localhost/menu/chocolate-cake", "http://localhost/fr/menu/chocolate-cake",
+      "http://localhost/menu/lemon-tart", "http://localhost/fr/menu/lemon-tart",
+    ]));
+    for (const gone of ["secret-cake", "yule-log", "old-chocolate"]) expect(xml).not.toContain(gone);
+  });
+
   test("values are XML-escaped", () => {
     expect(sitemapXml("https://a.test", ["/x&y"])).toContain("<loc>https://a.test/x&amp;y</loc>");
   });
@@ -81,5 +98,14 @@ describe("/robots.txt", () => {
     expect(body).toContain("Sitemap: http://localhost/sitemap.xml");
     expect(body).toContain("Disallow: /admin");
     expect(body).not.toMatch(/Disallow: \/\s*$/m);
+  });
+
+  test("S-224 AC4, AC7: keeps crawlers out of the basket, orders, tracking and accounts in both languages", async () => {
+    const body = await robots(routeArgs(database, { path: "/robots.txt" }) as never).text();
+
+    for (const path of ["/basket", "/order/", "/t/", "/account", "/fr/basket", "/fr/order/", "/fr/t/", "/fr/account"]) {
+      expect(body).toContain(`Disallow: ${path}\n`);
+    }
+    expect(body).not.toMatch(/Disallow: \/menu/);
   });
 });

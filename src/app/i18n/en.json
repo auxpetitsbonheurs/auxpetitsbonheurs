@@ -209,6 +209,7 @@
     "viewBasket": "View basket",
     "soldOut": "Sold out",
     "soldOutHint": "This cake is sold out for now. Message us on WhatsApp to ask when it is back.",
+    "metaDescription": "{{name}}, made to order by Aux petits bonheurs in Beau Bassin, Mauritius. Order online for pickup or delivery.",
     "addedCount_one": "Added to your basket",
     "addedCount_other": "Added to your basket ({{count}} in basket)"
   },

@@ -12,6 +12,7 @@ import { todayMU } from "~/domain/time";
 import { t as translate } from "~/i18n/catalog.server";
 import { useI18n } from "~/i18n/react";
 import { formatRupees, localeFromPathname, localePath } from "~/lib/locale";
+import { SEO_HANDLE, metaDescription, rootOrigin, seoMeta, shareImage } from "~/lib/seo";
 import { actionError, domainErrorResult } from "~/server/action-result.server";
 import { basketCookie, newLineId, readBasket } from "~/server/basket.server";
 import { clockContext } from "~/server/clock.server";
@@ -66,7 +67,12 @@ export async function loader({ params, context, url }: Route.LoaderArgs) {
   const today = todayMU(now);
   const problem = productProblem({ ...record, season: availability.season }, today);
   if (problem === "hidden" || problem === "out_of_season") throw data(PRODUCT_GONE, { status: 404 });
+  const locale = localeFromPathname(url.pathname);
+  const name = record.name[locale] || record.name.en;
   return {
+    // S-224 AC1: the page's own title and description in its language (the share image is read
+    // from the photos in `meta`).
+    seo: { title: name, description: metaDescription(record.description?.[locale], translate("product.metaDescription", locale, { name })) },
     // S-066: the option groups for the ordering area; S-067: the Settings message limit.
     // S-082 / S-066 AC4: the live offer (lowest price, no stacking) with its end for "Offer ends".
     product: { ...customerProduct(record, context.get(publicConfigContext).supabaseUrl, { promotions, now }), optionGroups: record.optionGroups },
@@ -134,9 +140,22 @@ export function shouldRevalidate({ formData, actionResult, defaultShouldRevalida
   return added ? false : defaultShouldRevalidate;
 }
 
-export function meta({ loaderData }: Route.MetaArgs) {
+/** Its meta uses seoMeta: the site layout leaves the brand share image to it (S-224). */
+export const handle = SEO_HANDLE;
+
+/** S-224 AC1, AC6: title, description, canonical and share preview in the page language. */
+export function meta({ loaderData, matches, location }: Route.MetaArgs) {
   if (!loaderData) return [{ name: "robots", content: "noindex" }];
-  return [{ title: `${loaderData.product.name.en} | Aux petits bonheurs` }];
+  const { seo, product } = loaderData;
+  return seoMeta({
+    origin: rootOrigin(matches),
+    locale: localeFromPathname(location.pathname),
+    path: `/menu/${product.slug}`,
+    title: seo.title,
+    description: seo.description,
+    image: shareImage(product.photos[0]),
+    imageAlt: seo.title,
+  });
 }
 
 /**
