@@ -1,9 +1,9 @@
 import { Check, ChevronLeft } from "lucide-react";
-import { type FormEvent, type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from "react";
+import { type FormEvent, type ReactNode, type RefObject, Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { Link, data, useFetcher, useNavigate } from "react-router";
 import { AdminErrorBoundary } from "~/components/admin/admin-states";
 import { LeaveDialog, keepAboveSaveBar, useUnsavedGuard } from "~/components/admin/unsaved-guard";
-import { OptionGroupsEditor, optionAnchor } from "~/components/admin/option-groups-editor";
+import { type StoredOptionGroup, optionAnchor, postedOptionGroups } from "~/components/admin/option-groups-form";
 import { PhotoManager } from "~/components/admin/photo-manager";
 import { usePhotoUploads } from "~/components/admin/use-photo-uploads";
 import { ErrorSummary } from "~/components/checkout/error-summary";
@@ -297,6 +297,29 @@ function AllergenChips({ tags, selected, error }: { tags: string[]; selected: st
   );
 }
 
+// The Options editor (the largest part of the form, and the drag-sort code) is its own chunk
+// (NFR-001 JS budget). Server rendering includes it; on an in-app visit the skeleton below
+// shows for the moment the chunk takes, and still posts the stored groups unchanged.
+const OptionGroupsEditor = lazy(() => import("~/components/admin/option-groups-editor"));
+
+function OptionsSkeleton({ initial }: { initial: readonly StoredOptionGroup[] }) {
+  const { t } = useI18n();
+  return (
+    <section id="options" aria-busy="true" aria-labelledby="options-heading" data-testid="options-skeleton">
+      <input type="hidden" name="optionGroups" value={postedOptionGroups(initial)} />
+      <h2 id="options-heading" className="text-xl font-semibold">
+        {t("admin.product.options.heading")}
+      </h2>
+      <div aria-hidden="true" className="mt-3 grid gap-3">
+        {initial.map((group) => (
+          <div key={group.id} className="h-24 rounded-card bg-muted" />
+        ))}
+        <div className="h-12 w-48 rounded-md bg-muted" />
+      </div>
+    </section>
+  );
+}
+
 /** Seasonal dates (S-049): optional, both or neither, both days included. */
 function SeasonFields({ window, error }: { window: { startsOn: string; endsOn: string } | null; error?: string }) {
   const { t } = useI18n();
@@ -530,14 +553,16 @@ function ProductEditor({ loaderData }: { loaderData: LoaderData }) {
         />
         <NamesSection product={product} errors={errors} onFrenchName={() => setDirty(true)} onEnglishName={setEnglishName} />
         <OtherFields loaderData={loaderData} errors={errors} onPrice={setBasePrice}>
-          <OptionGroupsEditor
-            initial={product?.optionGroups ?? []}
-            basePrice={basePrice}
-            cakeMessageMax={loaderData.settingsDefaults.cakeMessageMax}
-            errors={errors}
-            onChange={() => setDirty(true)}
-            announce={announce}
-          />
+          <Suspense fallback={<OptionsSkeleton initial={product?.optionGroups ?? []} />}>
+            <OptionGroupsEditor
+              initial={product?.optionGroups ?? []}
+              basePrice={basePrice}
+              cakeMessageMax={loaderData.settingsDefaults.cakeMessageMax}
+              errors={errors}
+              onChange={() => setDirty(true)}
+              announce={announce}
+            />
+          </Suspense>
         </OtherFields>
         {/* Sticky above the bottom bar; static while typing on a phone (keyboard up) and at 200% zoom. */}
         <div data-editor-bar="" className="sticky bottom-0 z-30 -mx-4 border-t border-border bg-card px-4 py-3 shadow-md min-[20rem]:bottom-[calc(3.5rem+env(safe-area-inset-bottom))] md:-mx-6 md:px-6">
