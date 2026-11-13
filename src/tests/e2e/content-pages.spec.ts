@@ -42,7 +42,7 @@ test.describe("Contact us and Custom order at every width (S-251 AC8, S-252 AC6)
 });
 
 test.describe("Contact us (S-251)", () => {
-  test("AC1, AC2, AC4: WhatsApp with a greeting, the phone as text, Beau Bassin and hours; no email or form", async ({ page }) => {
+  test("AC1, AC2, AC4: WhatsApp with a greeting, the phone as text, the footer's email, Beau Bassin and hours; no form", async ({ page }) => {
     await open(page, "/contact");
     const main = page.getByRole("main");
 
@@ -52,8 +52,9 @@ test.describe("Contact us (S-251)", () => {
     await expect(main.getByText("Pickup in Beau Bassin")).toBeVisible();
     await expect(main.getByRole("heading", { level: 2, name: "Opening hours" })).toBeVisible();
     await expect(main.locator("form")).toHaveCount(0);
-    await expect(main.locator('a[href^="mailto:"]')).toHaveCount(0);
-    await expect(main).not.toContainText("hello@example.com");
+    // AC4 amended (2026-11-13): the same Settings email as the footer, so the two never disagree.
+    await expect(main.getByRole("link", { name: "Email hello@example.com" })).toHaveAttribute("href", "mailto:hello@example.com");
+    await expect(page.getByRole("contentinfo").locator('a[href="mailto:hello@example.com"]')).toHaveCount(1);
   });
 
   test("AC3: no map link or embedded map when Settings has no map URL", async ({ page }) => {

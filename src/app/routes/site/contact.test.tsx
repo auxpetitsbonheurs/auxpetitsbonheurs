@@ -10,6 +10,7 @@ const base: Data = {
   description: "d",
   whatsapp: "+230 5000 0000",
   phone: "+230 400 0000",
+  email: null,
   address: null,
   mapUrl: null,
   text: { intro: "Say hello.", hours: "Tue to Sat\n9:00 to 17:00", pickupNote: "Pickup note." },
@@ -75,12 +76,20 @@ describe("Contact us page (S-251)", () => {
     expect(html).not.toContain("<script");
   });
 
-  test("AC4: no form, no email address, no mailto", () => {
+  test("AC4: no form; without a Settings email, no mailto", () => {
     const html = page();
 
     expect(html).not.toContain("<form");
     expect(html).not.toContain("mailto:");
-    expect(html).not.toMatch(/@[a-z]+\./);
+  });
+
+  test("AC4 (amended): the Settings email shows as a mailto link with the address as text, like the footer", () => {
+    const html = page({ email: "hello@example.com" });
+
+    const mail = links(html).find((l) => l.href.startsWith("mailto:"));
+    expect(mail?.href).toBe("mailto:hello@example.com");
+    expect(mail?.text).toContain("hello@example.com");
+    expect(page({ email: "hello@example.com" }, "/fr/contact")).toContain("Écrire à");
   });
 
   test("AC5, AC6: the exact address and the hours are escaped plain text with line breaks kept", () => {
