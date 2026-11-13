@@ -3,15 +3,22 @@
 import type { MenuEntry, MenuProduct } from "./menu";
 import type { PricedLine, PricedOption } from "./pricing-core";
 
-export type RefusedLine = Pick<PricedLine, "productId" | "unitPriceRs" | "problem"> & { options?: readonly Pick<PricedOption, "choiceId" | "priceDeltaRs" | "quantity">[] };
+export type RefusedLine = Pick<PricedLine, "productId" | "unitPriceRs" | "problem"> & Partial<Pick<PricedLine, "originalUnitPriceRs" | "promotionId">> & { options?: readonly Pick<PricedOption, "choiceId" | "priceDeltaRs" | "quantity">[] };
 
-/** The product as a refused line priced it: base = unit price less the options, and each chosen option's delta. */
+/**
+ * The product as a refused line priced it: base = original unit price less the options, each
+ * chosen option's delta, and the promotion the server applied (its sale base price), or none:
+ * the server's promotion is the only one the page then shows (S-082; never two at once).
+ */
 function withServerPrices(product: MenuProduct, line: RefusedLine): MenuProduct {
   const options = line.options ?? [];
   const deltas = new Map(options.flatMap((o) => (o.choiceId ? [[o.choiceId, o.quantity ? o.priceDeltaRs / o.quantity : o.priceDeltaRs] as const] : [])));
   const optionGroups = product.optionGroups.map((g) => ({ ...g, choices: g.choices.map((c) => ({ ...c, priceDeltaRs: deltas.get(c.id) ?? c.priceDeltaRs })) }));
-  const basePriceRs = line.unitPriceRs - options.reduce((sum, o) => sum + o.priceDeltaRs, 0);
-  return { ...product, basePriceRs, optionGroups, status: "available" };
+  const optionsRs = options.reduce((sum, o) => sum + o.priceDeltaRs, 0);
+  const basePriceRs = (line.originalUnitPriceRs ?? line.unitPriceRs) - optionsRs;
+  const known = product.promos?.find((p) => p.id === line.promotionId);
+  const promos = line.promotionId ? [{ id: line.promotionId, salePriceRs: line.unitPriceRs - optionsRs, endsAt: known?.endsAt ?? Number.MAX_SAFE_INTEGER }] : [];
+  return { ...product, basePriceRs, optionGroups, promos, status: "available" };
 }
 
 /**

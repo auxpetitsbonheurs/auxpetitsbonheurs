@@ -73,6 +73,11 @@ export function muDateTimeToInstant(dateOrValue: string, time?: string): Date {
   return new Date(Date.UTC(year!, month! - 1, day!, hour!, minute!) - MU_OFFSET_MS);
 }
 
+/** The UTC instant -> Mauritius wall time "2026-11-12T18:00" (a datetime-local value); inverse of muDateTimeToInstant. */
+export function instantToMuDateTime(instant: Date): string {
+  return new Date(instant.getTime() + MU_OFFSET_MS).toISOString().slice(0, 16);
+}
+
 function parseDate(value: string): Date {
   const match = DATE.exec(value);
   const [year, month, day] = (match?.slice(1) ?? []).map(Number);

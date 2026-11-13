@@ -54,13 +54,13 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const db = context.get(requestDbContext).db;
   const basket = readBasket(request);
   const menu = await timed(context, "menu", () =>
-    loadMenu({ db, supabaseUrl: context.get(publicConfigContext).supabaseUrl, now: context.get(clockContext).now() }),
+    loadMenu({ db, supabaseUrl: context.get(publicConfigContext).supabaseUrl, now: context.get(clockContext).now(), fixedClock: context.get(clockContext).fixed }),
   );
   return {
     basket,
     menu,
     // Priced here for the first paint; the browser loads the pricing rules after hydration.
-    priced: priceBasketFromMenu(basket, menu.data, menu.data.today),
+    priced: priceBasketFromMenu(basket, menu.data, menu.data.today, context.get(clockContext).now().getTime()),
     goneNames: await goneProductNames(context, basket, menu),
     today: menu.data.today,
     // Fresh per render; a repeated submit with it returns the same order (FR-023, S-014).

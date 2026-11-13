@@ -26,6 +26,7 @@ export const ADMIN_MODULE_POLICY = {
   "product-preview": "admin",
   uploads: "admin",
   promotions: "admin",
+  promotion: "admin",
   gallery: "admin",
   customers: "admin",
   sales: "admin",

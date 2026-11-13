@@ -22,6 +22,7 @@ import {
   textOptionProblem,
   validateSelection,
 } from "./pricing";
+import { bestPromotion } from "./promotions";
 
 const name = (en: string) => ({ en, fr: null });
 const group = (id: string, kind: string, required: boolean, choices: [string, number][], extra: Partial<PricingGroup> = {}): PricingGroup => ({
@@ -367,5 +368,44 @@ describe("text option length (S-048 AC8, FR-008)", () => {
   test("blank is refused only when the group is required", () => {
     expect(textOptionProblem("  ", { required: true, textMaxLength: null }, 40)).toBe("missing");
     expect(textOptionProblem(undefined, { required: false, textMaxLength: null }, 40)).toBeNull();
+  });
+});
+
+describe("promotions on priced lines (S-082 AC5, AC9, AC11)", () => {
+  const NOW = new Date("2026-11-12T08:00:00.000Z");
+  const promo = {
+    id: "promo-20",
+    startsAt: new Date("2026-11-12T05:00:00.000Z"),
+    endsAt: new Date("2026-11-12T14:00:00.000Z"),
+    active: true,
+    placement: "card" as const,
+    discounts: [{ productId: "P", kind: "percent" as const, percentOff: 20 }],
+  };
+  const promotionFor = (product: ProductPricing) => bestPromotion(product.id, product.basePriceRs, [promo], NOW);
+  const opts = { fulfilment: null, deliveryFeeRs: 0, limits: LIMITS, promotionFor };
+
+  test("AC5: options and the delivery fee are unchanged; the original price is returned for strike-through", () => {
+    const options = [size("M"), { groupId: "addons", choiceIds: ["topper"] }];
+    const basket = priceBasket([line(options, 2, { lineId: "l1" })], new Map([["P", P]]), { ...opts, fulfilment: "delivery", deliveryFeeRs: 200 });
+    // 20% of base 3000 = 2400; + M 500 + topper 300 (never discounted)
+    expect(basket.lines[0]).toMatchObject({ unitPriceRs: 3200, originalUnitPriceRs: 3800, lineTotalRs: 6400 });
+    expect(basket.lines[0]!.options.map((o) => o.priceDeltaRs)).toEqual([500, 300]);
+    expect(basket).toMatchObject({ itemsTotalRs: 6400, deliveryFeeRs: 200, totalRs: 6600 });
+  });
+
+  test("AC9: a line priced with a promotion carries its promotionId; once it ended, null", () => {
+    const withPromo = priceBasket([line([size("S")], 1, { lineId: "l1" })], new Map([["P", P]]), opts);
+    expect(withPromo.lines[0]).toMatchObject({ promotionId: "promo-20", unitPriceRs: 2400, originalUnitPriceRs: 3000 });
+    const endedFor = (product: ProductPricing) => bestPromotion(product.id, product.basePriceRs, [promo], promo.endsAt);
+    const ended = priceBasket([line([size("S")], 1, { lineId: "l1" })], new Map([["P", P]]), { ...opts, promotionFor: endedFor });
+    expect(ended.lines[0]).toMatchObject({ promotionId: null, unitPriceRs: 3000, originalUnitPriceRs: 3000 });
+  });
+
+  test("AC11: a promotion on a hidden or sold-out product has no effect (product rules win)", () => {
+    for (const status of ["hidden", "sold_out"] as const) {
+      const basket = priceBasket([line([size("S")], 1, { lineId: "l1" })], new Map([["P", { ...P, status }]]), opts);
+      expect(basket.lines[0]).toMatchObject({ problem: status, promotionId: null });
+      expect(basket.itemsTotalRs).toBe(0);
+    }
   });
 });

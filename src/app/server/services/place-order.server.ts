@@ -18,6 +18,7 @@ import { type AvailabilityCtx, type AvailabilityRules, type DateRange, type DayR
 import type { BasketLine } from "~/domain/basket";
 import { formatOrderNumber, newTrackingToken } from "~/domain/order-number";
 import { type CheckoutTotals, type LocalizedName, type PricedLine, type PricingGroup, type ProductPricing, cleanText, graphemeLength, priceBasket } from "~/domain/pricing";
+import { type PromotionRule, bestPromotion } from "~/domain/promotions";
 import { todayMU } from "~/domain/time";
 import type { Locale } from "~/lib/locale";
 import { type PlaceOrderInput, parsePlaceOrder } from "~/server/contracts/site";
@@ -77,6 +78,20 @@ interface SnapshotProduct {
   seasonEndsOn: string | null;
   minQuantity: number | null;
   optionGroups: PricingGroup[];
+  /** Active promotions covering the product that have not ended (drizzle/0012). */
+  promotions?: SnapshotPromotion[];
+}
+
+/** One promotion row on a snapshot product: the window and this product's discount. */
+interface SnapshotPromotion {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+  active: boolean;
+  placement: PromotionRule["placement"];
+  discountKind: "percent" | "sale_price";
+  percentOff: number | null;
+  salePriceRs: number | null;
 }
 
 type ExistingOrder = PlacedOrderRef & { contactEmail: string | null; orderNumberPrefix: string };
@@ -104,6 +119,8 @@ interface ProcedureInput {
   idempotencyKey: string | null;
   /** The request's Mauritius date: the procedure judges notice and horizon from it. */
   today: string;
+  /** The request instant (ISO): the procedure judges the promotion window from it (0012). */
+  now: string;
   insert: boolean;
   basket: ProcedureLine[];
   order: {
@@ -185,12 +202,14 @@ function procedureInput(form: Record<string, unknown>, ctx: PlaceOrderContext, p
   const key = Uuid.safeParse(form.idempotencyKey);
   const basket = ctx.basket.map(procedureLine);
   const today = todayMU(ctx.now);
-  if (!parsed.ok) return { idempotencyKey: key.success ? key.data : null, today, insert: false, basket, order: null };
+  const now = ctx.now.toISOString();
+  if (!parsed.ok) return { idempotencyKey: key.success ? key.data : null, today, now, insert: false, basket, order: null };
   const input = parsed.data;
   const delivery = input.fulfilment === "delivery" ? input : undefined;
   return {
     idempotencyKey: input.idempotencyKey,
     today,
+    now,
     insert,
     basket,
     order: {
@@ -221,6 +240,18 @@ function productMap(products: SnapshotProduct[]): Map<string, ProductPricing> {
     optionGroups: p.optionGroups ?? [],
     season: p.seasonStartsOn && p.seasonEndsOn ? { startsOn: p.seasonStartsOn, endsOn: p.seasonEndsOn } : null,
   }]));
+}
+
+/** The snapshot's promotion rows as domain/promotions reads them (one discount each: this product's). */
+function promotionRules(products: SnapshotProduct[]): PromotionRule[] {
+  return products.flatMap((p) => (p.promotions ?? []).map((row) => ({
+    id: row.id,
+    startsAt: row.startsAt,
+    endsAt: row.endsAt,
+    active: row.active,
+    placement: row.placement,
+    discounts: [{ productId: p.id, kind: row.discountKind, percentOff: row.percentOff, salePriceRs: row.salePriceRs }],
+  })));
 }
 
 const windowsOf = (settings: SnapshotSettings) => ({ delivery: settings.deliveryWindows, pickup: settings.pickupWindows });
@@ -266,13 +297,16 @@ function decide(form: Record<string, unknown>, ctx: PlaceOrderContext, parsed: R
     return fields.includes("windowId") ? { ok: false, code: "VALIDATION_FAILED", fields, windows: windowsOf(snapshot.settings) } : { ok: false, code: "VALIDATION_FAILED", fields };
   }
   const input = parsed.data;
-  // Server prices only (S-081): the snapshot's products, options and Settings, never the client's.
+  const rules = promotionRules(snapshot.products);
+  // Server prices only (S-081): the snapshot's products, options, promotions and Settings, never the client's.
   const { lines, ...totals } = priceBasket(ctx.basket, productMap(snapshot.products), {
     fulfilment: input.fulfilment,
     deliveryFeeRs: snapshot.settings.deliveryFeeRs,
     limits: { cakeMessageMax: snapshot.settings.cakeMessageMax },
     // S-084 AC7: a line out of its season today is left out, as the procedure does.
     today: todayMU(ctx.now),
+    // S-082: the lowest live sale price, never stacked (the procedure's product_promotion, 0012).
+    promotionFor: (product) => bestPromotion(product.id, product.basePriceRs, rules, ctx.now),
   });
   // ADR-0004: sold-out, hidden and deleted lines, and lines whose options are no longer
   // offered, are left out (the page showed them dimmed and outside the total); only a basket

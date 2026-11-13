@@ -172,10 +172,60 @@ describe("later menu edits never change an order (S-092 AC2, AC4)", () => {
 });
 
 describe("promotion on the item (S-092 AC3)", () => {
-  test("no promotion applies: promotion_id is null (promotions arrive with S-082)", async () => {
+  test("no promotion applies: promotion_id is null", async () => {
     placed(await place(pickupForm(1600), [eightInch()]));
 
     expect((await items())[0]?.promotion_id).toBeNull();
+  });
+
+  /** A promotion on the cake: 09:00 to 18:00 Mauritius on 10 Nov (NOW is 12:00). */
+  async function promote(discount: { percentOff?: number; salePriceRs?: number }, window = { starts: "2026-11-10T05:00:00Z", ends: "2026-11-10T14:00:00Z" }, title = "Spring offer") {
+    const { rows } = await database.client.query<{ id: string }>(
+      "insert into promotion (title_en, starts_at, ends_at, placement) values ($1, $2, $3, 'card') returning id",
+      [title, window.starts, window.ends],
+    );
+    const id = rows[0]!.id;
+    const kind = discount.percentOff === undefined ? "sale_price" : "percent";
+    await database.client.query("insert into promotion_product (promotion_id, product_id, discount_kind, percent_off, sale_price_rs) values ($1, $2, $3, $4, $5)", [
+      id, cakeId, kind, discount.percentOff ?? null, discount.salePriceRs ?? null,
+    ]);
+    return id;
+  }
+
+  test("a live promotion: the item references it, keeps its title, the sale base and the original price; options stay full price", async () => {
+    const promotionId = await promote({ percentOff: 20 });
+    // 20% of 1000 = 800; + 8 inch 600 = 1400 a cake
+    placed(await place(pickupForm(1400), [eightInch()]));
+
+    const { rows } = await database.client.query<{ promotion_id: string; promotion_title_en: string; unit_base_price_rs: number; original_base_price_rs: number; line_total_rs: number }>(
+      "select promotion_id, promotion_title_en, unit_base_price_rs, original_base_price_rs, line_total_rs from order_item",
+    );
+    expect(rows).toEqual([{ promotion_id: promotionId, promotion_title_en: "Spring offer", unit_base_price_rs: 800, original_base_price_rs: 1000, line_total_rs: 1400 }]);
+  });
+
+  test("S-082 AC6: two live offers never add up: the lowest price wins and is recorded", async () => {
+    await promote({ percentOff: 20 });
+    const cheaper = await promote({ salePriceRs: 700 }, undefined, "Flash sale");
+    placed(await place(pickupForm(1300), [eightInch()]));
+
+    expect((await items())[0]).toMatchObject({ promotion_id: cheaper, unit_base_price_rs: 700, line_total_rs: 1300 });
+  });
+
+  test("a total shown with an ended promotion's price is refused calmly with the full price", async () => {
+    await promote({ percentOff: 20 }, { starts: "2026-11-09T05:00:00Z", ends: "2026-11-10T08:00:00Z" });
+    const result = refused(await place(pickupForm(1400), [eightInch()]), "PRICE_CHANGED");
+
+    expect(result.lines[0]).toMatchObject({ unitPriceRs: 1600, originalUnitPriceRs: 1600, promotionId: null });
+    expect(result.totalRs).toBe(1600);
+    expect(await items()).toEqual([]);
+  });
+
+  test("a forged lower total is refused: the server price with the promotion is the only one charged", async () => {
+    await promote({ percentOff: 20 });
+    const result = refused(await place(pickupForm(1000), [eightInch()]), "PRICE_CHANGED");
+
+    expect(result).toMatchObject({ totalRs: 1400 });
+    expect(result.lines[0]).toMatchObject({ unitPriceRs: 1400, originalUnitPriceRs: 1600 });
   });
 });
 

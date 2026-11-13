@@ -1,5 +1,5 @@
 # S-052: Promotions list with automatic Scheduled, Live and Ended
-Status: ready
+Status: review
 Epic: E-03-menu-content-management
 Spec: docs/specs/features/admin-menu-content.md#promotions
 Estimate: 3 pts
@@ -31,6 +31,7 @@ As a bakery admin, I want to see each promotion's state and end one early with a
 - AC9 → src/tests/e2e/admin-promotions.spec.ts
 
 ## Notes
+- As built (2026-11-13): `/admin/promotions`, linked from More. Built: AC1, AC2 (domain `promotionStatus`), AC3 ("Turn off" / "Turn on"; status "Inactive"), AC4 (Delete hidden on a Live row and refused on the server: "End it first"), AC5, AC6 empty state (load failure uses the admin error boundary, no inline Retry), AC7. Buttons are named "Turn off: <title>" / "Delete: <title>" (AC9 wording differs). Tests: `src/app/routes/admin/promotion.test.ts`, `src/tests/e2e/admin-promotions.spec.ts`.
 - Depends on: S-004 (E-01), S-033 (E-02 frame).
 - Contract: `admin/promotions` loader and `setActive`, `delete`. "Live" is computed from `now` (data-model `promotion`), never stored; the predicate is shared with price rules (E-05).
 - Delete of a Live promotion: the spec says delete is for Scheduled, Ended or Inactive only but gives no error code; decision: `VALIDATION_FAILED` with the message above.

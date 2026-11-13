@@ -19,6 +19,8 @@ export interface HomeProduct {
   name: { en: string; fr: string | null };
   photo: HomePhoto | null;
   fromPriceRs: number;
+  /** The "from" price without the live offer, to strike through (S-082); null when no offer applies. */
+  originalFromPriceRs: number | null;
   soldOut: boolean;
 }
 

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Outlet, redirect, useLocation, useMatches, useRouteLoaderData } from "react-router";
 import { LanguageSwitch } from "~/components/shell/language-switch";
 import { NavProgress } from "~/components/shell/nav-progress";
+import { PromoBanner } from "~/components/shell/promo-banner";
 import { SiteFooter } from "~/components/shell/site-footer";
 import { SiteHeader } from "~/components/shell/site-header";
 import { SkipLink } from "~/components/shell/skip-link";
@@ -18,6 +19,8 @@ import { requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { photoOrigin } from "~/lib/images";
 import { whenLoadedAndIdle } from "~/lib/after-load";
+import { dismissedBanners, siteBanner } from "~/server/banner.server";
+import { getSitePromotions } from "~/server/repos/promotions.server";
 import { getSiteSettings } from "~/server/repos/settings.server";
 import { timed } from "~/server/server-timing.server";
 import type { Route } from "./+types/layout";
@@ -49,12 +52,24 @@ const SITE_BAND = "#660C0C";
 /** Customer page frame (S-007): skip link, header, one main landmark, footer. */
 export async function loader({ request, context }: Route.LoaderArgs) {
   // Cached per isolate: most page loads make no database round trip for the frame.
-  const { footer: contacts } = await timed(context, "settings", () => getSiteSettings(context.get(requestDbContext).db));
+  const db = context.get(requestDbContext).db;
+  const clock = context.get(clockContext);
+  const [{ footer: contacts }, promotions] = await Promise.all([
+    timed(context, "settings", () => getSiteSettings(db)),
+    // A failed read must not take every page down: the frame shows no banner instead.
+    timed(context, "promotions", () => getSitePromotions(db, clock)).catch((error: unknown) => {
+      console.error(JSON.stringify({ level: "error", event: "banner_read_failed", message: error instanceof Error ? error.message : String(error) }));
+      return [];
+    }),
+  ]);
+  const now = clock.now();
   return {
     basketCount: readBasketCount(request),
     photoOrigin: photoOrigin(context.get(publicConfigContext).supabaseUrl),
     contacts,
-    year: todayMU(context.get(clockContext).now()).slice(0, 4),
+    year: todayMU(now).slice(0, 4),
+    // S-062: the live banner promotion at this request's instant, unless dismissed in this session.
+    banner: siteBanner(promotions, now, dismissedBanners(request)),
   };
 }
 
@@ -116,6 +131,7 @@ export default function SiteLayout({ loaderData }: Route.ComponentProps) {
       <BrandShareImage />
       <NavProgress />
       <SkipLink />
+      <PromoBanner banner={loaderData.banner} />
       <SiteHeader
         basketCount={loaderData.basketCount}
         languageSwitch={<LanguageSwitch href={twinPath(location.pathname, location.search, other)} />}

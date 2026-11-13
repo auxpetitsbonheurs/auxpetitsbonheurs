@@ -1,16 +1,18 @@
 import { CircleSlash, MessageCircle, RotateCw } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useRevalidator, useRouteLoaderData } from "react-router";
 import type { FooterContacts } from "~/components/shell/site-footer";
 import { Alert } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
+import { CardPrice } from "~/components/site/card-price";
 import { type CollectionSection, collectionSections, fromPriceRs, needsOptions } from "~/domain/collection";
+import { livePromo } from "~/domain/live-promo";
 import type { MenuEntry, MenuProduct } from "~/domain/menu";
 import { t as serverT } from "~/i18n/catalog.server";
 import { localized } from "~/i18n/localized";
 import { useI18n } from "~/i18n/react";
 import { whatsappHref } from "~/lib/contact";
-import { formatRupees, localeFromPathname, localePath } from "~/lib/locale";
+import { localeFromPathname, localePath } from "~/lib/locale";
 import { menuStore, useMenuState } from "~/lib/menu-cache";
 import { SEO_HANDLE, rootOrigin, seoMeta } from "~/lib/seo";
 import { clockContext } from "~/server/clock.server";
@@ -31,7 +33,7 @@ export const handle = SEO_HANDLE;
  */
 export async function loader({ context, url }: Route.LoaderArgs) {
   const menu = await timed(context, "menu", () =>
-    loadMenu({ db: context.get(requestDbContext).db, supabaseUrl: context.get(publicConfigContext).supabaseUrl, now: context.get(clockContext).now() }),
+    loadMenu({ db: context.get(requestDbContext).db, supabaseUrl: context.get(publicConfigContext).supabaseUrl, now: context.get(clockContext).now(), fixedClock: context.get(clockContext).fixed }),
   );
   const locale = localeFromPathname(url.pathname);
   return { menu, title: serverT("collection.title", locale), description: serverT("collection.metaDescription", locale) };
@@ -85,7 +87,7 @@ const EAGER_CARDS = 4;
  * tab stop and one tap target, and the photo's alt (the name) is not read twice. Price and
  * sold-out label describe the link.
  */
-function ProductCard({ product, index }: { product: MenuProduct; index: number }) {
+function ProductCard({ product, index, nowMs }: { product: MenuProduct; index: number; nowMs: number }) {
   const { t, locale } = useI18n();
   const name = localized(product.name, locale);
   const photo = product.photos[0];
@@ -122,9 +124,8 @@ function ProductCard({ product, index }: { product: MenuProduct; index: number }
             {name}
           </Link>
         </h3>
-        <p id={priceId} className="text-sm font-semibold whitespace-nowrap text-primary-strong tabular-nums">
-          {t("collection.fromPrice", { price: formatRupees(fromPriceRs(product), locale) })}
-        </p>
+        {/* S-082: a live offer (not on a sold-out product) shows the sale "from" with the original struck. */}
+        <CardPrice id={priceId} fromRs={fromPriceRs(product, soldOut ? null : livePromo(product, nowMs))} wasFromRs={soldOut ? null : fromPriceRs(product)} />
         {soldOut && (
           <p id={statusId} className="inline-flex items-center gap-1 text-sm font-semibold">
             <CircleSlash aria-hidden="true" className="size-4" strokeWidth={1.75} />
@@ -139,7 +140,7 @@ function ProductCard({ product, index }: { product: MenuProduct; index: number }
   );
 }
 
-function TypeSection({ section, offset }: { section: CollectionSection; offset: number }) {
+function TypeSection({ section, offset, nowMs }: { section: CollectionSection; offset: number; nowMs: number }) {
   const { t } = useI18n();
   return (
     <section aria-labelledby={`type-${section.type}`} className="scroll-mt-4">
@@ -149,7 +150,7 @@ function TypeSection({ section, offset }: { section: CollectionSection; offset: 
       {/* 2 columns on phones (320 and 375 px), 3 at md, 4 at lg (AC7); 1 below 20rem (200% zoom on a 320 px phone). */}
       <ul className="mt-4 grid grid-cols-1 gap-3 min-[20rem]:grid-cols-2 min-[23rem]:gap-4 md:grid-cols-3 lg:grid-cols-4">
         {section.products.map((product, i) => (
-          <ProductCard key={product.id} product={product} index={offset + i} />
+          <ProductCard key={product.id} product={product} index={offset + i} nowMs={nowMs} />
         ))}
       </ul>
     </section>
@@ -205,6 +206,8 @@ export default function Collection({ loaderData }: Route.ComponentProps) {
   const menu = useCollectionMenu(loaderData.menu);
   const sections = collectionSections(menu, menu.today);
   const offsets = sections.map((_, i) => sections.slice(0, i).reduce((n, s) => n + s.products.length, 0));
+  // The instant offers are judged at (S-082): a cached menu's offer that has ended shows no sale.
+  const [nowMs] = useState(Date.now);
   return (
     <>
       <header className="text-center">
@@ -218,7 +221,7 @@ export default function Collection({ loaderData }: Route.ComponentProps) {
       ) : (
         <div className="mt-8 flex flex-col gap-10">
           {sections.map((section, i) => (
-            <TypeSection key={section.type} section={section} offset={offsets[i] ?? 0} />
+            <TypeSection key={section.type} section={section} offset={offsets[i] ?? 0} nowMs={nowMs} />
           ))}
         </div>
       )}

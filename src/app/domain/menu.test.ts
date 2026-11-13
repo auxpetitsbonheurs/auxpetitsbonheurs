@@ -142,3 +142,43 @@ describe("orderableItemCount (header badge, UX audit H1.4 / M1)", () => {
     expect(orderableItemCount(lines, null, new Set())).toBe(6);
   });
 });
+
+describe("promotions in the cached menu (S-082, ADR-0004 stale prices)", () => {
+  const END = Date.parse("2026-11-12T14:00:00.000Z");
+  const PROMO = "77777777-7777-4777-8777-777777777777";
+  const onSale = (extra = {}) => ({ ...sized(600), promos: [{ id: PROMO, salePriceRs: 800, endsAt: END }], ...extra });
+
+  test("a live promotion replaces the base price (options unchanged) until its end instant, then the full price", () => {
+    const cached = menu([onSale()]);
+    expect(priceBasketFromMenu([eightInch], cached, cached.today, END - 1)[0]).toMatchObject({ unitPriceRs: 1400, originalUnitPriceRs: 1600, promotionId: PROMO });
+    expect(priceBasketFromMenu([eightInch], cached, cached.today, END)[0]).toMatchObject({ unitPriceRs: 1600, promotionId: null });
+  });
+
+  test("the next ranked promotion takes over when the best one ends first", () => {
+    const later = "88888888-8888-4888-8888-888888888888";
+    const cached = menu([{ ...sized(600), promos: [{ id: PROMO, salePriceRs: 700, endsAt: END }, { id: later, salePriceRs: 900, endsAt: END + 3_600_000 }] }]);
+    expect(priceBasketFromMenu([eightInch], cached, cached.today, END)[0]).toMatchObject({ unitPriceRs: 1500, promotionId: later });
+  });
+
+  test("a sold-out product's promotion has no effect (S-082 AC11)", () => {
+    const cached = menu([onSale({ status: "sold_out" as const })]);
+    expect(priceBasketFromMenu([eightInch], cached, cached.today, END - 1)[0]).toMatchObject({ problem: "sold_out", promotionId: null });
+  });
+
+  test("a promotion that ended between two menu copies gives the calm note from the sale price to the full price", () => {
+    const before = menu([onSale()]);
+    const after = menu([sized(600)]);
+    const note = priceChanges(before, after).get(CAKE);
+    expect(note).toBeDefined();
+    expect(linePriceNote(eightInch, note, after.products[0], END)).toEqual({ fromRs: 1400, toRs: 1600 });
+  });
+
+  test("a PRICE_CHANGED refusal with a promotion keeps the sale once (never applied twice); without one, no sale is shown", () => {
+    const base: MenuEntry = { v: "m-1", data: menu([sized(600)]) };
+    const withPromo = menuWithServerPrices(base, [{ productId: CAKE, unitPriceRs: 1400, originalUnitPriceRs: 1600, promotionId: PROMO, problem: null, options: [{ choiceId: EIGHT, priceDeltaRs: 600 }] }], undefined);
+    expect(priceBasketFromMenu([eightInch], withPromo.data, withPromo.data.today, END)[0]).toMatchObject({ unitPriceRs: 1400, originalUnitPriceRs: 1600, promotionId: PROMO });
+    const ended: MenuEntry = { v: "m-2", data: menu([onSale()]) };
+    const noPromo = menuWithServerPrices(ended, [{ productId: CAKE, unitPriceRs: 1600, originalUnitPriceRs: 1600, promotionId: null, problem: null, options: [{ choiceId: EIGHT, priceDeltaRs: 600 }] }], undefined);
+    expect(priceBasketFromMenu([eightInch], noPromo.data, noPromo.data.today, END - 1)[0]).toMatchObject({ unitPriceRs: 1600, promotionId: null });
+  });
+});

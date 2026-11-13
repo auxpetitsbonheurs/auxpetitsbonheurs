@@ -425,7 +425,8 @@
       "team": "Équipe",
       "label": "Admin",
       "toReview": "{{count}} à valider",
-      "pages": "Pages"
+      "pages": "Pages",
+      "promotions": "Promotions"
     },
     "states": {
       "ownerOnlyTitle": "Réservé aux propriétaires",
@@ -1280,6 +1281,100 @@
         "invalid": "Un élément du formulaire n'était pas correct. Rechargez la page et réessayez."
       },
       "textTitle": "Textes"
+    },
+    "promotions": {
+      "new": "Nouvelle promotion",
+      "intro": "Une promotion peut afficher un bandeau sur chaque page, des prix en offre sur des produits, ou les deux. Elle commence et se termine toute seule.",
+      "empty": "Aucune promotion pour l’instant. Créez-en une pour afficher un bandeau ou des prix en offre.",
+      "status": {
+        "scheduled": "Programmée",
+        "live": "En cours",
+        "ended": "Terminée",
+        "inactive": "Désactivée"
+      },
+      "window": "{{start}} au {{end}}",
+      "placement": {
+        "banner": "Bandeau",
+        "card": "Carte de l’accueil",
+        "both": "Bandeau et carte de l’accueil"
+      },
+      "productCount": "Prix en offre sur {{count}} produits",
+      "productCountOne": "Prix en offre sur 1 produit",
+      "noProducts": "Aucun, bandeau/carte seulement",
+      "editNamed": "Modifier {{title}}",
+      "turnOff": "Désactiver",
+      "turnOn": "Activer",
+      "delete": "Supprimer",
+      "deleteConfirm": "Supprimer « {{title}} » ? C’est définitif. Les commandes passées gardent leurs prix.",
+      "deleted": "Promotion supprimée",
+      "endFirst": "Terminez-la d’abord : désactivez-la, puis supprimez-la.",
+      "switchedOn": "Promotion activée",
+      "switchedOff": "Promotion désactivée",
+      "back": "Toutes les promotions",
+      "newTitle": "Nouvelle promotion",
+      "editTitle": "Modifier la promotion",
+      "textSection": "Ce que voient les clients",
+      "titleEn": "Titre (anglais)",
+      "titleFr": "Titre (français)",
+      "titleHint": "Court, par exemple « -15 % sur les gâteaux d’anniversaire ».",
+      "textEn": "Texte (anglais)",
+      "textFr": "Texte (français)",
+      "optional": "(facultatif)",
+      "whenSection": "Quand elle a lieu",
+      "startsAt": "Début",
+      "endsAt": "Fin",
+      "timeHint": "Heure de Maurice. Elle se termine juste avant cette heure.",
+      "active": "Activée",
+      "activeHint": "Désactivez-la pour la mettre en pause sans la supprimer.",
+      "whereSection": "Où elle s’affiche",
+      "placementLegend": "L’afficher comme",
+      "linkLegend": "Où mènent le bandeau et la carte",
+      "link": {
+        "none": "Nulle part (texte seul)",
+        "product": "Un produit",
+        "category": "Une section du menu",
+        "custom_request": "Le formulaire de gâteau sur mesure"
+      },
+      "linkProduct": "Produit",
+      "linkCategory": "Section du menu",
+      "choose": "Choisir…",
+      "discountsSection": "Prix en offre",
+      "discountsHint": "Les options et la livraison ne sont jamais réduites. Si un produit est dans deux offres, le prix le plus bas s’applique ; les offres ne s’additionnent pas.",
+      "discountFor": "Offre pour {{name}}",
+      "discount": {
+        "none": "Pas d’offre",
+        "percent": "Pourcentage de réduction",
+        "sale_price": "Prix en offre (Rs)"
+      },
+      "amountFor": "Montant pour {{name}}",
+      "basePrice": "Prix habituel {{price}}",
+      "result": "Les clients paient {{price}} au lieu de {{was}}",
+      "notLower": "Pas plus bas que {{was}} : aucune offre ne s’affichera pour ce produit.",
+      "inOther": "Aussi dans une autre offre en cours : le prix le plus bas s’applique, les offres ne s’additionnent pas.",
+      "hidden": "Masqué du menu",
+      "save": "Enregistrer la promotion",
+      "saved": "Promotion enregistrée",
+      "errorSummaryTitle": "Vérifiez ces champs",
+      "field": {
+        "titleEn": "Titre (anglais)",
+        "titleFr": "Titre (français)",
+        "textEn": "Texte (anglais)",
+        "textFr": "Texte (français)",
+        "startsAt": "Début",
+        "endsAt": "Fin",
+        "placement": "L’afficher comme",
+        "linkProductId": "Produit",
+        "linkCategory": "Section du menu",
+        "id": "Promotion",
+        "discount": "Offre pour {{name}}"
+      },
+      "errors": {
+        "missing": "{{field}} : veuillez le remplir.",
+        "tooLong": "{{field}} : trop long.",
+        "format": "{{field}} : saisissez une valeur valide.",
+        "range": "{{field}} : le pourcentage doit être entre 1 et 99.",
+        "order": "{{field}} : la fin doit être après le début."
+      }
     }
   },
   "email": {
@@ -1472,5 +1567,13 @@
     "soldOutHintNoWhatsapp": "Nous ne pouvons pas le commander pour le moment. Revenez bientôt.",
     "soldOutWhatsapp": "Demander sur WhatsApp",
     "soldOutMessage": "Bonjour ! Le {{name}} est-il de nouveau disponible ?"
+  },
+  "promo": {
+    "wasNow": "Avant {{old}}, maintenant {{new}}",
+    "offer": "Promo",
+    "endsOn": "Offre valable jusqu’au {{date}} à {{time}}",
+    "bannerLabel": "Offre du moment",
+    "dismiss": "Masquer l’offre : {{title}}",
+    "dismissShort": "Masquer"
   }
 }

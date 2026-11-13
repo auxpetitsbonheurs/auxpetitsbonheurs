@@ -58,6 +58,10 @@ const adminPages = [
     route("menu/new", "routes/admin/product.tsx", { id: "admin-product-new" }),
     route("menu/:id", "routes/admin/product.tsx", { id: "admin-product" }),
     route("more", "routes/admin/more.tsx"),
+    // Promotions (S-052 list, S-053 editor).
+    route("promotions", "routes/admin/promotions.tsx"),
+    route("promotions/new", "routes/admin/promotion.tsx", { id: "admin-promotion-new" }),
+    route("promotions/:id", "routes/admin/promotion.tsx", { id: "admin-promotion" }),
     route("gallery", "routes/admin/gallery.tsx"),
     route("customers", "routes/admin/customers.tsx"),
     route("sales", "routes/admin/sales.tsx"),
@@ -81,6 +85,8 @@ const resourceRoutes = [
   route("sitemap.xml", "routes/hooks/sitemap.ts"),
   route("robots.txt", "routes/hooks/robots.ts"),
   route("api/basket/reissue", "routes/hooks/basket-reissue.ts"),
+  // Promo banner Dismiss (S-062): the session cookie, with or without JavaScript.
+  route("api/banner/dismiss", "routes/hooks/banner-dismiss.ts"),
   // Supabase Auth Send Email hook (S-024) and the emailed link's landing (S-026).
   route("hooks/supabase/send-email", "routes/hooks/send-email.ts"),
   route("auth/confirm", "routes/auth/confirm.ts"),

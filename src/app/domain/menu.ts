@@ -9,6 +9,9 @@ import type { AvailabilityRules } from "./availability";
 import type { BasketLine } from "./basket";
 import type { LocalizedName, PricingLimits } from "./pricing";
 import type { SeasonWindow } from "./season";
+import type { MenuPromo } from "./live-promo";
+
+export type { MenuPromo } from "./live-promo";
 
 export interface MenuOptionGroup {
   id: string;
@@ -40,6 +43,12 @@ export interface MenuProduct {
   season?: SeasonWindow | null;
   /** Own notice in days, null = the Settings default (S-083). Optional: absent from copies cached before. */
   noticeDays?: number | null;
+  /**
+   * Live promotions on the product when the server read the menu (S-082), best first (lowest
+   * price, earlier start, lower id: domain/promotions rankedOffers). The page takes the first
+   * not yet ended, so a sale disappears on its end instant even from a cached copy. Optional.
+   */
+  promos?: MenuPromo[];
 }
 
 export interface MenuCheckout {
@@ -109,9 +118,9 @@ export function orderableItemCount(lines: readonly BasketLine[], menu: Menu | nu
   return lines.reduce((sum, line) => (leftOut(line.productId) ? sum : sum + line.quantity), 0);
 }
 
-/** Everything that sets a product's prices: base and every choice's delta. */
+/** Everything that sets a product's prices: base, every choice's delta and its promotions' prices. */
 function pricingSignature(product: MenuProduct): string {
-  return JSON.stringify([product.basePriceRs, product.optionGroups.map((g) => [g.id, g.kind, g.choices.map((c) => [c.id, c.priceDeltaRs])])]);
+  return JSON.stringify([product.basePriceRs, product.optionGroups.map((g) => [g.id, g.kind, g.choices.map((c) => [c.id, c.priceDeltaRs])]), (product.promos ?? []).map((p) => [p.id, p.salePriceRs])]);
 }
 
 /** Products (in both menus) whose base price or option prices differ: their earlier copy. */

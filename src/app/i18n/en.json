@@ -425,7 +425,8 @@
       "team": "Team",
       "label": "Admin",
       "toReview": "{{count}} to review",
-      "pages": "Pages"
+      "pages": "Pages",
+      "promotions": "Promotions"
     },
     "states": {
       "ownerOnlyTitle": "Owner only",
@@ -1280,6 +1281,100 @@
         "invalid": "Something in the form was not right. Reload the page and try again."
       },
       "textTitle": "Text"
+    },
+    "promotions": {
+      "new": "New promotion",
+      "intro": "A promotion can show a banner on every page, offer prices on products, or both. It starts and ends by itself.",
+      "empty": "No promotions yet. Create one to show a banner or offer prices.",
+      "status": {
+        "scheduled": "Scheduled",
+        "live": "Live",
+        "ended": "Ended",
+        "inactive": "Inactive"
+      },
+      "window": "{{start}} to {{end}}",
+      "placement": {
+        "banner": "Banner",
+        "card": "Home card",
+        "both": "Banner and Home card"
+      },
+      "productCount": "Offer prices on {{count}} products",
+      "productCountOne": "Offer price on 1 product",
+      "noProducts": "None, banner/card only",
+      "editNamed": "Edit {{title}}",
+      "turnOff": "Turn off",
+      "turnOn": "Turn on",
+      "delete": "Delete",
+      "deleteConfirm": "Delete “{{title}}”? This cannot be undone. Past orders keep their prices.",
+      "deleted": "Promotion deleted",
+      "endFirst": "End it first: turn it off, then delete it.",
+      "switchedOn": "Promotion turned on",
+      "switchedOff": "Promotion turned off",
+      "back": "All promotions",
+      "newTitle": "New promotion",
+      "editTitle": "Edit promotion",
+      "textSection": "What customers see",
+      "titleEn": "Title (English)",
+      "titleFr": "Title (French)",
+      "titleHint": "Short, for example “15% off birthday cakes”.",
+      "textEn": "Text (English)",
+      "textFr": "Text (French)",
+      "optional": "(optional)",
+      "whenSection": "When it runs",
+      "startsAt": "Starts",
+      "endsAt": "Ends",
+      "timeHint": "Mauritius time. It ends just before this time.",
+      "active": "On",
+      "activeHint": "Turn off to pause it without deleting it.",
+      "whereSection": "Where it shows",
+      "placementLegend": "Show it as",
+      "linkLegend": "Where the banner and card lead",
+      "link": {
+        "none": "Nowhere (text only)",
+        "product": "A product",
+        "category": "A menu section",
+        "custom_request": "The custom cake form"
+      },
+      "linkProduct": "Product",
+      "linkCategory": "Menu section",
+      "choose": "Choose…",
+      "discountsSection": "Offer prices",
+      "discountsHint": "Options and delivery are never discounted. If a product is in two offers, the lowest price applies; offers do not add up.",
+      "discountFor": "Offer for {{name}}",
+      "discount": {
+        "none": "No offer",
+        "percent": "Percent off",
+        "sale_price": "Sale price (Rs)"
+      },
+      "amountFor": "Amount for {{name}}",
+      "basePrice": "Usual price {{price}}",
+      "result": "Customers pay {{price}} instead of {{was}}",
+      "notLower": "Not lower than {{was}}: no offer will show for this product.",
+      "inOther": "Also in another current offer: the lowest price applies, offers do not add up.",
+      "hidden": "Hidden from the menu",
+      "save": "Save promotion",
+      "saved": "Promotion saved",
+      "errorSummaryTitle": "Check these fields",
+      "field": {
+        "titleEn": "Title (English)",
+        "titleFr": "Title (French)",
+        "textEn": "Text (English)",
+        "textFr": "Text (French)",
+        "startsAt": "Starts",
+        "endsAt": "Ends",
+        "placement": "Show it as",
+        "linkProductId": "Product",
+        "linkCategory": "Menu section",
+        "id": "Promotion",
+        "discount": "Offer for {{name}}"
+      },
+      "errors": {
+        "missing": "{{field}}: please fill this in.",
+        "tooLong": "{{field}}: too long.",
+        "format": "{{field}}: enter a valid value.",
+        "range": "{{field}}: percent off must be 1 to 99.",
+        "order": "{{field}}: the end must be after the start."
+      }
     }
   },
   "email": {
@@ -1472,5 +1567,13 @@
     "soldOutHintNoWhatsapp": "We cannot take orders for it right now. Please check again soon.",
     "soldOutWhatsapp": "Ask on WhatsApp",
     "soldOutMessage": "Hello! Is the {{name}} available again?"
+  },
+  "promo": {
+    "wasNow": "Was {{old}}, now {{new}}",
+    "offer": "Offer",
+    "endsOn": "Offer ends {{date}} at {{time}}",
+    "bannerLabel": "Current offer",
+    "dismiss": "Dismiss offer: {{title}}",
+    "dismissShort": "Dismiss"
   }
 }

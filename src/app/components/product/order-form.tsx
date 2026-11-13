@@ -13,6 +13,7 @@ import { useI18n } from "~/i18n/react";
 import { basketStore } from "~/lib/basket-store";
 import { formatRupees, localePath } from "~/lib/locale";
 import { readFormSelection } from "./form-selection";
+import { PromoPrice } from "~/components/site/promo-price";
 import { MessageField } from "./message-field";
 import { CLEAR_OF_BAR, OptionPicker, Stepper } from "./option-picker";
 import { issueFields } from "./selection-messages";
@@ -27,7 +28,14 @@ const nbsp = (price: string) => price.replace(" ", "\u00a0");
 export interface OrderFormProduct extends ProductPricing {
   optionGroups: PricingGroup[];
   minQuantity: number | null;
+  /** The live offer the server applied (S-082): its sale base price and id; null or absent = none. */
+  salePriceRs?: number | null;
+  promotionId?: string | null;
 }
+
+/** The server's offer for the base price (display only; placeOrder prices again). */
+const offerOf = (product: OrderFormProduct) =>
+  product.promotionId && typeof product.salePriceRs === "number" ? { promotionId: product.promotionId, salePriceRs: product.salePriceRs } : null;
 
 export interface OrderFormProps {
   product: OrderFormProduct;
@@ -94,17 +102,25 @@ function useSelection(product: OrderFormProduct, echoed?: Omit<LineInput, "produ
   return { picks, pick, adopt, quantity, setQuantity, message, setMessage, input };
 }
 
-/** The live price: exact once every required group is chosen, else "From Rs X". */
+/**
+ * The live price: exact once every required group is chosen, else "From Rs X"; with an offer
+ * (S-082) also the original price (`was`), struck through. Options are never discounted.
+ */
 function useLivePrice(product: OrderFormProduct, input: LineInput, cakeMessageMax: number) {
   const { t } = useI18n();
   return useMemo(() => {
     const limits = { cakeMessageMax };
+    const offer = offerOf(product);
     if (validateSelection(product, input, limits).length === 0) {
-      const line = priceLine(product, input, null, limits);
-      const total = nbsp(formatRupees(line.lineTotalRs));
-      return { price: input.quantity > 1 ? t("productOptions.totalFor", { price: total, count: input.quantity }) : total, exact: true };
+      const line = priceLine(product, input, offer, limits);
+      const shown = (amount: number) => {
+        const total = nbsp(formatRupees(amount));
+        return input.quantity > 1 ? t("productOptions.totalFor", { price: total, count: input.quantity }) : total;
+      };
+      return { price: shown(line.lineTotalRs), was: offer ? shown(line.originalUnitPriceRs * input.quantity) : null, exact: true };
     }
-    return { price: t("productOptions.fromPrice", { price: nbsp(formatRupees(fromPriceRs(product))) }), exact: false };
+    const from = (promo: typeof offer) => t("productOptions.fromPrice", { price: nbsp(formatRupees(fromPriceRs(product, promo))) });
+    return { price: from(offer), was: offer ? from(null) : null, exact: false };
   }, [product, input, cakeMessageMax, t]);
 }
 
@@ -120,7 +136,7 @@ export function ProductOrderForm({ product, cakeMessageMax, takesMessage, refusa
   const [localError, setLocalError] = useState<string>();
   const form = useRef<HTMLFormElement>(null);
   const live = useLivePrice(product, selection.input, cakeMessageMax);
-  const announced = usePriceAnnouncement(t("productOptions.priceAnnounce", { price: live.price }));
+  const announced = usePriceAnnouncement(t("productOptions.priceAnnounce", { price: live.was ? t("promo.wasNow", { old: live.was, new: live.price }) : live.price }));
   const busy = fetcher.state !== "idle";
   const result = fetcher.data;
   const serverAdded = fetcher.state !== "submitting" && result?.ok === true;
@@ -238,7 +254,7 @@ export function ProductOrderForm({ product, cakeMessageMax, takesMessage, refusa
           <p className="min-w-0">
             <span className="block text-sm text-muted-foreground">{t("productOptions.price")}</span>
             <span data-testid="live-price" className="text-2xl font-semibold text-primary-strong">
-              {live.price}
+              <PromoPrice price={live.price} was={live.was} />
             </span>
           </p>
           <SubmitButton size="lg" className={`max-w-full ${CLEAR_OF_BAR}`} pending={fetcher.state === "submitting"} pendingText={t("product.adding")} pendingLabel={t("product.adding")}>

@@ -3,6 +3,7 @@ import { isRouteErrorResponse } from "react-router";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { product } from "~/db/schema";
 import { insertProduct } from "~/db/testing/catalogue";
+import { insertPromotion } from "~/db/testing/promotions";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { TEST_SUPABASE_URL, cookieFrom, routeArgs } from "~/server/testing/route-context";
 import { BASKET_COOKIE } from "~/server/basket.server";
@@ -285,5 +286,34 @@ describe("revalidation after Add (staging latency)", () => {
   test("anything else keeps the default", () => {
     expect(shouldRevalidate(args("addToBasket", false))).toBe(true);
     expect(shouldRevalidate({ defaultShouldRevalidate: true } as never)).toBe(true);
+  });
+});
+
+describe("a live promotion on the product page (S-066 AC4, S-082)", () => {
+  const at = (now: string) => loader(routeArgs(database, { path: "/menu/chocolate-cake", params: { slug: "chocolate-cake" }, now }) as never);
+  const t = (key: string, values?: Record<string, string | number>) => (key === "promo.endsOn" ? `Offer ends ${values?.date} at ${values?.time}` : key);
+
+  test("the original is struck, the sale shown and 'Offer ends' given in Mauritius time; at ends_at a reload shows no sale (fixed clock)", async () => {
+    const id = await insertProduct(database.db, { basePriceRs: 1000 });
+    // 12 Nov 09:00 to 18:00 Mauritius, 20% off
+    const promotionId = await insertPromotion(database, { title: "Spring offer", starts: "2026-11-12T05:00:00Z", ends: "2026-11-12T14:00:00Z", discounts: [{ productId: id, percentOff: 20 }] });
+
+    const during = await at("2026-11-12T13:59:59.000Z");
+    expect(during.product).toMatchObject({ basePriceRs: 1000, salePriceRs: 800, promotionId, promotion: { title: { en: "Spring offer" }, endsAt: "2026-11-12T14:00:00.000Z" } });
+    expect(productView(during.product, "en", t)).toMatchObject({ price: "Rs 800", wasPrice: "Rs 1,000", offerEnds: "Offer ends Thu 12 Nov at 18:00" });
+
+    const after = await at("2026-11-12T14:00:00.000Z");
+    expect(after.product).toMatchObject({ salePriceRs: null, promotionId: null, promotion: null });
+    expect(productView(after.product, "en", t)).toMatchObject({ price: "Rs 1,000", wasPrice: null, offerEnds: null });
+  });
+
+  test("two live offers: the lowest price only (no stacking); a sold-out product shows none (S-082 AC6, AC11)", async () => {
+    const id = await insertProduct(database.db, { basePriceRs: 1000 });
+    await insertPromotion(database, { starts: "2026-11-12T05:00:00Z", ends: "2026-11-12T14:00:00Z", discounts: [{ productId: id, percentOff: 20 }] });
+    const cheaper = await insertPromotion(database, { starts: "2026-11-12T05:00:00Z", ends: "2026-11-12T14:00:00Z", discounts: [{ productId: id, salePriceRs: 700 }] });
+
+    expect((await at("2026-11-12T08:00:00Z")).product).toMatchObject({ salePriceRs: 700, promotionId: cheaper });
+    await database.client.query("update product set status = 'sold_out' where id = $1", [id]);
+    expect((await at("2026-11-12T08:00:00Z")).product).toMatchObject({ salePriceRs: null, promotionId: null });
   });
 });

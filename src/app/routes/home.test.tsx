@@ -12,7 +12,7 @@ import { routeArgs } from "~/server/testing/route-context";
 import Home, { ErrorBoundary, loader } from "./home";
 
 const photo = (name: string) => ({ url: `https://cdn.test/${name}.webp`, width: 1200, height: 900 });
-const product = (id: string, en: string, fr: string | null = null) => ({ id, slug: `slug-${id}`, name: { en, fr }, photo: photo(id), fromPriceRs: 950, soldOut: false });
+const product = (id: string, en: string, fr: string | null = null) => ({ id, slug: `slug-${id}`, name: { en, fr }, photo: photo(id), fromPriceRs: 950, originalFromPriceRs: null as number | null, soldOut: false });
 
 const full: HomeData = {
   hero: { tagline: { en: "Baked with love in Beau Bassin", fr: "Fait avec amour à Beau Bassin" }, photo: photo("hero") },
@@ -123,6 +123,13 @@ describe("view", () => {
     for (let i = 1; i < levels.length; i++) expect(levels[i]! - levels[i - 1]!).toBeLessThanOrEqual(1);
   });
 
+  test("S-082: a card on offer strikes the original 'from' and says 'Was …, now …' to screen readers", () => {
+    const onSale = { ...full, featured: [{ ...product("f1", "Black forest cake"), fromPriceRs: 810, originalFromPriceRs: 900 }] };
+    const html = render(onSale);
+    expect(html).toMatch(/<s [^>]*>from Rs\s900<\/s>/u);
+    expect(html).toContain("Was from Rs 900, now from Rs 810");
+  });
+
   test("AC7: a failed load shows an error state with a WhatsApp button, not a blank page", () => {
     const html = renderInSite(<ErrorBoundary />, "/");
     expect(html).toContain("We could not load this page.");
@@ -205,5 +212,17 @@ describe("loader", () => {
 
   test("the page title and description are in the page language", async () => {
     expect((await load(undefined, "/fr")).title).toBe("Gâteaux faits maison à Maurice");
+  });
+
+  test("S-082: a featured product on offer shows the sale 'from' and keeps the original to strike; not after the end", async () => {
+    await exec("delete from product");
+    await exec("delete from promotion");
+    const cake = await addProduct("cake-c", "cake");
+    await exec(`update settings set featured_product_ids = '{${cake}}'`);
+    const { rows } = await database.client.query<{ id: string }>("insert into promotion (title_en, starts_at, ends_at, placement) values ('Sale', '2026-11-01T00:00:00Z', '2026-11-10T14:00:00Z', 'card') returning id");
+    await database.client.query("insert into promotion_product (promotion_id, product_id, discount_kind, percent_off) values ($1, $2, 'percent', 10)", [rows[0]!.id, cake]);
+
+    expect((await load("2026-11-10T13:59:00Z")).home.featured[0]).toMatchObject({ fromPriceRs: 810, originalFromPriceRs: 900 });
+    expect((await load("2026-11-10T14:00:00Z")).home.featured[0]).toMatchObject({ fromPriceRs: 900, originalFromPriceRs: null });
   });
 });

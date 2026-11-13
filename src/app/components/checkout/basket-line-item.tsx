@@ -1,6 +1,7 @@
 import { CircleSlash, Info, Minus, Plus, Trash2 } from "lucide-react";
 import { type ComponentProps, type FormEvent, useEffect, useState } from "react";
 import { useFetcher } from "react-router";
+import { PromoPrice } from "~/components/site/promo-price";
 import { Button } from "~/components/ui/button";
 import { type BasketLine, LINE_MAX_QUANTITY, LINE_MIN_QUANTITY } from "~/domain/basket";
 import { useI18n } from "~/i18n/react";
@@ -16,6 +17,8 @@ export interface BasketLineView {
   details?: string[];
   quantity: number;
   unitPrice: string;
+  /** The unit price without the live offer, struck through (S-082); absent when none applies. */
+  wasUnitPrice?: string | null;
   lineTotal: string;
   /** Sold out, hidden or deleted: shown dimmed with "No longer available", left out of the total. */
   unavailable: boolean;
@@ -210,7 +213,11 @@ export function BasketLineItem({ line, onRemoved }: { line: BasketLineView; onRe
             ))}
           </ul>
         )}
-        {!line.unavailable && <p className="text-sm text-muted-foreground">{t("basket.eachPrice", { price: line.unitPrice })}</p>}
+        {!line.unavailable && (
+          <p className="text-sm text-muted-foreground">
+            <PromoPrice price={t("basket.eachPrice", { price: line.unitPrice })} was={line.wasUnitPrice && t("basket.eachPrice", { price: line.wasUnitPrice })} />
+          </p>
+        )}
         <LineNote line={line} />
       </div>
       {!line.unavailable && (

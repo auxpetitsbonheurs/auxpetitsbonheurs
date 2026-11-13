@@ -7,6 +7,8 @@ import { readCookie } from "~/lib/cookies";
 
 export interface Clock {
   now(): Date;
+  /** True when a test fixed "now" (test mode only): per-isolate caches of time-bound data are bypassed. */
+  fixed?: boolean;
 }
 
 export const TEST_CLOCK_COOKIE = "apb_test_now";
@@ -34,7 +36,7 @@ export function createClock(
   realNow: () => Date = () => new Date(),
 ): Clock {
   const fixed = options.testClock ? testInstant(request) : undefined;
-  return { now: () => (fixed === undefined ? realNow() : new Date(fixed)) };
+  return { now: () => (fixed === undefined ? realNow() : new Date(fixed)), fixed: fixed !== undefined };
 }
 
 export const clockContext = createContext<Clock>({ now: () => new Date() });
