@@ -74,4 +74,4 @@ See `docs/COLLABORATIVE-DESIGN-PRINCIPLE.md` for the full protocol.
 - **UX comes first.** Customers, the Owner and admins must never be frustrated: every action gives instant feedback, nothing feels slow or broken, and edge cases (sold out, price changes, errors) are handled calmly without blocking the flow. Involve `ux-lead` on any user-facing change and check it on a real phone width before calling it done.
 - Work autonomously; ask only for major design decisions (popup question with options + "Other").
 - Manual setup steps for the Owner: only the minimum needed for the current step, one action per line with where to click.
-- Work on several jobs in parallel, but push them to main in ONE go: agents commit locally on their own branch and never push; the lead integrates, runs the gates once and pushes once (each push to main restarts CI).
+- Work on several jobs in parallel. CI is fast (~12–15 min), so push each job to main as soon as it is done and its own fast checks pass (lint, typecheck, affected tests); CI runs the full suites. Don't hold finished work back to batch it (Owner, 2026-11-13).
