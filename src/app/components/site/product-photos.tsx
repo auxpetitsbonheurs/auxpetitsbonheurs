@@ -6,11 +6,14 @@ import { ChevronLeft, ChevronRight, ImageOff } from "lucide-react";
 import { type KeyboardEvent, type TouchEvent, useEffect, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { useI18n } from "~/i18n/react";
+import { PRODUCT_VIEWER_SIZES } from "~/lib/photo-sizes";
 
 export interface ProductPhoto {
   url: string;
   width: number;
   height: number;
+  /** Smaller copies (S-276); absent when only the original exists. */
+  srcSet?: string;
   alt: string;
 }
 
@@ -42,6 +45,8 @@ function Photo({ photo, first, name }: { photo: ProductPhoto; first: boolean; na
     <img
       ref={ref}
       src={photo.url}
+      srcSet={photo.srcSet}
+      sizes={photo.srcSet && PRODUCT_VIEWER_SIZES}
       alt={photo.alt}
       width={photo.width}
       height={photo.height}

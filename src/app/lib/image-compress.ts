@@ -4,6 +4,8 @@
 // scaled to at most 1600 px on the long edge and re-encoded as WebP (JPEG where the browser
 // cannot write WebP) at decreasing quality until it fits 300 kB. Drawing to a canvas and
 // encoding again keeps only pixels: EXIF (location, camera, time) never leaves the phone.
+// The same decoded image also gives the 480 and 960 px wide copies pages show on phones
+// (S-276); `uploadVariants` (re-exported here so it loads with this chunk) stores them.
 import {
   PHOTO_MAX_EDGE,
   type SourceProblem,
@@ -13,7 +15,11 @@ import {
   fitWithin,
   isHeicSource,
   sourceProblem,
+  variantSize,
+  variantWidthsFor,
 } from "~/domain/upload";
+
+export { uploadVariants } from "./photo-variants";
 
 export type CompressProblem = SourceProblem | "unreadable" | "heic" | "too_big_after";
 
@@ -41,6 +47,13 @@ export interface CompressIo {
 export interface CompressedPhoto {
   blob: Blob;
   type: UploadType;
+  width: number;
+  height: number;
+}
+
+/** A smaller copy of a compressed photo (S-276), same type, `width` from PHOTO_VARIANT_WIDTHS. */
+export interface PhotoVariant {
+  blob: Blob;
   width: number;
   height: number;
 }
@@ -89,13 +102,35 @@ async function shrink(io: CompressIo, image: DecodedImage): Promise<CompressedPh
   throw new CompressError("too_big_after");
 }
 
-/** The file to upload for `file`, or a CompressError saying why it cannot be used. */
-export async function compressPhoto(file: File, io: CompressIo = browserIo()): Promise<CompressedPhoto> {
+/** Quality of the smaller copies: they are small at any quality, so one pass. */
+export const VARIANT_QUALITY = 0.78;
+
+/**
+ * The smaller copies of `photo` (S-276), drawn from the decoded source at each variant width
+ * below the photo's own, in the photo's type. A copy the browser cannot write in that type,
+ * or that is not smaller than the photo itself, is left out (the original serves instead).
+ */
+async function variantsOf(io: CompressIo, image: DecodedImage, photo: CompressedPhoto): Promise<PhotoVariant[]> {
+  const variants: PhotoVariant[] = [];
+  for (const width of variantWidthsFor(photo.width)) {
+    const size = variantSize(photo.width, photo.height, width);
+    const blob = await io.encode(image, size.width, size.height, photo.type, VARIANT_QUALITY).catch(() => null);
+    if (blob && blob.type === photo.type && blob.size > 0 && blob.size < photo.blob.size) variants.push({ blob, ...size });
+  }
+  return variants;
+}
+
+/** The file to upload for `file` and its smaller copies, or a CompressError saying why it cannot be used. */
+/** What an upload sends: the photo and its smaller copies. */
+export type PreparedPhoto = CompressedPhoto & { variants: PhotoVariant[] };
+
+export async function compressPhoto(file: File, io: CompressIo = browserIo()): Promise<PreparedPhoto> {
   const problem = sourceProblem(file);
   if (problem) throw new CompressError(problem);
   const image = await decodeSource(file, io);
   try {
-    return await shrink(io, image);
+    const photo = await shrink(io, image);
+    return { ...photo, variants: await variantsOf(io, image, photo) };
   } finally {
     image.close();
   }

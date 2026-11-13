@@ -55,6 +55,23 @@ describe("Our collection page (S-244)", () => {
     expect(html).toContain("Choisir les options");
   });
 
+  test("S-276 AC3: a photo with smaller copies gets srcset and the card's sizes; the first card stays the eager, high-priority LCP image", () => {
+    const srcSet = "https://cdn.test/p-480w.webp 480w, https://cdn.test/p-960w.webp 960w, https://cdn.test/p.webp 1600w";
+    const html = page([cake({ photos: [{ url: "https://cdn.test/p.webp", width: 1600, height: 1200, srcSet }] })]);
+
+    const img = html.match(/<img[^>]*cdn\.test\/p\.webp[^>]*>/)![0];
+    expect(img).toMatch(new RegExp(`srcSet="${srcSet}"`, "i"));
+    expect(img).toContain('sizes="(min-width: 64rem) 17rem, (min-width: 48rem) 31vw, (min-width: 20rem) 47vw, 100vw"');
+    expect(img).toContain('width="1600" height="1200" loading="eager"');
+    expect(img).toMatch(/fetchPriority="high"/i);
+  });
+
+  test("S-276 AC4: a photo without copies has no srcset or sizes (the original is used)", () => {
+    const img = page([cake()]).match(/<img[^>]*chocolate-cake\.svg[^>]*>/)![0];
+
+    expect(img).not.toMatch(/srcset|sizes=/i);
+  });
+
   test("AC2: cards after the first row load lazily", () => {
     const products = Array.from({ length: 6 }, (_, i) => cake({ id: `p${i}-xxxx`, slug: `cake-${i}` }));
 

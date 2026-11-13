@@ -15,6 +15,8 @@ export interface PhotoRecord {
   storagePath: string;
   width: number;
   height: number;
+  /** Widths of the stored smaller copies (S-276); absent in fixtures and old cached copies. */
+  variantWidths?: number[];
 }
 
 export interface ProductRecord {
@@ -37,7 +39,7 @@ export interface ProductRecord {
 // Columns are written table-qualified: drizzle would print bare names, and a bare "id"
 // inside the subquery would mean product_photo.id.
 const photosJson = sql<PhotoRecord[] | string>`coalesce((
-  select json_agg(json_build_object('storagePath', pp.storage_path, 'width', pp.width, 'height', pp.height) order by pp.sort_order)
+  select json_agg(json_build_object('storagePath', pp.storage_path, 'width', pp.width, 'height', pp.height, 'variantWidths', pp.variant_widths) order by pp.sort_order)
   from ${productPhoto} pp where pp.product_id = ${sql.raw(`"${getTableName(product)}"."id"`)}
 ), '[]'::json)`;
 

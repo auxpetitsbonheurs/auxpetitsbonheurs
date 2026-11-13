@@ -1,0 +1,51 @@
+name: photo-variants
+
+# Makes the missing 480/960 px copies of photos already stored on STAGING (S-276; new uploads
+# make their own in the browser). Manual only: Actions -> photo-variants -> Run workflow (branch
+# main). Idempotent: copies already stored are reused and complete rows are skipped, so a re-run
+# changes nothing. Resizing runs here with sharp, never in the Worker. Staging only, by
+# construction: the job is bound to the `staging` GitHub Environment, uses only STAGING_*
+# secrets, and the script refuses any APP_ENV but staging. Secrets are referenced by name only
+# and never printed; if one is missing the run names it and stops before writing anything.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: photo-variants-staging
+  cancel-in-progress: false
+
+jobs:
+  photo-variants:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: staging
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Check the staging secrets (names only)
+        env:
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          STAGING_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          STAGING_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
+        run: scripts/check-keys.sh --require STAGING_DATABASE_URL STAGING_SUPABASE_URL STAGING_SUPABASE_SERVICE_ROLE_KEY
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+      - run: npm ci
+      - name: Make the missing photo copies (staging)
+        env:
+          APP_ENV: staging
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run backfill:photo-variants

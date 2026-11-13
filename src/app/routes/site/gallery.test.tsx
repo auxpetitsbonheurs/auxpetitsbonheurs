@@ -27,6 +27,16 @@ describe("view", () => {
     expect(html).toContain('<img src="https://cdn.test/g3.webp" alt="A cake by Aux petits bonheurs" width="800" height="800" loading="lazy"');
   });
 
+  test("S-276 AC3: tiles with smaller copies carry srcset and the tile sizes", () => {
+    const srcSet = "https://cdn.test/g1-480w.webp 480w, https://cdn.test/g1.webp 800w";
+    const html = render({ photos: [{ ...photo(1), srcSet }], total: 1 });
+
+    const img = html.match(/<img[^>]*g1\.webp"[^>]*>/)![0];
+    expect(img).toMatch(new RegExp(`srcSet="${srcSet}"`, "i"));
+    expect(img).toContain('sizes="(min-width: 72rem) 22rem, (min-width: 48rem) 31vw, 47vw"');
+    expect(img).toMatch(/fetchPriority="high"/i);
+  });
+
   test("AC1: in French the heading is French", () => {
     expect(render({ photos: [photo(1)], total: 1 }, "/fr/gallery")).toMatch(/<h1[^>]*>Galerie<\/h1>/);
   });

@@ -25,7 +25,7 @@ import {
 } from "~/domain/site-pages";
 import { t as translate } from "~/i18n/catalog.server";
 import { useI18n } from "~/i18n/react";
-import { publicImageUrl } from "~/lib/images";
+import { thumbnailUrl } from "~/lib/images";
 import { actionError } from "~/server/action-result.server";
 import { afterResponseContext } from "~/server/after-response.server";
 import { requireAdmin } from "~/server/auth.server";
@@ -53,7 +53,7 @@ export async function loader(args: Route.LoaderArgs) {
   const page = await readSitePageForEditor(args.context.get(requestDbContext).db, key);
   if (!page) throw data(null, { status: 404 });
   const { supabaseUrl } = args.context.get(publicConfigContext);
-  const photo = (p: (typeof page.photos)[number]) => ({ path: p.path, url: publicImageUrl(p.path, supabaseUrl), width: p.width, height: p.height, alt: p.alt });
+  const photo = (p: (typeof page.photos)[number]) => ({ path: p.path, url: thumbnailUrl(p.path, p.width, p.variantWidths, supabaseUrl), width: p.width, height: p.height, alt: p.alt });
   const name = translate(`admin.pages.names.${key}`, me.locale);
   return {
     title: name,

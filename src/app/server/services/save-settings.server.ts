@@ -7,14 +7,14 @@
 // fee applies to the next order; stored orders keep their own fee and number prefix.
 import { eq, inArray } from "drizzle-orm";
 import { type LocalizedText, product, settings } from "~/db/schema";
-import { isIssuedSitePath } from "~/domain/upload";
+import { PHOTO_MAX_EDGE, isIssuedSitePath } from "~/domain/upload";
 import { policiesMissingEntries } from "~/domain/settings";
 import type { AfterResponse } from "~/server/after-response.server";
 import type { SettingsInput } from "~/server/contracts/settings";
 import type { Database } from "~/server/db.server";
 import { siteSettingsCache } from "~/server/repos/settings.server";
 import type { StorageGateway, UploadGateway } from "~/server/storage.server";
-import { isStoredImage } from "./product-photos.server";
+import { checkNewPhoto } from "./product-photos.server";
 import { removePhotos } from "./storage-cleanup.server";
 
 export type SaveSettingsResult =
@@ -37,20 +37,32 @@ type ImageField = "heroImagePath" | "aboutImagePath";
 
 const storedImage = (row: Pick<Row, "hero" | "aboutImagePath">, field: ImageField) => (field === "heroImagePath" ? (row.hero?.imagePath ?? null) : row.aboutImagePath);
 
-/** Image fields whose posted path is new and fails the upload checks. */
-async function rejectedImages(db: Database, input: SettingsInput, context: SaveSettingsContext): Promise<ImageField[]> {
-  const [row] = await db.select({ hero: settings.hero, aboutImagePath: settings.aboutImagePath }).from(settings).where(eq(settings.id, 1));
+type ImageVariants = { heroImageVariants: number[]; aboutImageVariants: number[] };
+const VARIANT_COLUMN = { heroImagePath: "heroImageVariants", aboutImagePath: "aboutImageVariants" } as const;
+
+/**
+ * Image fields whose posted path is new and fails the upload checks, and each image's variant
+ * widths to store (S-276): kept for an unchanged image, checked in Storage for a new one
+ * (Settings images carry no stored size, so every width up to the 1600 px edge is looked for).
+ * A stale read here is harmless: the save's version check refuses a row changed since.
+ */
+async function checkImages(db: Database, input: SettingsInput, context: SaveSettingsContext): Promise<{ rejected: ImageField[]; variants: ImageVariants }> {
+  const [row] = await db
+    .select({ hero: settings.hero, aboutImagePath: settings.aboutImagePath, heroImageVariants: settings.heroImageVariants, aboutImageVariants: settings.aboutImageVariants })
+    .from(settings)
+    .where(eq(settings.id, 1));
   const fields: ImageField[] = ["heroImagePath", "aboutImagePath"];
   const checks = await Promise.all(
-    fields.map(async (field) => {
+    fields.map(async (field): Promise<number[] | null> => {
       const path = input[field];
-      if (path === null || (row && storedImage(row, field) === path)) return true;
+      if (path === null) return [];
+      if (row && storedImage(row, field) === path) return row[VARIANT_COLUMN[field]];
       const { uploads, uploadSessionId, adminId } = context;
-      if (!uploads || !uploadSessionId || !isIssuedSitePath(path, adminId, uploadSessionId)) return false;
-      return isStoredImage(uploads, path);
+      if (!uploads || !uploadSessionId || !isIssuedSitePath(path, adminId, uploadSessionId)) return null;
+      return checkNewPhoto(uploads, { path, width: PHOTO_MAX_EDGE, height: PHOTO_MAX_EDGE });
     }),
   );
-  return fields.filter((_, i) => !checks[i]);
+  return { rejected: fields.filter((_, i) => !checks[i]), variants: { heroImageVariants: checks[0] ?? [], aboutImageVariants: checks[1] ?? [] } };
 }
 
 async function unknownFeatured(db: Database, ids: string[]): Promise<boolean> {
@@ -98,9 +110,9 @@ function changedKeys(before: Row, after: ReturnType<typeof columns>): string[] {
 
 export async function saveSettings(db: Database, version: number, input: SettingsInput, context: SaveSettingsContext): Promise<SaveSettingsResult> {
   if (await unknownFeatured(db, input.featuredProductIds)) return { ok: false, code: "VALIDATION_FAILED", fields: { featuredProductIds: "unknown" } };
-  const rejected = await rejectedImages(db, input, context);
+  const { rejected, variants } = await checkImages(db, input, context);
   if (rejected.length > 0) return { ok: false, code: "UPLOAD_REJECTED", fields: Object.fromEntries(rejected.map((field) => [field, "rejected"])) };
-  const values = columns(input, context);
+  const values = { ...columns(input, context), ...variants };
   const saved = await db.transaction(async (tx) => {
     const [row] = await tx.select().from(settings).where(eq(settings.id, 1)).for("update");
     if (!row || row.version !== version) return null;

@@ -37,9 +37,9 @@ describe("findProductBySlug", () => {
     expect(queries()).toBe(1);
     expect(found).toMatchObject({ id, slug: "chocolate-cake", name: { en: "Chocolate cake", fr: "Gâteau au chocolat" }, basePriceRs: 850 });
     expect(found!.photos).toEqual([
-      { storagePath: "/images/sample/chocolate-cake.svg", width: 800, height: 600 },
-      { storagePath: "products/b.webp", width: 30, height: 40 },
-      { storagePath: "products/c.webp", width: 10, height: 20 },
+      { storagePath: "/images/sample/chocolate-cake.svg", width: 800, height: 600, variantWidths: [] },
+      { storagePath: "products/b.webp", width: 30, height: 40, variantWidths: [] },
+      { storagePath: "products/c.webp", width: 10, height: 20, variantWidths: [] },
     ]);
   });
 
@@ -63,7 +63,7 @@ describe("findProductsByIds", () => {
 
     expect(queries()).toBe(1);
     expect([...found.keys()].sort()).toEqual([a, b].sort());
-    expect(found.get(b)!.photos).toEqual([{ storagePath: "products/lemon.webp", width: 800, height: 600 }]);
+    expect(found.get(b)!.photos).toEqual([{ storagePath: "products/lemon.webp", width: 800, height: 600, variantWidths: [] }]);
     expect(found.get(a)!.name.en).toBe("Chocolate cake");
   });
 

@@ -4,6 +4,7 @@ import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import type { Database } from "~/server/db.server";
 import type { StorageGateway } from "~/server/storage.server";
 import { purgeStorage } from "./purge-storage";
+import { withVariantPaths } from "~/domain/upload";
 
 let database: TestDatabase;
 
@@ -25,7 +26,9 @@ test("removes queued objects and empties the queue", async () => {
 
   expect(await purgeStorage(context(), storage)).toEqual({ job: "purgeStorage", ran: true, processed: 2 });
 
-  expect(removed).toEqual([["p/a.webp", "p/b.webp"]]);
+  // Each queued original takes its smaller copies with it (S-276 AC7).
+  expect(removed).toEqual([withVariantPaths(["p/a.webp", "p/b.webp"])]);
+  expect(removed[0]).toContain("p/a-480w.webp");
   expect(await queue()).toEqual([]);
 });
 

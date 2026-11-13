@@ -10,7 +10,7 @@ import type { MenuProduct } from "~/domain/menu";
 import { isInSeason } from "~/domain/season";
 import { todayMU } from "~/domain/time";
 import type { Locale } from "~/lib/locale";
-import { publicImageUrl } from "~/lib/images";
+import { publicImageUrl, webPhoto } from "~/lib/images";
 import type { Database } from "~/server/db.server";
 import { type MenuProductRecord, listMenuProducts } from "~/server/repos/catalogue.server";
 import { getSiteSettings } from "~/server/repos/settings.server";
@@ -46,7 +46,7 @@ function toMenuProduct(record: MenuProductRecord, supabaseUrl: string): MenuProd
     basePriceRs: record.basePriceRs,
     status: record.status,
     minQuantity: record.minQuantity,
-    photos: record.photos.map((p) => ({ url: publicImageUrl(p.storagePath, supabaseUrl), width: p.width, height: p.height })),
+    photos: record.photos.map((p) => webPhoto(p.storagePath, p.width, p.height, p.variantWidths, supabaseUrl)),
     optionGroups: record.optionGroups,
     season: record.season,
   };
@@ -119,7 +119,7 @@ export async function loadHome({ db, supabaseUrl, now, locale, galleryAlt }: Hom
   });
   const heroPath = settings.home.heroImagePath;
   const heroPhoto = heroPath
-    ? { url: publicImageUrl(heroPath, supabaseUrl), ...HERO_BOX }
+    ? webPhoto(heroPath, HERO_BOX.width, HERO_BOX.height, settings.home.heroImageVariants, supabaseUrl)
     : (firstPhoto(featured) ?? firstPhoto(sections.find((s) => s.type === "cake")?.products ?? []) ?? firstPhoto([...visible.values()]));
   return {
     hero: { tagline: settings.home.tagline, photo: heroPhoto },

@@ -4,7 +4,7 @@
 // Nothing here touches the saved product: the list is posted with Save.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MAX_PHOTOS, sourceProblem } from "~/domain/upload";
-import type { CompressedPhoto } from "~/lib/image-compress";
+import type { PreparedPhoto } from "~/lib/image-compress";
 import { UploadError, putFile, requestUpload } from "~/lib/photo-upload";
 import { moveItem } from "~/lib/use-drag-sort";
 
@@ -48,7 +48,7 @@ function newSessionId(): string {
 export function usePhotoUploads(saved: readonly SavedPhoto[], announce: (message: { key: string; values?: Record<string, string | number> }) => void) {
   const [items, setItems] = useState<PhotoItem[]>(() => saved.map(fromSaved));
   const sessionId = useRef<string | null>(null);
-  const sources = useRef(new Map<string, { file: File; compressed?: CompressedPhoto }>());
+  const sources = useRef(new Map<string, { file: File; compressed?: PreparedPhoto }>());
   const queue = useRef<string[]>([]);
   const active = useRef(0);
   const objectUrls = useRef(new Set<string>());
@@ -69,9 +69,9 @@ export function usePhotoUploads(saved: readonly SavedPhoto[], announce: (message
       patch(key, { state: "preparing", failure: null, progress: null });
       let timer: ReturnType<typeof setTimeout> | undefined;
       try {
+        const lazy = await import("~/lib/image-compress");
         if (!source.compressed) {
-          const { compressPhoto } = await import("~/lib/image-compress");
-          source.compressed = await compressPhoto(source.file);
+          source.compressed = await lazy.compressPhoto(source.file);
           const url = URL.createObjectURL(source.compressed.blob);
           objectUrls.current.add(url);
           patch(key, { url, width: source.compressed.width, height: source.compressed.height });
@@ -86,6 +86,8 @@ export function usePhotoUploads(saved: readonly SavedPhoto[], announce: (message
           fraction = value;
           setItems((list) => list.map((item) => (item.key === key && item.progress !== null ? { ...item, progress: value } : item)));
         });
+        // Smaller copies for phones (S-276): best effort, the save finds them by name.
+        await lazy.uploadVariants(sessionId.current, "products", { path: issued.path, type: photo.type }, photo.variants);
         patch(key, { state: "ready", path: issued.path, progress: null });
         announce({ key: "admin.product.photos.announceUploaded", values: { name: source.file.name } });
       } catch (error) {

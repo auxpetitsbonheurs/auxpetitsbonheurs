@@ -39,6 +39,8 @@ export const sitePagePhoto = pgTable(
       .references(() => sitePage.key, { onDelete: "cascade" }),
     role: text("role").notNull().default("page"),
     storagePath: text("storage_path").notNull().unique(),
+    /** Widths of the smaller copies stored beside it (S-276); empty = original only. */
+    variantWidths: smallint("variant_widths").array().notNull().default(sql`'{}'::smallint[]`),
     width: integer("width").notNull(),
     height: integer("height").notNull(),
     altEn: text("alt_en").notNull(),

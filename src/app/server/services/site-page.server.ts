@@ -7,7 +7,7 @@ import { type SQL, asc, eq, sql } from "drizzle-orm";
 import { galleryPhoto, sitePage, sitePagePhoto } from "~/db/schema";
 import { type PageContent, type PageEvent, SITE_PAGE_FIELDS, type SitePageField, type SitePageKey, isPagePhotoPath } from "~/domain/site-pages";
 import { localized } from "~/i18n/localized";
-import { publicImageUrl } from "~/lib/images";
+import { webPhoto } from "~/lib/images";
 import type { Locale } from "~/lib/locale";
 import type { Database } from "~/server/db.server";
 import { SETTINGS_TTL_MS, type TtlCache, createTtlCache } from "~/server/settings-cache.server";
@@ -17,6 +17,8 @@ export interface StoredPagePhoto {
   path: string;
   width: number;
   height: number;
+  /** Widths of the stored smaller copies (S-276); absent in copies cached before. */
+  variantWidths?: number[];
   alt: { en: string; fr: string | null };
 }
 
@@ -33,6 +35,9 @@ export interface PagePhoto {
   url: string;
   width: number;
   height: number;
+  /** Smaller copies for `srcset` (S-276); absent when only the original exists. */
+  srcSet?: string;
+  thumbUrl?: string;
   alt: string;
 }
 
@@ -61,6 +66,7 @@ function selectStoredPage<E extends Record<string, SQL>>(db: Database, key: Site
       path: sitePagePhoto.storagePath,
       width: sitePagePhoto.width,
       height: sitePagePhoto.height,
+      variantWidths: sitePagePhoto.variantWidths,
       altEn: sitePagePhoto.altEn,
       altFr: sitePagePhoto.altFr,
       ...extra,
@@ -79,6 +85,7 @@ interface StoredPageRow {
   path: string | null;
   width: number | null;
   height: number | null;
+  variantWidths?: number[] | null;
   altEn: string | null;
   altFr: string | null;
 }
@@ -88,7 +95,7 @@ function storedPageFrom(key: SitePageKey, rows: StoredPageRow[]): StoredSitePage
   if (!first) return null;
   const photos: StoredPagePhoto[] = rows
     .filter((r) => r.path !== null && r.width !== null && r.height !== null && (r.role === "page" || r.role === "event"))
-    .map((r) => ({ role: r.role as "page" | "event", path: r.path!, width: r.width!, height: r.height!, alt: { en: r.altEn ?? "", fr: r.altFr } }));
+    .map((r) => ({ role: r.role as "page" | "event", path: r.path!, width: r.width!, height: r.height!, variantWidths: r.variantWidths ?? [], alt: { en: r.altEn ?? "", fr: r.altFr } }));
   return { key, content: first.content, event: first.event, isPlaceholder: first.isPlaceholder, photos };
 }
 
@@ -129,7 +136,7 @@ export function getPagePlaceholders(db: Database): Promise<Partial<Record<SitePa
 }
 
 function photoView(photo: StoredPagePhoto, locale: Locale, supabaseUrl: string): PagePhoto {
-  return { url: publicImageUrl(photo.path, supabaseUrl), width: photo.width, height: photo.height, alt: localized(photo.alt, locale) };
+  return { ...webPhoto(photo.path, photo.width, photo.height, photo.variantWidths, supabaseUrl), alt: localized(photo.alt, locale) };
 }
 
 /** The stored page in `locale` (S-245 AC3, AC6). Pure. */
@@ -173,6 +180,8 @@ export interface StoredGalleryPhoto {
   path: string;
   width: number;
   height: number;
+  /** Widths of the stored smaller copies (S-276); absent in copies cached before. */
+  variantWidths?: number[];
   captionEn: string | null;
   captionFr: string | null;
   occasion: string | null;
@@ -182,6 +191,8 @@ export interface GalleryPhotoView {
   url: string;
   width: number;
   height: number;
+  srcSet?: string;
+  thumbUrl?: string;
   alt: string;
   caption: string | null;
 }
@@ -193,12 +204,12 @@ export type GalleryRead = { ok: true; photos: GalleryPhotoView[] } | { ok: false
 function galleryView(photo: StoredGalleryPhoto, locale: Locale, supabaseUrl: string, fallbackAlt: string): GalleryPhotoView {
   const caption = photo.captionEn && photo.captionEn.trim() !== "" ? localized({ en: photo.captionEn, fr: photo.captionFr }, locale) : null;
   const occasion = photo.occasion && photo.occasion.trim() !== "" ? photo.occasion : null;
-  return { url: publicImageUrl(photo.path, supabaseUrl), width: photo.width, height: photo.height, alt: caption ?? occasion ?? fallbackAlt, caption };
+  return { ...webPhoto(photo.path, photo.width, photo.height, photo.variantWidths, supabaseUrl), alt: caption ?? occasion ?? fallbackAlt, caption };
 }
 
 /** Gallery rows as JSON in sort order, for a column of another statement (S-254 query merge). */
 const galleryJson = sql<StoredGalleryPhoto[] | string | null>`(
-  select json_agg(json_build_object('path', g.storage_path, 'width', g.width, 'height', g.height,
+  select json_agg(json_build_object('path', g.storage_path, 'width', g.width, 'height', g.height, 'variantWidths', g.variant_widths,
     'captionEn', g.caption_en, 'captionFr', g.caption_fr, 'occasion', g.occasion) order by g.sort_order, g.created_at)
   from ${galleryPhoto} g
 )`;
@@ -209,6 +220,7 @@ function readGalleryRows(db: Database): Promise<StoredGalleryPhoto[]> {
       path: galleryPhoto.storagePath,
       width: galleryPhoto.width,
       height: galleryPhoto.height,
+      variantWidths: galleryPhoto.variantWidths,
       captionEn: galleryPhoto.captionEn,
       captionFr: galleryPhoto.captionFr,
       occasion: galleryPhoto.occasion,

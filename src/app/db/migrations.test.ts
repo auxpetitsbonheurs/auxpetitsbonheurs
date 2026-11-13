@@ -162,4 +162,29 @@ describe("migrations applied to an empty Postgres (AC3-AC5, AC7)", () => {
       { id: "request-photos", name: "request-photos", public: false, file_size_limit: 1048576, allowed_mime_types: mime },
     ]);
   });
+
+  test("S-276 AC5: 0011 adds variant widths to every photo table and the Settings images, empty by default", async () => {
+    const columns = await query<{ table_name: string; column_name: string; data_type: string; is_nullable: string; column_default: string }>(
+      `select table_name, column_name, data_type, is_nullable, column_default from information_schema.columns
+       where table_schema = 'public' and column_name in ('variant_widths', 'hero_image_variants', 'about_image_variants') order by table_name, column_name`,
+    );
+
+    expect(columns.map((c) => [c.table_name, c.column_name, c.data_type, c.is_nullable])).toEqual([
+      ["gallery_photo", "variant_widths", "ARRAY", "NO"],
+      ["product_photo", "variant_widths", "ARRAY", "NO"],
+      ["settings", "about_image_variants", "ARRAY", "NO"],
+      ["settings", "hero_image_variants", "ARRAY", "NO"],
+      ["site_page_photo", "variant_widths", "ARRAY", "NO"],
+    ]);
+    expect(columns.every((c) => c.column_default.startsWith("'{}'"))).toBe(true);
+    expect(await query("select hero_image_variants, about_image_variants from settings")).toEqual([{ hero_image_variants: [], about_image_variants: [] }]);
+  });
+
+  test("S-276 AC5: 0011 is additive only (ADD COLUMN, nothing dropped or rewritten)", () => {
+    const sql = readFileSync(`${drizzleDir}0011_photo_variants.sql`, "utf8").replace(/^--.*$/gm, "");
+    const statements = sql.split("--> statement-breakpoint").map((s) => s.trim()).filter(Boolean);
+
+    expect(statements).toHaveLength(5);
+    expect(statements.every((s) => /^ALTER TABLE "\w+" ADD COLUMN "\w+" smallint\[\] DEFAULT '\{\}'::smallint\[\] NOT NULL;$/.test(s))).toBe(true);
+  });
 });

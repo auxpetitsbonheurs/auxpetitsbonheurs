@@ -47,10 +47,11 @@ export function SiteImageField({ id, name, label, hint, path: savedPath, url: sa
     update("working");
     setMessage(t("admin.settings.image.working"));
     try {
-      const { compressPhoto } = await import("~/lib/image-compress");
+      const { compressPhoto, uploadVariants } = await import("~/lib/image-compress");
       const photo = await compressPhoto(file);
       const issued = await requestUpload(sessionId(), photo.type, photo.blob.size, undefined, "site");
       await putFile(issued.signedUrl, photo.blob, () => {});
+      await uploadVariants(sessionId(), "site", { path: issued.path, type: photo.type }, photo.variants);
       setCurrent({ path: issued.path, url: URL.createObjectURL(photo.blob) });
       update("idle");
       setMessage(t("admin.settings.image.uploaded"));

@@ -44,6 +44,9 @@ export const settings = pgTable(
     featuredProductIds: uuid("featured_product_ids").array().notNull().default(sql`'{}'::uuid[]`),
     about: jsonb("about").$type<LocalizedText>(),
     aboutImagePath: text("about_image_path"),
+    /** Widths of the smaller copies of the hero and About images (S-276); empty = original only. */
+    heroImageVariants: smallint("hero_image_variants").array().notNull().default(sql`'{}'::smallint[]`),
+    aboutImageVariants: smallint("about_image_variants").array().notNull().default(sql`'{}'::smallint[]`),
     faq: jsonb("faq").$type<LocalizedText | FaqEntry[]>().notNull().default(sql`'[]'::jsonb`),
     policies: jsonb("policies").$type<LocalizedText>(),
     privacyNote: jsonb("privacy_note").$type<LocalizedText>(),

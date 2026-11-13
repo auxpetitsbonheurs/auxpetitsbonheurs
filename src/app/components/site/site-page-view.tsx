@@ -7,6 +7,7 @@ import { useRouteLoaderData } from "react-router";
 import type { FooterContacts } from "~/components/shell/site-footer";
 import { useI18n } from "~/i18n/react";
 import { localeFromPathname } from "~/lib/locale";
+import { PAGE_PAIR_SIZES, PAGE_SINGLE_SIZES } from "~/lib/photo-sizes";
 import { rootOrigin, seoMeta } from "~/lib/seo";
 import { cn } from "~/lib/utils";
 import { PlainText } from "./plain-text";
@@ -15,6 +16,8 @@ export interface PagePhotoView {
   url: string;
   width: number;
   height: number;
+  /** Smaller copies (S-276); absent when only the original exists. */
+  srcSet?: string;
   alt: string;
 }
 
@@ -29,13 +32,15 @@ export function useSiteContacts(): FooterContacts | null {
  * A photo with its size reserved (no layout shift). A file missing in Storage hides its
  * figure instead of showing a broken image (S-245 AC6).
  */
-export function PagePhoto({ photo, eager = false, className }: { photo: PagePhotoView; eager?: boolean; className?: string }) {
+export function PagePhoto({ photo, eager = false, className, sizes = PAGE_SINGLE_SIZES }: { photo: PagePhotoView; eager?: boolean; className?: string; sizes?: string }) {
   const [broken, setBroken] = useState(false);
   if (broken) return null;
   return (
     <figure className={cn("min-w-0", className)}>
       <img
         src={photo.url}
+        srcSet={photo.srcSet}
+        sizes={photo.srcSet && sizes}
         alt={photo.alt}
         width={photo.width}
         height={photo.height}
@@ -53,7 +58,7 @@ export function PagePhotoGrid({ photos, firstEager = false }: { photos: PagePhot
   return (
     <div className={cn("grid gap-4", photos.length > 1 && "sm:grid-cols-2")}>
       {photos.map((photo, index) => (
-        <PagePhoto key={photo.url} photo={photo} eager={firstEager && index === 0} />
+        <PagePhoto key={photo.url} photo={photo} eager={firstEager && index === 0} sizes={photos.length > 1 ? PAGE_PAIR_SIZES : PAGE_SINGLE_SIZES} />
       ))}
     </div>
   );

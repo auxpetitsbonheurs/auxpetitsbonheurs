@@ -9,6 +9,7 @@ import { whatsappHref } from "~/lib/contact";
 import { localeFromPathname, localePath } from "~/lib/locale";
 import { requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
+import { GALLERY_TILE_SIZES } from "~/lib/photo-sizes";
 import { timed } from "~/server/server-timing.server";
 import { getGalleryPage } from "~/server/services/site-page.server";
 import type { Route } from "./+types/gallery";
@@ -82,6 +83,8 @@ function GalleryGrid({ photos, total }: { photos: Photo[]; total: number }) {
             <figure className="grid gap-2">
               <img
                 src={photo.url}
+                srcSet={photo.srcSet}
+                sizes={photo.srcSet && GALLERY_TILE_SIZES}
                 alt={photo.alt}
                 width={photo.width}
                 height={photo.height}

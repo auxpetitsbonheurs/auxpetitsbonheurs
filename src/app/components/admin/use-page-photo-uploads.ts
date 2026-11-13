@@ -8,7 +8,7 @@
 // this small queue lives here and the upload code under it is shared.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { sourceProblem } from "~/domain/upload";
-import type { CompressedPhoto } from "~/lib/image-compress";
+import type { PreparedPhoto } from "~/lib/image-compress";
 import { UploadError, type UploadScopeName, putFile, requestUpload } from "~/lib/photo-upload";
 import type { PhotoFailure, PhotoItem, RejectedFile, SavedPhoto } from "./use-photo-uploads";
 
@@ -19,7 +19,7 @@ const fromSaved = (photo: SavedPhoto): PhotoItem => ({ key: photo.path, path: ph
 export function usePagePhotoUploads(saved: readonly SavedPhoto[], max: number, scope: UploadScopeName, announce: (key: string, values: Record<string, string>) => void) {
   const [items, setItems] = useState<PhotoItem[]>(() => saved.map(fromSaved));
   const session = useRef<string | null>(null);
-  const sources = useRef(new Map<string, { file: File; compressed?: CompressedPhoto }>());
+  const sources = useRef(new Map<string, { file: File; compressed?: PreparedPhoto }>());
   const urls = useRef(new Set<string>());
   // One upload at a time: a page has at most six photos, and a phone's uplink is the limit.
   const chain = useRef<Promise<void>>(Promise.resolve());
@@ -40,9 +40,9 @@ export function usePagePhotoUploads(saved: readonly SavedPhoto[], max: number, s
       patch(key, { state: "preparing", failure: null, progress: null });
       let timer: ReturnType<typeof setTimeout> | undefined;
       try {
+        const lazy = await import("~/lib/image-compress");
         if (!source.compressed) {
-          const { compressPhoto } = await import("~/lib/image-compress");
-          source.compressed = await compressPhoto(source.file);
+          source.compressed = await lazy.compressPhoto(source.file);
           const url = URL.createObjectURL(source.compressed.blob);
           urls.current.add(url);
           patch(key, { url, width: source.compressed.width, height: source.compressed.height });
@@ -61,6 +61,8 @@ export function usePagePhotoUploads(saved: readonly SavedPhoto[], max: number, s
           fraction = value;
           if (shown) patch(key, { progress: value });
         });
+        // Smaller copies for phones (S-276): best effort, the save finds them by name.
+        await lazy.uploadVariants(session.current, scope, { path: issued.path, type: photo.type }, photo.variants);
         patch(key, { state: "ready", path: issued.path, progress: null });
         announce("admin.product.photos.announceUploaded", { name: source.file.name });
       } catch (error) {

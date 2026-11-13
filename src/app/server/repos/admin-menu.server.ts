@@ -3,7 +3,7 @@
 import { asc, eq, getTableName, isNotNull, sql } from "drizzle-orm";
 import { admin, product, productPhoto, settings } from "~/db/schema";
 import { PRODUCT_TYPES, type ProductStatusValue, type ProductType, type SeasonalTag, seasonalTag } from "~/domain/product";
-import { publicImageUrl } from "~/lib/images";
+import { thumbnailUrl } from "~/lib/images";
 import type { Database } from "~/server/db.server";
 import { type Localized, type OptionGroupRecord, optionGroupsJson, parseJsonColumn } from "./catalogue.server";
 
@@ -23,8 +23,9 @@ export type AdminMenuByType = Record<ProductType, AdminMenuRow[]>;
 // Table-qualified on purpose: a bare "id" inside the subquery would mean product_photo.id.
 const productId = sql.raw(`"${getTableName(product)}"."id"`);
 
-const mainPhoto = sql<string | null>`(
-  select pp.storage_path from ${productPhoto} pp
+// The card photo with what picks its smallest copy (S-276): admin lists show 56 px thumbnails.
+const mainPhoto = sql<{ path: string; width: number; variantWidths: number[] } | string | null>`(
+  select json_build_object('path', pp.storage_path, 'width', pp.width, 'variantWidths', pp.variant_widths) from ${productPhoto} pp
   where pp.product_id = ${productId}
   order by pp.sort_order limit 1
 )`;
@@ -52,12 +53,18 @@ export interface AdminProduct {
   updated: { name: string; at: string } | null;
 }
 
-const photosJson = sql<{ path: string; width: number; height: number }[] | string>`coalesce((
-  select json_agg(json_build_object('path', pp.storage_path, 'width', pp.width, 'height', pp.height) order by pp.sort_order)
+const photosJson = sql<{ path: string; width: number; height: number; variantWidths?: number[] }[] | string>`coalesce((
+  select json_agg(json_build_object('path', pp.storage_path, 'width', pp.width, 'height', pp.height, 'variantWidths', pp.variant_widths) order by pp.sort_order)
   from ${productPhoto} pp where pp.product_id = ${productId}
 ), '[]'::json)`;
 
 const parseJson = <T>(value: T | string): T => (typeof value === "string" ? (JSON.parse(value) as T) : value);
+
+function rowThumbnail(photo: { path: string; width: number; variantWidths: number[] } | string | null, supabaseUrl: string): string | null {
+  if (photo === null) return null;
+  const p = parseJson(photo);
+  return thumbnailUrl(p.path, p.width, p.variantWidths, supabaseUrl);
+}
 
 /** One product for the editor, whatever its status. */
 export async function findAdminProduct(db: Database, id: string, supabaseUrl: string): Promise<AdminProduct | undefined> {
@@ -88,7 +95,8 @@ export async function findAdminProduct(db: Database, id: string, supabaseUrl: st
     .where(eq(product.id, id));
   if (!row) return undefined;
   const { nameEn, nameFr, descriptionEn, descriptionFr, updatedAt, updatedByName, photos: rawPhotos, optionGroups, seasonalStartsOn, seasonalEndsOn, ...rest } = row;
-  const photos = parseJson(rawPhotos).map((p) => ({ ...p, url: publicImageUrl(p.path, supabaseUrl) }));
+  // The editor's tiles are 80 px: they load the smallest copy when there is one (S-276).
+  const photos = parseJson(rawPhotos).map(({ variantWidths, ...p }) => ({ ...p, url: thumbnailUrl(p.path, p.width, variantWidths, supabaseUrl) }));
   return {
     ...rest,
     photoCount: photos.length,
@@ -140,7 +148,7 @@ export async function listAdminMenu(db: Database, { today, supabaseUrl }: { toda
       id: row.id,
       name: { en: row.nameEn, fr: row.nameFr },
       status: row.status,
-      imageUrl: row.photo ? publicImageUrl(row.photo, supabaseUrl) : null,
+      imageUrl: rowThumbnail(row.photo, supabaseUrl),
       sortOrder: row.sortOrder,
       fromPriceRs: row.basePriceRs,
       seasonal: seasonalTag(row, today),

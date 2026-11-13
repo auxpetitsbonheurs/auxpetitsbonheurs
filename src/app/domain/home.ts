@@ -7,6 +7,9 @@ export interface HomePhoto {
   url: string;
   width: number;
   height: number;
+  /** Smaller copies for `srcset` (S-276); absent when only the original exists. */
+  srcSet?: string;
+  thumbUrl?: string;
 }
 
 /** A product card on Home (contracts.md ProductCard, the fields Home shows). */

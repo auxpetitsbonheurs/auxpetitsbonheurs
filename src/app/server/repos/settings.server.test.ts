@@ -72,6 +72,7 @@ describe("getSiteSettings (cached for display)", () => {
     expect((await getSiteSettings(database.db)).home).toEqual({
       tagline: { en: "Baked with love", fr: "Fait avec amour" },
       heroImagePath: "site/hero.webp",
+      heroImageVariants: [],
       featuredProductIds: ["11111111-1111-4111-8111-111111111111"],
     });
 

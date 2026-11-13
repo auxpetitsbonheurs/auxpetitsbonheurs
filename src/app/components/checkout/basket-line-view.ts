@@ -45,7 +45,8 @@ export function basketLineViews({ basket, lines, menu, notes, goneName, noteFor 
     return {
       lineId: line.lineId,
       name: name ? localized(name, locale) : t("basket.unavailableItem"),
-      imageUrl: product?.photos[0]?.url ?? null,
+      // 56 px thumbnail: the smallest stored copy when there is one (S-276).
+      imageUrl: product?.photos[0]?.thumbUrl ?? product?.photos[0]?.url ?? null,
       details: lineDetails(line, t, locale),
       quantity: line.quantity,
       unitPrice: formatRupees(line.unitPriceRs),

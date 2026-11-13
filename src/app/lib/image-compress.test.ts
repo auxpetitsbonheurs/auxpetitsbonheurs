@@ -77,6 +77,39 @@ describe("compressPhoto (AC1)", () => {
     expect(io.encodes.map((e) => e.quality).slice(0, 3)).toEqual([0.82, 0.72, 0.62]);
   });
 
+  test("S-276 AC1: 480 and 960 px wide copies are made from the same decoded photo, in its type and ratio, smaller than it", async () => {
+    const io = fakeIo({ width: 3000, height: 4000 });
+
+    const photo = await compressPhoto(file("tall.jpg", "image/jpeg", 3 * MB), io);
+
+    expect(photo.width).toBe(1200);
+    expect(photo.variants.map((v) => ({ width: v.width, height: v.height, type: v.blob.type }))).toEqual([
+      { width: 480, height: 640, type: "image/webp" },
+      { width: 960, height: 1280, type: "image/webp" },
+    ]);
+    expect(photo.variants.every((v) => v.blob.size < photo.blob.size)).toBe(true);
+    expect(io.decode).toHaveBeenCalledTimes(1);
+  });
+
+  test("S-276 AC1: where WebP cannot be written the copies are JPEG like the photo; a photo 480 px wide or less gets none", async () => {
+    const jpeg = await compressPhoto(file("photo.webp", "image/webp", MB), fakeIo({ width: 2000, height: 1500, webp: false }));
+    const small = await compressPhoto(file("small.jpg", "image/jpeg", MB), fakeIo({ width: 480, height: 360 }));
+
+    expect(jpeg.variants.map((v) => v.blob.type)).toEqual(["image/jpeg", "image/jpeg"]);
+    expect(small.variants).toEqual([]);
+  });
+
+  test("S-276 AC4: a copy the browser fails to encode is left out; the photo itself is unaffected", async () => {
+    const io = fakeIo({ width: 1600, height: 1200 });
+    const encode = io.encode;
+    io.encode = vi.fn(async (img, width, height, type, quality) => (width === 960 ? Promise.reject(new Error("canvas lost")) : encode(img, width, height, type, quality)));
+
+    const photo = await compressPhoto(file("photo.jpg", "image/jpeg", MB), io);
+
+    expect(photo.type).toBe("image/webp");
+    expect(photo.variants.map((v) => v.width)).toEqual([480]);
+  });
+
   test("a browser that cannot write WebP gets JPEG", async () => {
     const io = fakeIo({ width: 2000, height: 1500, webp: false });
 

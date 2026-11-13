@@ -5,7 +5,7 @@
 import { DAY_HORIZON } from "~/domain/availability";
 import { addDays, todayMU } from "~/domain/time";
 import type { Menu, MenuEntry } from "~/domain/menu";
-import { publicImageUrl } from "~/lib/images";
+import { webPhoto } from "~/lib/images";
 import type { Database } from "~/server/db.server";
 import { listMenuProducts } from "~/server/repos/catalogue.server";
 import { getSiteSettings } from "~/server/repos/settings.server";
@@ -41,7 +41,7 @@ export async function loadMenu({ db, supabaseUrl, now }: MenuSources): Promise<M
     basePriceRs: r.basePriceRs,
     status: r.status,
     minQuantity: r.minQuantity,
-    photos: r.photos.map((p) => ({ url: publicImageUrl(p.storagePath, supabaseUrl), width: p.width, height: p.height })),
+    photos: r.photos.map((p) => webPhoto(p.storagePath, p.width, p.height, p.variantWidths, supabaseUrl)),
     optionGroups: r.optionGroups,
     season: r.season,
     noticeDays: r.noticeDays,

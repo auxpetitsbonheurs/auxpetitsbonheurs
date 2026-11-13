@@ -22,6 +22,7 @@
     "test:e2e": "playwright test",
     "seed:sample": "tsx scripts/seed-sample.ts",
     "seed:menu": "tsx scripts/seed-menu.ts",
+    "backfill:photo-variants": "tsx scripts/backfill-photo-variants.ts",
     "cpu:load": "node scripts/cpu-load.ts",
     "cpu:report": "node scripts/cpu-report.ts",
     "check:launch": "node scripts/launch-readiness.ts",

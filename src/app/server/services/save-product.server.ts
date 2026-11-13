@@ -15,7 +15,7 @@ import type { Database } from "~/server/db.server";
 import type { StorageGateway, UploadGateway } from "~/server/storage.server";
 import { isUniqueViolation } from "./place-order.server";
 import { replaceOptionGroups } from "./product-options.server";
-import { type PhotoInput, photosAcceptable, replacePhotos, storedPhotos } from "./product-photos.server";
+import { type PhotoInput, type VerifiedPhotos, photosAcceptable, replacePhotos, storedPhotos } from "./product-photos.server";
 import { isStoragePath, removePhotos } from "./storage-cleanup.server";
 
 export type SaveProductResult =
@@ -50,7 +50,7 @@ class Refused extends Error {
 
 interface PhotoPlan {
   posted: PhotoInput[];
-  verified: Set<string>;
+  verified: VerifiedPhotos;
 }
 
 /** Writes the posted photo list, or refuses; returns the paths whose files must go. */
@@ -139,8 +139,9 @@ async function planPhotos(db: Database, input: ProductInput, context: SaveProduc
   if (!input.photos) return null;
   const known = await storedPhotos(db, input.id);
   const check = { adminId: context.adminId, uploadSessionId: input.uploadSessionId, uploads: context.uploads ?? null };
-  if (!(await photosAcceptable(db, input.photos, known, check))) return "rejected";
-  return { posted: input.photos, verified: new Set(input.photos.map((p) => p.path).filter((path) => !known.has(path))) };
+  const verified = await photosAcceptable(db, input.photos, known, check);
+  if (!verified) return "rejected";
+  return { posted: input.photos, verified };
 }
 
 export async function saveProduct(db: Database, input: ProductInput, context: SaveProductContext): Promise<SaveProductResult> {

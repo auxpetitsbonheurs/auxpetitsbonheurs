@@ -7,7 +7,8 @@ import { Link } from "react-router";
 import { localized } from "~/i18n/localized";
 import { useI18n } from "~/i18n/react";
 import { formatRupees, localePath } from "~/lib/locale";
-import type { HomeCategory, HomeData, HomeProduct, HomePromoCard } from "~/domain/home";
+import type { HomeCategory, HomeData, HomePhoto, HomeProduct, HomePromoCard } from "~/domain/home";
+import { CARD_SIZES, CATEGORY_SIZES, GALLERY_PREVIEW_SIZES, HERO_SIZES } from "~/lib/photo-sizes";
 
 const iconProps = { "aria-hidden": true, strokeWidth: 1.5 } as const;
 
@@ -33,10 +34,13 @@ export function HomeHero({ hero }: { hero: HomeData["hero"] }) {
       </div>
       <div className="relative order-1 md:order-2 md:min-h-[28rem]">
         {/* React hoists this into <head>: the LCP photo is requested before the route scripts compete for the link. */}
-        {hero.photo && <link rel="preload" as="image" href={hero.photo.url} fetchPriority="high" />}
+        {/* With smaller copies the preload carries the same srcset/sizes, so it fetches the copy the img will use (S-276). */}
+        {hero.photo && <link rel="preload" as="image" href={hero.photo.url} imageSrcSet={hero.photo.srcSet} imageSizes={hero.photo.srcSet && HERO_SIZES} fetchPriority="high" />}
         {hero.photo ? (
           <img
             src={hero.photo.url}
+            srcSet={hero.photo.srcSet}
+            sizes={hero.photo.srcSet && HERO_SIZES}
             alt={t("home.heroAlt")}
             width={hero.photo.width}
             height={hero.photo.height}
@@ -91,7 +95,7 @@ function SectionHeading({ id, children }: { id: string; children: ReactNode }) {
 const CATEGORY_ICONS: Record<string, typeof Cake> = { cake: Cake, cupcake_box: Cake, dessert: Cookie, seasonal: Leaf };
 
 /** A photo that reserves its box (no layout shift), lazy (below the hero). */
-function CardPhoto({ photo, alt, icon }: { photo: { url: string; width: number; height: number } | null; alt: string; icon: typeof Cake }) {
+function CardPhoto({ photo, alt, icon, sizes }: { photo: HomePhoto | null; alt: string; icon: typeof Cake; sizes: string }) {
   if (!photo) {
     const Icon = icon;
     return (
@@ -100,7 +104,20 @@ function CardPhoto({ photo, alt, icon }: { photo: { url: string; width: number; 
       </div>
     );
   }
-  return <img src={photo.url} alt={alt} width={photo.width} height={photo.height} loading="lazy" fetchPriority="low" decoding="async" className="aspect-4/3 h-auto w-full bg-decorative object-cover" />;
+  return (
+    <img
+      src={photo.url}
+      srcSet={photo.srcSet}
+      sizes={photo.srcSet && sizes}
+      alt={alt}
+      width={photo.width}
+      height={photo.height}
+      loading="lazy"
+      fetchPriority="low"
+      decoding="async"
+      className="aspect-4/3 h-auto w-full bg-decorative object-cover"
+    />
+  );
 }
 
 /** One card per product type with live products (AC1), a link to its section of the menu. */
@@ -110,7 +127,7 @@ function CategoryCard({ category }: { category: HomeCategory }) {
   return (
     <li className="relative flex w-full flex-col overflow-hidden rounded-card border border-border bg-card text-center min-[20rem]:w-[calc(50%-0.5rem)] md:w-[calc(25%-0.75rem)]">
       {/* The name is the link (alt="" so it is not read twice); its hit area covers the card. */}
-      <CardPhoto photo={category.photo} alt="" icon={CATEGORY_ICONS[category.type] ?? Cake} />
+      <CardPhoto photo={category.photo} alt="" icon={CATEGORY_ICONS[category.type] ?? Cake} sizes={CATEGORY_SIZES} />
       <h3 className="px-2 pt-3 text-lg leading-snug wrap-anywhere md:text-xl">
         <Link
           to={`${localePath(locale, "/menu")}#type-${category.type}`}
@@ -150,7 +167,7 @@ function ProductCard({ product }: { product: HomeProduct }) {
   const name = localized(product.name, locale);
   return (
     <li className="relative flex flex-col overflow-hidden rounded-card border border-border bg-card">
-      <CardPhoto photo={product.photo} alt="" icon={Cake} />
+      <CardPhoto photo={product.photo} alt="" icon={Cake} sizes={CARD_SIZES} />
       <div className="flex flex-1 flex-col gap-1 p-3 min-[23rem]:p-4">
         <h3 className="text-lg leading-snug wrap-anywhere">
           <Link
@@ -282,7 +299,18 @@ export function HomeGalleryPreview({ photos }: { photos: HomeData["gallery"] }) 
       <ul className="mt-6 grid grid-cols-2 gap-2 min-[23rem]:grid-cols-3 md:gap-4">
         {photos.map((photo) => (
           <li key={photo.url}>
-            <img src={photo.url} alt={photo.alt} width={photo.width} height={photo.height} loading="lazy" fetchPriority="low" decoding="async" className="aspect-square h-auto w-full rounded-sm bg-decorative object-cover" />
+            <img
+              src={photo.url}
+              srcSet={photo.srcSet}
+              sizes={photo.srcSet && GALLERY_PREVIEW_SIZES}
+              alt={photo.alt}
+              width={photo.width}
+              height={photo.height}
+              loading="lazy"
+              fetchPriority="low"
+              decoding="async"
+              className="aspect-square h-auto w-full rounded-sm bg-decorative object-cover"
+            />
           </li>
         ))}
       </ul>
