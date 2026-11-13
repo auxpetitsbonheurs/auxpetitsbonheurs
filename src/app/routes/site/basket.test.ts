@@ -234,6 +234,43 @@ describe("placeOrder from the basket page (S-013 AC11, AC2 envelope)", () => {
     expect(rows).toEqual([{ locale: "fr" }]);
   });
 
+  test("RL-order (S-228 AC2): a 6th order from one IP within 10 minutes is RATE_LIMITED with Retry-After, values kept; another IP still orders", async () => {
+    const id = await insertProduct(database.db);
+    const cookie = cookieWith([{ lineId: "a", productId: id, quantity: 1 }]);
+    const fromIp = (ip: string, n: number) =>
+      action(routeArgs(database, { path: "/basket", cookie, headers: { "cf-connecting-ip": ip }, form: form({ idempotencyKey: `6f1c1c55-8f42-4d39-9a51-2f0d5a3f0d${String(n).padStart(2, "0")}` }) }) as never);
+    for (let n = 0; n < 5; n += 1) expect(((await fromIp("203.0.113.7", n)) as Response).status).toBe(302);
+
+    const limited = (await fromIp("203.0.113.7", 5)) as unknown as {
+      data: { error: { code: string; fields: Record<string, string> }; values: Record<string, string> };
+      init: { status: number; headers: Record<string, string> };
+    };
+    expect(limited.init.status).toBe(429);
+    expect(limited.data.error.code).toBe("RATE_LIMITED");
+    expect(Number(new Headers(limited.init.headers).get("Retry-After"))).toBeGreaterThan(0);
+    expect(limited.data.error.fields.form).toMatch(/WhatsApp/);
+    expect(limited.data.values["contact.name"]).toBe("Aisha");
+    expect(((await fromIp("198.51.100.4", 6)) as Response).status).toBe(302);
+    const { rows } = await database.client.query<{ n: number }>("select count(*)::int as n from orders");
+    expect(rows).toEqual([{ n: 6 }]);
+  });
+
+  test("RL-order never refuses a replay of a placed order (spec step 2 before step 3): the original redirect comes back", async () => {
+    const id = await insertProduct(database.db);
+    const cookie = cookieWith([{ lineId: "a", productId: id, quantity: 1 }]);
+    const ip = { "cf-connecting-ip": "203.0.113.9" };
+    const send = (n: number) =>
+      action(routeArgs(database, { path: "/basket", cookie, headers: ip, form: form({ idempotencyKey: `7f1c1c55-8f42-4d39-9a51-2f0d5a3f0d${String(n).padStart(2, "0")}` }) }) as never) as Promise<Response>;
+    const first = await send(0);
+    for (let n = 1; n < 5; n += 1) await send(n);
+
+    for (let i = 0; i < 3; i += 1) {
+      const replay = await send(0);
+      expect(replay.status).toBe(302);
+      expect(replay.headers.get("Location")).toBe(first.headers.get("Location"));
+    }
+  });
+
   test("a no-JavaScript delivery post succeeds first time: the total for the chosen fulfilment is read", async () => {
     const id = await insertProduct(database.db);
     const cookie = cookieWith([{ lineId: "a", productId: id, quantity: 1 }]);

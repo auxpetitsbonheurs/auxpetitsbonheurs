@@ -34,6 +34,8 @@ import { confirmationContext } from "~/server/confirmation-cookie.server";
 import { Uuid } from "~/server/contracts/shared";
 import { RemoveLineInput, UpdateLineInput } from "~/server/contracts/site";
 import { requestDbContext } from "~/server/db.server";
+import { clientIp } from "~/server/auth-rate-limit.server";
+import { consumeOrderRateLimit } from "~/server/order-rate-limit.server";
 import { loadMenu } from "~/server/menu.server";
 import { noStore } from "~/server/response-headers.server";
 import { publicConfigContext } from "~/server/public-config.server";
@@ -210,6 +212,17 @@ async function submitOrder(form: Record<string, unknown>, args: Route.ActionArgs
   const basket = readBasket(request);
   // One instant for the order's created_at and its confirmation cookie (the payment deadline runs from it).
   const now = context.get(clockContext).now();
+  // RL-order (S-228 AC2; a replay of a placed order is never counted): bot and spam orders stop here, before any order or email is written. The
+  // basket and typed details stay on the page, which names WhatsApp as the way to finish now.
+  const limited = await consumeOrderRateLimit(context.get(requestDbContext).db, clientIp(request), form.idempotencyKey, now);
+  if (!limited.ok) {
+    const minutes = Math.max(1, Math.ceil(limited.retryAfterSeconds / 60));
+    return actionError("RATE_LIMITED", locale, {
+      fields: { form: translate("checkout.errors.rateLimited", locale, { minutes }) },
+      extra: { values: echo(form), retryAfterSeconds: limited.retryAfterSeconds },
+      headers: { "Retry-After": String(limited.retryAfterSeconds) },
+    });
+  }
   const result = await timed(context, "place-order", () => placeOrder(form, {
     db: context.get(requestDbContext).db,
     now,

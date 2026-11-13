@@ -30,6 +30,8 @@ export const ADMIN_MODULE_POLICY = {
   gallery: "admin",
   customers: "admin",
   sales: "admin",
+  // Sales summary CSV download (E-09 S-178, S-179): same audience as Sales.
+  "sales-csv": "admin",
   profile: "admin",
   // Brand pages (E-13 S-246, S-247): Admins may edit page content (Lead decision 1, 2026-11-12).
   pages: "admin",
