@@ -290,7 +290,7 @@ test.describe("S-043 hide or mark sold out", () => {
     await expect(page.getByRole("status").filter({ hasText: `${product.name} is marked sold out.` })).toBeVisible();
     await expect(rowOf(page, product.name)).toContainText("Sold out");
     await page.goto(`/menu/${product.slug}`);
-    await expect(page.getByText("Sold out", { exact: true })).toBeVisible();
+    await expect(page.getByText("Sold out this week", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Add to basket" })).toHaveCount(0);
   });
 
