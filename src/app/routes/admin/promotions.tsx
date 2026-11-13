@@ -1,6 +1,6 @@
 import { Plus, Tag } from "lucide-react";
 import { type FormEvent, useEffect, useRef } from "react";
-import { Link, useFetcher } from "react-router";
+import { Link, isRouteErrorResponse, useFetcher, useRevalidator, useRouteError } from "react-router";
 import { AdminErrorBoundary } from "~/components/admin/admin-states";
 import { Alert } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
@@ -76,7 +76,24 @@ export function meta({ loaderData }: Route.MetaArgs) {
   return [{ title: `${loaderData?.title ?? ""} | Aux petits bonheurs` }, { name: "robots", content: "noindex, nofollow" }];
 }
 
-export const ErrorBoundary = AdminErrorBoundary;
+/** Load failure (S-052 AC6): the page keeps its heading and offers Retry in place; 403/404 as any admin page. */
+export function ErrorBoundary(props: Route.ErrorBoundaryProps) {
+  const error = useRouteError();
+  const { t } = useI18n();
+  const revalidator = useRevalidator();
+  if (isRouteErrorResponse(error) && (error.status === 403 || error.status === 404)) return <AdminErrorBoundary error={props.error} />;
+  return (
+    <>
+      <h1>{t("admin.nav.promotions")}</h1>
+      <Alert tone="danger" role="alert" title={t("admin.promotions.loadFailedTitle")} className="mt-6">
+        <p>{t("admin.promotions.loadFailedBody")}</p>
+        <Button type="button" variant="outline" className="mt-3" onClick={() => void revalidator.revalidate()} aria-busy={revalidator.state === "loading" || undefined}>
+          {t("admin.states.retry")}
+        </Button>
+      </Alert>
+    </>
+  );
+}
 
 type Row = Route.ComponentProps["loaderData"]["promotions"][number];
 type Answer = { ok: true; intent: string; active?: boolean } | { ok: false; error: { message: string; fields?: Record<string, string> } };

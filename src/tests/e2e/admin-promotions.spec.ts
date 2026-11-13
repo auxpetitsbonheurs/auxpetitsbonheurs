@@ -93,4 +93,23 @@ test.describe("S-052, S-053 admin promotions", () => {
     await expect(page.getByRole("listitem").filter({ hasText: title })).toHaveCount(0);
     await expect.poll(async () => (await db`select 1 from promotion where title_en = ${title}`).length).toBe(0);
   });
+
+  test("S-052 AC6: a load failure keeps the heading and shows an Alert with Retry; Retry loads the list", async ({ page, db }) => {
+    const admin = await createE2eAdmin(db, { role: "admin" });
+    const title = `Retry sale ${randomInt(1e6)}`;
+    await db`insert into promotion (title_en, starts_at, ends_at, placement) values (${title}, '2044-04-04T05:00Z', '2044-04-04T14:00Z', 'card')`;
+    await signIn(page, admin, "/admin/more");
+    await hydrated(page);
+    await page.route("**/admin/promotions.data*", (route) => route.fulfill({ status: 500, body: "down" }));
+
+    await page.getByRole("link", { name: "Promotions" }).click();
+
+    await expect(page.getByRole("heading", { level: 1, name: "Promotions" })).toBeVisible();
+    const alert = page.getByRole("alert").filter({ hasText: "The promotions did not load" });
+    await expect(alert).toBeVisible();
+    await page.unroute("**/admin/promotions.data*");
+    await alert.getByRole("button", { name: "Try again" }).click();
+    await expect(page.getByRole("link", { name: `Edit ${title}` })).toBeVisible();
+    await expect(alert).toHaveCount(0);
+  });
 });
