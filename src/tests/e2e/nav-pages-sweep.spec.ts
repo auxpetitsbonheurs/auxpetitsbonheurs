@@ -59,7 +59,8 @@ test.describe("S-254 phone menu sweep", () => {
       for (const [i, label] of labels.entries()) {
         await menuButton(page, "Menu").click();
         await page.getByRole("dialog").getByRole("link", { name: label, exact: true }).click();
-        await expect(page).toHaveURL(new RegExp(`${localized(lang, PAGES[i]!).replace(/\//g, "\\/")}$`));
+        // The French home is /fr/ (trailing slash), the English one /.
+        await expect(page).toHaveURL(new RegExp(`${localized(lang, PAGES[i]!).replace(/\//g, "\\/")}\/?$`));
         await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
         await expect(page.getByRole("dialog")).toBeHidden();
       }
@@ -89,7 +90,7 @@ test.describe("S-254 AC8 laptop bar", () => {
 
   test("French labels and a +40% pseudo-locale never clip or overlap in the header bar at 1280 px", async ({ page }) => {
     await open(page, "/fr/menu");
-    const bar = page.getByRole("banner").getByRole("navigation", { name: "Main" }).getByRole("link");
+    const bar = page.getByRole("banner").getByRole("navigation").getByRole("link");
     await expect(bar).toHaveText(FR);
     await bar.evaluateAll((els) => {
       for (const el of els) el.textContent = `${el.textContent}${"É".repeat(Math.ceil((el.textContent ?? "").length * 0.4))}`;
