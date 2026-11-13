@@ -33,3 +33,4 @@ As a customer who just sent an order, I want a clear confirmation with my order 
 - Delivered by E-01 S-015 (tests: src/app/routes/site/order-confirmed.test.ts, src/tests/e2e/checkout.spec.ts "S-015 order confirmation"); the payment block on this page belongs to Juice payment (S-278).
 - AC7: the buttons are now "Copy order number", "Copy tracking link" and "Share tracking link" (EN/FR), each distinct; "Copied" is announced politely.
 - AC4 deferred to the accounts work (E-11, parallel: migration 0014 / contract v0.41): the "Save my details" card needs its sign-up action. `offerSaveDetails` stays false until then.
+- 2026-11-13 (E-11 S-215): the card is built; `offerSaveDetails` is true for a website order when the browser has no customer session (see S-215 build notes).

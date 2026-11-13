@@ -267,7 +267,10 @@
       "copyFailed": "La copie n'a pas fonctionné. Sélectionnez le texte et copiez-le vous-même.",
       "leftOutTitle": "Non inclus dans votre commande",
       "leftOutBody_one": "Cet article n'était plus disponible au moment de votre commande : {{names}}.",
-      "leftOutBody_other": "Ces articles n'étaient plus disponibles au moment de votre commande : {{names}}."
+      "leftOutBody_other": "Ces articles n'étaient plus disponibles au moment de votre commande : {{names}}.",
+      "saveDetailsTitle": "Gardez vos coordonnées pour la prochaine fois",
+      "saveDetailsBody": "En un geste, créez un compte avec l’e-mail de cette commande : votre prochaine commande sera plus rapide. Vous choisirez un mot de passe après avoir confirmé votre e-mail.",
+      "saveDetailsAction": "Garder mes coordonnées"
     },
     "notFound": {
       "metaTitle": "Commande introuvable",
@@ -2306,6 +2309,14 @@
     "languages": {
       "en": "English",
       "fr": "Français"
+    },
+    "saveDetails": {
+      "title": "Garder mes coordonnées",
+      "intro": "Nous créons un compte pour l’e-mail de votre commande et vous envoyons un lien pour le confirmer. Pas de mot de passe maintenant : vous en choisirez un après confirmation.",
+      "submit": "Garder mes coordonnées",
+      "note": "Vos commandes passées avec cet e-mail apparaîtront dans Mes commandes une fois l’e-mail confirmé.",
+      "checkBody": "Nous avons envoyé un lien à {{email}}. Ouvrez-le pour confirmer votre e-mail ; vos commandes apparaîtront alors dans Mes commandes.",
+      "inUse": "Cet e-mail a déjà un compte. Connectez-vous pour voir vos commandes."
     }
   },
   "reviews": {

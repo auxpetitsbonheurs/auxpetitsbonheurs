@@ -36,6 +36,7 @@ function customerPages(locale: "en" | "fr") {
       route("account/reset", "routes/account/reset.tsx", { id: `account-reset-${locale}` }),
       route("account/sign-out", "routes/account/sign-out.tsx", { id: `account-sign-out-${locale}` }),
       route("account/orders", "routes/account/orders.tsx", { id: `account-orders-${locale}` }),
+      route("account/save-details", "routes/account/save-details.tsx", { id: `account-save-details-${locale}` }),
     ]),
     route("*", "routes/site/not-found.tsx", { id: `not-found-${locale}` }),
   ];

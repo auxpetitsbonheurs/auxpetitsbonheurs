@@ -147,6 +147,25 @@ export async function listAccountOrders(db: Executor, customerId: string, confir
     .limit(ACCOUNT_ORDERS_LIMIT);
 }
 
+/** The order behind a Save my details link (S-215): a website order that has an email. */
+export interface SaveDetailsOrder {
+  email: string;
+  name: string;
+  phone: string;
+  locale: Locale;
+}
+
+/** By tracking token; null for an unknown token, a custom request or an order without an email (AC5, AC6). */
+export async function findSaveDetailsOrder(db: Executor, trackingToken: string): Promise<SaveDetailsOrder | null> {
+  const [row] = await db
+    .select({ email: orders.contactEmail, name: orders.contactName, phone: orders.contactPhone, locale: orders.locale, source: orders.source })
+    .from(orders)
+    .where(eq(orders.trackingToken, trackingToken))
+    .limit(1);
+  if (!row || row.source !== "website" || !row.email) return null;
+  return { email: row.email.toLowerCase(), name: row.name, phone: row.phone, locale: row.locale };
+}
+
 /** Orders My orders will show for this row and confirmed address (contracts `account/orders` filter). */
 async function countLinkedOrders(db: Executor, customerId: string, email: string): Promise<number> {
   const [row] = await db

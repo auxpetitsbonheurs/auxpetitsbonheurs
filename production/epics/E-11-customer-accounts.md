@@ -26,8 +26,8 @@ J10: guest "Save my details" then confirm email, sign in, My orders shows prior 
 | S-212 | Checkout prefills my details and offers my saved addresses | ready | 3 |
 | S-213 | See my current and past orders with their status | in-progress | 3 |
 | S-214 | Reorder a past order at today's prices (cut #3) | ready | 5 |
-| S-215 | Offer "Save my details" after a guest order (cut #4) | ready | 3 |
-| S-216 | Earlier guest orders appear only after I confirm my email (cut #4) | in-progress | 5 |
+| S-215 | Offer "Save my details" after a guest order (cut #4) | review | 3 |
+| S-216 | Earlier guest orders appear only after I confirm my email (cut #4) | review | 5 |
 | S-217 | Count account usage without tracking anyone | in-progress | 2 |
 | S-218 | Account screens pass an accessibility and language sweep | ready | 3 |
 | S-219 | Journey J10 works end to end | ready | 3 |

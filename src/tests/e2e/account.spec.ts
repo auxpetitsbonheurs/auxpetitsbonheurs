@@ -184,3 +184,28 @@ test.describe("S-209 reset and S-210 profile", () => {
     await checkLayout(page);
   });
 });
+
+test.describe("S-215 Save my details and S-216 linking", () => {
+  test("S-215 AC2, AC9 + S-216 AC1, AC4: one tap, check your email; after confirming, both earlier orders are in My orders", async ({ page, db }) => {
+    const email = e2eEmail("save");
+    const first = await createOrderFor(db, email);
+    const second = await createOrderFor(db, email);
+    await hydrated(page, `/account/save-details?t=${second.trackingToken}`);
+    await expect(page.getByText(email)).toBeVisible();
+    await page.getByRole("button", { name: "Save my details" }).click();
+    const status = page.getByRole("status").filter({ hasText: "Check your email to confirm" });
+    await expect(status).toBeFocused();
+    await checkLayout(page);
+
+    // Not confirmed yet: no account session, nothing to see (S-216 AC4).
+    await page.goto("/account/orders");
+    await expect(page).toHaveURL(/\/account\/sign-in/);
+
+    await page.goto(await emailedLink(email));
+    await page.getByRole("link", { name: "Skip for now" }).click();
+    await expect(page).toHaveURL(/\/account\/orders$/);
+    for (const order of [first, second]) {
+      await expect(page.getByRole("link", { name: `Track order APB-${String(order.number).padStart(4, "0")}` })).toBeVisible();
+    }
+  });
+});
