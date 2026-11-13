@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { Form, Link, redirect } from "react-router";
 import { AuthCard, FocusedStatus, LanguageField, RefusalAlert, isRefusal, usePosting } from "~/components/account/account-ui";
+import { BotCheck } from "~/components/account/bot-check";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { TextField } from "~/components/ui/text-field";
 import { t as translate } from "~/i18n/catalog.server";
@@ -15,7 +16,7 @@ import { rateLimitedResult } from "~/server/auth-rate-limit.server";
 import { parseSignUp } from "~/server/contracts/account";
 import { customerSession, pageLocale, safeCustomerNext } from "~/server/customer-auth.server";
 import { assertSameOrigin } from "~/server/origin.server";
-import { consumeSignUp, signUpCustomer } from "~/server/services/customer-auth.server";
+import { botCheckPassed, consumeSignUp, signUpCustomer } from "~/server/services/customer-auth.server";
 import type { Route } from "./+types/sign-up";
 import { PrivacyNoteLink } from "~/components/site/privacy-link";
 
@@ -42,6 +43,7 @@ export async function action(args: Route.ActionArgs) {
   }
   const limit = await consumeSignUp(args, "customer.signUp");
   if (!limit.ok) return rateLimitedResult(limit.retryAfterSeconds, locale, { values });
+  if (!(await botCheckPassed(args, form))) return actionError("BOT_CHECK_FAILED", locale, { extra: { values } });
   const next = typeof form.next === "string" && form.next !== "" ? safeCustomerNext(form.next, parsed.value.locale) : localePath(parsed.value.locale, "/account/orders");
   await signUpCustomer(args, parsed.value, next);
   return { ok: true as const, email: parsed.value.email, values, sentAt: Date.now() };
@@ -135,6 +137,7 @@ export default function SignUp({ loaderData, actionData }: Route.ComponentProps)
         />
         <TextField id="phone" name="phone" type="tel" label={t("account.signUp.phone")} hint={t("account.signUp.phoneHint")} autoComplete="tel" inputMode="tel" defaultValue={values?.phone} error={fields?.phone} />
         <LanguageField defaultValue={values?.locale || locale} label={t("account.signUp.language")} />
+        <BotCheck />
         <SubmitButton pending={pending} pendingText={t("account.signUp.creating")} size="lg" className="w-full">
           {t("account.signUp.submit")}
         </SubmitButton>
@@ -147,6 +150,7 @@ export default function SignUp({ loaderData, actionData }: Route.ComponentProps)
         </Link>
       </p>
       <p className="mt-2 text-sm text-muted-foreground">{t("account.common.guestNote")}</p>
+      <PrivacyNoteLink className="mt-2" />
     </AuthCard>
   );
 }

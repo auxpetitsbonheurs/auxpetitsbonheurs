@@ -2,7 +2,7 @@
 // case-insensitive; French checked when it has text). Warning only.
 import { describe, expect, test } from "vitest";
 import { overlappingWindows, isCalendarDate, minutesOf, newWindowId } from "./availability";
-import { policiesMissingEntries } from "./settings";
+import { policiesMissingEntries, privacyNoteMissingReviews } from "./settings";
 
 describe("policiesMissingEntries (S-059 AC4)", () => {
   test.each([
@@ -41,3 +41,16 @@ describe("availability helpers (S-056, S-057)", () => {
     expect(newWindowId(() => 0.5)).toBe("w-7fffff");
   });
 });
+
+describe("privacyNoteMissingReviews (E-14 S-268 AC4)", () => {
+  test.each([
+    [{ en: "We keep your orders. Reviews show your first name and initial; delete yours any time." }, false],
+    [{ en: "We keep your orders for five years." }, true],
+    [null, true],
+    [{ en: "Your review shows your first name.", fr: "Nous gardons vos commandes." }, true],
+    [{ en: "Your review shows your first name.", fr: "Votre avis montre votre prénom." }, false],
+  ])("%j -> missing %s", (note, missing) => {
+    expect(privacyNoteMissingReviews(note)).toBe(missing);
+  });
+});
+

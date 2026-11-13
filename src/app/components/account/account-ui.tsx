@@ -90,25 +90,27 @@ export function AccountFrame({ title, children }: { title: string; children: Rea
   const links = [
     { to: localePath(locale, "/account"), label: t("account.nav.profile"), end: true },
     { to: localePath(locale, "/account/orders"), label: t("account.nav.orders"), end: false },
+    { to: localePath(locale, "/account/addresses"), label: t("account.nav.addresses"), end: false },
   ];
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1>{title}</h1>
+        {/* Long French titles ("Mes coordonnées") break at 200% zoom on a 320 px phone (S-218 AC3). */}
+        <h1 className="min-w-0 max-w-full hyphens-auto wrap-anywhere">{title}</h1>
         <Form method="post" action={localePath(locale, "/account/sign-out")}>
-          <SubmitButton variant="outline" pending={signingOut} pendingText={t("account.nav.signingOut")}>
+          <SubmitButton variant="outline" pending={signingOut} pendingText={t("account.nav.signingOut")} className="max-w-full shrink whitespace-normal px-3">
             {t("account.nav.signOut")}
           </SubmitButton>
         </Form>
       </div>
       <nav aria-label={t("account.nav.label")}>
-        <ul className="flex flex-wrap gap-2">
+        <ul className="flex flex-wrap gap-2 [&>li]:max-w-full">
           {links.map((link) => (
             <li key={link.to}>
               <NavLink
                 to={link.to}
                 end={link.end}
-                className="inline-flex min-h-11 items-center rounded-md border-2 border-border px-4 font-semibold aria-[current=page]:border-primary aria-[current=page]:bg-primary aria-[current=page]:text-primary-foreground"
+                className="inline-flex min-h-11 max-w-full items-center rounded-md border-2 border-border px-3 text-center font-semibold wrap-anywhere aria-[current=page]:border-primary aria-[current=page]:bg-primary aria-[current=page]:text-primary-foreground"
               >
                 {link.label}
               </NavLink>
@@ -130,7 +132,7 @@ export function LanguageField({ defaultValue, label }: { defaultValue: string; l
       <div className="mt-2 flex flex-wrap gap-2">
         {(["en", "fr"] as const).map((value) => (
           // The whole 44 px box is the radio (like RadioCard): the native input fills it, invisible; the dot is drawn.
-          <label key={value} className="relative inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-md border-2 border-input bg-card px-4 has-checked:border-primary has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring">
+          <label key={value} className="relative inline-flex min-h-12 max-w-full cursor-pointer items-center gap-2 rounded-md border-2 border-input bg-card px-2 has-checked:border-primary min-[20rem]:px-4 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring">
             <input type="radio" name="locale" value={value} defaultChecked={defaultValue === value} className="peer absolute inset-0 size-full cursor-pointer appearance-none rounded-md" />
             <span aria-hidden="true" className="size-5 shrink-0 rounded-full border-2 border-input bg-card peer-checked:border-[6px] peer-checked:border-primary" />
             <span lang={value}>{t(`account.languages.${value}`)}</span>

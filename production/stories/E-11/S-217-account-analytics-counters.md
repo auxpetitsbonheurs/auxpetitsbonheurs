@@ -1,5 +1,5 @@
 # S-217: Count account usage without tracking anyone
-Status: in-progress
+Status: review
 Epic: E-11-customer-accounts
 Spec: docs/specs/features/customer-accounts.md#analytics-events
 Estimate: 2 pts
@@ -28,3 +28,8 @@ As the Owner, I want simple counts of sign-ups, sign-ins and reorders, so that I
 
 ## Build notes (2026-11-13)
 - Counter store: table `usage_counter` (day, event, props, count; migration 0017), written after the response; no PII, no cookie. `account_created` and `sign_in` are counted; the other events arrive with their stories.
+- All counters now exist except `save_details_shown` (see S-215 notes: counting it would add a database write to the confirmation page's no-database path): `account_created` (signup, link, save_details + linkedOrders), `sign_in` (password, magic_link), `save_details_completed`, `reorder_started` (skippedCount), `address_saved` (atCheckout).
+- AC1, AC2, AC4, AC5 tested in src/app/server/usage.server.test.ts. AC3 (no tracking cookie, no third-party script) is checked in the S-218 sweep (src/tests/e2e/account.spec.ts).
+
+## Build notes (2026-11-14)
+- AC3 checked in src/tests/e2e/account-a11y.spec.ts: only first-party cookies, no request to another origin on the account pages.

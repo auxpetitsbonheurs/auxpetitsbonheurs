@@ -45,17 +45,42 @@ import { alertAdmins } from "~/server/notify/admin-alerts.server";
 import { timed } from "~/server/server-timing.server";
 import { type PlaceOrderResult, placeOrder } from "~/server/services/place-order.server";
 import { turnstileContext } from "~/server/turnstile.server";
+import { customerSession, hasSignedInHint } from "~/server/customer-auth.server";
+import { accountHint } from "~/lib/account-hint";
+import { whatsappHref } from "~/lib/contact";
+import { type ReorderFlash, clearReorderFlash, readReorderFlash } from "~/server/services/reorder.server";
+import type { CheckoutAddress } from "~/components/checkout/fulfilment-section";
+import { addAddress, listAddresses } from "~/server/repos/customer-addresses.server";
+import { recordUsage } from "~/server/usage.server";
 import type { Route } from "./+types/basket";
 
 /** no-store on the page, data requests and action results: the form carries a per-render idempotency key (M2). */
-export const middleware: Route.MiddlewareFunction[] = [noStore];
+/** E-11 S-214: the reorder note is shown once; the response that reads it clears it. */
+const clearReorderNote: Route.MiddlewareFunction = async ({ request }, next) => {
+  const response = (await next()) as Response;
+  if (request && readReorderFlash(request)) response.headers.append("Set-Cookie", clearReorderFlash);
+  return response;
+};
+
+export const middleware: Route.MiddlewareFunction[] = [noStore, clearReorderNote];
 
 /**
  * `site/basket` loader (contracts.md, ADR-0004): the visitor's basket lines and the public
  * menu they are priced from (the same data GET /api/menu serves, also seeding the browser
  * cache). Lines are priced by the view with `priceBasket`, on the server and in the browser.
  */
-export async function loader({ request, context }: Route.LoaderArgs) {
+/**
+ * The signed-in customer (E-11 S-212), read only when the browser says it has a customer session
+ * (`apb_customer`), so guests' checkout does no auth work. Never gates checkout (AC5).
+ */
+async function signedInCustomer(args: Route.LoaderArgs | Route.ActionArgs) {
+  if (!hasSignedInHint(args.request)) return null;
+  const session = await customerSession(args).catch(() => null);
+  return session?.status === "customer" ? session.customer : null;
+}
+
+export async function loader(args: Route.LoaderArgs) {
+  const { request, context } = args;
   const db = context.get(requestDbContext).db;
   const basket = readBasket(request);
   const menu = await timed(context, "menu", () =>
@@ -70,7 +95,50 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     today: menu.data.today,
     // Fresh per render; a repeated submit with it returns the same order (FR-023, S-014).
     idempotencyKey: crypto.randomUUID(),
+    // S-212 AC1: a signed-in customer's details, editable for this order only (AC5).
+    prefill: await prefillFor(args),
+    savedAddresses: await savedAddressesFor(args),
+    // S-214 AC1, AC4, AC9: what a reorder could not add, shown once on the basket.
+    reorderNote: readReorderFlash(request),
   };
+}
+
+/** The saved address the form chose, when it is the customer's own (anything else: the typed fields). */
+async function chosenAddress(args: Route.ActionArgs, customerId: string, raw: unknown): Promise<CheckoutAddress | null> {
+  if (typeof raw !== "string" || raw === "new") return null;
+  const addresses = await listAddresses(args.context.get(requestDbContext).db, customerId);
+  return addresses.find((a) => a.id === raw) ?? null;
+}
+
+/**
+ * "Save this address" (S-212 AC3): after the order is placed, the typed delivery address joins the
+ * account (label = its first line); the first one saved becomes the default. A failure never
+ * touches the order, which is already placed.
+ */
+async function keepTypedAddress(args: Route.ActionArgs, customerId: string, form: Record<string, unknown>) {
+  if (form.saveAddress !== "on" || form.fulfilment !== "delivery" || typeof form.address !== "string" || form.address.trim() === "") return;
+  const db = args.context.get(requestDbContext).db;
+  const address = form.address.trim().slice(0, 500);
+  const landmark = typeof form.landmark === "string" && form.landmark.trim() !== "" ? form.landmark.trim().slice(0, 200) : null;
+  try {
+    const existing = await listAddresses(db, customerId);
+    if (existing.some((a) => a.address === address)) return;
+    await addAddress(db, customerId, { label: address.split(/[\n,]/)[0]!.trim().slice(0, 40) || address.slice(0, 40), address, landmark, isDefault: existing.length === 0 });
+    await recordUsage(args, "address_saved", { atCheckout: true });
+  } catch (error) {
+    console.error(JSON.stringify({ level: "error", event: "checkout_address_save_failed", error: error instanceof Error ? error.name : "unknown" }));
+  }
+}
+
+async function prefillFor(args: Route.LoaderArgs): Promise<Record<string, string> | null> {
+  const customer = await signedInCustomer(args);
+  if (!customer) return null;
+  return { "contact.name": customer.name, "contact.phone": customer.phone, "contact.email": customer.authEmail };
+}
+
+async function savedAddressesFor(args: Route.LoaderArgs): Promise<CheckoutAddress[] | null> {
+  const customer = await signedInCustomer(args);
+  return customer ? listAddresses(args.context.get(requestDbContext).db, customer.id) : null;
 }
 
 /** Names of the visitor's own basket products the menu leaves out (hidden), so the line can say what it was. */
@@ -116,7 +184,8 @@ function fromLoader(priced: readonly PricedLine[], basket: readonly BasketLine[]
 export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
   const entry = menuStore.state().entry;
   // A copy cached before the date rules (S-083) cannot place a date: ask the server.
-  if (!entry?.data.checkout.availability || typeof crypto.randomUUID !== "function") return serverLoader();
+  // A signed-in customer asks the server: checkout comes with their details (E-11 S-212 AC1).
+  if (!entry?.data.checkout.availability || typeof crypto.randomUUID !== "function" || accountHint.get()) return serverLoader();
   void menuStore.revalidate({ force: true });
   const clientToday = todayMU(new Date());
   const today = clientToday > entry.data.today ? clientToday : entry.data.today;
@@ -166,7 +235,7 @@ function removeBasketLine(form: Record<string, unknown>, request: Request, local
 }
 
 /** The typed values sent back with a refusal, so a no-JavaScript page keeps them (never prices). */
-const ECHOED = ["fulfilment", "address", "landmark", "date", "windowId.delivery", "windowId.pickup", "contact.name", "contact.phone", "contact.email", "contact.note", "acceptPolicies", "displayedTotalRs", "displayedTotalRs.delivery", "displayedTotalRs.pickup"];
+const ECHOED = ["fulfilment", "address", "landmark", "date", "windowId.delivery", "windowId.pickup", "contact.name", "contact.phone", "contact.email", "contact.note", "acceptPolicies", "displayedTotalRs", "displayedTotalRs.delivery", "displayedTotalRs.pickup", "savedAddressId", "saveAddress"];
 
 function echo(form: Record<string, unknown>): Record<string, string> {
   const values = Object.fromEntries(ECHOED.flatMap((key) => (typeof form[key] === "string" ? [[key, form[key] as string]] : [])));
@@ -226,16 +295,22 @@ async function submitOrder(form: Record<string, unknown>, args: Route.ActionArgs
   const now = context.get(clockContext).now();
   // RL-order (S-228 AC2, S-091 AC8) and Turnstile are pipeline step 3 inside placeOrder: counted in
   // the same CALL as the order (no extra round trip), and a replay of a placed order is never counted.
+  const account = await signedInCustomer(args);
+  // S-212 AC2: a chosen saved address (the customer's own, checked here) replaces the typed fields.
+  const chosen = account && form.fulfilment === "delivery" ? await chosenAddress(args, account.id, form.savedAddressId) : null;
+  if (chosen) Object.assign(form, { address: chosen.address, landmark: chosen.landmark ?? "" });
   const result = await timed(context, "place-order", () => placeOrder(form, {
     db: context.get(requestDbContext).db,
     now,
     locale,
     basket,
     guard: { ip: clientIp(request), turnstile: context.get(turnstileContext) },
+    accountCustomerId: account?.id,
   }));
   if (!result.ok) return refusal(result, echo(form), locale, basket.length > 0);
   // Admins hear about a new order after the response (S-195); a replay alerts nobody again.
   if (!result.replayed) await alertAdmins(context, "new_order", { orderId: result.orderId });
+  if (account && !chosen && !result.replayed) await keepTypedAddress(args, account.id, form);
   // The order's own locale: a replay from either language returns the original redirect (S-014 AC2).
   const confirmation = localePath(result.locale, `/order/${result.trackingToken}/confirmed`);
   const headers = new Headers({ "Set-Cookie": clearBasketCookie() });
@@ -575,7 +650,7 @@ function OrderBotCheck({ siteKey, refused }: { siteKey: string | null; refused: 
 function CheckoutForm({ data, model, refused }: { data: LoaderData; model: BasketModel; refused: OrderRefusal | undefined }) {
   const { t, locale } = useI18n();
   const navigation = useNavigation();
-  const values = refused?.values ?? {};
+  const values = refused?.values ?? ("prefill" in data && data.prefill ? data.prefill : {});
   const summaryRef = useFocusOnRefusal(refused);
   const errors = refused?.error.fields ?? {};
   const { checkout } = model.menu;
@@ -598,7 +673,14 @@ function CheckoutForm({ data, model, refused }: { data: LoaderData; model: Baske
       {/* One total per choice so the first submit matches even without JavaScript (the server reads the chosen one). */}
       <input type="hidden" name="displayedTotalRs.delivery" value={itemsTotalRs + deliveryFeeFor("delivery", checkout.deliveryFeeRs)} />
       <input type="hidden" name="displayedTotalRs.pickup" value={itemsTotalRs} />
-      <FulfilmentSection deliveryFee={formatRupees(checkout.deliveryFeeRs)} pickupAddress={checkout.pickup.address} pickupMapUrl={checkout.pickup.mapUrl} initial={values} errors={errors} />
+      <FulfilmentSection
+        deliveryFee={formatRupees(checkout.deliveryFeeRs)}
+        pickupAddress={checkout.pickup.address}
+        pickupMapUrl={checkout.pickup.mapUrl}
+        initial={values}
+        errors={errors}
+        savedAddresses={"savedAddresses" in data ? data.savedAddresses : null}
+      />
       <DateSection dates={dates} today={data.today} initial={values.date} error={errors.date} whatsapp={contacts?.whatsapp ?? null} />
       <TimeSection windows={refused?.windows ?? checkout.windows} initial={values} error={errors.windowId} />
       <DetailsSection initial={values} errors={errors} />
@@ -618,6 +700,27 @@ function CheckoutForm({ data, model, refused }: { data: LoaderData; model: Baske
   );
 }
 
+/**
+ * After Reorder (S-214): which items could not be added and why, in the basket's polite status
+ * region (AC9), as words (never colour alone, AC10); nothing added offers WhatsApp (AC4).
+ */
+function ReorderNote({ note }: { note: ReorderFlash }) {
+  const { t, locale } = useI18n();
+  const contacts = (useRouteLoaderData(`site-${locale}`) as { contacts?: FooterContacts } | undefined)?.contacts;
+  const items = note.skipped.map((s) => t("basket.reorder.item", { name: localized(s.name, locale), reason: t(`basket.reorder.reasons.${s.reason}`) }));
+  return (
+    <Alert tone={note.added > 0 ? "info" : "warning"} role="status" className="mt-4">
+      {note.added === 0 && <p className="font-semibold">{t("basket.reorder.nothing")}</p>}
+      {items.length > 0 && <p>{t("basket.reorder.skipped", { items: items.join(", ") })}</p>}
+      {note.added === 0 && contacts?.whatsapp && (
+        <a href={whatsappHref(contacts.whatsapp)} className="mt-2 inline-flex min-h-11 items-center font-semibold link">
+          {t("basket.reorder.whatsapp")}
+        </a>
+      )}
+    </Alert>
+  );
+}
+
 export default function Basket({ loaderData, actionData }: Route.ComponentProps) {
   const { t, locale } = useI18n();
   const model = useBasketModel(loaderData, t, locale);
@@ -630,6 +733,7 @@ export default function Basket({ loaderData, actionData }: Route.ComponentProps)
   return (
     <>
       <h1>{t("basket.metaTitle")}</h1>
+      {"reorderNote" in loaderData && loaderData.reorderNote && <ReorderNote note={loaderData.reorderNote} />}
       <RemovedNote removed={undo.removed} restored={undo.restored} onUndo={undo.onUndo} />
       <UnavailableAnnouncement count={model.leftOut.length} />
       {hasLines && <BasketSection lines={model.views} itemsTotalRs={model.itemsTotalRs} showSubtotal={canOrder} lineError={lineError} onRemoved={undo.onRemoved} />}

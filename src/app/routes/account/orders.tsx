@@ -1,7 +1,7 @@
 // `account/orders` (`/account/orders`, S-213; contracts.md): the signed-in customer's own orders,
 // Current and Past, each with its status in words and a Track link. Customer only; filtered
 // by the session's row AND the confirmed email (or manual orders), threat-model G-02.
-import { Link, useRevalidator } from "react-router";
+import { Form, Link, redirect, useRevalidator } from "react-router";
 import { AccountFrame } from "~/components/account/account-ui";
 import { Alert } from "~/components/ui/alert";
 import { buttonVariants } from "~/components/ui/button";
@@ -16,6 +16,11 @@ import { cn } from "~/lib/utils";
 import { pageLocale, requireCustomer } from "~/server/customer-auth.server";
 import { requestDbContext } from "~/server/db.server";
 import { type AccountOrderRow, listAccountOrders } from "~/server/repos/customer-accounts.server";
+import { actionError } from "~/server/action-result.server";
+import { basketCookie } from "~/server/basket.server";
+import { Uuid } from "~/server/contracts/shared";
+import { reorder, reorderFlashCookie } from "~/server/services/reorder.server";
+import { recordUsage } from "~/server/usage.server";
 import type { Route } from "./+types/orders";
 
 /** Past = finished one way or another (AC1); everything else is Current. */
@@ -60,6 +65,26 @@ export async function loader(args: Route.LoaderArgs) {
   };
 }
 
+/**
+ * `reorder` (S-214): the own order's items into the basket at today's prices, then the basket with
+ * the skipped note. Another customer's (or an unknown) order is NOT_FOUND; signed out, the guard
+ * answers. A plain form post (full page load), so the browser basket reads the new cookie.
+ */
+export async function action(args: Route.ActionArgs) {
+  const customer = await requireCustomer(args);
+  const locale = pageLocale(args);
+  const form = Object.fromEntries(await args.request.formData());
+  const orderId = Uuid.safeParse(form.orderId);
+  if (form.intent !== "reorder" || !orderId.success) return actionError("VALIDATION_FAILED", locale);
+  const result = await reorder(args, customer, orderId.data);
+  if (!result) return actionError("NOT_FOUND", locale);
+  await recordUsage(args, "reorder_started", { skippedCount: result.skipped.length });
+  const headers = new Headers();
+  if (result.added > 0) headers.append("Set-Cookie", basketCookie(result.lines));
+  headers.append("Set-Cookie", reorderFlashCookie({ added: result.added, skipped: result.skipped }));
+  throw redirect(localePath(locale, "/basket"), { headers });
+}
+
 export function meta({ loaderData }: Route.MetaArgs) {
   return [{ title: `${loaderData?.title ?? ""} | Aux petits bonheurs` }, { name: "robots", content: "noindex, nofollow" }];
 }
@@ -82,7 +107,7 @@ function StatusChip({ status }: { status: OrderStatus }) {
   );
 }
 
-function OrderCard({ order }: { order: OrderSummary }) {
+function OrderCard({ order, past }: { order: OrderSummary; past: boolean }) {
   const { t } = useI18n();
   return (
     <li className="rounded-card border border-border bg-card p-4">
@@ -104,19 +129,29 @@ function OrderCard({ order }: { order: OrderSummary }) {
         <Link to={order.trackingUrl} aria-label={t("account.orders.trackName", { number: order.number })} className={buttonVariants({ variant: "outline" })}>
           {t("account.orders.track")}
         </Link>
+        {past && (
+          // S-214 AC9: a distinct name per order; a full page load so the basket reads its cookie.
+          <Form method="post" reloadDocument>
+            <input type="hidden" name="intent" value="reorder" />
+            <input type="hidden" name="orderId" value={order.id} />
+            <button type="submit" aria-label={t("account.orders.reorderName", { number: order.number })} className={buttonVariants({ variant: "default" })}>
+              {t("account.orders.reorder")}
+            </button>
+          </Form>
+        )}
       </div>
     </li>
   );
 }
 
-function OrderSection({ id, title, orders }: { id: string; title: string; orders: OrderSummary[] }) {
+function OrderSection({ id, title, orders, past = false }: { id: string; title: string; orders: OrderSummary[]; past?: boolean }) {
   if (orders.length === 0) return null;
   return (
     <section aria-labelledby={id}>
       <h2 id={id}>{title}</h2>
       <ul className="mt-3 grid gap-3">
         {orders.map((order) => (
-          <OrderCard key={order.id} order={order} />
+          <OrderCard key={order.id} order={order} past={past} />
         ))}
       </ul>
     </section>
@@ -129,16 +164,16 @@ export default function Orders({ loaderData }: Route.ComponentProps) {
   return (
     <AccountFrame title={t("account.orders.title")}>
       {current.length === 0 && past.length === 0 ? (
-        <div className="rounded-card border border-border bg-card p-6 text-center">
+        <div className="rounded-card border border-border bg-card p-3 text-center min-[20rem]:p-6">
           <p>{t("account.orders.empty")}</p>
-          <Link to={localePath(locale, "/menu")} className={cn(buttonVariants({ size: "lg" }), "mt-4")}>
+          <Link to={localePath(locale, "/menu")} className={cn(buttonVariants({ size: "lg" }), "mt-4 w-full px-4 min-[20rem]:w-auto min-[20rem]:px-7")}>
             {t("account.orders.orderNow")}
           </Link>
         </div>
       ) : (
         <>
           <OrderSection id="orders-current" title={t("account.orders.current")} orders={current} />
-          <OrderSection id="orders-past" title={t("account.orders.past")} orders={past} />
+          <OrderSection id="orders-past" title={t("account.orders.past")} orders={past} past />
         </>
       )}
     </AccountFrame>

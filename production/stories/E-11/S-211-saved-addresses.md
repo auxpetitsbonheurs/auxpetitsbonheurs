@@ -1,5 +1,5 @@
 # S-211: Save, edit and delete my delivery addresses
-Status: ready
+Status: review
 Epic: E-11-customer-accounts
 Spec: docs/specs/features/customer-accounts.md#ux
 Estimate: 3 pts
@@ -33,3 +33,8 @@ As a signed-in customer, I want to keep my delivery addresses, so that I do not 
 ## Notes
 - Cut with accounts (cut order #5). Checkout use of addresses is S-212.
 - Dependencies (R9): S-207. Not yet done; expected.
+
+## Build notes (2026-11-13)
+- Add and edit open in a sheet (the shared Modal: native dialog, focus trapped, Escape closes, focus back to the trigger); delete asks in a confirm dialog. Label and address are required; landmark optional.
+- `address_saved` is counted (atCheckout false here, true from checkout).
+- Tests: src/app/routes/account/addresses.test.ts, src/tests/e2e/account.spec.ts.

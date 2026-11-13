@@ -1,5 +1,5 @@
 # S-212: Checkout prefills my details and offers my saved addresses
-Status: ready
+Status: review
 Epic: E-11-customer-accounts
 Spec: docs/specs/features/customer-accounts.md#ux
 Estimate: 3 pts
@@ -35,3 +35,9 @@ As a signed-in customer, I want checkout to know my name, phone, email and addre
 ## Notes
 - Modifies the E-05 checkout; FR-021 link only (E-05 owns the base). Customer matching rule: contracts.md "Customer matching".
 - Dependencies (R9): S-211, S-210, E-05. Not yet done; expected.
+
+## Build notes (2026-11-13)
+- AC6 changed (coordinator decision 2026-11-13): a signed-in customer's order is attached to their own customer row whatever email is typed, and My orders lists it. Migration 0021 adds `orders.by_account` and re-creates `place_order` from the 0013 body with one change: the server passes `order.accountCustomerId` from the customer session (never the form); a linked account row wins over the email match. Guests are unchanged. The typed contact data stays a snapshot on the order; `customer.email` is never overwritten. My orders now lists `customer_id = mine AND (confirmed email OR manual OR by_account)`.
+- AC1: the basket loader reads the session only when the `apb_customer` hint is present (guests do no auth work); the basket's client loader asks the server for a signed-in customer so a client navigation is prefilled too.
+- AC2/AC3: saved addresses are a radio group with "A new address"; without JavaScript the fields stay visible and the server uses the chosen saved address (checked to be the customer's own). "Save this address" saves after the order is placed (label = first line; the first saved becomes the default); a failure there is logged and never touches the order.
+- Tests: src/app/routes/site/checkout-account.test.ts, src/tests/e2e/account-checkout.spec.ts.

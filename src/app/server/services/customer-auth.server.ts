@@ -12,11 +12,18 @@ import { localePath } from "~/lib/locale";
 import { authContext } from "~/server/auth-gateway.server";
 import type { GuardArgs } from "~/server/auth.server";
 import { clientIp } from "~/server/auth-rate-limit.server";
+import { turnstileContext } from "~/server/turnstile.server";
 import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
 import { RL_EMAIL_RESEND, RL_SIGNUP, type RateLimitResult, consumeRateLimit } from "~/server/rate-limit.server";
 import { hasLinkedAccount, isAdminEmail } from "~/server/repos/customer-accounts.server";
 import type { SignUpInput } from "~/server/contracts/account";
+
+/** Turnstile (reusing E-08's check): true when the posted token is real, or the check is not configured. */
+export async function botCheckPassed(args: GuardArgs, form: Record<string, unknown>): Promise<boolean> {
+  const token = typeof form.turnstileToken === "string" && form.turnstileToken !== "" ? form.turnstileToken : undefined;
+  return (await args.context.get(turnstileContext).verify(token, clientIp(args.request))) === "ok";
+}
 
 /** `<origin>/auth/confirm?next=<path>`: the hook rebuilds the emailed link from it (S-024 AC3). */
 export function confirmRedirect(request: Request, next: string): string {

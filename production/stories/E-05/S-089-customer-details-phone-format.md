@@ -35,3 +35,4 @@ As a customer, I want to enter my name, phone and email once and type my number 
 ## Implementation notes (2026-11-13, E-05 finish)
 - Tests: src/app/domain/phone.test.ts (adds "23057123456"), src/app/server/services/place-order.server.test.ts (name over 80, note over 1000, 80/1000 accepted; the drift log carries no name, phone or email), src/app/server/error-log.server.test.ts (redaction), src/tests/e2e/checkout.spec.ts (S-013 AC1, AC12, AC13).
 - AC5 deferred to the accounts work (E-11, parallel: migration 0014 / contract v0.41): prefill needs a signed-in customer session, which does not exist yet. Guests already get empty fields.
+- 2026-11-13 (E-11 S-212): AC5 built: a signed-in customer's checkout is prefilled (see S-212 build notes).

@@ -45,6 +45,11 @@ export interface PlaceOrderContext {
   locale: Locale;
   basket: BasketLine[];
   guard?: OrderGuard;
+  /**
+   * The signed-in customer's own row (E-11 S-212 AC6), from the server session only: the order is
+   * attached to it whatever email was typed. Absent for guests (email match, contracts "Customer matching").
+   */
+  accountCustomerId?: string;
 }
 
 /**
@@ -176,6 +181,8 @@ interface ProcedureInput {
     trackingToken: string;
     displayedTotalRs: number;
     policiesAcceptedAt: string;
+    /** E-11 S-212: the signed-in customer's row, from the session (null or absent for a guest). */
+    accountCustomerId?: string | null;
   } | null;
 }
 
@@ -281,6 +288,7 @@ function procedureInput(form: Record<string, unknown>, ctx: PlaceOrderContext, p
       trackingToken: newTrackingToken(),
       displayedTotalRs: input.displayedTotalRs,
       policiesAcceptedAt: ctx.now.toISOString(),
+      accountCustomerId: ctx.accountCustomerId ?? null,
     },
   };
 }

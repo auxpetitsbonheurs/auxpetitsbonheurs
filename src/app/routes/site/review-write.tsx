@@ -2,6 +2,7 @@
 // v0.41 "Reviews"). Signed out: a sign-in prompt that returns here (same-site `next`), no form.
 // Signed in as a customer: the rating and comment form, or the own review to edit or delete,
 // with its status in words. Private (no-store, noindex) with its own `reviewForm` text.
+import { PrivacyNoteLink } from "~/components/site/privacy-link";
 import { useEffect, useRef, useState } from "react";
 import { Form, Link, useNavigation } from "react-router";
 import { FocusedStatus, isRefusal } from "~/components/account/account-ui";
@@ -175,6 +176,8 @@ function ReviewWritePage(props: Route.ComponentProps) {
     <div className="mx-auto flex max-w-2xl flex-col gap-4">
       <h1>{editing ? t("reviewForm.editTitle") : t("reviewForm.title")}</h1>
       <p className="text-sm text-muted-foreground">{t("reviewForm.privacy")}</p>
+      {/* S-268 AC1: the link to the privacy note (S-225). */}
+      <PrivacyNoteLink className="-mt-2" />
       <WriteReview {...props} />
     </div>
   );

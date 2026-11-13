@@ -8,7 +8,7 @@
 import { eq, inArray } from "drizzle-orm";
 import { type LocalizedText, product, settings } from "~/db/schema";
 import { PHOTO_MAX_EDGE, isIssuedSitePath } from "~/domain/upload";
-import { policiesMissingEntries } from "~/domain/settings";
+import { policiesMissingEntries, privacyNoteMissingReviews } from "~/domain/settings";
 import type { AfterResponse } from "~/server/after-response.server";
 import type { SettingsInput } from "~/server/contracts/settings";
 import type { Database } from "~/server/db.server";
@@ -18,7 +18,7 @@ import { checkNewPhoto } from "./product-photos.server";
 import { removePhotos } from "./storage-cleanup.server";
 
 export type SaveSettingsResult =
-  | { ok: true; version: number; warnings: { policies: boolean } }
+  | { ok: true; version: number; warnings: { policies: boolean; privacyReviews: boolean } }
   | { ok: false; code: "SETTINGS_CHANGED" }
   | { ok: false; code: "VALIDATION_FAILED"; fields: Record<string, string> }
   | { ok: false; code: "UPLOAD_REJECTED"; fields: Record<string, string> };
@@ -134,5 +134,5 @@ export async function saveSettings(db: Database, version: number, input: Setting
     if (context.after) context.after.defer("remove-photos", cleanUp);
     else await cleanUp();
   }
-  return { ok: true, version: saved.version, warnings: { policies: policiesMissingEntries(input.policies) } };
+  return { ok: true, version: saved.version, warnings: { policies: policiesMissingEntries(input.policies), privacyReviews: privacyNoteMissingReviews(input.privacyNote) } };
 }

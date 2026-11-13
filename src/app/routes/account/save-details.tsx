@@ -4,6 +4,7 @@
 // linked and no history is shown until the email is confirmed (S-216). RL-signup per IP.
 import { Form, Link, data } from "react-router";
 import { AuthCard, FocusedStatus, RefusalAlert, isRefusal, usePosting } from "~/components/account/account-ui";
+import { BotCheck } from "~/components/account/bot-check";
 import { Alert } from "~/components/ui/alert";
 import { buttonVariants } from "~/components/ui/button";
 import { SubmitButton } from "~/components/ui/submit-button";
@@ -17,7 +18,7 @@ import { requestDbContext } from "~/server/db.server";
 import { assertSameOrigin } from "~/server/origin.server";
 import { isTrackingToken } from "~/server/token-page.server";
 import { findSaveDetailsOrder } from "~/server/repos/customer-accounts.server";
-import { consumeSignUp, saveDetailsAccount } from "~/server/services/customer-auth.server";
+import { botCheckPassed, consumeSignUp, saveDetailsAccount } from "~/server/services/customer-auth.server";
 import { recordUsage } from "~/server/usage.server";
 import type { Route } from "./+types/save-details";
 import { PrivacyNoteLink } from "~/components/site/privacy-link";
@@ -41,6 +42,7 @@ export async function action(args: Route.ActionArgs) {
   const form = Object.fromEntries(await args.request.formData());
   const limit = await consumeSignUp(args, "customer.saveDetails");
   if (!limit.ok) return rateLimitedResult(limit.retryAfterSeconds, locale, {});
+  if (!(await botCheckPassed(args, form))) return actionError("BOT_CHECK_FAILED", locale);
   const order = await orderFor(args, form.trackingToken);
   if (!order) return actionError("NOT_FOUND", locale);
   const outcome = await saveDetailsAccount(args, order);
@@ -93,12 +95,14 @@ export default function SaveDetails({ loaderData, actionData }: Route.ComponentP
       />
       <Form method="post" className="mt-6">
         <input type="hidden" name="trackingToken" value={loaderData.token} />
+        <BotCheck />
         <SubmitButton pending={pending} pendingText={t("account.signUp.creating")} size="lg" className="w-full">
           {t("account.saveDetails.submit")}
         </SubmitButton>
         <PrivacyNoteLink className="mt-2" />
       </Form>
       <p className="mt-4 text-sm text-muted-foreground">{t("account.saveDetails.note")}</p>
+      <PrivacyNoteLink className="mt-2" />
     </AuthCard>
   );
 }

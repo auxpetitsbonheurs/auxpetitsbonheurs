@@ -2,8 +2,9 @@
 // account is the `customer` row whose `auth_user_id` is the session's Auth user. Only
 // `linkConfirmedAccount` (called from `auth/confirm` once the email is proven) ever sets
 // `auth_user_id`, and it matches by email only, never by phone.
-import { and, eq, isNull, sql } from "drizzle-orm";
-import { admin, customer, orders } from "~/db/schema";
+import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { admin, customer, orderItem, orders } from "~/db/schema";
+import type { ReorderItem } from "~/domain/reorder";
 import { normalizePhone } from "~/domain/phone";
 import type { Locale } from "~/lib/locale";
 import type { Database, Executor } from "~/server/db.server";
@@ -123,7 +124,8 @@ export const ACCOUNT_ORDERS_LIMIT = 100;
 
 /**
  * The orders of this account (contracts `account/orders`, threat-model G-02): `customer_id` is
- * the session's row AND (`lower(contact_email)` = the confirmed address OR `source = manual`).
+ * the session's row AND (`lower(contact_email)` = the confirmed address OR `source = manual` OR
+ * placed while signed in, `by_account`, S-212).
  * Another person's guest order that happens to share a row is never listed.
  */
 export async function listAccountOrders(db: Executor, customerId: string, confirmedEmail: string): Promise<AccountOrderRow[]> {
@@ -142,7 +144,7 @@ export async function listAccountOrders(db: Executor, customerId: string, confir
       trackingToken: orders.trackingToken,
     })
     .from(orders)
-    .where(and(eq(orders.customerId, customerId), sql`(lower(${orders.contactEmail}) = ${confirmedEmail.toLowerCase()} or ${orders.source} = 'manual')`))
+    .where(and(eq(orders.customerId, customerId), sql`(lower(${orders.contactEmail}) = ${confirmedEmail.toLowerCase()} or ${orders.source} = 'manual' or ${orders.byAccount})`))
     .orderBy(sql`${orders.createdAt} desc`)
     .limit(ACCOUNT_ORDERS_LIMIT);
 }
@@ -164,6 +166,31 @@ export async function findSaveDetailsOrder(db: Executor, trackingToken: string):
     .limit(1);
   if (!row || row.source !== "website" || !row.email) return null;
   return { email: row.email.toLowerCase(), name: row.name, phone: row.phone, locale: row.locale };
+}
+
+/**
+ * A past order's items for Reorder (S-214 AC7): only when the order passes the same ownership
+ * filter as My orders; null otherwise (NOT_FOUND, whether it exists or not).
+ */
+export async function findReorderItems(db: Executor, customerId: string, confirmedEmail: string, orderId: string): Promise<ReorderItem[] | null> {
+  const [own] = await db
+    .select({ id: orders.id })
+    .from(orders)
+    .where(and(eq(orders.id, orderId), eq(orders.customerId, customerId), sql`(lower(${orders.contactEmail}) = ${confirmedEmail.toLowerCase()} or ${orders.source} = 'manual' or ${orders.byAccount})`))
+    .limit(1);
+  if (!own) return null;
+  const rows = await db
+    .select({ productId: orderItem.productId, nameEn: orderItem.nameEn, nameFr: orderItem.nameFr, options: orderItem.options, cakeMessage: orderItem.cakeMessage, quantity: orderItem.quantity })
+    .from(orderItem)
+    .where(eq(orderItem.orderId, orderId))
+    .orderBy(asc(orderItem.sortOrder));
+  return rows.map((row) => ({
+    productId: row.productId,
+    name: { en: row.nameEn, fr: row.nameFr ?? row.nameEn },
+    options: row.options.map((o) => ({ groupId: o.groupId, choiceId: o.choiceId ?? null, text: o.text, quantity: o.quantity })),
+    cakeMessage: row.cakeMessage,
+    quantity: row.quantity,
+  }));
 }
 
 /** Orders My orders will show for this row and confirmed address (contracts `account/orders` filter). */

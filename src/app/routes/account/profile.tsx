@@ -1,6 +1,7 @@
 // `account/profile` (`/account`, S-210; contracts.md): the signed-in customer's name, phone and
 // email language; the email is shown read-only (it is the identity, AC4). Customer only: every
 // read and write is the session's own row (AC6).
+import { PrivacyNoteLink } from "~/components/site/privacy-link";
 import { Form, redirect } from "react-router";
 import { AccountFrame, LanguageField, RefusalAlert, isRefusal, usePosting } from "~/components/account/account-ui";
 import { Alert } from "~/components/ui/alert";
@@ -65,7 +66,7 @@ export default function Profile({ loaderData, actionData }: Route.ComponentProps
   const { profile } = loaderData;
   return (
     <AccountFrame title={t("account.profile.title")}>
-      <div className="rounded-card border border-border bg-card p-3 min-[20rem]:p-5 sm:p-6">
+      <div className="rounded-card border border-border bg-card p-2 min-[20rem]:p-5 sm:p-6">
         <RefusalAlert refusal={refusal} anchors={ANCHORS} message={refusal?.error.code === "INTERNAL" ? t("account.profile.failed") : undefined} />
         <Form method="post" noValidate className="grid gap-5" key={JSON.stringify(profile)}>
           <TextField id="name" name="name" label={t("account.profile.name")} autoComplete="name" maxLength={80} defaultValue={values?.name ?? profile.name} error={fields?.name} />
@@ -87,8 +88,9 @@ export default function Profile({ loaderData, actionData }: Route.ComponentProps
           </div>
           <LanguageField defaultValue={values?.locale || profile.locale} label={t("account.profile.language")} />
           <p className="text-sm text-muted-foreground">{t("account.profile.pastOrdersNote")}</p>
+          <PrivacyNoteLink />
           <div className="flex flex-wrap items-center gap-4">
-            <SubmitButton pending={pending} pendingText={t("account.profile.saving")} size="lg">
+            <SubmitButton pending={pending} pendingText={t("account.profile.saving")} size="lg" className="w-full px-4 min-[20rem]:w-auto min-[20rem]:px-7">
               {refusal?.error.code === "INTERNAL" ? t("account.profile.retry") : t("account.profile.save")}
             </SubmitButton>
             <p role="status" className="font-semibold">

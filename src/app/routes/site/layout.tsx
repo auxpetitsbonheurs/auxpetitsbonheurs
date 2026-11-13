@@ -8,6 +8,7 @@ import { SiteHeader } from "~/components/shell/site-header";
 import { SkipLink } from "~/components/shell/skip-link";
 import { todayMU } from "~/domain/time";
 import { readCookie } from "~/lib/cookies";
+import { accountHint } from "~/lib/account-hint";
 import { basketStore } from "~/lib/basket-store";
 import { localeFromPathname, localePath } from "~/lib/locale";
 import { menuStore } from "~/lib/menu-cache";
@@ -135,6 +136,7 @@ export default function SiteLayout({ loaderData }: Route.ComponentProps) {
   const location = useLocation();
   const other = localeFromPathname(location.pathname) === "fr" ? "en" : "fr";
   useBrowserBasket(loaderData.basketCount);
+  accountHint.set(loaderData.signedIn);
   return (
     <div className="flex min-h-dvh flex-col">
       {/* React hoists this into <head>: the phone's browser bar matches the burgundy header band (tokens color.band). */}

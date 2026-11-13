@@ -35,7 +35,7 @@ As a customer who forgot my password, I want a reset link by email, so that I ca
 - Dependencies (R9): S-207, S-194. Not yet done; expected.
 
 ## Build notes (2026-11-13)
-- Turnstile is not built anywhere in the app yet (checkout and admin sign-in have none either; it is the site-wide public-forms work in S-228 AC2). The `BOT_CHECK_FAILED` parts of the ACs move there; until then these forms rely on the rate limits and the generic answers. Adjusted 2026-11-13 (E-11 build).
+- Turnstile (2026-11-14, reusing E-08's `useTurnstile` and `turnstileContext`): the form carries the invisible widget's token and the server answers BOT_CHECK_FAILED for a missing or bad one (after the rate limit, before any Auth call); without configured keys the check is skipped, as on the custom-cake form. Test: src/app/routes/account/bot-check.test.ts.
 - AC4: an expired reset link lands on /account/reset?expired=1, which shows the notice above the request form.
 - AC6: setPassword needs a session made by an emailed link (reset, sign-up confirmation or sign-in link) in the last hour that belongs to a customer account; anything else is LINK_EXPIRED. Other devices are signed out after the change.
 - Tests: src/app/routes/account/reset.test.ts, src/app/routes/auth/confirm.customer.test.ts, src/tests/e2e/account.spec.ts.

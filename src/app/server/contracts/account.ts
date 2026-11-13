@@ -68,3 +68,22 @@ export function passwordProblem(raw: unknown): string | undefined {
   const password = typeof raw === "string" ? raw : "";
   return password.length < PASSWORD_MIN || password.length > PASSWORD_MAX ? "account.reset.passwordShort" : undefined;
 }
+
+export type AddressField = "label" | "address" | "landmark";
+export const ADDRESS_MAX = 500;
+export const LABEL_MAX = 40;
+export const LANDMARK_MAX = 200;
+
+/** `account/addresses` add/update (S-211 AC2, AC6): label and address required, landmark optional. */
+export function parseAddress(form: Record<string, unknown>): Parsed<{ label: string; address: string; landmark: string | null; isDefault: boolean }, AddressField> {
+  const problems: Problems<AddressField> = {};
+  const label = text(form, "label");
+  const address = text(form, "address");
+  const landmark = text(form, "landmark");
+  if (label === "" || label.length > LABEL_MAX) problems.label = "account.addresses.errors.label";
+  if (address === "" || address.length > ADDRESS_MAX) problems.address = "account.addresses.errors.address";
+  if (landmark.length > LANDMARK_MAX) problems.landmark = "account.addresses.errors.landmark";
+  if (Object.keys(problems).length > 0) return { ok: false, problems };
+  const isDefault = form.isDefault === "on" || form.isDefault === "true";
+  return { ok: true, value: { label, address, landmark: landmark === "" ? null : landmark, isDefault } };
+}

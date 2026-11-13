@@ -168,7 +168,10 @@
       "whatsappText": "Bonjour, je voudrais commander mais aucune date n'est disponible sur le site.",
       "contact": "Nous contacter"
     },
-    "paymentInfo": "Paiement : la totalité par MCB Juice. Vous recevez les informations de paiement dès que vous passez commande."
+    "paymentInfo": "Paiement : la totalité par MCB Juice. Vous recevez les informations de paiement dès que vous passez commande.",
+    "savedAddresses": "Vos adresses enregistrées",
+    "newAddress": "Une nouvelle adresse",
+    "saveAddress": "Enregistrer cette adresse dans mon compte"
   },
   "errors": {
     "notFoundTitle": "Page introuvable",
@@ -248,7 +251,21 @@
     "optionText": "{{group}} : {{text}}",
     "optionQuantity": "{{name}} × {{count}}",
     "cakeMessage": "Message sur le gâteau : {{text}}",
-    "optionsChanged": "Les choix pour cet article ont changé. Il ne fera pas partie de votre commande. Retirez-le, puis choisissez à nouveau dans le menu."
+    "optionsChanged": "Les choix pour cet article ont changé. Il ne fera pas partie de votre commande. Retirez-le, puis choisissez à nouveau dans le menu.",
+    "reorder": {
+      "nothing": "Rien de cette commande ne peut être ajouté aujourd’hui.",
+      "skipped": "Non ajouté : {{items}}.",
+      "item": "{{name}} ({{reason}})",
+      "whatsapp": "Demander à la pâtisserie sur WhatsApp",
+      "reasons": {
+        "sold_out": "épuisé",
+        "hidden": "n’est plus à la carte",
+        "out_of_season": "hors saison",
+        "option_removed": "une option n’est plus proposée",
+        "free_text": "fait sur demande",
+        "basket_full": "le panier est plein"
+      }
+    }
   },
   "order": {
     "confirmed": {
@@ -1481,7 +1498,9 @@
       "whatsappFrEmpty": "Vide : le texte anglais sera utilisé.",
       "previewEn": "Aperçu en anglais",
       "previewFr": "Aperçu en français",
-      "previewUsesEn": "Le texte anglais sera utilisé"
+      "previewUsesEn": "Le texte anglais sera utilisé",
+      "privacyReviewsWarningTitle": "Ajoutez une ligne sur les avis",
+      "privacyReviewsWarning": "La note de confidentialité ne parle pas encore des avis : indiquez qu’un avis affiche le prénom, l’initiale du nom, la date et les mots, que vous validez chaque avis et que le client peut le supprimer à tout moment. Enregistré quand même."
     },
     "availability": {
       "title": "Disponibilités",
@@ -2720,7 +2739,9 @@
       "emailMissing": "Saisissez votre adresse e-mail.",
       "emailFormat": "Saisissez une adresse e-mail comme nom@exemple.com.",
       "optional": "(facultatif)",
-      "guestNote": "Aucun compte n’est nécessaire pour commander : la commande sans compte fonctionne toujours."
+      "guestNote": "Aucun compte n’est nécessaire pour commander : la commande sans compte fonctionne toujours.",
+      "botLoading": "Vérification de votre visite…",
+      "botFailed": "La vérification de sécurité n’a pas chargé. Rechargez la page ou écrivez-nous sur WhatsApp."
     },
     "signIn": {
       "title": "Se connecter",
@@ -2856,6 +2877,32 @@
       "note": "Vos commandes passées avec cet e-mail apparaîtront dans Mes commandes une fois l’e-mail confirmé.",
       "checkBody": "Nous avons envoyé un lien à {{email}}. Ouvrez-le pour confirmer votre e-mail ; vos commandes apparaîtront alors dans Mes commandes.",
       "inUse": "Cet e-mail a déjà un compte. Connectez-vous pour voir vos commandes."
+    },
+    "addresses": {
+      "title": "Mes adresses",
+      "empty": "Aucune adresse enregistrée pour l’instant",
+      "add": "Ajouter une adresse",
+      "addTitle": "Ajouter une adresse",
+      "editTitle": "Modifier l’adresse",
+      "label": "Nom de l’adresse",
+      "labelHint": "Par exemple Maison ou Travail",
+      "address": "Adresse",
+      "landmark": "Repère",
+      "makeDefault": "Utiliser cette adresse par défaut",
+      "save": "Enregistrer l’adresse",
+      "default": "Par défaut",
+      "edit": "Modifier",
+      "editName": "Modifier l’adresse {{label}}",
+      "delete": "Supprimer",
+      "deleteName": "Supprimer l’adresse {{label}}",
+      "deleteTitle": "Supprimer cette adresse ?",
+      "deleteBody": "Les commandes passées gardent l’adresse où elles ont été livrées.",
+      "cancel": "Annuler",
+      "errors": {
+        "label": "Saisissez un nom, par ex. Maison.",
+        "address": "Saisissez l’adresse.",
+        "landmark": "Utilisez 200 caractères au plus."
+      }
     }
   },
   "reviews": {

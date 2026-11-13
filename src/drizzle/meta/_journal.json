@@ -134,6 +134,13 @@
       "when": 1794599621407,
       "tag": "0020_promotion_image_variants",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794603780605,
+      "tag": "0021_place_order_account",
+      "breakpoints": true
     }
   ]
 }

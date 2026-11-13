@@ -32,6 +32,18 @@ const KEYWORDS = { en: ["cancellation", "storage"], fr: ["annulation", "conserva
  * Spec decision: a case-insensitive keyword check on each language that has text; English
  * is always checked. A warning only: the save goes ahead.
  */
+/**
+ * True when the privacy note does not mention reviews (E-14 S-268 AC4): a case-insensitive check
+ * for "review" (EN) and "avis" (FR, when there is French text). Same pattern as the policies
+ * warning: the save still goes ahead.
+ */
+export function privacyNoteMissingReviews(note: LocalizedValue | null): boolean {
+  const en = (note?.en ?? "").toLowerCase();
+  const fr = (note?.fr ?? "").trim().toLowerCase();
+  if (!en.includes("review")) return true;
+  return fr !== "" && !fr.includes("avis");
+}
+
 export function policiesMissingEntries(policies: LocalizedValue | null): boolean {
   const en = (policies?.en ?? "").toLowerCase();
   const fr = (policies?.fr ?? "").trim().toLowerCase();

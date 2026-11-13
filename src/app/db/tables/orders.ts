@@ -68,6 +68,11 @@ export const orders = pgTable(
     trackingToken: text("tracking_token").notNull().unique(),
     idempotencyKey: uuid("idempotency_key").unique(),
     policiesAcceptedAt: timestamp("policies_accepted_at", tz),
+    /**
+     * Placed by a signed-in customer (E-11 S-212): the order is on their own customer row whatever
+     * email was typed, and My orders lists it. Set only by `place_order` from the server session.
+     */
+    byAccount: boolean("by_account").notNull().default(false),
     pendingAlertSentAt: timestamp("pending_alert_sent_at", tz),
     /** Juice payment (migration 0013): the 12 h unpaid reminder was queued (S-280). */
     paymentReminderSentAt: timestamp("payment_reminder_sent_at", tz),

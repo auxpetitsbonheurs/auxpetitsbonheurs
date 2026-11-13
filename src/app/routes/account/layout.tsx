@@ -3,6 +3,7 @@ import { namespaceMessages } from "~/i18n/catalog.server";
 import { ExtraMessages } from "~/i18n/react";
 import { localeFromPathname } from "~/lib/locale";
 import { responseHeaders } from "~/server/response-headers.server";
+import { turnstileContext } from "~/server/turnstile.server";
 import type { Route } from "./+types/layout";
 
 /**
@@ -12,8 +13,9 @@ import type { Route } from "./+types/layout";
  */
 export const middleware: Route.MiddlewareFunction[] = [responseHeaders({ "Cache-Control": "private, no-store", "X-Robots-Tag": "noindex, nofollow" })];
 
-export function loader({ url }: Route.LoaderArgs) {
-  return { messages: namespaceMessages(localeFromPathname(url.pathname), "account") };
+export function loader({ url, context }: Route.LoaderArgs) {
+  // The Turnstile site key for the account forms' bot check (null: not configured, no widget).
+  return { messages: namespaceMessages(localeFromPathname(url.pathname), "account"), turnstileSiteKey: context.get(turnstileContext).siteKey };
 }
 
 /** The text only changes with the language, which is another layout route. */

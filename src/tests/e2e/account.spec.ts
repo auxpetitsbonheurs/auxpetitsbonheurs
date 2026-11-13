@@ -11,6 +11,7 @@ import {
   withZoom,
 } from "./support/a11y";
 import { createE2eCustomer, createOrderFor, e2eEmail, emailedLink, signInCustomer } from "./support/customer";
+import { SAMPLE_PRODUCT } from "./support/database";
 import { type Page, expect, test } from "./support/fixtures";
 
 const SCREENSHOTS = "/tmp/claude-0/-home-user-auxpetitsbonheurs/9106cb54-2393-55df-a3cb-bd8500903b6a/scratchpad";
@@ -209,3 +210,57 @@ test.describe("S-215 Save my details and S-216 linking", () => {
     }
   });
 });
+
+test.describe("S-211 saved addresses", () => {
+  test("AC1, AC2, AC7, AC8: add in a sheet (Escape closes, focus returns), default marker, delete with confirm, layout and axe", async ({ page, db }) => {
+    const customer = await createE2eCustomer(db);
+    await signInCustomer(page, customer, "/account/addresses");
+    await expect(page.locator("html")).toHaveAttribute("data-hydrated", "true");
+    await expect(page.getByText("No saved addresses yet")).toBeVisible();
+
+    const add = page.getByRole("button", { name: "Add address" });
+    await add.click();
+    await expect(page.getByRole("dialog", { name: "Add an address" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toBeHidden();
+    await expect(add).toBeFocused();
+
+    await add.click();
+    await page.getByLabel("Label").fill("Home");
+    await page.getByLabel("Address", { exact: true }).fill("12 Royal Road, Rose Hill");
+    await page.getByLabel("Use this address by default").check();
+    await page.getByRole("button", { name: "Save address" }).click();
+    await expect(page.getByRole("dialog")).toBeHidden();
+    await expect(page.getByRole("heading", { name: "Home" })).toBeVisible();
+    await expect(page.getByText("Default", { exact: true })).toBeVisible();
+    await checkLayout(page);
+
+    await page.getByRole("button", { name: "Delete address Home" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Delete" }).click();
+    await expect(page.getByText("No saved addresses yet")).toBeVisible();
+  });
+});
+
+test.describe("S-214 reorder", () => {
+  test("AC1, AC8, AC9, AC10: Reorder on a past order fills the basket at today's price and names the skipped line", async ({ page, db }) => {
+    const customer = await createE2eCustomer(db, "Reorder Customer");
+    const order = await createOrderFor(db, customer.email, { status: "completed" });
+    const [product] = await db<{ id: string; name_en: string }[]>`select id, name_en from product where slug = ${SAMPLE_PRODUCT.slug}`;
+    await db`insert into order_item (order_id, product_id, name_en, name_fr, original_base_price_rs, unit_base_price_rs, options, quantity, line_total_rs, sort_order)
+      select o.id, ${product!.id}, ${product!.name_en}, null, 700, 700, '[]', 2, 1400, 0 from orders o where o.tracking_token = ${order.trackingToken}`;
+    await db`insert into order_item (order_id, product_id, name_en, name_fr, original_base_price_rs, unit_base_price_rs, options, quantity, line_total_rs, sort_order)
+      select o.id, null, 'Custom tier cake', null, 0, 0, '[]', 1, 0, 1 from orders o where o.tracking_token = ${order.trackingToken}`;
+    await signInCustomer(page, customer, "/account/orders");
+    const number = `APB-${String(order.number).padStart(4, "0")}`;
+    await page.getByRole("button", { name: `Reorder order ${number}` }).click();
+
+    await expect(page).toHaveURL(/\/basket$/);
+    const note = page.getByRole("status").filter({ hasText: "Skipped: Custom tier cake (made to order)." });
+    await expect(note).toBeVisible();
+    await expect(page.getByRole("group", { name: `Quantity of ${product!.name_en}` })).toContainText("2");
+    await expectNoHorizontalScroll(page);
+    await expectTapTargets(page);
+    await expectNoA11yViolations(page);
+  });
+});
+

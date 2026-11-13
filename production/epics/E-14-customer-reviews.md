@@ -43,7 +43,7 @@ A signed-in customer posts a review in under 1 minute on a phone; the Owner appr
 | S-265 | Hide and show a published review | review | 3 |
 | S-266 | Reviews section on Home | review | 3 |
 | S-267 | Public Reviews page and footer link | review | 3 |
-| S-268 | Reviews privacy: delete, account deletion, no rating markup | in-progress | 2 |
+| S-268 | Reviews privacy: delete, account deletion, no rating markup | review | 2 |
 | S-269 | Reviews accessibility, language, performance and journey sweep | in-progress | 3 |
 
 Total: 31 pts. Files: `production/stories/E-14/`. Story numbers S-261 to S-275 reserved for this epic (S-270 to S-275 spare); next free number after the block: S-276.

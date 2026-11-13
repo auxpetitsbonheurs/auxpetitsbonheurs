@@ -5,6 +5,7 @@
 // signed out afterwards.
 import { Form, Link, redirect } from "react-router";
 import { AuthCard, FocusedStatus, RefusalAlert, isRefusal, usePosting } from "~/components/account/account-ui";
+import { BotCheck } from "~/components/account/bot-check";
 import { Alert } from "~/components/ui/alert";
 import { PasswordField } from "~/components/ui/password-field";
 import { SubmitButton } from "~/components/ui/submit-button";
@@ -19,7 +20,7 @@ import { recoverySession } from "~/server/auth.server";
 import { parseEmail, passwordProblem } from "~/server/contracts/account";
 import { customerSession, pageLocale, safeCustomerNext } from "~/server/customer-auth.server";
 import { assertSameOrigin } from "~/server/origin.server";
-import { requestCustomerReset } from "~/server/services/customer-auth.server";
+import { botCheckPassed, requestCustomerReset } from "~/server/services/customer-auth.server";
 import type { Route } from "./+types/reset";
 
 type Args = Route.LoaderArgs | Route.ActionArgs;
@@ -56,6 +57,7 @@ async function requestReset(args: Route.ActionArgs, form: Record<string, FormDat
   }
   const limit = await consumeAuthAttempt(args, AUTH_ACTIONS.customerReset, email.value);
   if (!limit.ok) return rateLimitedResult(limit.retryAfterSeconds, locale, { intent: "requestReset", values });
+  if (!(await botCheckPassed(args, form))) return actionError("BOT_CHECK_FAILED", locale, { extra: { intent: "requestReset", values } });
   await requestCustomerReset(args, email.value, locale);
   return { ok: true as const, intent: "requestReset" as const };
 }
@@ -155,6 +157,7 @@ function RequestForm({ expired, actionData }: { expired: boolean; actionData: un
       />
       <Form method="post" noValidate className="mt-6 grid gap-5">
         <input type="hidden" name="intent" value="requestReset" />
+        <BotCheck />
         <TextField
           id="email"
           name="email"

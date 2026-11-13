@@ -35,7 +35,7 @@ As a customer who does not want a password, I want a one-time sign-in link by em
 - Dependencies (R9): S-207 (sign-in page), S-194. Not yet done; expected.
 
 ## Build notes (2026-11-13)
-- Turnstile is not built anywhere in the app yet (checkout and admin sign-in have none either; it is the site-wide public-forms work in S-228 AC2). The `BOT_CHECK_FAILED` parts of the ACs move there; until then these forms rely on the rate limits and the generic answers. Adjusted 2026-11-13 (E-11 build).
+- Turnstile (2026-11-14, reusing E-08's `useTurnstile` and `turnstileContext`): the form carries the invisible widget's token and the server answers BOT_CHECK_FAILED for a missing or bad one (after the rate limit, before any Auth call); without configured keys the check is skipped, as on the custom-cake form. Test: src/app/routes/account/bot-check.test.ts.
 - AC5: the server sends at most one account email per address per minute; the button then reads "Send another link".
 - AC7: Password and Link are two links styled as a switch (`aria-current`), so they work before JavaScript and with a keyboard.
 - Tests: src/app/routes/account/sign-in.test.ts, src/app/routes/auth/confirm.customer.test.ts, src/app/server/supabase-auth.customer.test.ts, src/tests/e2e/account.spec.ts.

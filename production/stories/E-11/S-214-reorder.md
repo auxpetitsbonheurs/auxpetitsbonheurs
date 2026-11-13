@@ -1,5 +1,5 @@
 # S-214: Reorder a past order at today's prices
-Status: ready
+Status: review
 Epic: E-11-customer-accounts
 Spec: docs/specs/features/customer-accounts.md#edge-cases
 Estimate: 5 pts
@@ -38,3 +38,9 @@ As a returning customer, I want to put a past order's items back in my basket at
 - PRD cut order #3 (cut after CSV export and Customers list). If cut, drop the Reorder buttons only; My orders (S-213) stays. Thank-you email link "order again" (S-192) must then link to the menu.
 - Uses the E-05 pricing engine for current prices; skipped-reason enum per contracts.md.
 - Dependencies (R9): S-213, E-05 (pricing, basket `reorderSkipped`), E-03/E-04 (catalogue). Not yet done; expected.
+
+## Build notes (2026-11-13)
+- The basket always prices from today's menu, so reorder only rebuilds the lines (same options and message) and checks each against today's menu with the checkout's own pricing; an ended promotion simply gives the full price (AC2).
+- Skipped reasons per contracts: `sold_out`, `hidden`, `out_of_season`, `option_removed` (pricing's `options_changed`), `free_text` (deleted product or manual line), `basket_full` (lines past 10; never a BASKET_FULL error).
+- The note travels in a one-minute HttpOnly flash cookie (names and reason codes only), shown once in the basket's status region and cleared by that response. Reorder is a plain form post so the browser basket reads the new cookie. Nothing orderable leaves the basket untouched and offers WhatsApp (AC4).
+- Tests: src/app/domain/reorder.test.ts, src/app/routes/account/reorder.test.ts, src/tests/e2e/account.spec.ts.

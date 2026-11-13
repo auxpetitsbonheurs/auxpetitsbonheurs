@@ -91,7 +91,7 @@ export const ErrorBoundary = AdminErrorBoundary;
 type LoaderData = Route.ComponentProps["loaderData"];
 type Settings = LoaderData["settings"];
 type Errors = Record<string, string | undefined>;
-type SaveAnswer = { ok: true; version: number; warnings: { policies: boolean } } | { ok: false; error: { code: string; message: string; fields?: Record<string, string> } };
+type SaveAnswer = { ok: true; version: number; warnings: { policies: boolean; privacyReviews?: boolean } } | { ok: false; error: { code: string; message: string; fields?: Record<string, string> } };
 
 /** Field name -> element id for the error summary's links. */
 const ANCHORS: Record<string, string> = {
@@ -322,6 +322,12 @@ export default function AdminSettings({ loaderData }: Route.ComponentProps) {
       {answer?.ok && answer.warnings.policies && (
         <Alert tone="warning" role="status" title={t("admin.settings.policiesWarningTitle")} className="mt-6">
           <p>{t("admin.settings.policiesWarning")}</p>
+        </Alert>
+      )}
+      {answer?.ok && answer.warnings.privacyReviews && (
+        // E-14 S-268 AC4: the privacy note should say what reviews show and how to delete one.
+        <Alert tone="warning" role="status" title={t("admin.settings.privacyReviewsWarningTitle")} className="mt-6">
+          <p>{t("admin.settings.privacyReviewsWarning")}</p>
         </Alert>
       )}
       <fetcher.Form method="post" noValidate onChange={markDirty} onInput={markDirty} onFocus={keepAboveSaveBar} className="mt-6 grid gap-6">

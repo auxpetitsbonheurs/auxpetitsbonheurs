@@ -168,7 +168,10 @@
       "whatsappText": "Hello, I would like to order but no dates are available on the website.",
       "contact": "Contact us"
     },
-    "paymentInfo": "Payment: the full amount by MCB Juice. You get the payment details as soon as you place your order."
+    "paymentInfo": "Payment: the full amount by MCB Juice. You get the payment details as soon as you place your order.",
+    "savedAddresses": "Your saved addresses",
+    "newAddress": "A new address",
+    "saveAddress": "Save this address to my account"
   },
   "errors": {
     "notFoundTitle": "Page not found",
@@ -248,7 +251,21 @@
     "optionText": "{{group}}: {{text}}",
     "optionQuantity": "{{name}} × {{count}}",
     "cakeMessage": "Message on cake: {{text}}",
-    "optionsChanged": "The choices for this item have changed. It will not be part of your order. Remove it, then choose again from the menu."
+    "optionsChanged": "The choices for this item have changed. It will not be part of your order. Remove it, then choose again from the menu.",
+    "reorder": {
+      "nothing": "Nothing from that order could be added today.",
+      "skipped": "Skipped: {{items}}.",
+      "item": "{{name}} ({{reason}})",
+      "whatsapp": "Ask the bakery on WhatsApp",
+      "reasons": {
+        "sold_out": "sold out",
+        "hidden": "no longer on the menu",
+        "out_of_season": "out of season",
+        "option_removed": "an option is no longer offered",
+        "free_text": "made to order",
+        "basket_full": "the basket is full"
+      }
+    }
   },
   "order": {
     "confirmed": {
@@ -1481,7 +1498,9 @@
       "whatsappFrEmpty": "Empty: the English text will be used.",
       "previewEn": "Preview in English",
       "previewFr": "Preview in French",
-      "previewUsesEn": "EN text will be used"
+      "previewUsesEn": "EN text will be used",
+      "privacyReviewsWarningTitle": "Add a line about reviews",
+      "privacyReviewsWarning": "The privacy note does not mention reviews yet: say that a review shows the first name, last initial, date and words, that you approve each one, and that the customer can delete it at any time. Saved anyway."
     },
     "availability": {
       "title": "Availability",
@@ -2720,7 +2739,9 @@
       "emailMissing": "Enter your email address.",
       "emailFormat": "Enter an email address like name@example.com.",
       "optional": "(optional)",
-      "guestNote": "You never need an account to order: guest checkout always works."
+      "guestNote": "You never need an account to order: guest checkout always works.",
+      "botLoading": "Checking this is a real visit…",
+      "botFailed": "The safety check did not load. Reload the page, or message us on WhatsApp."
     },
     "signIn": {
       "title": "Sign in",
@@ -2856,6 +2877,32 @@
       "note": "Your earlier orders with this email appear in My orders once the email is confirmed.",
       "checkBody": "We sent a link to {{email}}. Open it to confirm your email; your orders will then appear in My orders.",
       "inUse": "This email already has an account. Sign in to see your orders."
+    },
+    "addresses": {
+      "title": "My addresses",
+      "empty": "No saved addresses yet",
+      "add": "Add address",
+      "addTitle": "Add an address",
+      "editTitle": "Edit the address",
+      "label": "Label",
+      "labelHint": "For example Home or Work",
+      "address": "Address",
+      "landmark": "Landmark",
+      "makeDefault": "Use this address by default",
+      "save": "Save address",
+      "default": "Default",
+      "edit": "Edit",
+      "editName": "Edit address {{label}}",
+      "delete": "Delete",
+      "deleteName": "Delete address {{label}}",
+      "deleteTitle": "Delete this address?",
+      "deleteBody": "Past orders keep the address they were delivered to.",
+      "cancel": "Cancel",
+      "errors": {
+        "label": "Enter a label, e.g. Home.",
+        "address": "Enter the address.",
+        "landmark": "Use 200 characters or fewer."
+      }
     }
   },
   "reviews": {

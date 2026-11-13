@@ -3,6 +3,7 @@
 // credential problem; the link request always answers the same (no account enumeration).
 import { Form, Link, redirect } from "react-router";
 import { AuthCard, FocusedStatus, RefusalAlert, isRefusal, usePosting } from "~/components/account/account-ui";
+import { BotCheck } from "~/components/account/bot-check";
 import { Alert } from "~/components/ui/alert";
 import { PasswordField } from "~/components/ui/password-field";
 import { SubmitButton } from "~/components/ui/submit-button";
@@ -16,7 +17,7 @@ import { AUTH_ACTIONS, clearAuthAttempts, consumeAuthAttempt, rateLimitedResult 
 import { parseEmail } from "~/server/contracts/account";
 import { customerSession, pageLocale, safeCustomerNext, signInCustomer } from "~/server/customer-auth.server";
 import { assertSameOrigin } from "~/server/origin.server";
-import { sendSignInLink } from "~/server/services/customer-auth.server";
+import { botCheckPassed, sendSignInLink } from "~/server/services/customer-auth.server";
 import { recordUsage } from "~/server/usage.server";
 import type { Route } from "./+types/sign-in";
 
@@ -43,6 +44,7 @@ async function passwordSignIn(args: Route.ActionArgs, form: Record<string, FormD
   if (!email.ok || password === "") return actionError("VALIDATION_FAILED", locale, { fields: fieldMessages(problems, locale), extra: { intent: "password", values } });
   const limit = await consumeAuthAttempt(args, AUTH_ACTIONS.customerSignIn, email.value);
   if (!limit.ok) return rateLimitedResult(limit.retryAfterSeconds, locale, { intent: "password", values });
+  if (!(await botCheckPassed(args, form))) return actionError("BOT_CHECK_FAILED", locale, { extra: { intent: "password", values } });
   const result = await signInCustomer(args, { email: email.value, password });
   if (!result.ok) return actionError("INVALID_CREDENTIALS", locale, { extra: { intent: "password", values } });
   await clearAuthAttempts(args, AUTH_ACTIONS.customerSignIn, email.value);
@@ -57,6 +59,7 @@ async function linkSignIn(args: Route.ActionArgs, form: Record<string, FormDataE
   if (!email.ok) return actionError("VALIDATION_FAILED", locale, { fields: fieldMessages(email.problems, locale), extra: { intent: "magicLink", values } });
   const limit = await consumeAuthAttempt(args, AUTH_ACTIONS.customerLink, email.value);
   if (!limit.ok) return rateLimitedResult(limit.retryAfterSeconds, locale, { intent: "magicLink", values });
+  if (!(await botCheckPassed(args, form))) return actionError("BOT_CHECK_FAILED", locale, { extra: { intent: "magicLink", values } });
   await sendSignInLink(args, email.value, safeCustomerNext(form.next, locale));
   return { ok: true as const, intent: "magicLink" as const, values };
 }
@@ -138,6 +141,7 @@ function PasswordForm({ next, refusal }: { next: string; refusal: ReturnType<typ
       <RefusalAlert refusal={refusal ? { ...refusal, retryAfterMinutes: undefined } : undefined} anchors={ANCHORS} message={message} />
       <Form method="post" noValidate className="mt-6 grid gap-5">
         <input type="hidden" name="intent" value="password" />
+        <BotCheck />
         <input type="hidden" name="next" value={next} />
         <EmailField value={refusal?.values?.email} error={fields?.email} />
         <PasswordField
@@ -177,6 +181,7 @@ function LinkForm({ next, refusal, sent }: { next: string; refusal: ReturnType<t
       <RefusalAlert refusal={refusal ? { ...refusal, retryAfterMinutes: undefined } : undefined} anchors={ANCHORS} message={message} />
       <Form method="post" noValidate className="mt-6 grid gap-5">
         <input type="hidden" name="intent" value="magicLink" />
+        <BotCheck />
         <input type="hidden" name="next" value={next} />
         <EmailField value={sent?.email ?? refusal?.values?.email} error={refusal?.error.fields?.email} />
         <SubmitButton pending={pending} pendingText={t("account.signIn.linkSending")} size="lg" className="w-full">

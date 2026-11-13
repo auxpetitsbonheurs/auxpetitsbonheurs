@@ -1,5 +1,5 @@
 # S-213: See my current and past orders with their status
-Status: in-progress
+Status: review
 Epic: E-11-customer-accounts
 Spec: docs/specs/features/customer-accounts.md#ux
 Estimate: 3 pts
@@ -41,3 +41,4 @@ As a signed-in customer, I want a list of my orders with status, so that I can f
 - Built: list, Current/Past, Track links, empty state, error state with Retry, G-02 filter (session row AND confirmed email, or manual). Reorder buttons arrive with S-214.
 - AC7: server-rendered, so no skeleton; a failed read shows the error with Retry.
 - Tests: src/app/routes/account/orders.test.ts, src/tests/e2e/account.spec.ts.
+- Reorder buttons on past orders now built (S-214).

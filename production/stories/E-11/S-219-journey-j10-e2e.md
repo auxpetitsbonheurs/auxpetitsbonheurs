@@ -1,5 +1,5 @@
 # S-219: Journey J10 works end to end: save details, confirm, sign in, reorder
-Status: ready
+Status: review
 Epic: E-11-customer-accounts
 Spec: docs/specs/features/customer-accounts.md#acceptance-criteria
 Estimate: 3 pts
@@ -30,3 +30,6 @@ As the Owner, I want the whole returning-customer journey proven on staging, so 
 - Email steps use a test inbox helper (no real network in unit tests; e2e uses the staging test inbox or a mail capture).
 - If FR-037/FR-038 are cut, remove AC1/AC2/AC5 accordingly (PRD cut order).
 - Dependencies (R9): S-206..S-216, E-10 emails. Not yet done; expected.
+
+## Build notes (2026-11-14)
+- src/tests/e2e/j10-account-journey.spec.ts on the 375 px phone: AC1, AC2, AC4, AC5, AC6, AC7. AC3 (a guest orders from /fr/basket, no account) is covered by checkout.spec.ts and skeleton-order.spec.ts. Emails come from the GoTrue stub (no real network), so the journey with real emails still waits for Resend on a custom domain (E-10).

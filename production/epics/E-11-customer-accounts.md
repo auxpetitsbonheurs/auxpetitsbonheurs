@@ -1,6 +1,6 @@
 # E-11: Customer accounts
 
-Status: in progress · Milestone: MVP
+Status: review (all stories built; S-213..S-219 checked 2026-11-14) · Milestone: MVP
 PRD: FR-034, FR-035, FR-036, FR-037, FR-038 · Specs: docs/specs/features/customer-accounts.md
 Release phase: 5 Notifications and accounts (part 2)
 
@@ -22,15 +22,15 @@ J10: guest "Save my details" then confirm email, sign in, My orders shows prior 
 | S-208 | Sign in with a one-time email link | review | 3 |
 | S-209 | Reset a forgotten password | review | 3 |
 | S-210 | Keep my profile and email language up to date | review | 3 |
-| S-211 | Save, edit and delete my delivery addresses | ready | 3 |
-| S-212 | Checkout prefills my details and offers my saved addresses | ready | 3 |
-| S-213 | See my current and past orders with their status | in-progress | 3 |
-| S-214 | Reorder a past order at today's prices (cut #3) | ready | 5 |
+| S-211 | Save, edit and delete my delivery addresses | review | 3 |
+| S-212 | Checkout prefills my details and offers my saved addresses | review | 3 |
+| S-213 | See my current and past orders with their status | review | 3 |
+| S-214 | Reorder a past order at today's prices (cut #3) | review | 5 |
 | S-215 | Offer "Save my details" after a guest order (cut #4) | review | 3 |
 | S-216 | Earlier guest orders appear only after I confirm my email (cut #4) | review | 5 |
-| S-217 | Count account usage without tracking anyone | in-progress | 2 |
-| S-218 | Account screens pass an accessibility and language sweep | ready | 3 |
-| S-219 | Journey J10 works end to end | ready | 3 |
+| S-217 | Count account usage without tracking anyone | review | 2 |
+| S-218 | Account screens pass an accessibility and language sweep | review | 3 |
+| S-219 | Journey J10 works end to end | review | 3 |
 
 Total: 49 pts. Story files: `production/stories/E-11/`. Cut order: S-214 (#3), S-215/S-216 (#4), S-206..S-213 (#5; FR-034 is Must so cutting S-206..S-209 needs a product-director decision). Dependencies on earlier epics (R9) not yet done.
 
