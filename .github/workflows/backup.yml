@@ -43,26 +43,37 @@ jobs:
       RCLONE_CONFIG_GDRIVE_ROOT_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - name: Check backup secrets
         run: src/scripts/check-keys.sh --require SUPABASE_DB_URL SUPABASE_S3_ENDPOINT SUPABASE_S3_REGION SUPABASE_S3_ACCESS_KEY_ID SUPABASE_S3_SECRET_ACCESS_KEY AGE_RECIPIENT GDRIVE_TOKEN GDRIVE_FOLDER_ID
       - name: Install rclone and age
         run: sudo apt-get update -q && sudo apt-get install -y -q rclone age
       - name: Dump the database
-        # pg_dump from the Postgres 17 image (must be >= the Supabase server version).
+        # App tables (database.dump), Auth accounts (auth.dump) and counts.tsv for the restore
+        # check; the same script the staging rehearsal proves (backup-rehearsal.yml, S-232).
         run: |
           mkdir -p backup/storage
-          docker run --rm --user "$(id -u):$(id -g)" -e SUPABASE_DB_URL -v "$PWD/backup:/backup" postgres:17 \
-            sh -c 'pg_dump --format=custom --no-owner --no-privileges --file=/backup/database.dump "$SUPABASE_DB_URL"'
+          src/scripts/backup-dump.sh backup
       - name: Copy the Storage buckets
         run: |
           rclone copy supabase:public-images backup/storage/public-images
           rclone copy supabase:request-photos backup/storage/request-photos
+      - name: Record what the backup holds (job summary, counts only)
+        run: |
+          {
+            echo "## Weekly backup $(date -u +%Y-%m-%d)"
+            echo "- database.dump $(du -h backup/database.dump | cut -f1), auth.dump $(du -h backup/auth.dump | cut -f1)"
+            echo "- photos: public-images $(find backup/storage/public-images -type f 2>/dev/null | wc -l) files, request-photos $(find backup/storage/request-photos -type f 2>/dev/null | wc -l) files"
+            echo "- before encryption: $(du -sh backup | cut -f1)"
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Encrypt
         run: |
           ARCHIVE="apb-backup-$(date -u +%Y-%m-%d).tar.age"
           tar -C backup -cf - . | age --encrypt --recipient "$AGE_RECIPIENT" --output "$ARCHIVE"
           rm -rf backup
           echo "ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
+          echo "- encrypted archive $ARCHIVE: $(du -h "$ARCHIVE" | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
       - name: Upload to Google Drive
         run: 'rclone copy "$ARCHIVE" gdrive:'
       - name: Keep the latest 8

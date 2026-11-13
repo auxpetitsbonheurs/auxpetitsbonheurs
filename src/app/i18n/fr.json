@@ -209,6 +209,7 @@
     "viewBasket": "Voir le panier",
     "soldOut": "Épuisé",
     "soldOutHint": "Ce gâteau est épuisé pour le moment. Écrivez-nous sur WhatsApp pour savoir quand il revient.",
+    "metaDescription": "{{name}}, préparé sur commande par Aux petits bonheurs à Beau Bassin, Maurice. Commandez en ligne, à retirer ou en livraison.",
     "addedCount_one": "Ajouté à votre panier",
     "addedCount_other": "Ajouté à votre panier ({{count}} dans le panier)"
   },

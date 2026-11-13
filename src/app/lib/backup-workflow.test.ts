@@ -7,6 +7,9 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
 
 const workflow = readFileSync(fileURLToPath(new URL("../../../.github/workflows/backup.yml", import.meta.url)), "utf8");
+const rehearsal = readFileSync(fileURLToPath(new URL("../../../.github/workflows/backup-rehearsal.yml", import.meta.url)), "utf8");
+const dumpScript = readFileSync(fileURLToPath(new URL("../../scripts/backup-dump.sh", import.meta.url)), "utf8");
+const verifyScript = fileURLToPath(new URL("../../scripts/backup-verify.sh", import.meta.url));
 const at = (text: string) => {
   const index = workflow.indexOf(text);
   expect(index, text).toBeGreaterThanOrEqual(0);
@@ -23,7 +26,7 @@ describe("backup workflow schedule (AC5)", () => {
 describe("backup workflow steps (AC5)", () => {
   test("dump, copy both buckets, encrypt, upload, keep the latest 8, in that order", () => {
     const order = [
-      at("pg_dump --format=custom"),
+      at("src/scripts/backup-dump.sh backup"),
       at("rclone copy supabase:public-images"),
       at("rclone copy supabase:request-photos"),
       at('age --encrypt --recipient "$AGE_RECIPIENT"'),
@@ -34,8 +37,21 @@ describe("backup workflow steps (AC5)", () => {
   });
 
   test("pg_dump runs as the runner's user so it can write into the runner-owned backup folder", () => {
-    const dockerRun = workflow.slice(at("docker run"), at("pg_dump --format=custom"));
+    const dockerRun = dumpScript.slice(dumpScript.indexOf("docker run"), dumpScript.indexOf("pg_dump --format=custom"));
     expect(dockerRun).toContain('--user "$(id -u):$(id -g)"');
+  });
+
+  test("S-232: the dump holds the app tables, the Auth accounts (data only) and the counts for the restore check", () => {
+    expect(dumpScript).toContain("pg_dump --format=custom --no-owner --no-privileges --schema=public --schema=drizzle --file=/backup/database.dump");
+    expect(dumpScript).toContain("pg_dump --format=custom --no-owner --no-privileges --data-only --schema=auth --file=/backup/auth.dump");
+    expect(dumpScript).toContain("> /backup/counts.tsv");
+    expect(dumpScript).toContain("postgres:17");
+  });
+
+  test("S-231 AC2: the run summary records sizes and photo counts", () => {
+    const summary = workflow.slice(at("Record what the backup holds"), at("- name: Encrypt"));
+    expect(summary).toContain("GITHUB_STEP_SUMMARY");
+    expect(summary).toMatch(/public-images .*files/);
   });
 
   test("the plain dump and bucket copies never leave the runner unencrypted", () => {
@@ -49,7 +65,7 @@ describe("backup workflow secrets (AC6)", () => {
   const names = [...new Set([...workflow.matchAll(/secrets\.([A-Z0-9_]+)/g)].map((m) => m[1]!))];
 
   test("checks every required secret first and fails naming the missing one", () => {
-    expect(at("scripts/check-keys.sh --require")).toBeLessThan(at("pg_dump --format=custom"));
+    expect(at("scripts/check-keys.sh --require")).toBeLessThan(at("src/scripts/backup-dump.sh"));
     for (const name of names.filter((n) => n !== "BACKUP_RESEND_API_KEY" && n !== "BACKUP_NOTIFY_EMAIL")) {
       expect(workflow.slice(at("scripts/check-keys.sh --require")).split("\n")[0]).toContain(name);
     }
@@ -92,5 +108,54 @@ describe("scripts/check-keys.sh --require (AC6: never a silent success)", () => 
     expect(status).toBe(0);
     expect(out).toContain("configured=true");
     expect(out).not.toContain("pg-value-xyz");
+  });
+});
+
+describe("backup rehearsal on staging (S-232)", () => {
+  test("manual only, staging secrets only, no production path", () => {
+    expect(rehearsal).toMatch(/^on:\n {2}workflow_dispatch:\n/m);
+    expect(rehearsal).toContain("environment: staging");
+    expect(rehearsal).not.toMatch(/production|PRODUCTION_|SUPABASE_S3|GDRIVE/);
+    expect([...new Set([...rehearsal.matchAll(/secrets\.([A-Z0-9_]+)/g)].map((m) => m[1]))].sort()).toEqual([
+      "STAGING_DATABASE_URL", "STAGING_SUPABASE_SERVICE_ROLE_KEY", "STAGING_SUPABASE_URL",
+    ]);
+  });
+
+  test("runs the weekly backup's own dump script, then restores into a clean local Postgres and compares", () => {
+    expect(rehearsal).toContain("src/scripts/backup-dump.sh backup");
+    expect(rehearsal).toContain("src/scripts/backup-verify.sh backup");
+    expect(rehearsal).toMatch(/RESTORE_DB_URL: postgres:\/\/postgres:postgres@127\.0\.0\.1:5433\/restore/);
+  });
+
+  test("staging is only read: photos by GET, no upload, delete or SQL write", () => {
+    expect(rehearsal).not.toMatch(/curl[^\n]*-X\s*(POST|PUT|DELETE|PATCH)|--data|rclone|\b(insert|update|delete) (into|from)?\s/i);
+  });
+
+  test("the plain copy never leaves the runner: only an age-encrypted archive, kept 1 day", () => {
+    const uploads = rehearsal.slice(rehearsal.indexOf("actions/upload-artifact"));
+    expect(uploads).toContain("path: rehearsal.tar.age");
+    expect(uploads).toContain("retention-days: 1");
+    expect(rehearsal).toContain('age --encrypt --recipient "$RECIPIENT"');
+  });
+});
+
+describe("scripts/backup-verify.sh refuses before touching anything (S-232 AC5, AC6)", () => {
+  const run = (dir: string, url: string) => {
+    const result = spawnSync("bash", [verifyScript, dir], { env: { PATH: process.env.PATH ?? "", RESTORE_DB_URL: url } as unknown as NodeJS.ProcessEnv, encoding: "utf8" });
+    return { status: result.status, out: result.stdout + result.stderr };
+  };
+
+  test("a Supabase database is never a restore target", () => {
+    const { status, out } = run(mkdtempSync(join(tmpdir(), "bk-")), "postgresql://postgres.abc:pw@aws-0-eu.pooler.supabase.com:5432/postgres");
+    expect(status).toBe(1);
+    expect(out).toMatch(/points at Supabase/);
+  });
+
+  test("a missing backup file stops with a clear error", () => {
+    const dir = mkdtempSync(join(tmpdir(), "bk-"));
+    writeFileSync(join(dir, "counts.tsv"), "public.orders\t1\n");
+    const { status, out } = run(dir, "postgres://postgres:postgres@127.0.0.1:5433/restore");
+    expect(status).toBe(1);
+    expect(out).toMatch(/database\.dump is missing or empty.*nothing was restored/);
   });
 });

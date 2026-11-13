@@ -41,6 +41,40 @@ export interface PageSeo {
   image?: string | null;
   /** True while the page still holds placeholder text, and for private pages. */
   noindex?: boolean;
+  /** Text alternative of the page's own share image (S-224), e.g. the product name. */
+  imageAlt?: string;
+}
+
+/** Widest share image sent to previews: WhatsApp and Facebook show 1200 px wide at most. */
+export const SHARE_IMAGE_MAX_WIDTH = 1200;
+
+/**
+ * A page description search engines and previews show whole (S-224): the text itself, on one
+ * line, cut on a word with "…" past 160 characters; the fallback when the text is missing or
+ * shorter than 50 characters.
+ */
+export function metaDescription(text: string | null | undefined, fallback: string): string {
+  const clean = (value: string) => value.replace(/\s+/g, " ").trim();
+  const chosen = text && clean(text).length >= DESCRIPTION_LENGTH.min ? clean(text) : clean(fallback);
+  if (chosen.length <= DESCRIPTION_LENGTH.max) return chosen;
+  const cut = chosen.slice(0, DESCRIPTION_LENGTH.max - 1);
+  const word = cut.slice(0, cut.lastIndexOf(" ") > 0 ? cut.lastIndexOf(" ") : cut.length);
+  return `${word.replace(/[\s,.;:!?-]+$/, "")}…`;
+}
+
+/**
+ * The share image of a photo (S-224 AC1, AC6): its widest stored copy no wider than 1200 px
+ * (srcset), else the original; null for an SVG, which link previews cannot show.
+ */
+export function shareImage(photo: { url: string; srcSet?: string } | null | undefined): string | null {
+  if (!photo || /\.svg(?:$|[?#])/i.test(photo.url)) return null;
+  const copies = (photo.srcSet ?? "")
+    .split(",")
+    .map((entry) => entry.trim().match(/^(\S+)\s+(\d+)w$/))
+    .flatMap((m) => (m ? [{ url: m[1]!, width: Number(m[2]) }] : []))
+    .filter((copy) => copy.width <= SHARE_IMAGE_MAX_WIDTH)
+    .sort((a, b) => b.width - a.width);
+  return copies[0]?.url ?? photo.url;
 }
 
 export function pageTitle(title: string): string {
@@ -81,6 +115,7 @@ export function seoMeta(page: PageSeo): MetaDescriptor[] {
   const own = page.image ? absolute(page.origin, page.image) : null;
   const image = own ?? absolute(page.origin, BRAND_SHARE_IMAGE.path);
   if (image) tags.push({ property: "og:image", content: image }, { name: "twitter:image", content: image });
+  if (own && page.imageAlt) tags.push({ property: "og:image:alt", content: page.imageAlt }, { name: "twitter:image:alt", content: page.imageAlt });
   if (image && !own) {
     tags.push(
       { property: "og:image:width", content: String(BRAND_SHARE_IMAGE.width) },

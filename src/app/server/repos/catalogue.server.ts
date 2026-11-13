@@ -199,6 +199,19 @@ export const optionGroupsJson = sql<OptionGroupRecord[] | string>`coalesce((
 export const parseJsonColumn = <T>(value: T | string): T => (typeof value === "string" ? (JSON.parse(value) as T) : value);
 
 /**
+ * Current slugs of the product pages a customer can open (not hidden), with their season, for
+ * /sitemap.xml (S-224 AC4, AC5). Old slugs live in product_slug_history and are never listed.
+ */
+export async function listProductPageSlugs(db: Database): Promise<{ slug: string; season: { startsOn: string; endsOn: string } | null }[]> {
+  const rows = await db
+    .select({ slug: product.slug, startsOn: product.seasonalStartsOn, endsOn: product.seasonalEndsOn })
+    .from(product)
+    .where(ne(product.status, "hidden"))
+    .orderBy(asc(product.sortOrder), asc(product.nameEn));
+  return rows.map(({ slug, startsOn, endsOn }) => ({ slug, season: startsOn && endsOn ? { startsOn, endsOn } : null }));
+}
+
+/**
  * The public menu (ADR-0004): every product that is not hidden, in menu order, with photos
  * and option groups, in one query. Hidden products never leave the server.
  */

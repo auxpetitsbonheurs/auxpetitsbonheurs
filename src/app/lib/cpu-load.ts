@@ -66,6 +66,76 @@ export function orderForm({ basketHtml, date, runId, index }: OrderFormInput): U
   return new URLSearchParams(fields as Record<string, string>);
 }
 
+/** The parts of an `/api/menu` product the line plan reads. */
+export interface PlanProduct {
+  id: string;
+  type: string;
+  status: string;
+  minQuantity: number | null;
+  optionGroups: readonly {
+    id: string;
+    kind: string;
+    required: boolean;
+    quantityMin: number | null;
+    textMaxLength: number | null;
+    choices: readonly { id: string }[];
+  }[];
+}
+
+export interface PlannedLine {
+  /** The product page form an add-to-basket posts (no JavaScript). */
+  fields: URLSearchParams;
+}
+
+const MAX_VARIANTS_PER_PRODUCT = 50;
+
+/** Variant `v` of a product as add-to-basket fields: required groups filled, text made unique where allowed. */
+function lineFields(product: PlanProduct, v: number): URLSearchParams {
+  const fields = new URLSearchParams({ intent: "addToBasket", productId: product.id, quantity: String(Math.max(1, product.minQuantity ?? 1)) });
+  const label = `CPU line ${v + 1}`;
+  let cycle = v;
+  for (const group of product.optionGroups) {
+    if (group.kind === "text") {
+      if (group.required || v > 0) fields.set(`optionText.${group.id}`, label.slice(0, group.textMaxLength ?? label.length));
+    } else if (group.kind === "quantity") {
+      if (group.required) fields.set(`optionQty.${group.id}`, String(Math.max(1, group.quantityMin ?? 1)));
+    } else if (group.choices.length > 0) {
+      const size = group.required ? group.choices.length : 2; // optional: without, then with the first choice
+      const pick = cycle % size;
+      cycle = Math.floor(cycle / size);
+      if (group.required) fields.set(`option.${group.id}`, group.choices[pick]!.id);
+      else if (pick === 1) fields.append(`option.${group.id}`, group.choices[0]!.id);
+    }
+  }
+  // Cakes take a message unless they have their own text option: it makes every cake line distinct.
+  if (product.type === "cake" && !product.optionGroups.some((g) => g.kind === "text") && v > 0) fields.set("cakeMessage", label);
+  return fields;
+}
+
+/**
+ * S-097 AC1: `count` distinct basket lines from the menu's orderable products, taken in turn,
+ * each with its required options set (a distinct choice, add-on or cake message per line, so the
+ * basket keeps them as separate lines instead of merging them).
+ */
+export function basketLinePlan(products: readonly PlanProduct[], count: number): PlannedLine[] {
+  const orderable = products.filter((p) => p.status === "available");
+  if (orderable.length === 0) throw new Error("No orderable product on the menu");
+  const seen = new Set<string>();
+  const plan: PlannedLine[] = [];
+  for (let v = 0; v < MAX_VARIANTS_PER_PRODUCT && plan.length < count; v += 1) {
+    for (const product of orderable) {
+      if (plan.length >= count) break;
+      const fields = lineFields(product, v);
+      const key = fields.toString();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      plan.push({ fields });
+    }
+  }
+  if (plan.length < count) throw new Error(`Only ${plan.length} distinct lines are orderable on this menu`);
+  return plan;
+}
+
 /** The load script creates real orders: only staging or a local build may be targeted. */
 export function assertMeasurableTarget(base: string): void {
   const host = new URL(base).hostname;

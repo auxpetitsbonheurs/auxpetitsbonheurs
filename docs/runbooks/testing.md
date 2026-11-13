@@ -1,8 +1,9 @@
 # Testing: the fast local loop
 
 CI runs every suite on every code push (`.github/workflows/ci.yml`). The repository is
-private on GitHub's free plan (2,000 runner minutes a month), and the suites are what
-CI is for, so before a push run only what the change can break, then let CI run the rest.
+public, so GitHub's standard runners cost nothing (checked 2026-11-13, docs/runbooks/free-plans.md),
+but a CI run still takes 12-15 minutes and the suites are what CI is for, so before a push run
+only what the change can break, then let CI run the rest.
 
 ## Before each push (agents and humans)
 

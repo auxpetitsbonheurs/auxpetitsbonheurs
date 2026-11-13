@@ -6,7 +6,10 @@
 // cached per isolate like Settings, cleared by an admin save). Each page's `meta` passes the
 // flag of its own page read as `seoMeta({ noindex })` (lib/seo.ts): a page the client edits
 // joins the sitemap and loses noindex on the next read.
+import { isInSeason } from "~/domain/season";
+import { todayMU } from "~/domain/time";
 import type { Database } from "~/server/db.server";
+import { listProductPageSlugs } from "~/server/repos/catalogue.server";
 import { reviewSummary } from "~/server/repos/reviews.server";
 import { getPagePlaceholders } from "~/server/services/site-page.server";
 
@@ -59,7 +62,9 @@ async function hasApprovedReviews(db: Database): Promise<boolean> {
 }
 
 /** Unprefixed paths for /sitemap.xml. */
-export async function sitemapPaths(db: Database): Promise<string[]> {
-  const [flags, reviews] = await Promise.all([contentPagePlaceholders(db), hasApprovedReviews(db)]);
-  return [...indexablePaths(flags), ...(reviews ? [REVIEWS_PATH] : [])];
+export async function sitemapPaths(db: Database, today: string = todayMU(new Date())): Promise<string[]> {
+  const [flags, reviews, products] = await Promise.all([contentPagePlaceholders(db), hasApprovedReviews(db), listProductPageSlugs(db)]);
+  // S-224 AC4, AC5: product pages a customer can open today (not hidden, in season), current slug only.
+  const productPaths = products.filter((p) => isInSeason(p.season, today)).map((p) => `/menu/${encodeURIComponent(p.slug)}`);
+  return [...indexablePaths(flags), ...(reviews ? [REVIEWS_PATH] : []), ...productPaths];
 }

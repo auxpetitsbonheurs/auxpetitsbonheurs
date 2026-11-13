@@ -86,6 +86,10 @@ dashboard → Workers & Pages → Overview, "Subdomain").
 | production | `auxpetitsbonheurs` | `https://auxpetitsbonheurs.<subdomain>.workers.dev` |
 
 Staging answers every request with `X-Robots-Tag: noindex, nofollow`; production does not.
+The code holds no site address (canonical URLs, share previews, sitemap and email links come from
+the address a request arrives on), so a custom domain later is configuration only:
+[`docs/runbooks/custom-domain.md`](../docs/runbooks/custom-domain.md). Free-plan limits and the
+weekly 5-minute check: [`docs/runbooks/free-plans.md`](../docs/runbooks/free-plans.md).
 
 ### How deploys happen
 
@@ -253,10 +257,15 @@ cake becomes the real Chocolate Cake (same id).
 
 Weekly, every Sunday 02:00 Mauritius time (Saturday 22:00 UTC), and on demand (GitHub →
 Actions → backup → Run workflow): `.github/workflows/backup.yml` dumps the **production**
-database (`pg_dump --format=custom`), copies both Storage buckets (`public-images`,
-`request-photos`) with `rclone`, encrypts everything with `age`, uploads one
+database with `scripts/backup-dump.sh` (app tables in `database.dump`, Auth accounts in
+`auth.dump`, row and photo counts in `counts.tsv`), copies both Storage buckets
+(`public-images`, `request-photos`) with `rclone`, encrypts everything with `age`, uploads one
 `apb-backup-<date>.tar.age` file to the bakery's Google Drive folder and keeps the latest 8.
-Nothing unencrypted leaves GitHub's runner.
+The run's summary records the sizes and photo counts. Nothing unencrypted leaves GitHub's runner.
+
+GitHub turns off scheduled workflows in a public repository after 60 days without a commit:
+check monthly that the last Sunday run is green, and press "Enable workflow" if GitHub disabled it
+(`docs/runbooks/free-plans.md`).
 
 Accounts involved (all the bakery's): GitHub (runs it, holds the secrets), Supabase
 (production project: database and Storage), Google Drive (the backup folder), Resend
@@ -286,8 +295,14 @@ value: `docs/runbooks/deploy-keys.md` section 5):
 Optional variable: `BACKUP_EMAIL_FROM` (defaults to Resend's test sender, which only
 delivers to the Resend account's own address; set it once the bakery domain is verified).
 
-Restore (new Supabase project → `pg_restore` → buckets back → secrets → redeploy) is
-written and tested in E-12 as `docs/runbooks/restore.md`, once on staging before launch.
+### Restore a backup
+
+Step by step in [`docs/runbooks/restore.md`](../docs/runbooks/restore.md): open a backup with the
+`age` key, **check** it in a throwaway Postgres (`scripts/backup-verify.sh` compares every table,
+photo bucket, sign-in account and order number with `counts.tsv`), or **restore for real** into a
+new Supabase project on the Owner's instruction (never over the live database). The same check runs
+on staging data, read-only, with GitHub → Actions → **backup-rehearsal** → Run workflow; the evidence
+(E-12, S-232) is in `production/audits/backup-restore-2026.md`.
 
 Supabase's free plan has no point-in-time recovery: the worst case is losing up to one week
 of data (since the last Sunday backup). Orders also exist in the customer and admin emails.
