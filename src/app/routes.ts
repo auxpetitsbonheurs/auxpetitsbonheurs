@@ -87,6 +87,8 @@ const resourceRoutes = [
   route("api/basket/reissue", "routes/hooks/basket-reissue.ts"),
   // Promo banner Dismiss (S-062): the session cookie, with or without JavaScript.
   route("api/banner/dismiss", "routes/hooks/banner-dismiss.ts"),
+  // Custom cake request photos (E-08 S-153): signed upload URLs to the private bucket.
+  route("api/custom-cake/uploads", "routes/hooks/request-uploads.ts"),
   // Supabase Auth Send Email hook (S-024) and the emailed link's landing (S-026).
   route("hooks/supabase/send-email", "routes/hooks/send-email.ts"),
   route("auth/confirm", "routes/auth/confirm.ts"),

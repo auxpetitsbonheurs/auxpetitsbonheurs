@@ -36,6 +36,7 @@ const integrationSchema = z.object({
   VAPID_PRIVATE_KEY: required,
   VAPID_SUBJECT: required,
   SUPABASE_AUTH_HOOK_SECRET: required,
+  TURNSTILE_SITE_KEY: required,
   TURNSTILE_SECRET_KEY: required,
   SENTRY_DSN: url,
 });

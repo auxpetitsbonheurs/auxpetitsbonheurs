@@ -50,7 +50,7 @@ describe("dispatch (AC4)", () => {
     expect(String((results[0] as { error: string }).error)).toMatch(/SUPABASE_URL/);
   });
 
-  test("keepAlive, the missing-integrations check, the purges and the unpaid-order deadlines (S-280) run on every hourly tick", () => {
-    expect(JOBS.map((job) => job.name)).toEqual(["keepAlive", "integrations", "purgeRateLimits", "purgeStorage", "paymentDeadlines"]);
+  test("keepAlive, the missing-integrations check, the purges, the unpaid-order deadlines (S-280) and the quote expiry (E-08 S-160) run on every hourly tick", () => {
+    expect(JOBS.map((job) => job.name)).toEqual(["keepAlive", "integrations", "purgeRateLimits", "purgeStorage", "paymentDeadlines", "expireQuotes"]);
   });
 });

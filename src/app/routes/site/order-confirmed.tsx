@@ -37,10 +37,11 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
   const signer = context.get(confirmationContext);
   const fresh = signer ? await signer.read(request, params.token, context.get(clockContext).now()) : undefined;
   // A cookie set before Juice payment carries no payment snapshot: read the database instead.
+  // Only website orders set the cookie: a custom request always reads the database.
   if (fresh && fresh.locale === locale && fresh.payment) {
     const { totalRs, placedAt, ...settings } = fresh.payment;
     const payment = paymentView({ totalRs, reference: fresh.number, createdAt: new Date(placedAt), settings, locale });
-    return confirmation(url, params.token, fresh.locale, fresh.number, fresh.leftOut, payment);
+    return confirmation(url, params.token, fresh.locale, fresh.number, fresh.leftOut, payment, false);
   }
   // One query: the order, the number prefix and the left-out names (ADR-0003 amendment 3).
   // Left out (UX audit H1, AC41): product ids from the `apb_left_out` cookie the basket
@@ -61,13 +62,15 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
   const payment = found.status === "awaiting_payment"
     ? paymentView({ totalRs: found.totalRs, reference: number, createdAt: found.createdAt, settings: found.payment, locale })
     : null;
-  return confirmation(url, order.trackingToken, order.locale, number, leftOut, payment);
+  return confirmation(url, order.trackingToken, order.locale, number, leftOut, payment, found.isRequest);
 }
 
 /** The page data, the same whether it came from the cookie or the database. */
-function confirmation(url: URL, token: string, orderLocale: Locale, number: string, leftOut: string[], payment: PaymentView | null) {
+function confirmation(url: URL, token: string, orderLocale: Locale, number: string, leftOut: string[], payment: PaymentView | null, isRequest: boolean) {
   return {
-    title: translate("order.confirmed.metaTitle", localeFromPathname(url.pathname)),
+    title: translate(isRequest ? "customRequest.confirmed.metaTitle" : "order.confirmed.metaTitle", localeFromPathname(url.pathname)),
+    /** A custom cake request (E-08 S-151 AC2): "Request received, we will send you a quote". */
+    isRequest,
     number,
     trackingUrl: `${url.origin}${localePath(orderLocale, `/t/${token}`)}`,
     offerSaveDetails: false,
@@ -87,12 +90,12 @@ function useFocusOnArrival() {
   return ref;
 }
 
-function NumberCard({ number, onCopy, copied }: { number: string; onCopy?: () => void; copied: boolean }) {
+function NumberCard({ label, number, onCopy, copied }: { label: string; number: string; onCopy?: () => void; copied: boolean }) {
   const { t } = useI18n();
   return (
     <section aria-labelledby="number-label" className="mt-6 rounded-lg bg-muted p-5">
       <h2 id="number-label" className="text-lg">
-        {t("order.confirmed.numberLabel")}
+        {label}
       </h2>
       <p className="mt-1 font-heading text-4xl tabular-nums wrap-anywhere">{number}</p>
       {onCopy && (
@@ -109,20 +112,25 @@ export default function OrderConfirmed({ loaderData }: Route.ComponentProps) {
   const heading = useFocusOnArrival();
   const hydrated = useHydrated();
   const { status, copy } = useCopyStatus();
-  const { number, trackingUrl, leftOut, payment } = loaderData;
+  const { number, trackingUrl, leftOut, payment, isRequest } = loaderData;
   const copiedNumber = t("order.confirmed.copiedNumber");
   const copiedLink = t("order.confirmed.copiedLink");
   return (
     <>
       <h1 ref={heading} tabIndex={-1} className="outline-none">
-        {t("order.confirmed.heading")}
+        {t(isRequest ? "customRequest.confirmed.heading" : "order.confirmed.heading")}
       </h1>
       {/* Pay first (S-278 AC2): the order is confirmed once the client sees the Juice payment. */}
       {payment && <PaymentInstructions view={payment} />}
-      <NumberCard number={number} copied={status === copiedNumber} onCopy={hydrated ? () => copy(number, copiedNumber) : undefined} />
+      <NumberCard label={t(isRequest ? "customRequest.confirmed.numberLabel" : "order.confirmed.numberLabel")} number={number} copied={status === copiedNumber} onCopy={hydrated ? () => copy(number, copiedNumber) : undefined} />
       {leftOut.length > 0 && (
         <Alert tone="warning" title={t("order.confirmed.leftOutTitle")} className="mt-6">
           <p>{t("order.confirmed.leftOutBody", { count: leftOut.length, names: nameList(leftOut, locale) })}</p>
+        </Alert>
+      )}
+      {isRequest && (
+        <Alert tone="info" title={t("customRequest.notice")} className="mt-6">
+          <p>{t("customRequest.confirmed.body")}</p>
         </Alert>
       )}
       <section aria-labelledby="tracking-label" className="mt-8">

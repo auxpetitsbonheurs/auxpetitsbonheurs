@@ -70,7 +70,7 @@ off and says so (an hourly `integration_missing` line in Workers Logs; queued em
 the outbox and go out once email is configured, from E-10). After each deploy the GitHub run
 summary shows **Launch readiness**: the names still missing (never values).
 **Before production is announced publicly**, email (`RESEND_API_KEY`, `EMAIL_FROM`) and
-`TURNSTILE_SECRET_KEY` must be set: the production summary says "NOT ready for public
+`TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` must be set: the production summary says "NOT ready for public
 launch" until they are.
 
 | Name | Sensitive | Value for staging / production | Where to get it |
@@ -85,7 +85,8 @@ launch" until they are.
 | `VAPID_PRIVATE_KEY` | **high** | same pair as above | Same command → "Private Key" |
 | `VAPID_SUBJECT` | no | both: `mailto:<bakery address>` | The bakery email address |
 | `SUPABASE_AUTH_HOOK_SECRET` | **high** | each project's own | Supabase project → Authentication → Hooks → Add hook → **Send Email hook** → type HTTPS → URL `https://<worker URL>/hooks/supabase/send-email` → **Generate secret** → copy (`v1,whsec_…`). The route exists since S-024 (2026-11-12): **enable** the hook only after `RESEND_API_KEY` and `EMAIL_FROM` are set for that Worker, else reset emails fail (the forgot page still shows its calm message). It sends password reset emails in the admin's language; while disabled, Supabase sends its own English email whose link does not work with the admin reset page |
-| `TURNSTILE_SECRET_KEY` | **high** | one widget per environment | Cloudflare → Turnstile → Add widget → name `apb-staging` / `apb-production` → Hostname: the Worker's `workers.dev` host → Widget mode Managed → Create → copy **Secret key** (the Site key is public and not needed yet) |
+| `TURNSTILE_SITE_KEY` | no (public) | one widget per environment | Cloudflare → Turnstile → Add widget → name `apb-staging` / `apb-production` → Hostname: the Worker's `workers.dev` host → Widget mode **Non-interactive** (no puzzles, E-08 S-162 AC7) → Create → copy **Site key**. The custom cake form shows the widget only when both Turnstile keys are set |
+| `TURNSTILE_SECRET_KEY` | **high** | same widget as above | Same widget → copy **Secret key** |
 | `SENTRY_DSN` | low | one project, same DSN in both (or one project per environment) | sentry.io → Projects → Create project → platform **Cloudflare Workers** → Settings → Projects → the project → **Client Keys (DSN)** → copy the DSN (`https://…@o….ingest.sentry.io/…`) |
 
 Set in `src/wrangler.jsonc`, **do not** add in the dashboard: `APP_ENV`

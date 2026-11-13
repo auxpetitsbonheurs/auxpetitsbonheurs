@@ -60,7 +60,7 @@ describe("integrationsCheck job", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     const env = {
       RESEND_API_KEY: SECRET, EMAIL_FROM: "x", VAPID_PUBLIC_KEY: "x", VAPID_PRIVATE_KEY: "x", VAPID_SUBJECT: "x",
-      SUPABASE_AUTH_HOOK_SECRET: "x", TURNSTILE_SECRET_KEY: "x", SENTRY_DSN: "https://k@o0.ingest.sentry.io/0",
+      SUPABASE_AUTH_HOOK_SECRET: "x", TURNSTILE_SITE_KEY: "x", TURNSTILE_SECRET_KEY: "x", SENTRY_DSN: "https://k@o0.ingest.sentry.io/0",
     };
 
     expect(await run(env)).toEqual({ job: "integrations", ran: true, processed: 0 });

@@ -1,4 +1,4 @@
-// S-252 AC1, AC2, AC3, AC5, AC6: the Custom order page (interim), server-rendered.
+// S-252 AC1, AC2, AC3, AC5, AC6 and E-08 S-151/S-154 (the request form on the same page), server-rendered.
 import { describe, expect, test } from "vitest";
 import { links, renderInSite } from "~/server/testing/render-in-site";
 import CustomOrder, { ErrorBoundary } from "./custom-order";
@@ -14,6 +14,18 @@ const base: Data = {
   text: { intro: "A cake for you.", body: "What it is.\n\nHow we do it." },
   photos: [],
   isPlaceholder: true,
+  form: {
+    idempotencyKey: "6f1c2b0e-1d2a-4c3b-8e4f-5a6b7c8d9e0f",
+    uploadSessionId: "0b6a6c1e-4a4f-4d0e-9f53-2a1b3c4d5e6f",
+    today: "2026-11-05",
+    availability: { defaultNoticeDays: 3, closedWeekdays: [7], blocked: [] },
+    windows: { delivery: [{ id: "morning", start: "09:00", end: "12:00", label: { en: "Morning", fr: "Matin" } }], pickup: [{ id: "morning", start: "09:00", end: "12:00", label: { en: "Morning", fr: "Matin" } }] },
+    pickup: { address: "Beau Bassin", mapUrl: null },
+    policies: "Free cancellation until 48 hours before.",
+    whatsapp: "+230 5000 0000",
+    attachedGalleryPhoto: null,
+    turnstileSiteKey: null,
+  },
 };
 
 const page = (data: Partial<Data> = {}, path = "/custom-cake") =>
@@ -55,8 +67,39 @@ describe("Custom order page (S-252)", () => {
     expect(none.find((l) => l.href === "/fr/contact")?.text).toBe("Voir tous les moyens de nous contacter");
   });
 
-  test("AC3: no form while the request form (E-08 S-151) is not live", () => {
-    expect(page()).not.toContain("<form");
+  test("AC3 with E-08 S-151: the request form is on the page and WhatsApp is the second way to ask", () => {
+    const html = page();
+
+    expect(html.match(/<form/g)).toHaveLength(1);
+    expect(html).toContain("Request a custom cake");
+    expect(html.indexOf("<form")).toBeLessThan(html.indexOf("https://wa.me/"));
+    expect(html).toContain("Prefer to talk to us first?");
+  });
+
+  test("S-151 AC8: the form, its labels and the not-confirmed notice in each language", () => {
+    const en = page();
+    expect(en).toContain("Not confirmed until we send you a quote and you accept");
+    for (const label of ["Occasion", "Number of people", "Flavours", "Text on the cake", "Send my request"]) expect(en).toContain(label);
+    const fr = page({}, "/fr/custom-cake");
+    expect(fr).toContain("Pas confirmé tant que nous ne vous avons pas envoyé de devis et que vous ne l&#x27;avez pas accepté");
+    for (const label of ["Occasion", "Nombre de personnes", "Parfums", "Texte sur le gâteau", "Envoyer ma demande"]) expect(fr).toContain(label);
+  });
+
+  test("S-151 AC11: phone, email and numbers get the right keyboards", () => {
+    const html = page();
+    expect(html).toMatch(/<input[^>]*id="contact-phone"[^>]*type="tel"/);
+    expect(html).toMatch(/<input[^>]*id="contact-email"[^>]*type="email"/);
+    expect(html).toMatch(/<input[^>]*id="servings"[^>]*inputMode="numeric"|<input[^>]*inputmode="numeric"[^>]*id="servings"/i);
+  });
+
+  test("S-151 AC4: a refusal lists the problems at the top, keeps the values and links each error to its field", () => {
+    const actionData = { ok: false, error: { code: "VALIDATION_FAILED", message: "Some details need checking.", fields: { servings: "Enter a number of people between 1 and 500" } }, values: { flavours: "Vanilla", servings: "900" } };
+    const html = renderInSite(<CustomOrder {...({ loaderData: base, actionData } as never)} />, "/custom-cake");
+
+    expect(html).toContain('role="alert"');
+    expect(html).toContain('href="#servings"');
+    expect(html).toMatch(/id="servings"[^>]*aria-describedby="servings-hint servings-error"|aria-describedby="servings-hint servings-error"[^>]*id="servings"/);
+    expect(html).toContain('value="Vanilla"');
   });
 
   test("AC5: the notice comes from Settings, with no price in the text", () => {

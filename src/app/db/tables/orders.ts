@@ -71,6 +71,12 @@ export const orders = pgTable(
     pendingAlertSentAt: timestamp("pending_alert_sent_at", tz),
     /** Juice payment (migration 0013): the 12 h unpaid reminder was queued (S-280). */
     paymentReminderSentAt: timestamp("payment_reminder_sent_at", tz),
+    /**
+     * When the order started waiting for its Juice payment, when that is not its creation:
+     * an accepted quote (migration 0016, E-08 S-158). The 24 h deadline and the 12 h reminder
+     * count from `coalesce(awaiting_payment_since, created_at)`.
+     */
+    awaitingPaymentSince: timestamp("awaiting_payment_since", tz),
     /** Why a cancelled order was cancelled: `unpaid` (24 h job, S-280); E-06 adds others. */
     cancelReason: text("cancel_reason"),
     /** Money to send back by Juice after a paid order was refused (S-281); null = none due. */

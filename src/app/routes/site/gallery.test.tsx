@@ -9,7 +9,7 @@ import { routeArgs } from "~/server/testing/route-context";
 import Gallery, { loader } from "./gallery";
 
 type LoaderData = Parameters<typeof Gallery>[0]["loaderData"];
-const photo = (n: number, caption: string | null = null) => ({ url: `https://cdn.test/g${n}.webp`, width: 800, height: 800, alt: caption ?? "A cake by Aux petits bonheurs", caption });
+const photo = (n: number, caption: string | null = null) => ({ id: null as string | null, url: `https://cdn.test/g${n}.webp`, width: 800, height: 800, alt: caption ?? "A cake by Aux petits bonheurs", caption });
 
 function render(data: Partial<LoaderData>, path = "/gallery") {
   const loaderData = { title: "", description: "", indexable: true, page: { key: "gallery", isPlaceholder: false, text: { intro: "Some of our cakes." }, photos: [], event: null }, photos: [], total: 0, ...data } as LoaderData;
@@ -35,6 +35,15 @@ describe("view", () => {
     expect(img).toMatch(new RegExp(`srcSet="${srcSet}"`, "i"));
     expect(img).toContain('sizes="(min-width: 72rem) 22rem, (min-width: 48rem) 31vw, calc(50vw - 1.5rem)"');
     expect(img).toMatch(/fetchPriority="high"/i);
+  });
+
+  test("E-08 S-154 AC5: each photo links to the request form with it attached; the name includes its alt text; French at /fr", () => {
+    const html = render({ photos: [{ ...photo(1, "Wedding cake"), id: "0b6a6c1e-4a4f-4d0e-9f53-2a1b3c4d5e6f" }], total: 1 });
+    expect(html).toContain('href="/custom-cake?fromGallery=0b6a6c1e-4a4f-4d0e-9f53-2a1b3c4d5e6f"');
+    expect(html).toContain('aria-label="Request something similar to: Wedding cake"');
+    const fr = render({ photos: [{ ...photo(1, "Gâteau"), id: "0b6a6c1e-4a4f-4d0e-9f53-2a1b3c4d5e6f" }], total: 1 }, "/fr/gallery");
+    expect(fr).toContain('href="/fr/custom-cake?fromGallery=0b6a6c1e-4a4f-4d0e-9f53-2a1b3c4d5e6f"');
+    expect(fr).toContain(">Demander quelque chose de similaire<");
   });
 
   test("AC1: in French the heading is French", () => {

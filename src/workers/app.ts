@@ -13,7 +13,8 @@ import { refuseCrossSiteAdminRequest } from "~/server/origin.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { withDbTiming } from "~/server/db-timing.server";
 import { ServerTiming, serverTimingContext } from "~/server/server-timing.server";
-import { storageContext, supabaseStorage, uploadContext } from "~/server/storage.server";
+import { requestPhotosContext, storageContext, supabaseStorage, uploadContext } from "~/server/storage.server";
+import { turnstileContext, turnstileFromEnv } from "~/server/turnstile.server";
 import { createSupabaseAuth } from "~/server/supabase-auth.server";
 import { supabaseUserAdmin, userAdminContext } from "~/server/user-admin.server";
 import { withEnvironmentHeaders, withServerTiming } from "./headers";
@@ -46,6 +47,10 @@ async function respond(request: Request, settings: ServerEnv, ctx: ExecutionCont
     const storage = supabaseStorage({ url: settings.SUPABASE_URL, serviceRoleKey: settings.SUPABASE_SERVICE_ROLE_KEY });
     context.set(storageContext, storage);
     context.set(uploadContext, storage);
+    // Customer request photos (E-08): the private bucket, same key, signed uploads and reads.
+    context.set(requestPhotosContext, storage);
+    // Bot check on the public custom cake form (S-162); skipped until both Turnstile keys are set.
+    context.set(turnstileContext, turnstileFromEnv(settings));
     // Auth Admin API (service key, server only): creating an invited admin's account (S-029).
     context.set(userAdminContext, supabaseUserAdmin({ url: settings.SUPABASE_URL, serviceRoleKey: settings.SUPABASE_SERVICE_ROLE_KEY }));
     // Email (S-024): optional integrations; without their keys the hook answers a safe 500

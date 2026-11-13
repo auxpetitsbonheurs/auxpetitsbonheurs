@@ -38,7 +38,7 @@ export function TotalByChoice({ itemsTotalRs, deliveryFeeRs }: { itemsTotalRs: n
   );
 }
 
-function PolicyAcceptance({ policies, error, initial }: { policies: string; error?: string; initial?: boolean }) {
+export function PolicyAcceptance({ policies, error, initial }: { policies: string; error?: string; initial?: boolean }) {
   const { t } = useI18n();
   return (
     <div className="mt-6">

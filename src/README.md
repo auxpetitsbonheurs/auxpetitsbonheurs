@@ -195,7 +195,7 @@ environment, in this order:
    `DATABASE_URL`. The site runs with just these (ADR-0002 amendment).
    Later, one integration at a time: `RESEND_API_KEY` + `EMAIL_FROM` (email),
    `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` + `VAPID_SUBJECT` (phone notifications),
-   `SUPABASE_AUTH_HOOK_SECRET`, `TURNSTILE_SECRET_KEY`, `SENTRY_DSN`. While one is missing its
+   `SUPABASE_AUTH_HOOK_SECRET`, `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `SENTRY_DSN`. While one is missing its
    feature is off and says so (hourly `integration_missing` line in Workers Logs; queued
    emails wait in the outbox). Each deploy run's summary lists what is still missing
    ("Launch readiness", names only). **Production must not be announced publicly before

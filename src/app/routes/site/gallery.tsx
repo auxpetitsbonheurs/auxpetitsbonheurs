@@ -73,6 +73,16 @@ function EmptyGallery() {
   );
 }
 
+/** "Request something similar" (E-08 S-154 AC5): the request form with this photo attached; its name says which photo. */
+function SimilarLink({ id, alt }: { id: string; alt: string }) {
+  const { t, locale } = useI18n();
+  return (
+    <Link to={localePath(locale, `/custom-cake?fromGallery=${id}`)} aria-label={t("customRequest.similarLabel", { photo: alt })} className="mt-1 inline-flex min-h-11 items-center font-semibold link wrap-anywhere">
+      {t("customRequest.similar")}
+    </Link>
+  );
+}
+
 function GalleryGrid({ photos, total }: { photos: Photo[]; total: number }) {
   const { t } = useI18n();
   return (
@@ -95,6 +105,7 @@ function GalleryGrid({ photos, total }: { photos: Photo[]; total: number }) {
               />
               {photo.caption && <figcaption className="text-sm wrap-anywhere">{photo.caption}</figcaption>}
             </figure>
+            {photo.id && <SimilarLink id={photo.id} alt={photo.alt} />}
           </li>
         ))}
       </ul>

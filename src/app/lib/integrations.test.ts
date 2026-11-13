@@ -49,7 +49,7 @@ describe("launchReadiness", () => {
   });
 
   test("optional extras missing only (push, hook, Sentry) do not block the launch", () => {
-    const report = launchReadiness([...CORE_SECRETS, "RESEND_API_KEY", "EMAIL_FROM", "TURNSTILE_SECRET_KEY"]);
+    const report = launchReadiness([...CORE_SECRETS, "RESEND_API_KEY", "EMAIL_FROM", "TURNSTILE_SITE_KEY", "TURNSTILE_SECRET_KEY"]);
 
     expect(report.launchReady).toBe(true);
     expect(report.missing.map((i) => i.name)).toEqual(["push", "authEmailHook", "sentry"]);
@@ -83,7 +83,7 @@ describe("readinessAnnotations (names only)", () => {
     const lines = readinessAnnotations(launchReadiness(CORE_SECRETS), "production");
 
     expect(lines.filter((l) => l.startsWith("::warning::"))).toHaveLength(6);
-    expect(lines.at(-1)).toBe("::warning::production is NOT ready for public launch: set RESEND_API_KEY, EMAIL_FROM, TURNSTILE_SECRET_KEY first.");
+    expect(lines.at(-1)).toBe("::warning::production is NOT ready for public launch: set RESEND_API_KEY, EMAIL_FROM, TURNSTILE_SITE_KEY, TURNSTILE_SECRET_KEY first.");
     expect(lines.join("\n")).toContain("email not configured (RESEND_API_KEY, EMAIL_FROM): order emails stay queued in the outbox");
   });
 
