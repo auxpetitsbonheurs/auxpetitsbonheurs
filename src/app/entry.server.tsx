@@ -4,6 +4,7 @@ import { isbot } from "isbot";
 import { renderToReadableStream } from "react-dom/server";
 import type { EntryContext, HandleErrorFunction, RouterContextProvider } from "react-router";
 import { ServerRouter } from "react-router";
+import { createDeferScriptsTransform, shouldDeferHydration } from "~/lib/defer-hydration";
 import { serverErrorLogLine } from "~/server/error-log.server";
 
 export const handleError: HandleErrorFunction = (error, { request }) => {
@@ -65,7 +66,11 @@ export default async function handleRequest(
   }
 
   responseHeaders.set("Content-Type", "text/html");
-  return new Response(body, {
+  // Browsing pages start their JavaScript after load + idle, so it never shares bandwidth with the
+  // LCP photo (S-276 AC7); links and forms work as plain navigations until then.
+  const routeIds = routerContext.staticHandlerContext.matches.map((match) => match.route.id);
+  const page = shouldDeferHydration(routeIds) ? body.pipeThrough(createDeferScriptsTransform()) : body;
+  return new Response(page, {
     headers: responseHeaders,
     status: responseStatusCode,
   });
