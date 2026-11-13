@@ -1,0 +1,121 @@
+name: backup-rehearsal
+
+# S-232 (NFR-005): proves the weekly backup can be restored, using STAGING data, read-only.
+# Actions → backup-rehearsal → Run workflow. It runs the same dump script as the weekly backup
+# (scripts/backup-dump.sh) against the staging database, copies the staging photos, restores the
+# dump into a clean, throwaway Postgres 17 on the runner and compares every count
+# (scripts/backup-verify.sh: tables, rows, photos, sign-in accounts, order numbers). The result
+# table is the job summary (counts only, no personal data).
+#
+# Optional `recipient`: an age public key (age1…) of a throwaway key held by whoever wants to
+# repeat the restore on their own machine. The archive is then encrypted to it and kept as a
+# workflow artifact for 1 day. Without it nothing leaves the runner.
+#
+# Nothing is ever written to staging: pg_dump and the count query only read, and photos are
+# downloaded with GET. Staging only: nothing in this file can reach the live site.
+on:
+  workflow_dispatch:
+    inputs:
+      recipient:
+        description: Optional age public key (age1...) to receive the encrypted archive as a 1-day artifact
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup-rehearsal
+  cancel-in-progress: false
+
+jobs:
+  rehearse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: staging
+    env:
+      SUPABASE_DB_URL: ${{ secrets.STAGING_DATABASE_URL }}
+      SOURCE_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+      SOURCE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
+      RECIPIENT: ${{ inputs.recipient }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Check keys and the recipient
+        run: |
+          src/scripts/check-keys.sh --require SUPABASE_DB_URL SOURCE_SUPABASE_URL SOURCE_SERVICE_ROLE_KEY
+          if [ -n "$RECIPIENT" ] && ! [[ "$RECIPIENT" =~ ^age1[0-9a-z]{58}$ ]]; then
+            echo "::error::recipient must be an age public key (age1 followed by 58 characters)"; exit 1
+          fi
+      - name: Dump staging (read-only, same script as the weekly backup)
+        run: |
+          started=$(date +%s)
+          src/scripts/backup-dump.sh backup
+          echo "DUMP_SECONDS=$(( $(date +%s) - started ))" >> "$GITHUB_ENV"
+      - name: Copy the staging photos (GET only)
+        run: |
+          started=$(date +%s)
+          docker run --rm -e SUPABASE_DB_URL postgres:17 psql -X -At -v ON_ERROR_STOP=1 "$SUPABASE_DB_URL" \
+            -c "select bucket_id || '/' || name from storage.objects where name not like '%/.emptyFolderPlaceholder' order by 1" > objects.txt
+          while IFS= read -r object; do
+            [ -n "$object" ] || continue
+            encoded=$(jq -rn --arg p "$object" '$p | split("/") | map(@uri) | join("/")')
+            curl -fsS --retry 3 --create-dirs -o "backup/storage/$object" \
+              -H "Authorization: Bearer $SOURCE_SERVICE_ROLE_KEY" -H "apikey: $SOURCE_SERVICE_ROLE_KEY" \
+              "$SOURCE_SUPABASE_URL/storage/v1/object/authenticated/$encoded"
+          done < objects.txt
+          rm objects.txt
+          echo "COPY_SECONDS=$(( $(date +%s) - started ))" >> "$GITHUB_ENV"
+      - name: Start a clean, throwaway Postgres 17
+        run: |
+          docker run -d --name restore -p 127.0.0.1:5433:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=restore postgres:17
+          for _ in $(seq 1 30); do docker exec restore pg_isready -U postgres -d restore -q && break; sleep 1; done
+          sleep 2
+      - name: Restore and compare (job summary)
+        env:
+          RESTORE_DB_URL: postgres://postgres:postgres@127.0.0.1:5433/restore
+        run: |
+          started=$(date +%s)
+          set -o pipefail
+          {
+            echo "## Backup rehearsal (staging, $(date -u +%Y-%m-%d))"
+            echo
+            echo "Archive: database.dump $(du -h backup/database.dump | cut -f1), auth.dump $(du -h backup/auth.dump | cut -f1), photos $(find backup/storage -type f 2>/dev/null | wc -l) files, $(du -sh backup | cut -f1) in all."
+            echo "Dump ${DUMP_SECONDS} s, photo copy ${COPY_SECONDS} s."
+            echo
+            src/scripts/backup-verify.sh backup
+            echo
+            echo "Restore and checks: $(( $(date +%s) - started )) s."
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Corrupt archive is refused before anything is touched (AC5)
+        env:
+          RESTORE_DB_URL: postgres://postgres:postgres@127.0.0.1:5433/restore
+        run: |
+          mkdir -p corrupt && cp backup/counts.tsv backup/auth.dump corrupt/
+          head -c 512 backup/database.dump > corrupt/database.dump
+          if src/scripts/backup-verify.sh corrupt > corrupt.log 2>&1; then echo "::error::A cut-off dump was accepted"; exit 1; fi
+          grep -q "not a readable backup" corrupt.log
+          echo "- A cut-off database.dump is refused: \"$(grep -o 'database.dump is not a readable backup[^:]*' corrupt.log)\"." >> "$GITHUB_STEP_SUMMARY"
+          rm -rf corrupt corrupt.log
+      - name: Encrypt for the recipient
+        if: inputs.recipient != ''
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q age
+          docker run --rm --user "$(id -u):$(id -g)" -v "$PWD/backup:/backup" postgres:17 \
+            sh -c 'pg_restore --file=/backup/database.sql /backup/database.dump'
+          tar -C backup -cf - . | age --encrypt --recipient "$RECIPIENT" --output rehearsal.tar.age
+          ls -l rehearsal.tar.age
+      - name: Keep the encrypted archive for 1 day
+        if: inputs.recipient != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-rehearsal-${{ github.run_id }}
+          path: rehearsal.tar.age
+          retention-days: 1
+          if-no-files-found: error
+      - name: Delete the plain copy
+        if: always()
+        run: |
+          rm -rf backup
+          docker rm -f restore > /dev/null 2>&1 || :
