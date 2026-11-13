@@ -35,9 +35,10 @@
 			"preview_urls": false,
 			// Run the Worker near Supabase instead of near the visitor, since a page makes several
 			// database round trips and the visitor only one. Static assets are still served from the
-			// nearest edge. Targeted at the database's region (Mumbai, ap-south-1; ADR-0003 amendment
-			// 6): Smart Placement stayed `local-…` for days, so every query paid edge-to-Mumbai.
-			"placement": { "mode": "targeted", "region": "aws:ap-south-1" },
+			// nearest edge. Smart Placement (ADR-0003 amendment 6): targeted placement in Mumbai and
+			// Sydney still took 140-165 ms per query, so the database region is unconfirmed; once the
+			// Owner confirms it, use { "mode": "targeted", "region": "aws:<region>" }.
+			"placement": { "mode": "smart" },
 			"vars": {
 				"APP_ENV": "staging",
 				"APP_TIME_ZONE": "Indian/Mauritius"

@@ -285,3 +285,25 @@ then pays one edge-to-Mumbai trip instead of one per query. Verify after the dep
 `cf-placement` header names a remote location and `db-query` falls to a few ms. If not (wrong
 region, or the plan refuses targeted placement), go back to `"mode": "smart"`. Production gets
 the same line in a release once staging confirms it.
+
+Result (deploy 43419501773, 29b6011): `cf-placement: remote-BOM`, but `db-query` stayed at
+158-214 ms, so the database is not in Mumbai, and the extra edge-to-Mumbai hop made US TTFB no
+better. Follow-up the same day: placement targets the database host instead,
+`{ "mode": "targeted", "host": "db.<project-ref>.supabase.co:5432" }` (the project reference is
+public, in every photo URL; no credential), so Cloudflare probes it and places the Worker next
+to it whatever the region. Same verification and the same way back.
+
+Result of the host probe (deploy 43422079138, a121a83): `cf-placement: local-ORD`, queries
+still 178-232 ms, so the probe did not move the Worker (likely it cannot reach the IPv6-only
+direct host). Triangulation: a query takes ~185 ms from Chicago and ~165 ms from Mumbai, and an
+uncached Supabase origin call ~210 ms from Chicago; that fits Sydney (`ap-southeast-2`), not
+Mumbai or Singapore. Next try: `{ "mode": "targeted", "region": "aws:ap-southeast-2" }`. The Owner
+should confirm the region in Supabase (Project Settings → General) and correct the runbook.
+
+Result in Sydney (deploy 43424276130, 704238d): `cf-placement: remote-SYD`, queries 139-147 ms.
+So per-query time is 140-190 ms from Chicago, Mumbai and Sydney alike: not explained by where
+the Worker runs (a database in none of the three, or a fixed per-query cost on the Hyperdrive →
+Supavisor session-pooler path, or both). Staging goes back to `"mode": "smart"`.
+Open (Owner, one step): Supabase → Project Settings → General → **Region**; then targeted
+placement with that region and the runbook corrected. If queries stay above ~50 ms next to the
+database, investigate the Hyperdrive origin (direct connection instead of the session pooler).

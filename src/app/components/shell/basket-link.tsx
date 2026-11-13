@@ -4,22 +4,16 @@ import { Link } from "react-router";
 import { cn } from "~/lib/utils";
 import { useI18n } from "~/i18n/react";
 import { useBasketCount } from "~/lib/basket-store";
+import { whenLoadedAndIdle } from "~/lib/after-load";
 
 /**
- * True once the browser is idle after load (S-254): work that can wait (prefetching the basket's
- * code) then no longer competes with the page's own first paint on a slow phone connection.
+ * True once the page has loaded and the browser is idle (S-254, S-276 AC7): work that can wait
+ * (prefetching the basket's code) then no longer competes with the page's own first paint and
+ * LCP photo on a slow phone connection.
  */
 function useIdleAfterLoad(): boolean {
   const [idle, setIdle] = useState(false);
-  useEffect(() => {
-    const done = () => setIdle(true);
-    if ("requestIdleCallback" in window) {
-      const id = window.requestIdleCallback(done, { timeout: 3000 });
-      return () => window.cancelIdleCallback(id);
-    }
-    const timer = setTimeout(done, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+  useEffect(() => whenLoadedAndIdle(() => setIdle(true), 3000), []);
   return idle;
 }
 

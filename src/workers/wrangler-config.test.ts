@@ -26,7 +26,7 @@ describe("wrangler.jsonc environments (S-002 AC1)", () => {
     expect(env.triggers?.crons).toEqual(["0 * * * *"]);
   });
 
-  test("staging runs with Smart Placement, near the database (ADR-0003 amendment 2026-11-11)", () => {
+  test("staging runs with Smart Placement until the database region is confirmed (ADR-0003 amendment 6)", () => {
     expect(staging.placement).toEqual({ mode: "smart" });
   });
 
