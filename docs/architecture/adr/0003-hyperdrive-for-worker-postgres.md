@@ -299,3 +299,11 @@ direct host). Triangulation: a query takes ~185 ms from Chicago and ~165 ms from
 uncached Supabase origin call ~210 ms from Chicago; that fits Sydney (`ap-southeast-2`), not
 Mumbai or Singapore. Next try: `{ "mode": "targeted", "region": "aws:ap-southeast-2" }`. The Owner
 should confirm the region in Supabase (Project Settings → General) and correct the runbook.
+
+Result in Sydney (deploy 43424276130, 704238d): `cf-placement: remote-SYD`, queries 139-147 ms.
+So per-query time is 140-190 ms from Chicago, Mumbai and Sydney alike: not explained by where
+the Worker runs (a database in none of the three, or a fixed per-query cost on the Hyperdrive →
+Supavisor session-pooler path, or both). Staging goes back to `"mode": "smart"`.
+Open (Owner, one step): Supabase → Project Settings → General → **Region**; then targeted
+placement with that region and the runbook corrected. If queries stay above ~50 ms next to the
+database, investigate the Hyperdrive origin (direct connection instead of the session pooler).

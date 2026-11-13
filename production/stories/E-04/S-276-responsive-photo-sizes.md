@@ -26,21 +26,33 @@ As a customer on a phone over 4G, I want each photo to download at the size my s
 - AC4 → src/app/lib/images.test.ts ("AC4"); src/app/routes/site/menu.test.tsx ("S-276 AC4"); src/app/lib/photo-variants.test.ts (refusals never throw); src/app/lib/image-compress.test.ts ("S-276 AC4")
 - AC5 → src/app/db/migrations.test.ts ("S-276 AC5" ×2)
 - AC6 → src/app/domain/upload.test.ts ("removals (AC7)"); src/app/jobs/purge-storage.test.ts; src/app/server/services/delete-product.server.test.ts; save-product / save-site-page / save-settings removal tests
-- AC7 → manual Lighthouse runs on staging (Notes)
+- AC7 → manual Lighthouse runs on staging (Notes); src/app/lib/photo-sizes.test.ts (which copy a Pixel 7 / 3x phone picks)
 - AC8 → src/app/server/services/photo-variants-backfill.server.test.ts; src/app/lib/photo-variants-workflow.test.ts
 
 ## Design
 - Copies are named by convention beside the original (`<stem>-480w.<ext>`), so removals need no lookup (`withVariantPaths`); which copies really exist is stored with the row (migration 0011), so a page never points `srcset` at a missing file.
-- Widths are widths (not long edges), so the `w` descriptors are exact. `sizes` per place live in `app/lib/photo-sizes.ts`; Chrome's density rounding then picks the 480 copy for two-column phone cards and the 960 copy for full-width phone photos at DPR 2.6.
+- Widths are widths (not long edges), so the `w` descriptors are exact. `sizes` per place live in `app/lib/photo-sizes.ts`; two-column phone cards say their real width, `calc(50vw - 1.5rem)`, so a Pixel 7 (412 px @2.625) takes the 480 copy (47vw made it 508 px: the 960 copy).
 - Browser: `compressPhoto` returns `variants`; `uploadVariants` (lib/photo-variants.ts, re-exported by the lazy image-compress chunk) asks `admin/uploads` with `variantOf` and PUTs each copy. Best effort.
 - Server: `storedVariantWidths` / `checkNewPhoto` (product-photos.server) are shared by the three saves and the backfill.
 - Settings images have no stored size: their copies are looked for up to the 1600 px edge and the hero renders `srcset` against the 1600 px box.
 - Promotion images are out of scope (promotions job; migration 0012 is theirs).
 
-- Full-width phone photos (hero, product viewer, single page photos) use `90vw` in `sizes`, which caps a 412 px, 2.6x phone near 2.3x: it takes the 960 px copy instead of a 1200 px original only ~10% wider.
+- Full-width phone photos (hero, product viewer, brand page photos) say `20rem` below 30rem in `sizes`: every phone up to 3x takes the 960 px copy (2.3x on a Pixel 7) instead of a 1024-1600 px original two to three times its bytes (`90vw` still needed 973 px, so the 1024 px original won). From 30rem the real width again. `app/lib/photo-sizes.test.ts` checks the picks.
+- The customer layout preconnects to the Supabase photo origin; the basket code prefetch and the menu warm-up wait for the load event, then idle (`lib/after-load.ts`).
 
 ## Notes
 - 2026-11-13: code on main (81a02d6), CI green (run 43407986032). The staging deploy (run 43410205227, also re-run) did not start: GitHub refused every job with "recent account payments have failed or your spending limit needs to be increased". Until that is fixed, staging runs the old build, so the backfill and the after-measurement (AC7) wait. Owner step: GitHub → Settings → Billing and plans → fix the payment or raise the Actions spending limit; then Actions → deploy → Re-run, then Actions → photo-variants → Run workflow (main).
 - Before (staging, Lighthouse 12, Pixel 7 412×915 @2.625, simulated slow 4G + 4× CPU, 3 runs; median): `/` LCP 4.21 s, 727 kB total, 420 kB images · `/menu` 6.30 s, 950 kB, 646 kB images · `/menu/red-velvet` 4.27 s, 512 kB, 215 kB images · `/gallery` 1.83 s, 290 kB, 9 kB images (staging has no gallery photos yet, so nothing to gain there today). The LCP element was the photo on `/`, `/menu` and the product page.
 - Expected after (copies made locally from the same staging files with the backfill's settings, sharp q78): the 3 staging photos are 210-231 kB originals; their 480 px copies are 25-35 kB and 960 px copies 81-108 kB. `/menu` cards take the 480 copies: ~94 kB of photos instead of ~646 kB (-85%). Home hero and product photo take the 960 copy: ~81 kB instead of ~210 kB. To be confirmed with the same Lighthouse runs once staging is deployed and backfilled.
 - Production: the backfill is staging-only by design; production photos get copies when re-uploaded, or by a later run the Owner approves.
+- 2026-11-13 AC7 follow-up (after the deploy and backfill; same Lighthouse method, median of 3). Copies alone (90vw, f630883): `/` 4.26 s (401 kB images), `/menu` 4.09 s (299 kB), `/menu/red-velvet` 4.04 s (215 kB): phones still took the 1024 px hero/product original (206 kB) and 960 copies for two-column cards. Fixed in 292d52a (sizes, preconnect) and a121a83 (prefetch and menu warm-up after load).
+
+  | Page | LCP before S-276 | after copies (f630883) | after fixes (a121a83, Smart Placement `local-ORD`) | images before → now |
+  |---|---|---|---|---|
+  | `/` | 4.21 s | 4.26 s | 3.60 s | 420 → 148 kB (hero 79 kB 960 copy) |
+  | `/menu` | 6.30 s | 4.09 s | 3.23 s | 646 → 103 kB (480 copies) |
+  | `/menu/red-velvet` | 4.27 s | 4.04 s | 3.31 s | 215 → 89 kB (960 copy) |
+
+  With the Worker placed in Sydney (704238d, trial): 3.44 / 2.93 / 3.25 s. AC7 stays open; two causes remain, neither in the photos:
+  1. **Bytes before the LCP paint.** Lighthouse's simulation (1.6 Mbit/s) counts every request that starts before the photo paints except lazy images: ~160-190 kB of route JavaScript (modulepreloads, React + router ~110 kB of it), 55-78 kB of fonts (4 woff2), 13 kB CSS, 15 kB HTML and the photo(s): ~340-360 kB, about 2 s of transfer. Even a run with a 277 ms server response gave LCP 3.18 s on `/menu`. Reaching 2.5 s needs ~120 kB less before the photo: e.g. start hydration after the load event on customer pages (an Owner decision: pages work without JavaScript, but taps before load would be plain navigations/form posts), or fewer font files.
+  2. **Server response from the test machine (US).** Every query takes 140-190 ms whether the Worker runs in Chicago, Mumbai or Sydney (ADR-0003 amendment 6), so the region in the runbook (Mumbai) is unconfirmed; Home runs 2-5 sequential queries (0.35-1.0 s). Owner step: Supabase → Project Settings → General → Region, then targeted placement there.
