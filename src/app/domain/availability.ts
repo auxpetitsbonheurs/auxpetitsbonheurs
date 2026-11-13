@@ -99,16 +99,31 @@ export function noticeDaysFor(items: readonly { noticeDays: number | null | unde
 
 const inRange = (date: string, range: DateRange) => date >= range.startsOn && date <= range.endsOn;
 
-function reasonFor(date: string, ctx: AvailabilityCtx, noticeDays: number, seasons: readonly DateRange[]): DayReason | null {
+/** What every day of one basket is judged against, worked out once (S-097 AC3: 90 days < 1 ms). */
+interface Bounds {
+  /** First day the notice allows. */
+  earliest: string;
+  /** First day past the horizon. */
+  pastHorizon: string;
+}
+
+const boundsFor = (ctx: AvailabilityCtx, noticeDays: number): Bounds => ({
+  earliest: addDays(ctx.today, noticeDays),
+  pastHorizon: addDays(ctx.today, ctx.horizonDays ?? DAY_HORIZON),
+});
+
+function reasonFor(date: string, weekday: number, ctx: AvailabilityCtx, bounds: Bounds, seasons: readonly DateRange[]): DayReason | null {
   // A past day is simply gone, whatever else it was.
   if (date < ctx.today) return "too_soon";
   if (ctx.blocked.some((range) => inRange(date, range))) return "blocked";
-  if (ctx.closedWeekdays.includes(isoWeekday(date))) return "closed";
-  if (date < addDays(ctx.today, noticeDays)) return "too_soon";
-  if (date >= addDays(ctx.today, ctx.horizonDays ?? DAY_HORIZON)) return "too_far";
+  if (ctx.closedWeekdays.includes(weekday)) return "closed";
+  if (date < bounds.earliest) return "too_soon";
+  if (date >= bounds.pastHorizon) return "too_far";
   if (!seasons.every((range) => inRange(date, range))) return "out_of_season";
   return null;
 }
+
+const status = (date: string, reason: DayReason | null): DayStatus => ({ date, available: reason === null, reason });
 
 /**
  * One day for a basket: `noticeDays` from `noticeDaysFor`, `seasons` the seasonal windows of
@@ -116,13 +131,21 @@ function reasonFor(date: string, ctx: AvailabilityCtx, noticeDays: number, seaso
  */
 export function dayStatus(date: string, ctx: AvailabilityCtx, noticeDays: number, seasons: readonly DateRange[] = []): DayStatus {
   if (!isValidMuDate(date)) throw new DomainError("INVALID_DATE", `Not a valid date: "${date}"`);
-  const reason = reasonFor(date, ctx, noticeDays, seasons);
-  return { date, available: reason === null, reason };
+  return status(date, reasonFor(date, isoWeekday(date), ctx, boundsFor(ctx, noticeDays), seasons));
 }
 
-/** `count` days from today (the picker's 90). */
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** `count` days from today (the picker's 90): one date walk, bounds and weekday worked out once. */
 export function dayStatuses(ctx: AvailabilityCtx, noticeDays: number, seasons: readonly DateRange[] = [], count = ctx.horizonDays ?? DAY_HORIZON): DayStatus[] {
-  return Array.from({ length: count }, (_, i) => dayStatus(addDays(ctx.today, i), ctx, noticeDays, seasons));
+  if (!isValidMuDate(ctx.today)) throw new DomainError("INVALID_DATE", `Not a valid date: "${ctx.today}"`);
+  const bounds = boundsFor(ctx, noticeDays);
+  const start = Date.parse(`${ctx.today}T00:00:00Z`);
+  const firstWeekday = isoWeekday(ctx.today);
+  return Array.from({ length: count }, (_, i) => {
+    const date = new Date(start + i * DAY_MS).toISOString().slice(0, 10);
+    return status(date, reasonFor(date, ((firstWeekday - 1 + i) % 7) + 1, ctx, bounds, seasons));
+  });
 }
 
 /** The first available day inside the horizon, or null (then: "No dates available"). */

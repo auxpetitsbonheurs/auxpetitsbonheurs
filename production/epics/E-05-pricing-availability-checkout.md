@@ -17,24 +17,24 @@ Phase 3 exit: a guest places a 2-item delivery order on a phone, cancels it from
 ## Stories
 | ID | Title | Status | Estimate |
 |---|---|---|---|
-| S-081 | Pricing rules: server-calculated line and basket totals | ready | 5 |
-| S-082 | Promotions: live window, best price, no stacking | ready | 3 |
-| S-083 | Availability rules: notice, closed days, blocked days, horizon | ready | 5 |
-| S-084 | Seasonal products judged on the pickup/delivery date | ready | 3 |
-| S-085 | Basket lines: review, change quantity, remove | ready | 5 |
-| S-086 | Choose pickup or delivery, with the delivery fee | ready | 3 |
-| S-087 | Date picker that explains unavailable days | ready | 5 |
-| S-088 | Choose a time window for delivery or pickup | ready | 2 |
-| S-089 | Customer details with Mauritius phone formatting | ready | 3 |
-| S-090 | Order summary, payment information and policy acceptance | ready | 3 |
-| S-091 | Order submit re-checks dates, products and prices | ready | 5 |
-| S-092 | Prices and promotions are copied onto the order | ready | 2 |
-| S-093 | Order confirmation page | ready | 2 |
-| S-094 | Tracking page by private link | ready | 3 |
-| S-095 | Tracking progress bar, final-state alerts and quote block | ready | 3 |
-| S-096 | Customer cancels an order while it is pending | ready | 3 |
-| S-097 | Re-measure Worker CPU on pricing and checkout (risk T3) | ready | 2 |
-| S-098 | Checkout journeys end to end on a phone | ready | 3 |
+| S-081 | Pricing rules: server-calculated line and basket totals | review | 5 |
+| S-082 | Promotions: live window, best price, no stacking | review | 3 |
+| S-083 | Availability rules: notice, closed days, blocked days, horizon | review | 5 |
+| S-084 | Seasonal products judged on the pickup/delivery date | review | 3 |
+| S-085 | Basket lines: review, change quantity, remove | review | 5 |
+| S-086 | Choose pickup or delivery, with the delivery fee | review | 3 |
+| S-087 | Date picker that explains unavailable days | review | 5 |
+| S-088 | Choose a time window for delivery or pickup | review | 2 |
+| S-089 | Customer details with Mauritius phone formatting | review | 3 |
+| S-090 | Order summary, payment information and policy acceptance | review | 3 |
+| S-091 | Order submit re-checks dates, products and prices | review | 5 |
+| S-092 | Prices and promotions are copied onto the order | review | 2 |
+| S-093 | Order confirmation page | review | 2 |
+| S-094 | Tracking page by private link | review | 3 |
+| S-095 | Tracking progress bar, final-state alerts and quote block | review | 3 |
+| S-096 | Customer cancels an order while it is pending | review | 3 |
+| S-097 | Re-measure Worker CPU on pricing and checkout (risk T3) | in-progress | 2 |
+| S-098 | Checkout journeys end to end on a phone | review | 3 |
 | S-277 | Owner sets the Juice payment details | review | 2 |
 | S-278 | Orders start as Awaiting payment, with Juice instructions at once | review | 5 |
 | S-279 | Admin sees orders awaiting payment and marks Payment received | review | 5 |
