@@ -177,6 +177,8 @@ export async function getSitePage(db: Database, key: SitePageKey, locale: Locale
 // Gallery photos (S-250): the `gallery_photo` table S-054/S-055 manage, in the admin's order.
 
 export interface StoredGalleryPhoto {
+  /** For "Request something similar" (E-08 S-154); absent in copies cached before. */
+  id?: string;
   path: string;
   width: number;
   height: number;
@@ -188,6 +190,8 @@ export interface StoredGalleryPhoto {
 }
 
 export interface GalleryPhotoView {
+  /** The gallery photo id (E-08 S-154: the request form's ?fromGallery=); null in an old cached copy. */
+  id: string | null;
   url: string;
   width: number;
   height: number;
@@ -204,12 +208,12 @@ export type GalleryRead = { ok: true; photos: GalleryPhotoView[] } | { ok: false
 function galleryView(photo: StoredGalleryPhoto, locale: Locale, supabaseUrl: string, fallbackAlt: string): GalleryPhotoView {
   const caption = photo.captionEn && photo.captionEn.trim() !== "" ? localized({ en: photo.captionEn, fr: photo.captionFr }, locale) : null;
   const occasion = photo.occasion && photo.occasion.trim() !== "" ? photo.occasion : null;
-  return { ...webPhoto(photo.path, photo.width, photo.height, photo.variantWidths, supabaseUrl), alt: caption ?? occasion ?? fallbackAlt, caption };
+  return { id: photo.id ?? null, ...webPhoto(photo.path, photo.width, photo.height, photo.variantWidths, supabaseUrl), alt: caption ?? occasion ?? fallbackAlt, caption };
 }
 
 /** Gallery rows as JSON in sort order, for a column of another statement (S-254 query merge). */
 const galleryJson = sql<StoredGalleryPhoto[] | string | null>`(
-  select json_agg(json_build_object('path', g.storage_path, 'width', g.width, 'height', g.height, 'variantWidths', g.variant_widths,
+  select json_agg(json_build_object('id', g.id, 'path', g.storage_path, 'width', g.width, 'height', g.height, 'variantWidths', g.variant_widths,
     'captionEn', g.caption_en, 'captionFr', g.caption_fr, 'occasion', g.occasion) order by g.sort_order, g.created_at)
   from ${galleryPhoto} g
 )`;
@@ -217,6 +221,7 @@ const galleryJson = sql<StoredGalleryPhoto[] | string | null>`(
 function readGalleryRows(db: Database): Promise<StoredGalleryPhoto[]> {
   return db
     .select({
+      id: galleryPhoto.id,
       path: galleryPhoto.storagePath,
       width: galleryPhoto.width,
       height: galleryPhoto.height,

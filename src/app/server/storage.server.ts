@@ -31,6 +31,18 @@ export interface UploadGateway {
   inspect(bucket: string, path: string): Promise<StoredObject | null>;
 }
 
+/**
+ * Customer request photos in the private bucket (E-08): signed uploads and read-back checks
+ * like admin uploads, plus short-lived signed read URLs for admins (S-155 AC2).
+ */
+export interface RequestPhotoGateway extends UploadGateway {
+  /** A URL that reads `path` for `seconds`; throws when Storage refuses. */
+  signRead(bucket: string, path: string, seconds: number): Promise<string>;
+}
+
+/** Request photos for this request; null where Storage is not configured (uploads refused, no photo URLs). */
+export const requestPhotosContext = createContext<RequestPhotoGateway | null>(null);
+
 /** The request's Storage gateway; null where none is configured (the delete then queues). */
 export const storageContext = createContext<StorageGateway | null>(null);
 /** Upload signing and checks; null where none is configured (uploads are then refused). */
@@ -61,7 +73,7 @@ function totalSize(response: Response): number {
   return Number(response.headers.get("content-length") ?? Number.NaN);
 }
 
-export function supabaseStorage(options: { url: string; serviceRoleKey: string; fetch?: typeof fetch }): StorageGateway & UploadGateway {
+export function supabaseStorage(options: { url: string; serviceRoleKey: string; fetch?: typeof fetch }): StorageGateway & RequestPhotoGateway {
   const send = options.fetch ?? fetch;
   const base = options.url.replace(/\/+$/, "");
   const auth = { authorization: `Bearer ${options.serviceRoleKey}`, apikey: options.serviceRoleKey };
@@ -79,6 +91,19 @@ export function supabaseStorage(options: { url: string; serviceRoleKey: string; 
       const token = new URL(relative, "https://x").searchParams.get("token");
       if (!relative.startsWith("/") || !token) throw new Error("storage sign answered without a token");
       return { path, signedUrl: `${base}/storage/v1${relative}`, token };
+    },
+    async signRead(bucket, path, seconds) {
+      const response = await send(`${base}/storage/v1/object/sign/${encodeURIComponent(bucket)}/${encodePath(path)}`, {
+        method: "POST",
+        headers: { ...auth, "content-type": "application/json" },
+        body: JSON.stringify({ expiresIn: seconds }),
+        signal: AbortSignal.timeout(STORAGE_TIMEOUT_MS),
+      });
+      if (!response.ok) throw new Error(`storage sign read answered ${response.status}`);
+      const body = (await response.json()) as { signedURL?: unknown };
+      const relative = typeof body.signedURL === "string" ? body.signedURL : "";
+      if (!relative.startsWith("/") || !relative.includes("token=")) throw new Error("storage sign read answered without a token");
+      return `${base}/storage/v1${relative}`;
     },
     async inspect(bucket, path) {
       const response = await send(`${base}/storage/v1/object/authenticated/${encodeURIComponent(bucket)}/${encodePath(path)}`, {

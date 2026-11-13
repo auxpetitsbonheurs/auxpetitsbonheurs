@@ -3,6 +3,7 @@
 // never throws. Later epics add their jobs (with their own "due" rules) to JOBS.
 import { createRequestDb } from "~/server/db.server";
 import { getEnv } from "~/server/env.server";
+import { expireQuotes } from "./expire-quotes";
 import { integrationsCheck } from "./integrations";
 import { keepAlive } from "./keep-alive";
 import { paymentDeadlines } from "./payment-deadlines";
@@ -24,6 +25,7 @@ export const JOBS: readonly Job[] = [
   { name: "purgeStorage", run: (context) => purgeStorage(context) },
   // Juice payment (S-280): 12 h reminder, 24 h unpaid cancel.
   { name: "paymentDeadlines", run: paymentDeadlines },
+  { name: "expireQuotes", run: expireQuotes },
 ];
 
 /** Error name and message with any URL (it could carry credentials) replaced. */

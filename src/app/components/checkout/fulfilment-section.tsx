@@ -7,13 +7,16 @@ export type FulfilmentChoice = "delivery" | "pickup";
 export type FieldErrors = Record<string, string | undefined>;
 
 export interface FulfilmentSectionProps {
-  deliveryFee: string;
+  /** Omitted for a custom request (E-08): its quote includes delivery, so no fee line. */
+  deliveryFee?: string;
   pickupAddress: string | null;
   pickupMapUrl: string | null;
   /** Re-selected after a refused submit (no JavaScript); never a default choice. */
   initial: { fulfilment?: string; address?: string; landmark?: string };
   errors: FieldErrors;
   onChoose?: (value: FulfilmentChoice) => void;
+  /** Section title; defaults to the checkout's numbered step (a custom request has its own, E-08). */
+  title?: string;
 }
 
 /**
@@ -21,13 +24,13 @@ export interface FulfilmentSectionProps {
  * address, landmark and fee; pickup shows the address from Settings and "free".
  * Which details show is pure CSS (`data-when`, app.css), so it works without JS.
  */
-export function FulfilmentSection({ deliveryFee, pickupAddress, pickupMapUrl, initial, errors, onChoose }: FulfilmentSectionProps) {
+export function FulfilmentSection({ deliveryFee, pickupAddress, pickupMapUrl, initial, errors, onChoose, title }: FulfilmentSectionProps) {
   const { t } = useI18n();
   const choose = (value: string) => onChoose?.(value as FulfilmentChoice);
   return (
     <section aria-labelledby="fulfilment-heading" className="mt-10">
       <h2 id="fulfilment-heading" className="section-title-start text-h2">
-        {t("checkout.sections.fulfilment")}
+        {title ?? t("checkout.sections.fulfilment")}
       </h2>
       <fieldset id="fulfilment" tabIndex={-1} aria-describedby={errors.fulfilment ? "fulfilment-error" : undefined} className="mt-4 min-w-0">
         <legend className="font-semibold">{t("checkout.fulfilmentLegend")}</legend>
@@ -44,7 +47,7 @@ export function FulfilmentSection({ deliveryFee, pickupAddress, pickupMapUrl, in
       <div data-when="delivery" className="mt-6">
         <TextField id="address" name="address" multiline autoComplete="street-address" label={t("checkout.address")} hint={t("checkout.addressHint")} error={errors.address} defaultValue={initial.address} />
         <TextField id="landmark" name="landmark" type="text" autoComplete="off" className="mt-4" label={t("checkout.landmark")} optionalLabel={t("checkout.optional")} hint={t("checkout.landmarkHint")} error={errors.landmark} defaultValue={initial.landmark} />
-        <p className="mt-4 font-semibold">{t("checkout.deliveryFee", { fee: deliveryFee })}</p>
+        {deliveryFee && <p className="mt-4 font-semibold">{t("checkout.deliveryFee", { fee: deliveryFee })}</p>}
       </div>
       <div data-when="pickup" className="mt-6">
         {pickupAddress && <p>{t("checkout.pickupAddress", { address: pickupAddress })}</p>}

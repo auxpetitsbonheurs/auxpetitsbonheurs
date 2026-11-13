@@ -8,6 +8,8 @@ import type { Locale } from "~/lib/locale";
 
 const STATUS = {
   VALIDATION_FAILED: 400,
+  /** Turnstile said no, or its token is missing (S-162 AC1). */
+  BOT_CHECK_FAILED: 400,
   UNAUTHENTICATED: 401,
   INVALID_CREDENTIALS: 401,
   FORBIDDEN: 403,
@@ -18,6 +20,8 @@ const STATUS = {
   PRICE_CHANGED: 409,
   PRODUCT_UNAVAILABLE: 409,
   SLUG_TAKEN: 409,
+  /** Accept or decline after 23:59 MU on the quote's expiry day (S-158 AC3). */
+  QUOTE_EXPIRED: 409,
   /** Settings or availability saved from a stale page (S-056..S-059). */
   SETTINGS_CHANGED: 409,
   /** A brand page saved from a stale editor (E-13 S-246 AC5). */

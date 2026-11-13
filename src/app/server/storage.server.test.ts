@@ -1,6 +1,28 @@
 import { describe, expect, test, vi } from "vitest";
 import { supabaseStorage } from "./storage.server";
 
+describe("supabaseStorage.signRead (E-08 S-155 AC2)", () => {
+  test("asks Storage for a read URL valid the given seconds and returns it absolute", async () => {
+    const fetch = vi.fn(async () => Response.json({ signedURL: "/object/sign/request-photos/requests/s/p.webp?token=read123" }));
+    const storage = supabaseStorage({ url: "https://ref.supabase.co", serviceRoleKey: "service-key", fetch });
+
+    const url = await storage.signRead("request-photos", "requests/s/p.webp", 600);
+
+    expect(url).toBe("https://ref.supabase.co/storage/v1/object/sign/request-photos/requests/s/p.webp?token=read123");
+    const [called, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(called).toBe("https://ref.supabase.co/storage/v1/object/sign/request-photos/requests/s/p.webp");
+    expect(JSON.parse(init.body as string)).toEqual({ expiresIn: 600 });
+    expect(init.headers).toMatchObject({ authorization: "Bearer service-key" });
+  });
+
+  test("throws without the key when Storage refuses or answers no token", async () => {
+    const refused = supabaseStorage({ url: "https://ref.supabase.co", serviceRoleKey: "service-key", fetch: async () => new Response("no", { status: 400 }) });
+    await expect(refused.signRead("request-photos", "x", 600)).rejects.toThrow("storage sign read answered 400");
+    const tokenless = supabaseStorage({ url: "https://ref.supabase.co", serviceRoleKey: "service-key", fetch: async () => Response.json({ signedURL: "/x" }) });
+    await expect(tokenless.signRead("request-photos", "x", 600)).rejects.toThrow("without a token");
+  });
+});
+
 describe("supabaseStorage.remove", () => {
   test("DELETEs the paths from the bucket with the service key", async () => {
     const fetch = vi.fn(async () => new Response("[]", { status: 200 }));

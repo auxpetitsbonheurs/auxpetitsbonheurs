@@ -124,13 +124,14 @@ async function variantsOf(io: CompressIo, image: DecodedImage, photo: Compressed
 /** What an upload sends: the photo and its smaller copies. */
 export type PreparedPhoto = CompressedPhoto & { variants: PhotoVariant[] };
 
-export async function compressPhoto(file: File, io: CompressIo = browserIo()): Promise<PreparedPhoto> {
+/** `variants: false` (customer request photos, E-08): only the shrunk photo, no smaller copies. */
+export async function compressPhoto(file: File, io: CompressIo = browserIo(), options: { variants?: boolean } = {}): Promise<PreparedPhoto> {
   const problem = sourceProblem(file);
   if (problem) throw new CompressError(problem);
   const image = await decodeSource(file, io);
   try {
     const photo = await shrink(io, image);
-    return { ...photo, variants: await variantsOf(io, image, photo) };
+    return { ...photo, variants: options.variants === false ? [] : await variantsOf(io, image, photo) };
   } finally {
     image.close();
   }

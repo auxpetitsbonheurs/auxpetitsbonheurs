@@ -65,13 +65,15 @@ test.describe("Contact us (S-251)", () => {
 });
 
 test.describe("Custom order (S-252)", () => {
-  test("AC2, AC3, AC4: WhatsApp with the custom-cake message, no form, and ?fromGallery= ignored", async ({ page }) => {
+  // AC3 changed with E-08 S-151: the request form is now on the page and WhatsApp is the second way.
+  test("AC2, AC3, AC4: WhatsApp with the custom-cake message after the request form, and a bad ?fromGallery= ignored", async ({ page }) => {
     await open(page, "/fr/custom-cake?fromGallery=abc");
     const main = page.getByRole("main");
 
     const cta = main.getByRole("link", { name: "Nous contacter sur WhatsApp" }).first();
     await expect(cta).toHaveAttribute("href", /^https:\/\/wa\.me\/23050000000\?text=Bonjour%2C%20je%20voudrais/);
-    await expect(main.locator("form")).toHaveCount(0);
+    await expect(main.locator("form")).toHaveCount(1);
+    await expect(main.getByRole("button", { name: "Ajouter des photos (5 maximum)" })).toBeVisible();
     await expect(main.getByText("au moins 3 jours avant votre date")).toBeVisible();
   });
 });

@@ -32,6 +32,7 @@ VAPID_SUBJECT=mailto:owner@example.com
 SUPABASE_AUTH_HOOK_SECRET=v1,whsec_replace_with_secret
 
 # Bot protection on public forms (Cloudflare Turnstile, free)
+TURNSTILE_SITE_KEY=replace-with-turnstile-site-key
 TURNSTILE_SECRET_KEY=replace-with-turnstile-secret
 
 # Error tracking (Sentry Developer plan, free)

@@ -9,7 +9,8 @@ import { clockContext } from "~/server/clock.server";
 import { confirmationContext, confirmationSignerFor } from "~/server/confirmation-cookie.server";
 import { type RequestDb, requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
-import { type StorageGateway, type UploadGateway, storageContext, uploadContext } from "~/server/storage.server";
+import { type RequestPhotoGateway, type StorageGateway, type UploadGateway, requestPhotosContext, storageContext, uploadContext } from "~/server/storage.server";
+import { NO_TURNSTILE, type TurnstileCheck, turnstileContext } from "~/server/turnstile.server";
 import { FakeAuth } from "./fake-auth";
 
 export const TEST_SUPABASE_URL = "https://storage.test";
@@ -31,6 +32,10 @@ export interface RouteArgsOptions {
   storage?: StorageGateway | null;
   /** Upload double; defaults to none (uploads refused as INTERNAL). */
   uploads?: UploadGateway | null;
+  /** Private request-photo bucket double (E-08); defaults to none. */
+  requestPhotos?: RequestPhotoGateway | null;
+  /** Bot check (S-162); defaults to the one that always passes. */
+  turnstile?: TurnstileCheck;
 }
 
 const acceptingStorage: StorageGateway = { remove: async () => {} };
@@ -58,6 +63,8 @@ export function routeArgs(database: TestDatabase, options: RouteArgsOptions) {
   context.set(confirmationContext, confirmationSignerFor(TEST_CONFIRMATION_SECRET));
   context.set(storageContext, options.storage === undefined ? acceptingStorage : options.storage);
   context.set(uploadContext, options.uploads ?? null);
+  context.set(requestPhotosContext, options.requestPhotos ?? null);
+  context.set(turnstileContext, options.turnstile ?? NO_TURNSTILE);
   // Deferred work starts at once (the response is "ready"); tests await `afterResponse.settled()`.
   const afterResponse = createAfterResponse(() => {});
   afterResponse.release();

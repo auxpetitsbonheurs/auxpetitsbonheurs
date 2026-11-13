@@ -40,7 +40,7 @@ export const INTEGRATIONS: readonly Integration[] = [
   },
   {
     name: "turnstile",
-    keys: ["TURNSTILE_SECRET_KEY"],
+    keys: ["TURNSTILE_SITE_KEY", "TURNSTILE_SECRET_KEY"],
     launchBlocker: true,
     whenMissing: "public forms have no bot protection",
   },

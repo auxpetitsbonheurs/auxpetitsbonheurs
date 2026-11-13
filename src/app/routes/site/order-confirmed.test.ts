@@ -3,6 +3,7 @@ import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { insertProduct } from "~/db/testing/catalogue";
 import { confirmationContext } from "~/server/confirmation-cookie.server";
 import { requestDbContext } from "~/server/db.server";
+import { submitTestRequest } from "~/server/testing/custom-requests";
 import { placeTestOrder } from "~/server/testing/orders";
 import { routeArgs } from "~/server/testing/route-context";
 import { loader, meta, middleware } from "./order-confirmed";
@@ -253,5 +254,20 @@ describe("Juice payment instructions (S-278 AC2-AC4)", () => {
     await database.client.query("update orders set status = 'approved', paid = true");
 
     expect(((await load(path, token)) as { payment: unknown }).payment).toBeNull();
+  });
+});
+
+describe("a custom cake request's confirmation (E-08 S-151 AC2, AC9)", () => {
+  test("AC2: says 'Request received' with the request number and its tracking link, not an order to approve", async () => {
+    const placed = await submitTestRequest(database);
+
+    const data = await load(`/order/${placed.trackingToken}/confirmed`, placed.trackingToken);
+
+    expect(data).toMatchObject({ isRequest: true, title: "Request received", number: placed.orderNumber, trackingUrl: `http://localhost/t/${placed.trackingToken}` });
+  });
+
+  test("AC2: a website order is not a request", async () => {
+    const { path, token } = await placeOrder();
+    expect(await load(path, token)).toMatchObject({ isRequest: false });
   });
 });

@@ -39,7 +39,8 @@ test.describe("only the active locale ships (S-006 AC5)", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(english.get("home.heroTitle")!);
 
     expect(frenchOnly.length).toBeGreaterThan(5);
-    expect(scripts.size).toBeGreaterThan(0);
+    // The home page starts its JavaScript after load and idle (S-276): wait for it, never a fixed sleep.
+    await expect.poll(() => scripts.size).toBeGreaterThan(0);
     const bodies = [html, ...(await Promise.all([...scripts].map(async (url) => (await request.get(url)).text())))];
     // One assertion naming every leaked sentence (an expect per sentence and body cost ~8 s).
     const leaked = bodies.flatMap((body, i) => frenchOnly.filter((sentence) => body.includes(sentence)).map((s) => `${i}: ${s}`));

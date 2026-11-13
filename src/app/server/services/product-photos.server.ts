@@ -41,7 +41,7 @@ export async function storedPhotos(db: Reader, productId: string | undefined): P
 }
 
 /** A stored JPEG, PNG or WebP of at most 1 MB whose first bytes match its declared type. */
-function isImageObject(object: StoredObject | null): object is StoredObject {
+export function isImageObject(object: StoredObject | null): object is StoredObject {
   if (!object) return false;
   const sniffed = sniffImageType(object.head);
   return object.size > 0 && object.size <= UPLOAD_MAX_BYTES && isUploadType(object.contentType) && sniffed === object.contentType;

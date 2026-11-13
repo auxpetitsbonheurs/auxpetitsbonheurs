@@ -110,6 +110,8 @@ export interface SiteSettings {
   home: HomeSettings;
   /** Message-on-cake limit (S-067); placeOrder re-reads it fresh. */
   cakeMessageMax: number;
+  /** Days a quote stands by default (FR-030; the send-quote sheet's expiry, E-08 S-156 AC2). */
+  quoteValidityDays: number;
 }
 
 function homeFrom(row: SettingsRow): HomeSettings {
@@ -139,9 +141,20 @@ export const siteSettingsCache = createTtlCache<SiteSettings>(SETTINGS_TTL_MS);
  * (a page showing the old fee gets PRICE_CHANGED).
  */
 export function getSiteSettings(db: Database): Promise<SiteSettings> {
-  return siteSettingsCache.get(async () => {
-    const row = await siteSettingsRow(db);
-    const availability = { defaultNoticeDays: row.defaultNoticeDays, closedWeekdays: row.closedWeekdays, blocked: row.blocked };
-    return { footer: footerFrom(row), checkout: checkoutFrom(row), noticeDays: row.defaultNoticeDays, availability, home: homeFrom(row), cakeMessageMax: row.cakeMessageMax };
-  });
+  return siteSettingsCache.get(() => readSiteSettings(db));
+}
+
+/** The same values read fresh, for actions that decide with them (a custom request's date and window, E-08). */
+export async function readSiteSettings(db: Database): Promise<SiteSettings> {
+  const row = await siteSettingsRow(db);
+  const availability = { defaultNoticeDays: row.defaultNoticeDays, closedWeekdays: row.closedWeekdays, blocked: row.blocked };
+  return {
+    footer: footerFrom(row),
+    checkout: checkoutFrom(row),
+    noticeDays: row.defaultNoticeDays,
+    availability,
+    home: homeFrom(row),
+    cakeMessageMax: row.cakeMessageMax,
+    quoteValidityDays: row.quoteValidityDays,
+  };
 }

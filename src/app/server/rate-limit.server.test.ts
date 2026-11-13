@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import type { Executor } from "~/server/db.server";
-import { RL_AUTH, consumeRateLimit, purgeRateLimitBuckets, rateLimitKey } from "./rate-limit.server";
+import { RL_AUTH, RL_REQUEST, RL_UPLOAD, consumeRateLimit, purgeRateLimitBuckets, rateLimitKey } from "./rate-limit.server";
 
 let database: TestDatabase;
 let db: Executor;
@@ -85,5 +85,26 @@ describe("purgeRateLimitBuckets (AC7)", () => {
     expect(purged).toBe(1);
     const { rows } = await database.client.query<{ key: string }>("select key from rate_limit_bucket");
     expect(rows).toEqual([{ key: rateLimitKey(subject("recent@example.com")) }]);
+  });
+});
+
+describe("RL-request and RL-upload per IP (S-162 AC2, AC3)", () => {
+  const ip = (action: string) => ({ action, parts: ["198.51.100.20"] });
+
+  test("AC2: three requests in 10 minutes pass, the fourth waits for the window", async () => {
+    const results = [];
+    for (let i = 0; i < 4; i += 1) results.push(await consumeRateLimit(db, RL_REQUEST, ip("site.submitCustomRequest"), at(i)));
+    expect(results.slice(0, 3).every((r) => r.ok)).toBe(true);
+    expect(results[3]).toEqual({ ok: false, retryAfterSeconds: expect.any(Number) });
+    // T0 is 08:01: the 10-minute window ends at 08:10, 6 minutes after the 4th attempt (08:04).
+    expect(results[3]).toEqual({ ok: false, retryAfterSeconds: 6 * 60 });
+  });
+
+  test("AC3: twenty upload URL requests pass, the twenty-first is refused; the two classes count apart", async () => {
+    const results = [];
+    for (let i = 0; i < 21; i += 1) results.push(await consumeRateLimit(db, RL_UPLOAD, ip("site.requestUploadUrls"), T0));
+    expect(results.filter((r) => r.ok)).toHaveLength(20);
+    expect(results[20]!.ok).toBe(false);
+    expect((await consumeRateLimit(db, RL_REQUEST, ip("site.submitCustomRequest"), T0)).ok).toBe(true);
   });
 });

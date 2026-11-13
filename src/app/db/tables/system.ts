@@ -92,8 +92,13 @@ export const storagePurge = pgTable(
     attempts: smallint("attempts").notNull().default(0),
     lastError: text("last_error"),
     createdAt: timestamp("created_at", tz).notNull().defaultNow(),
+    /**
+     * Not removed before this (0016, E-08 S-153 AC7): a customer's request photo is queued when
+     * its upload URL is issued, due 24 h later, and the row is dropped when an order takes it.
+     */
+    dueAt: timestamp("due_at", tz).notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.bucket, t.path] })],
+  (t) => [primaryKey({ columns: [t.bucket, t.path] }), index("storage_purge_due_idx").on(t.dueAt)],
 ).enableRLS();
 
 /** Once-only guard for cron jobs: INSERT ... ON CONFLICT DO NOTHING. */

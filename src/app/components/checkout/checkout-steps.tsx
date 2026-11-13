@@ -29,6 +29,8 @@ function Heading({ id, text }: { id: string; text: string }) {
 }
 
 export interface DateSectionProps {
+  /** Section title; defaults to the checkout's numbered step (a custom request has its own, E-08). */
+  title?: string;
   /** The basket's 90 days (domain/availability `basketDates`), item names in the page language. */
   dates: BasketDates<string>;
   today: string;
@@ -56,7 +58,7 @@ export function DateSection(props: DateSectionProps) {
   const native = <NativeDate dates={props.dates} today={props.today} initial={props.initial} error={props.error} />;
   return (
     <section aria-labelledby="date-heading" className="mt-10">
-      <Heading id="date-heading" text={t("checkout.sections.date")} />
+      <Heading id="date-heading" text={props.title ?? t("checkout.sections.date")} />
       {hydrated ? <Suspense fallback={native}><DatePicker {...props} /></Suspense> : native}
     </section>
   );
@@ -78,11 +80,11 @@ function WindowList({ kind, windows, initial }: { kind: "delivery" | "pickup"; w
 }
 
 /** Step 4 (FR-020): the Settings windows for the chosen fulfilment; one list per fulfilment. */
-export function TimeSection({ windows, initial, error }: { windows: { delivery: WindowOption[]; pickup: WindowOption[] }; initial: Initial; error?: string }) {
+export function TimeSection({ windows, initial, error, title }: { windows: { delivery: WindowOption[]; pickup: WindowOption[] }; initial: Initial; error?: string; title?: string }) {
   const { t } = useI18n();
   return (
     <section aria-labelledby="time-heading" className="mt-10">
-      <Heading id="time-heading" text={t("checkout.sections.time")} />
+      <Heading id="time-heading" text={title ?? t("checkout.sections.time")} />
       <div id="windows" tabIndex={-1} aria-describedby={error ? "windows-error" : undefined} className="mt-4 outline-none">
         {error && (
           <p id="windows-error" className="mb-2 font-semibold text-destructive">
