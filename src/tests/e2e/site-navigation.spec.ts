@@ -130,7 +130,7 @@ test.describe("laptop header navigation (S-242)", () => {
     await page.setViewportSize({ width: 1023, height: 768 });
     await page.goto("/");
 
-    await expect(page.getByRole("link", { name: "Our story" })).toHaveCount(0);
+    await expect(page.getByRole("banner").getByRole("link", { name: "Our story" })).toHaveCount(0);
     await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(1);
     await expect(menuButton(page)).toBeVisible();
   });

@@ -13,7 +13,12 @@
       "phone": "Téléphone",
       "email": "E-mail",
       "copyright": "© {{year}} Aux petits bonheurs",
-      "pickup": "Retrait à {{address}}"
+      "pickup": "Retrait à {{address}}",
+      "instagram": "Instagram",
+      "pickupHeading": "Retrait",
+      "map": "Voir sur la carte",
+      "explore": "Découvrir",
+      "home": "Aux petits bonheurs, page d'accueil"
     },
     "loading": "Chargement…"
   },
@@ -22,8 +27,39 @@
   },
   "home": {
     "title": "Gâteaux faits maison à Maurice",
-    "intro": "Gâteaux, cupcakes et desserts préparés sur commande pour vos fêtes.",
-    "metaDescription": "Gâteaux, cupcakes et desserts faits maison, préparés sur commande à Maurice."
+    "intro": "Gâteaux, douceurs et créations sur mesure, faits avec passion et exigence.",
+    "metaDescription": "Gâteaux, cupcakes et desserts faits maison, préparés sur commande à Maurice.",
+    "heroTitle": "Pâtisserie artisanale pour vos plus beaux moments",
+    "discover": "Découvrir notre collection",
+    "heroAlt": "Un gâteau d'Aux petits bonheurs",
+    "promises": {
+      "heading": "Nos engagements",
+      "quality": "Ingrédients de qualité",
+      "custom": "Créations sur mesure",
+      "delivery": "Collection & livraison"
+    },
+    "collection": "Notre collection",
+    "collectionAll": "Voir toute la collection",
+    "offers": "Offres du moment",
+    "seasonal": "Spécialités de saison",
+    "featured": "Nos coups de cœur",
+    "how": {
+      "heading": "Comment ça marche",
+      "step1Title": "Choisissez",
+      "step1": "Sélectionnez vos gourmandises et leurs options dans notre collection.",
+      "step2Title": "Envoyez votre commande",
+      "step2": "Choisissez la date, puis le retrait ou la livraison. Nous la vérifions et vous la confirmons.",
+      "step3Title": "Régalez-vous",
+      "step3": "Retirez votre commande ou faites-vous livrer, puis partagez le moment."
+    },
+    "customBand": {
+      "title": "Un gâteau sur mesure ?",
+      "text": "Partagez votre idée et créons ensemble le gâteau de vos rêves.",
+      "cta": "Demander un devis"
+    },
+    "gallery": "Depuis notre cuisine",
+    "galleryAll": "Voir la galerie",
+    "errorTitle": "Bienvenue chez Aux petits bonheurs"
   },
   "checkout": {
     "title": "Finaliser la commande",
