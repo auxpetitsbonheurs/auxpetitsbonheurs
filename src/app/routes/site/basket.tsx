@@ -8,8 +8,8 @@ import { Button } from "~/components/ui/button";
 import { leftOutNames, nameList } from "~/lib/left-out";
 import { DateSection, DetailsSection, TimeSection } from "~/components/checkout/checkout-steps";
 import { ErrorSummary } from "~/components/checkout/error-summary";
-import { type FulfilmentChoice, FulfilmentSection } from "~/components/checkout/fulfilment-section";
-import { PlaceOrderBar, SummarySection } from "~/components/checkout/summary-section";
+import { FulfilmentSection } from "~/components/checkout/fulfilment-section";
+import { PlaceOrderBar, PlaceOrderLabel, SummarySection } from "~/components/checkout/summary-section";
 import { type AvailabilityRules, type BasketDates, basketDates } from "~/domain/availability";
 import { type BasketLine, checkoutTotals, deliveryFeeFor, removeLine, setLineQuantity } from "~/domain/basket";
 import { type Menu, type MenuEntry, fresherEntry } from "~/domain/menu";
@@ -132,12 +132,26 @@ function saveBasket(lines: BasketLine[], locale: Locale) {
   return redirect(localePath(locale, "/basket"), { headers: { "Set-Cookie": basketCookie(lines) } });
 }
 
-function updateLine(form: Record<string, unknown>, request: Request, locale: Locale) {
+/**
+ * A plain form post (no JavaScript, or a cookie the script cannot write). 1-50, and never
+ * below the product's minimum (S-085 AC4), which would leave the line out of the order.
+ * An unknown line id changes nothing.
+ */
+async function updateLine(form: Record<string, unknown>, args: Route.ActionArgs, locale: Locale) {
   const parsed = UpdateLineInput.safeParse(form);
   if (!parsed.success) {
     return actionError("VALIDATION_FAILED", locale, { fields: { quantity: translate("basket.errors.quantity", locale) } });
   }
-  return saveBasket(setLineQuantity(readBasket(request), parsed.data.lineId, parsed.data.quantity), locale);
+  const basket = readBasket(args.request);
+  const line = basket.find((l) => l.lineId === parsed.data.lineId);
+  if (line) {
+    const product = (await findProductsByIds(args.context.get(requestDbContext).db, [line.productId])).get(line.productId);
+    const min = product?.minQuantity ?? 1;
+    if (parsed.data.quantity < min) {
+      return actionError("VALIDATION_FAILED", locale, { fields: { quantity: translate("basket.atProductMinimum", locale, { min }) } });
+    }
+  }
+  return saveBasket(setLineQuantity(basket, parsed.data.lineId, parsed.data.quantity), locale);
 }
 
 function removeBasketLine(form: Record<string, unknown>, request: Request, locale: Locale) {
@@ -226,7 +240,7 @@ export async function action(args: Route.ActionArgs) {
   const form = Object.fromEntries(await args.request.formData());
   switch (form.intent) {
     case "updateLine":
-      return updateLine(form, args.request, locale);
+      return updateLine(form, args, locale);
     case "removeLine":
       return removeBasketLine(form, args.request, locale);
     case "placeOrder":
@@ -503,17 +517,14 @@ function CheckoutForm({ data, model, refused }: { data: LoaderData; model: Baske
   const { t, locale } = useI18n();
   const navigation = useNavigation();
   const values = refused?.values ?? {};
-  const initialChoice = values.fulfilment === "delivery" || values.fulfilment === "pickup" ? values.fulfilment : null;
-  const [fulfilment, setFulfilment] = useState<FulfilmentChoice | null>(initialChoice);
   const summaryRef = useFocusOnRefusal(refused);
   const errors = refused?.error.fields ?? {};
   const { checkout } = model.menu;
   const { itemsTotalRs } = model;
-  const totalRs = itemsTotalRs + deliveryFeeFor(fulfilment, checkout.deliveryFeeRs);
   // Busy from the tap until the confirmation page has loaded (the redirect's loading phase too).
   const submitting = isPendingIntent(navigation, "placeOrder");
   const priceChanged = refused?.error.code === "PRICE_CHANGED";
-  const label = priceChanged ? t("checkout.placeOrderAt", { total: formatRupees(totalRs) }) : t("checkout.placeOrder");
+  const label = <PlaceOrderLabel itemsTotalRs={itemsTotalRs} deliveryFeeRs={checkout.deliveryFeeRs} />;
   const items = model.orderable.map((l) => ({ lineId: l.lineId, name: localized(l.name, locale), quantity: l.quantity, lineTotalRs: l.lineTotalRs }));
   // Memoised on the refusal so the note scrolls into view once, not on every render.
   const note = useMemo(() => refusalNote(refused, t, locale), [refused, t, locale]);
@@ -527,7 +538,7 @@ function CheckoutForm({ data, model, refused }: { data: LoaderData; model: Baske
       {/* One total per choice so the first submit matches even without JavaScript (the server reads the chosen one). */}
       <input type="hidden" name="displayedTotalRs.delivery" value={itemsTotalRs + deliveryFeeFor("delivery", checkout.deliveryFeeRs)} />
       <input type="hidden" name="displayedTotalRs.pickup" value={itemsTotalRs} />
-      <FulfilmentSection deliveryFee={formatRupees(checkout.deliveryFeeRs)} pickupAddress={checkout.pickup.address} pickupMapUrl={checkout.pickup.mapUrl} initial={values} errors={errors} onChoose={setFulfilment} />
+      <FulfilmentSection deliveryFee={formatRupees(checkout.deliveryFeeRs)} pickupAddress={checkout.pickup.address} pickupMapUrl={checkout.pickup.mapUrl} initial={values} errors={errors} />
       <DateSection dates={dates} today={data.today} initial={values.date} error={errors.date} whatsapp={contacts?.whatsapp ?? null} />
       <TimeSection windows={refused?.windows ?? checkout.windows} initial={values} error={errors.windowId} />
       <DetailsSection initial={values} errors={errors} />

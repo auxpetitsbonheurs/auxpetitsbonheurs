@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Check, CircleSlash } from "lucide-react";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { useI18n } from "~/i18n/react";
@@ -67,6 +68,7 @@ function PolicyAcceptance({ policies, error, initial }: { policies: string; erro
           {t("checkout.readPolicies")}
         </summary>
         <PlainText text={policies} className="mt-2" />
+        <p className="mt-2 max-w-measure text-sm">{t("checkout.privacyNote")}</p>
       </details>
     </div>
   );
@@ -121,11 +123,27 @@ export function SummarySection({ items, leftOut = [], itemsTotalRs, deliveryFeeR
 }
 
 /**
+ * "Place order at Rs {total}" (S-090 AC6) for the chosen fulfilment, by the same CSS switch as
+ * the totals, so it is right without JavaScript; "Place order" until a choice is made.
+ */
+export function PlaceOrderLabel({ itemsTotalRs, deliveryFeeRs }: { itemsTotalRs: number; deliveryFeeRs: number }) {
+  const { t } = useI18n();
+  const at = (rs: number) => t("checkout.placeOrderAt", { total: formatRupees(rs) });
+  return (
+    <>
+      <span data-when="none">{t("checkout.placeOrder")}</span>
+      <span data-when="delivery">{at(itemsTotalRs + deliveryFeeRs)}</span>
+      <span data-when="pickup">{at(itemsTotalRs)}</span>
+    </>
+  );
+}
+
+/**
  * Sticky bar (design-system pattern): total + "Place order"; unsticks while typing (app.css).
  * While sending (S-014 AC7) the button is disabled and busy with a spinner but keeps its
  * accessible name; "Sending your order…" is announced in a status region instead.
  */
-export function PlaceOrderBar({ itemsTotalRs, deliveryFeeRs, label, submitting }: { itemsTotalRs: number; deliveryFeeRs: number; label: string; submitting: boolean }) {
+export function PlaceOrderBar({ itemsTotalRs, deliveryFeeRs, label, submitting }: { itemsTotalRs: number; deliveryFeeRs: number; label: ReactNode; submitting: boolean }) {
   const { t } = useI18n();
   return (
     <div data-sticky-bar className="sticky bottom-0 z-10 mt-8 border-t bg-card py-3 shadow-md">
@@ -134,7 +152,7 @@ export function PlaceOrderBar({ itemsTotalRs, deliveryFeeRs, label, submitting }
           <TotalByChoice itemsTotalRs={itemsTotalRs} deliveryFeeRs={deliveryFeeRs} />
         </div>
         {/* Focusable while busy (aria-disabled, not disabled); repeat taps are ignored and the idempotency key covers the rest. */}
-        <SubmitButton name="intent" value="placeOrder" size="lg" pending={submitting} pendingText={t("checkout.sending")} pendingLabel={t("checkout.sending")} className="min-w-1/2 grow">
+        <SubmitButton name="intent" value="placeOrder" size="lg" pending={submitting} pendingText={t("checkout.sending")} pendingLabel={t("checkout.sending")} className="h-auto min-h-12 min-w-1/2 max-w-full shrink grow whitespace-normal py-2">
           {label}
         </SubmitButton>
       </div>

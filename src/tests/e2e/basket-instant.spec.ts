@@ -183,7 +183,7 @@ test.describe("ADR-0004 instant Add to basket", () => {
       await page.getByRole("button", { name: `Increase quantity of ${SAMPLE_PRODUCT.nameEn}` }).click();
       await expect(quantity).toHaveText("2");
       await expect(page.getByRole("link", { name: "Basket, 2 items" })).toBeVisible();
-      await expect(page.locator("[data-sticky-bar]").getByText("Rs 1,700").locator("visible=true")).toHaveCount(1);
+      await expect(page.locator("[data-sticky-bar]").getByText("Rs 1,700", { exact: true }).locator("visible=true")).toHaveCount(1);
       await page.getByRole("button", { name: `Remove ${SAMPLE_PRODUCT.nameEn} from basket` }).click();
       await expect(page.getByText("Your basket is empty.")).toBeVisible();
     });

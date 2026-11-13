@@ -16,6 +16,8 @@ export interface BasketLineView {
   /** Chosen options and the cake message, in words ("8 inch", "Message on cake: Happy birthday"). */
   details?: string[];
   quantity: number;
+  /** The product's minimum (1 when it has none): the stepper stops there. */
+  minQuantity?: number;
   unitPrice: string;
   /** The unit price without the live offer, struck through (S-082); absent when none applies. */
   wasUnitPrice?: string | null;
@@ -97,7 +99,8 @@ function QuantityStepper({ line }: { line: BasketLineView }) {
   });
   // The limit hint shows only once a limit button was pressed (not on every 1-item line).
   const [hint, setHint] = useState<"min" | "max" | null>(null);
-  const atMin = quantity <= LINE_MIN_QUANTITY;
+  const min = Math.max(LINE_MIN_QUANTITY, line.minQuantity ?? LINE_MIN_QUANTITY);
+  const atMin = quantity <= min;
   const atMax = quantity >= LINE_MAX_QUANTITY;
   const shown = (hint === "min" && atMin) || (hint === "max" && atMax) ? hint : null;
   const hintId = `quantity-hint-${lineId}`;
@@ -122,7 +125,11 @@ function QuantityStepper({ line }: { line: BasketLineView }) {
         </div>
       </fetcher.Form>
       <p id={hintId} aria-live="polite" className="text-sm text-muted-foreground">
-        {shown && <span className="mt-1 inline-block">{t(shown === "min" ? "basket.atMinimum" : "basket.atMaximum")}</span>}
+        {shown && (
+          <span className="mt-1 inline-block">
+            {shown === "max" ? t("basket.atMaximum") : min > LINE_MIN_QUANTITY ? t("basket.atProductMinimum", { min }) : t("basket.atMinimum")}
+          </span>
+        )}
       </p>
       {fetcher.data && !fetcher.data.ok && (
         <p role="alert" className="mt-1 font-semibold text-destructive">
