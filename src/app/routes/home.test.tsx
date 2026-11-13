@@ -50,12 +50,12 @@ describe("view", () => {
 
     const hero = html.match(/<img[^>]*hero\.webp[^>]*>/)![0];
     expect(hero).toMatch(new RegExp(`srcSet="${srcSet}"`, "i"));
-    expect(hero).toContain('sizes="(min-width: 72rem) 40rem, (min-width: 48rem) 55vw, 100vw"');
+    expect(hero).toContain('sizes="(min-width: 72rem) 40rem, (min-width: 48rem) 55vw, 90vw"');
     expect(hero).toMatch(/fetchPriority="high"/i);
     expect(hero).not.toContain('loading="lazy"');
     const preload = html.match(/<link[^>]*rel="preload"[^>]*as="image"[^>]*>/)![0];
     expect(preload).toMatch(new RegExp(`imageSrcSet="${srcSet}"`, "i"));
-    expect(preload).toMatch(/imageSizes="\(min-width: 72rem\) 40rem, \(min-width: 48rem\) 55vw, 100vw"/i);
+    expect(preload).toMatch(/imageSizes="\(min-width: 72rem\) 40rem, \(min-width: 48rem\) 55vw, 90vw"/i);
     const card = html.match(/<img[^>]*c\.webp"[^>]*>/)![0];
     expect(card).toContain('sizes="(min-width: 72rem) 22rem, (min-width: 48rem) 31vw, (min-width: 20rem) 47vw, 100vw"');
     expect(card).toContain('loading="lazy"');

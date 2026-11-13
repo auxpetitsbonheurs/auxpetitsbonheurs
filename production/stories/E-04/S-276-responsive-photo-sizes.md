@@ -37,5 +37,10 @@ As a customer on a phone over 4G, I want each photo to download at the size my s
 - Settings images have no stored size: their copies are looked for up to the 1600 px edge and the hero renders `srcset` against the 1600 px box.
 - Promotion images are out of scope (promotions job; migration 0012 is theirs).
 
+- Full-width phone photos (hero, product viewer, single page photos) use `90vw` in `sizes`, which caps a 412 px, 2.6x phone near 2.3x: it takes the 960 px copy instead of a 1200 px original only ~10% wider.
+
 ## Notes
-- Owner steps: none for new uploads. Existing staging photos: the backfill was dispatched once on staging (see below). Production: not run (staging-only by design); production photos get copies when re-uploaded, or by a later production-approved run.
+- 2026-11-13: code on main (81a02d6), CI green (run 43407986032). The staging deploy (run 43410205227, also re-run) did not start: GitHub refused every job with "recent account payments have failed or your spending limit needs to be increased". Until that is fixed, staging runs the old build, so the backfill and the after-measurement (AC7) wait. Owner step: GitHub → Settings → Billing and plans → fix the payment or raise the Actions spending limit; then Actions → deploy → Re-run, then Actions → photo-variants → Run workflow (main).
+- Before (staging, Lighthouse 12, Pixel 7 412×915 @2.625, simulated slow 4G + 4× CPU, 3 runs; median): `/` LCP 4.21 s, 727 kB total, 420 kB images · `/menu` 6.30 s, 950 kB, 646 kB images · `/menu/red-velvet` 4.27 s, 512 kB, 215 kB images · `/gallery` 1.83 s, 290 kB, 9 kB images (staging has no gallery photos yet, so nothing to gain there today). The LCP element was the photo on `/`, `/menu` and the product page.
+- Expected after (copies made locally from the same staging files with the backfill's settings, sharp q78): the 3 staging photos are 210-231 kB originals; their 480 px copies are 25-35 kB and 960 px copies 81-108 kB. `/menu` cards take the 480 copies: ~94 kB of photos instead of ~646 kB (-85%). Home hero and product photo take the 960 copy: ~81 kB instead of ~210 kB. To be confirmed with the same Lighthouse runs once staging is deployed and backfilled.
+- Production: the backfill is staging-only by design; production photos get copies when re-uploaded, or by a later run the Owner approves.
