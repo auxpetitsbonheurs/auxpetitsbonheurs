@@ -132,6 +132,27 @@ describe("quantity limits (S-012 AC3)", () => {
     }
   });
 
+  test("S-085 AC4: below the product's minimum is VALIDATION_FAILED naming the minimum; the basket is unchanged", async () => {
+    const id = await insertProduct(database.db, { minQuantity: 6 });
+    const cookie = cookieWith([{ lineId: "a", productId: id, quantity: 6 }]);
+
+    const refused = (await post({ intent: "updateLine", lineId: "a", quantity: "5" }, cookie)) as unknown as Refusal & { headers?: Headers };
+    expect(refused.data.error.code).toBe("VALIDATION_FAILED");
+    expect(refused.data.error.fields?.quantity).toBe("This item comes in at least 6. To take it out, press Remove.");
+    const accepted = (await post({ intent: "updateLine", lineId: "a", quantity: "6" }, cookie)) as Response;
+    expect(accepted.headers.get("Set-Cookie")).toContain(`${BASKET_COOKIE}=`);
+  });
+
+  test("S-085 AC4: an unknown line id is ignored: the basket comes back unchanged", async () => {
+    const id = await insertProduct(database.db);
+    const cookie = cookieWith([{ lineId: "a", productId: id, quantity: 2 }]);
+
+    const response = (await post({ intent: "updateLine", lineId: "zzzzzzzzzzzz", quantity: "3" }, cookie)) as Response;
+    expect(response.status).toBe(302);
+    const after = await load(cookieFrom(response.headers.get("Set-Cookie")!));
+    expect(after.basket.map((l) => [l.lineId, l.quantity])).toEqual([["a", 2]]);
+  });
+
   test("an unknown intent is VALIDATION_FAILED", async () => {
     const refused = (await post({ intent: "nope" })) as unknown as Refusal;
     expect(refused.data.error.code).toBe("VALIDATION_FAILED");

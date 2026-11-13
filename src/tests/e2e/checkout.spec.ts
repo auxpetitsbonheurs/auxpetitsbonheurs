@@ -8,6 +8,8 @@ import {
   expectTapTargets,
   withZoom,
 } from "./support/a11y";
+import { mkdirSync } from "node:fs";
+import { createProduct } from "./support/catalogue";
 import { chooseDate } from "./support/checkout-date";
 import { setClock } from "./support/clock";
 import { E2E_POLICIES, SAMPLE_PRODUCT, createOrder } from "./support/database";
@@ -271,7 +273,7 @@ test.describe("S-012 basket and delivery or pickup", () => {
     await expect(page.getByText("Delivery fee Rs 200")).toBeVisible();
     const bar = page.locator("[data-sticky-bar]");
     await expect(bar.getByText("Total", { exact: true }).locator("visible=true")).toHaveCount(1);
-    await expect(bar.getByText("Rs 1,050")).toBeVisible();
+    await expect(bar.getByText("Rs 1,050", { exact: true })).toBeVisible();
     await page.getByLabel("Delivery address").fill("12 Royal Road, Rose Hill");
 
     await pickup.check();
@@ -279,8 +281,8 @@ test.describe("S-012 basket and delivery or pickup", () => {
     await expect(step2.getByText("Pickup address: Beau Bassin")).toBeVisible();
     await expect(step2.getByText("Pickup: free")).toBeVisible();
     await expect(page.getByLabel("Delivery address")).toBeHidden();
-    await expect(bar.getByText("Rs 1,050")).toBeHidden();
-    await expect(bar.getByText("Rs 850").locator("visible=true")).toHaveCount(1);
+    await expect(bar.getByText("Rs 1,050", { exact: true })).toBeHidden();
+    await expect(bar.getByText("Rs 850", { exact: true }).locator("visible=true")).toHaveCount(1);
     await expect(page.getByText("Delivery fee Rs 200")).toBeHidden();
   });
 
@@ -331,7 +333,7 @@ test.describe("S-012 without JavaScript", () => {
     await expect(page.getByRole("link", { name: "Basket, 2 items" })).toBeVisible();
 
     await page.getByRole("radio", { name: /Delivery/ }).check();
-    await expect(page.locator("[data-sticky-bar]").getByText("Rs 1,900")).toBeVisible();
+    await expect(page.locator("[data-sticky-bar]").getByText("Rs 1,900", { exact: true })).toBeVisible();
   });
 });
 
@@ -720,13 +722,13 @@ test.describe("S-015 order confirmation", () => {
     const trackingUrl = `${baseURL}/t/${token}`;
     await expect(page.getByText(trackingUrl, { exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Follow my order" })).toHaveAttribute("href", trackingUrl);
-    await expect(page.getByRole("link", { name: "Share link" })).toHaveAttribute("href", /^https:\/\/wa\.me\/\?text=/);
+    await expect(page.getByRole("link", { name: "Share tracking link" })).toHaveAttribute("href", /^https:\/\/wa\.me\/\?text=/);
 
     const status = page.getByRole("status").filter({ hasText: /copied/i });
     await page.getByRole("button", { name: "Copy order number" }).click();
     await expect(status).toHaveText("Order number copied");
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(number);
-    await page.getByRole("button", { name: "Copy link" }).click();
+    await page.getByRole("button", { name: "Copy tracking link" }).click();
     await expect(status).toHaveText("Link copied");
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(trackingUrl);
   });
@@ -781,7 +783,7 @@ test.describe("S-015 order confirmation", () => {
     await page.goto(`/order/${order.trackingToken}/confirmed`);
     await hydrated(page);
 
-    await expect(page.getByRole("button", { name: "Copy link" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Copy tracking link" })).toBeVisible();
     await expectAccessibleLayout(page);
   });
 
@@ -798,4 +800,75 @@ test.describe("S-015 order confirmation", () => {
       await expectNoA11yViolations(page);
     });
   }
+});
+
+/** 375 px screenshots for the review report, only when E05_SHOTS names a folder. */
+async function shot(page: Page, name: string) {
+  const dir = process.env.E05_SHOTS;
+  if (!dir || page.viewportSize()?.width !== 375) return;
+  mkdirSync(dir, { recursive: true });
+  await page.screenshot({ path: `${dir}/checkout-${name}.png`, fullPage: true });
+}
+
+/** A basket holding one line of a fresh product, opened at `path` once hydrated. */
+async function basketOf(page: Page, db: Parameters<typeof createProduct>[0], baseURL: string, setup: { minQuantity?: number; quantity?: number } = {}, path = "/basket") {
+  const product = await createProduct(db, { name: "Cupcake box" });
+  if (setup.minQuantity) await db`update product set min_quantity = ${setup.minQuantity} where id = ${product.id}`;
+  const line = { lineId: "m1", productId: product.id, options: [], quantity: setup.quantity ?? 1 };
+  await page.context().addCookies([{ name: "apb_basket", value: encodeURIComponent(JSON.stringify([line])), url: baseURL, sameSite: "Lax" }]);
+  await page.goto(path);
+  await hydrated(page);
+  return product;
+}
+
+test.describe("E-05 basket and summary", () => {
+  test("S-085 AC4: the stepper stops at the product's minimum and says why, tied to the button", async ({ page, db, baseURL }) => {
+    const product = await basketOf(page, db, baseURL!, { minQuantity: 6, quantity: 7 });
+    const decrease = page.getByRole("button", { name: `Decrease quantity of ${product.name}` });
+
+    await decrease.click();
+    await expect(page.getByRole("group", { name: `Quantity of ${product.name}` }).locator("output")).toHaveText("6");
+    // At the minimum the button is aria-disabled (still focusable): a tap only explains.
+    await decrease.click({ force: true });
+    await expect(page.getByRole("group", { name: `Quantity of ${product.name}` }).locator("output")).toHaveText("6");
+    await expect(decrease).toHaveAccessibleDescription("This item comes in at least 6. To take it out, press Remove.");
+    await expect(page.getByText("No longer available")).toHaveCount(0);
+  });
+
+  test("S-090 AC6: the button reads Place order, then Place order at the total of the chosen fulfilment", async ({ page, db, baseURL }) => {
+    await basketOf(page, db, baseURL!);
+    await expect(page.getByRole("button", { name: "Place order", exact: true })).toBeVisible();
+
+    await page.getByRole("radio", { name: /^Delivery/ }).check();
+    await expect(page.getByRole("button", { name: /^Place order at Rs\s1,050$/ })).toBeVisible();
+    await page.getByRole("radio", { name: /^Pickup/ }).check();
+    await expect(page.getByRole("button", { name: /^Place order at Rs\s850$/ })).toBeVisible();
+    await shot(page, "basket-pickup");
+    await expectNoHorizontalScroll(page);
+  });
+
+  test("S-090 AC4: the policies say how we use the details; French on /fr", async ({ page, db, baseURL }) => {
+    await basketOf(page, db, baseURL!, {}, "/fr/basket");
+    await page.getByText("Lire les conditions de commande", { exact: false }).click();
+
+    await expect(page.getByText("Nous utilisons vos coordonnées uniquement pour préparer, livrer et suivre cette commande.", { exact: false })).toBeVisible();
+    await page.getByRole("radio", { name: /^Retrait/ }).check();
+    await expect(page.getByRole("button", { name: /^Commander pour Rs\s850$/ })).toBeVisible();
+    await shot(page, "basket-fr");
+    await expectNoA11yViolations(page);
+  });
+});
+
+test.describe("E-05 basket without JavaScript", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("S-090 AC6: the chosen fulfilment's total is on the button from CSS alone", async ({ page, db, baseURL }) => {
+    const product = await createProduct(db, { name: "No-JS cake" });
+    const line = { lineId: "n1", productId: product.id, options: [], quantity: 1 };
+    await page.context().addCookies([{ name: "apb_basket", value: encodeURIComponent(JSON.stringify([line])), url: baseURL!, sameSite: "Lax" }]);
+    await page.goto("/basket");
+
+    await page.getByRole("radio", { name: /^Delivery/ }).check();
+    await expect(page.getByRole("button", { name: /^Place order at Rs\s1,050$/ })).toBeVisible();
+  });
 });

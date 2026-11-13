@@ -220,6 +220,23 @@ describe("promotion on the item (S-092 AC3)", () => {
     expect(await items()).toEqual([]);
   });
 
+  test("S-091 AC2: an offer ending at 18:00 Mauritius while the form was open: refused with the new prices, then the resubmit at the new total succeeds", async () => {
+    await promote({ percentOff: 20 });
+    const at = (iso: string, form: Record<string, string>) => placeOrder(form, { db: database.db, now: new Date(iso), locale: "en", basket: [eightInch()] });
+
+    // 17:59:59: the offer is live, so the shown total (1400) goes through.
+    expect((await at("2026-11-10T13:59:59Z", pickupForm(1400))).ok).toBe(true);
+    // 18:00:00 sharp: the offer has ended. Nothing is written; the answer carries every new figure.
+    const form = pickupForm(1400);
+    const result = refused(await at("2026-11-10T14:00:00Z", form), "PRICE_CHANGED");
+    expect(result).toMatchObject({ itemsTotalRs: 1600, deliveryFeeRs: 0, totalRs: 1600 });
+    expect(result.lines[0]).toMatchObject({ unitPriceRs: 1600, promotionId: null });
+    expect(await items()).toHaveLength(1);
+    // The page shows "Place order at Rs 1,600"; the same key with the new total is accepted.
+    expect((await at("2026-11-10T14:00:05Z", { ...form, displayedTotalRs: "1600" })).ok).toBe(true);
+    expect(await items()).toHaveLength(2);
+  });
+
   test("a forged lower total is refused: the server price with the promotion is the only one charged", async () => {
     await promote({ percentOff: 20 });
     const result = refused(await place(pickupForm(1000), [eightInch()]), "PRICE_CHANGED");

@@ -109,6 +109,19 @@ describe("validation (S-013 AC2)", () => {
     await expectNoOrder();
   });
 
+  test("S-089 AC4, S-086 AC4: a name over 80, a note over 1000 and a 4-character address are refused per field, with no order", async () => {
+    const form = deliveryForm({ "contact.name": "A".repeat(81), "contact.note": "n".repeat(1001), address: "Road" });
+
+    expect([...expectRefused(await place(form), "VALIDATION_FAILED").fields].sort()).toEqual(["address", "contact.name", "contact.note"]);
+    await expectNoOrder();
+  });
+
+  test("S-089 AC4: 80 characters of name and 1000 of note are accepted", async () => {
+    const result = await place(deliveryForm({ "contact.name": "A".repeat(80), "contact.note": "n".repeat(1000) }));
+
+    expect(result.ok).toBe(true);
+  });
+
   test("no delivery or pickup choice is VALIDATION_FAILED on fulfilment", async () => {
     const form = deliveryForm();
     delete (form as Record<string, string | undefined>).fulfilment;
@@ -542,6 +555,10 @@ describe("one database round trip (ADR-0003 amendment 3)", () => {
 
     expect(expectRefused(result, "PRICE_CHANGED")).toMatchObject({ totalRs: 1050 });
     expect(error.mock.calls.map((c) => String(c[0]))).toContain(JSON.stringify({ level: "error", event: "place_order_rule_drift", kind: "accepted_here_refused_there" }));
+    // S-089 AC7: the log carries the kind only, never the contact details of the form.
+    const logged = JSON.stringify(error.mock.calls);
+    const form = deliveryForm();
+    for (const pii of [form["contact.name"], form["contact.phone"], form["contact.email"], "57123456"]) expect(logged).not.toContain(pii);
     error.mockRestore();
   });
 });

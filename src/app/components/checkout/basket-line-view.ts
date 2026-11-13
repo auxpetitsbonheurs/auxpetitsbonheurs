@@ -49,6 +49,8 @@ export function basketLineViews({ basket, lines, menu, notes, goneName, noteFor 
       imageUrl: product?.photos[0]?.thumbUrl ?? product?.photos[0]?.url ?? null,
       details: lineDetails(line, t, locale),
       quantity: line.quantity,
+      // The stepper stops at the product's minimum (S-085 AC4), so a line is never dropped by a tap.
+      minQuantity: product?.minQuantity ?? 1,
       unitPrice: formatRupees(line.unitPriceRs),
       wasUnitPrice: line.promotionId && line.originalUnitPriceRs > line.unitPriceRs ? formatRupees(line.originalUnitPriceRs) : null,
       lineTotal: formatRupees(line.lineTotalRs),
