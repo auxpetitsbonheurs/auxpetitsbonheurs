@@ -1,5 +1,5 @@
 # S-116: Approve or decline an order
-Status: ready
+Status: done
 Epic: E-06-order-management
 Spec: docs/specs/features/admin-orders.md#api-contract
 Estimate: 3 pts
@@ -32,3 +32,7 @@ As an admin, I want to approve or decline a pending order with an optional reaso
 
 ## Notes
 - Email content/templates are E-10; this story queues outbox rows only. Depends on S-113, S-115.
+
+## Implementation notes (2026-11-13)
+- Adjusted: Decline is the Juice payment agent's Refuse (wording "Refuse order", reason ≤ 500 shown to the customer, refund due when paid); dialog copy from that spec, not "Decline this order?". Custom requests use `declineRequest` (email `request_declined`).
+- Approve is the primary bar button named after the order; the result is a focused polite status line in the bar (no separate toast) so focus never drops to <body>.

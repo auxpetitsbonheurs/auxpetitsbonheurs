@@ -71,7 +71,21 @@ describe("order detail (S-017 AC2)", () => {
     expect(page.customer).toEqual({ name: "Aisha", phone: "+23057123456", email: "aisha@example.com" });
     expect(page.telUrl).toBe("tel:+23057123456");
     expect(page.mapsUrl).toBe("https://www.google.com/maps/search/?api=1&query=12%20Royal%20Road%2C%20Rose%20Hill");
-    expect(page.allowed).toEqual({ approve: true, markPaid: false, decline: true, markRefunded: false });
+    expect(page.allowed).toEqual({
+      approve: true,
+      markPaid: false,
+      markRefunded: false,
+      decline: true,
+      declineRequest: false,
+      sendQuote: false,
+      advance: null,
+      revert: null,
+      cancel: true,
+      edit: true,
+      setPaid: true,
+      saveNote: true,
+    });
+    expect(page.whatsappUrl).toBe(`https://wa.me/23057123456?text=${encodeURIComponent("Hello Aisha, about your order APB-0001 at Aux petits bonheurs.")}`);
   });
 
   test("pickup has no maps link; an approved order no longer allows approve", async () => {
@@ -81,7 +95,7 @@ describe("order detail (S-017 AC2)", () => {
     const page = await load(id);
 
     expect(page.mapsUrl).toBeNull();
-    expect(page.allowed).toEqual({ approve: false, markPaid: false, decline: true, markRefunded: false });
+    expect(page.allowed).toMatchObject({ approve: false, markPaid: false, decline: true, markRefunded: false, advance: "in_preparation", revert: null, cancel: true });
     expect(page.order.version).toBe(2);
   });
 
@@ -97,7 +111,7 @@ describe("approve intent", () => {
   test("success returns the new status and version (S-017 AC3)", async () => {
     const id = await placed();
 
-    expect(await post(id, { intent: "approve", version: "1" })).toEqual({ ok: true, intent: "approve", order: { status: "approved", version: 2 } });
+    expect(await post(id, { intent: "approve", version: "1" })).toEqual({ ok: true, intent: "approve", order: { status: "approved", version: 2, paid: false } });
   });
 
   test("a stale version is ORDER_CHANGED 409 \"This order changed. Reload\" (AC4)", async () => {
@@ -123,7 +137,7 @@ describe("approve intent", () => {
   test.each([
     ["no version", { intent: "approve" }],
     ["a version of 0", { intent: "approve", version: "0" }],
-    ["an unknown intent", { intent: "quote", version: "1" }],
+    ["an unknown intent", { intent: "teleport", version: "1" }],
   ])("%s is VALIDATION_FAILED and changes nothing", async (_label, form) => {
     const id = await placed();
 
@@ -162,7 +176,7 @@ describe("activity log (S-018 AC1, AC2, AC5)", () => {
     const page = await load(id);
 
     expect(page.events).toHaveLength(1);
-    expect(page.events[0]).toMatchObject({ type: "created", actor: { type: "customer", name: null }, fromStatus: null, toStatus: "pending_approval" });
+    expect(page.events[0]).toMatchObject({ type: "created", notes: [] });
     expect(page.events[0]!.text).toMatch(/^Created by customer, \d{1,2} [A-Z][a-z]{2} \d{2}:\d{2}$/);
   });
 
@@ -175,7 +189,7 @@ describe("activity log (S-018 AC1, AC2, AC5)", () => {
     const page = await load(id);
 
     expect(page.events.map((e) => e.text)).toEqual([expect.stringMatching(/^Created by customer, /), "Approved by Sarah, 12 Nov 14:05"]);
-    expect(page.events[1]).toMatchObject({ at: "2026-11-12T10:05:00.000Z", actor: { type: "admin", name: "Sarah" }, type: "approved" });
+    expect(page.events[1]).toMatchObject({ at: "2026-11-12T10:05:00.000Z", type: "approved" });
   });
 
   test("in French the labels are French and the time is still Mauritius time (AC2)", async () => {

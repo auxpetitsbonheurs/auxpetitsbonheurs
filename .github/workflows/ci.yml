@@ -53,9 +53,9 @@ jobs:
             echo "code=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # Docs that unit tests read (tokens, runbooks, CPU evidence, src/README.md) count as code.
+          # Docs that unit tests read (tokens, runbooks, CPU evidence, PRD Appendix B, src/README.md) count as code.
           code=$(git diff --name-only "$base" HEAD | awk '
-            /^docs\/(design|runbooks)\// || /^docs\/architecture\/cpu-measurements\.md$/ { print; next }
+            /^docs\/(design|runbooks)\// || /^docs\/architecture\/cpu-measurements\.md$/ || /^docs\/product\/prd\.md$/ { print; next }
             /^(docs|production|prototypes)\// { next }
             /\.md$/ && !/^src\// { next }
             { print }')

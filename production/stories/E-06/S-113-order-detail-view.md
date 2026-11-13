@@ -1,5 +1,5 @@
 # S-113: Order detail with Maps, Call and WhatsApp
-Status: ready
+Status: done
 Epic: E-06-order-management
 Spec: docs/specs/features/admin-orders.md#flow
 Estimate: 3 pts
@@ -33,3 +33,9 @@ As an admin, I want one screen with everything about an order and one-tap Maps, 
 ## Notes
 - E-01 builds a minimal detail with approve; this widens it. Action bar and sheets are S-116.. S-119; layout rules S-126.
 - Depends on E-01, E-02.
+
+## Implementation notes (2026-11-13)
+- AC4: WhatsApp opens `wa.me` with the number and a prefilled line naming the order (order language); the template picker stays E-10 (FR-073).
+- AC1: the decline reason shows in the Payment section (juice-payment spec layout); an admin cancel reason in its own section.
+- AC3: Call and WhatsApp stay visible but disabled (`aria-disabled`) with a hint; Maps hidden. AC8: request fields and quote; photos are S-114.
+- Tests: `order.actions.test.ts` (detail fields), `tests/e2e/admin-order-detail.spec.ts`.

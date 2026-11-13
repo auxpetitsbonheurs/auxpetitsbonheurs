@@ -21,8 +21,11 @@ export function useStatusLabel() {
  * Design-system "Status badge": outline on the surface, icon + word. The text stays in
  * the foreground colour (AA in both themes); the tone colour is only the border and icon.
  */
-export function StatusBadge({ status }: { status: OrderStatus }) {
-  const label = useStatusLabel()(status);
+export function StatusBadge({ status, audience = "customer" }: { status: OrderStatus; audience?: "customer" | "admin" }) {
+  const { t } = useI18n();
+  const customerLabel = useStatusLabel()(status);
+  // Admin wording for every status (admin-orders spec; quote_sent reads "Waiting for customer", owner Q13).
+  const label = audience === "admin" ? t(`admin.status.${status}`) : customerLabel;
   const tone = TONE[statusTone(status)];
   return (
     <span className={cn("inline-flex min-h-6 items-center gap-1.5 rounded-full border-2 bg-background px-3 py-0.5 text-sm font-semibold", tone.border)}>

@@ -122,10 +122,10 @@ export function declineOrder(db: Database, input: PaymentActionInput & { reason:
   });
 }
 
-/** Refunded (S-281 AC3): a declined order's refund was sent by Juice; once only. */
+/** Refunded (S-281 AC3): a refused (or, since E-06, admin-cancelled) paid order's refund was sent by Juice; once only. */
 export function markRefunded(db: Database, input: PaymentActionInput): Promise<PaymentActionResult> {
   return runTransition(db, input, {
-    allowed: sql`o.status = 'declined'::order_status and orders.refund_due_rs is not null and orders.refunded_at is null`,
+    allowed: sql`o.status in ('declined'::order_status, 'cancelled'::order_status) and orders.refund_due_rs is not null and orders.refunded_at is null`,
     set: sql`refunded_at = ${input.now.toISOString()}::timestamptz, refunded_by = ${input.adminId}::uuid`,
     event: "refunded",
     details: sql`jsonb_build_object('amountRs', refund_due_rs)`,

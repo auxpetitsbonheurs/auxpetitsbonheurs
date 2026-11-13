@@ -1,5 +1,5 @@
 # S-125: Activity log on the order
-Status: ready
+Status: done
 Epic: E-06-order-management
 Spec: docs/specs/features/admin-orders.md#data-model-changes
 Estimate: 2 pts
@@ -28,3 +28,6 @@ As an admin, I want to read who did what and when on an order, so that I can res
 
 ## Notes
 - Event data is written by E-01 and the action stories; this story is display only (epic scope). Depends on S-113.
+
+## Implementation notes (2026-11-13)
+- AC4: an `edited` event shows the old/new total when present; the field diff arrives with S-122's event details.

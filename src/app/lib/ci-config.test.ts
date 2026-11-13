@@ -72,7 +72,8 @@ describe("docs-only commits (runner minutes)", () => {
   });
 
   test("docs that unit tests read count as code", () => {
-    expect(changes).toContain(String.raw`/^docs\/(design|runbooks)\// || /^docs\/architecture\/cpu-measurements\.md$/ { print; next }`);
+    // PRD Appendix B: the transition table test reads it (S-115 AC8).
+    expect(changes).toContain(String.raw`/^docs\/(design|runbooks)\// || /^docs\/architecture\/cpu-measurements\.md$/ || /^docs\/product\/prd\.md$/ { print; next }`);
     expect(changes).toContain(String.raw`/\.md$/ && !/^src\// { next }`);
   });
 });

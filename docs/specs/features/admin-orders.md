@@ -54,7 +54,7 @@ Sabera and her helpers run the bakery day from a phone: Today shows what needs a
 | cancel | pending_approval, quote_needed, quote_sent, approved, in_preparation, ready, out (not completed) | cancelled | Cancellation confirmed (quote_sent: the quote is withdrawn; tracking page shows cancelled; owner Q6) |
 | setPaid | any status | flag only | none |
 | edit (date and/or total changed) | not completed or terminal | same status | Your order was updated (new date and/or total; owner Q11) |
-Customer-driven transitions (quote accept/decline/expire, customer cancel) are in the tracking spec. `allowed` in the loader is computed from this table; the UI shows only allowed actions, and the server re-checks.
+Since 2026-11-13 the Juice payment spec adds `awaiting_payment` → Payment received (`markPaid`) → approved, its Undo, and Refuse (`decline` from awaiting_payment, pending_approval, approved, in_preparation; a paid order owes a refund); a custom request in quote_needed is declined with `declineRequest`; an admin cancel of a paid order also records the refund due; Mark paid/unpaid is not offered while a Juice payment is awaited. As built: `app/domain/order-transitions.ts` holds every row (contracts v0.42). Customer-driven transitions (quote accept/decline/expire, customer cancel) are in the tracking spec. `allowed` in the loader is computed from this table; the UI shows only allowed actions, and the server re-checks.
 
 ### Copy
 Strings via i18n EN/FR; the decline reason and quote note are free text sent in the order's language email. Confirm Dialogs: Decline ("Decline this order? The customer will get an email. Optional reason"), Cancel (reason optional, "The customer will be emailed"). Copywriter to finalise.

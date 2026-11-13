@@ -91,35 +91,38 @@ export function parseAlerts(form: FormData): { alertPush: boolean; alertEmail: b
   return { alertPush: form.get("alertPush") === "on", alertEmail: form.get("alertEmail") === "on" };
 }
 
-/** `admin/order` approve: the version the page loaded (FR-054). */
-export const ApproveInput = z.object({
-  intent: z.literal("approve"),
-  version: Version,
-});
+export const ADMIN_NOTE_MAX = 2000;
+
+/** Decline and cancel: optional, trimmed, blank = none, ≤ DECLINE_REASON_MAX (shown to the customer). */
+const Reason = z
+  .string()
+  .trim()
+  .max(DECLINE_REASON_MAX)
+  .optional()
+  .transform((value) => (value ? value : null));
 
 /**
- * `admin/order` actions (contracts.md v0.40): approve (approval path), and the Juice payment
- * intents markPaid, undoPaid, decline (optional reason ≤ 300, shown to the customer) and
- * markRefunded. Each carries the version the page loaded (FR-054).
+ * `admin/order` actions (contracts.md v0.40 + v0.42): approve (approval path), the Juice payment
+ * intents markPaid, undoPaid, decline and markRefunded (juice-payment spec), and E-06's advance,
+ * revert, cancel, setPaid and saveNote. Every status and paid action carries the version the page
+ * loaded (FR-054); saveNote takes none (last write wins, so autosave never conflicts).
  */
 export const OrderActionInput = z.discriminatedUnion("intent", [
   z.object({ intent: z.literal("approve"), version: Version }),
   z.object({ intent: z.literal("markPaid"), version: Version }),
   z.object({ intent: z.literal("undoPaid"), version: Version }),
   z.object({ intent: z.literal("markRefunded"), version: Version }),
-  z.object({
-    intent: z.literal("decline"),
-    version: Version,
-    reason: z
-      .string()
-      .trim()
-      .max(DECLINE_REASON_MAX)
-      .optional()
-      .transform((value) => (value ? value : null)),
-  }),
+  z.object({ intent: z.literal("decline"), version: Version, reason: Reason }),
+  z.object({ intent: z.literal("declineRequest"), version: Version, reason: Reason }),
+  z.object({ intent: z.literal("advance"), version: Version }),
+  z.object({ intent: z.literal("revert"), version: Version }),
+  z.object({ intent: z.literal("cancel"), version: Version, reason: Reason }),
+  z.object({ intent: z.literal("setPaid"), version: Version, paid: z.enum(["true", "false"]).transform((v) => v === "true") }),
+  z.object({ intent: z.literal("saveNote"), adminNote: z.string().max(ADMIN_NOTE_MAX) }),
 ]);
 
 export type OrderAction = z.infer<typeof OrderActionInput>;
+export type OrderIntent = OrderAction["intent"];
 
 export const OrderId = Uuid;
 

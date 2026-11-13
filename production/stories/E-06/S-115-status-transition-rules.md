@@ -1,5 +1,5 @@
 # S-115: Status transitions enforced on the server per Appendix B
-Status: ready
+Status: done
 Epic: E-06-order-management
 Spec: docs/specs/features/admin-orders.md#transition-table-enforced-by-domainorderstatus-appendix-b-is-authoritative
 Estimate: 3 pts
@@ -31,3 +31,6 @@ As the bakery owner, I want orders to move only along the allowed steps, so that
 ## Notes
 - No UI, no a11y ACs. Risk "transition table drift": tests are generated from Appendix B rows.
 - E-01 has a minimal approve transition; this story replaces it with the full module (refactor, behaviour kept).
+
+## Implementation notes (2026-11-13)
+- Adjusted (2026-11-13, Juice payment): the table also holds markPaid/undoPaid and Refuse (`decline` from awaiting_payment, pending_approval, approved, in_preparation, the payment agent's model); a custom request is declined with the separate `declineRequest`. `domain/status` `transitionTarget` delegates to the table. Tests: `app/domain/order-transitions.test.ts`, `order-transitions.appendix-b.test.ts` (PRD Appendix B now lists the payment rows; `docs/product/prd.md` counts as code in CI).
