@@ -22,8 +22,8 @@ describe("schema invariants (docs/architecture/data-model.md)", () => {
     expect(withoutRls.map((c) => c.name)).toEqual([]);
   });
 
-  test("the schema has exactly 27 tables (24 in 0000, incl. product_slug_history; storage_purge added by 0003, S-045; site_page and site_page_photo by 0008, E-13 S-245)", () => {
-    expect(tables).toHaveLength(27);
+  test("the schema has exactly 30 tables (24 in 0000, incl. product_slug_history; storage_purge added by 0003, S-045; site_page and site_page_photo by 0008, E-13 S-245; usage_counter by 0017, S-217; review and review_event by 0018, S-261)", () => {
+    expect(tables).toHaveLength(30);
   });
 
   test("storage_purge queues objects by bucket and path, with RLS (S-045 AC6)", () => {

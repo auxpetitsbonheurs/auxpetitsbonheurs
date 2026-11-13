@@ -203,8 +203,25 @@ describe("dedupe (AC6)", () => {
   });
 });
 
+describe("customer emails (E-11: S-206 signup, S-208 sign-in link, S-209 reset)", () => {
+  test.each([
+    ["signup", "fr", "Confirmez votre e-mail pour Aux petits bonheurs", "/account/orders"],
+    ["magiclink", "en", "Your Aux petits bonheurs sign-in link", "/reviews/write"],
+    ["recovery", "en", "Reset your Aux petits bonheurs password", "/account/reset"],
+  ])("%s in %s: the customer wording and a link to /auth/confirm with that next", async (type, locale, subject, next) => {
+    const mailer = new FakeMailer();
+
+    const result = await deliver({ payload: payload({ type, locale, userId: randomUUID(), redirectTo: `${SITE}/auth/confirm?next=${encodeURIComponent(next)}` }), mailer });
+
+    expect(result.status).toBe(200);
+    expect(mailer.sent[0]?.subject).toBe(subject);
+    expect(mailer.sent[0]?.text).toContain(`${SITE}/auth/confirm?token_hash=linkhash&type=${type}&next=${next}`);
+    expect(mailer.sent[0]?.text).not.toContain("admin");
+  });
+});
+
 describe("unsupported types (AC8)", () => {
-  test.each(["magiclink", "signup", "email_change", "invite"])("%s is 500 unsupported and sends nothing", async (type) => {
+  test.each(["email_change", "invite"])("%s is 500 unsupported and sends nothing", async (type) => {
     const mailer = new FakeMailer();
 
     const result = await deliver({ payload: payload({ type }), mailer });

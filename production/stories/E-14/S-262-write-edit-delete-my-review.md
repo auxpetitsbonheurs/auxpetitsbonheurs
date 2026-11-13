@@ -1,5 +1,5 @@
 # S-262: Write, edit and delete my review
-Status: ready
+Status: review
 Epic: E-14-customer-reviews
 Spec: docs/specs/features/bakery-reviews.md (to write) · Auth: E-11 S-207
 Estimate: 5 pts
@@ -36,3 +36,8 @@ As a signed-in customer, I want to rate the bakery and write a comment, change i
 - Where the entry points are: a "Write a review" button on the Reviews page (S-267) and in the Home section (S-266); it is not in the main navigation.
 - Depends on: S-261, E-11 S-206/S-207/S-210, S-023.
 - Open question: display name snapshot vs live (epic Q1); this story snapshots at each save.
+
+## Build notes (2026-11-13)
+- AC2: the stars are a fieldset (legend "Your rating") of five native radios inside 44 px labels, so arrow keys and Space work natively; the chosen value is also written ("4 of 5").
+- AC8: an admin session gets FORBIDDEN (403), signed out UNAUTHENTICATED (401).
+- Tests: src/app/server/services/reviews.server.test.ts, src/app/routes/site/reviews.test.ts, src/tests/e2e/reviews.spec.ts.

@@ -1,5 +1,5 @@
 # S-268: Reviews privacy: delete, account deletion, no rating markup
-Status: ready
+Status: in-progress
 Epic: E-14-customer-reviews
 Spec: docs/product/prd.md NFR-004 (privacy), FR-086 · Legal: Mauritius Data Protection Act 2017 (`[TO CONFIRM]`, PRD question 12)
 Estimate: 2 pts
@@ -27,3 +27,7 @@ As a customer, I want to know what is shown about me in a review and be able to 
 ## Notes
 - Open: retention period and controller (PRD Q12). This story implements deletion on request and account removal only.
 - Depends on: S-261, S-262, S-263, E-11 account deletion (S-210 or later; if no account deletion exists yet, AC2 is tested at the database cascade level and a follow-up is noted in E-11).
+
+## Build notes (2026-11-13)
+- Done: AC1 note on the form (the link to the privacy note waits for a public privacy page, none exists yet), AC2 at database level (customer row delete cascades; there is no customer self-deletion in v1, follow-up for E-11), AC3, AC5, AC6.
+- Left: AC4 (a reviews line in the Settings privacy note with the S-059 warning).

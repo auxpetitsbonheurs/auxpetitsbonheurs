@@ -26,8 +26,18 @@ export function messagesFor(locale: Locale, english: Messages = en, french: Mess
   return locale === "fr" ? merge(english, french) : english;
 }
 
-/** Namespaces customer pages never read: the admin app's text and the emails (server only). */
-const NOT_FOR_CUSTOMERS = new Set(["admin", "email"]);
+/**
+ * Namespaces the shared customer bundle leaves out: the admin app's text and the emails (server
+ * only), and the account and review-form screens' text, which their own route layouts add
+ * (`namespaceMessages`), so browsing pages do not carry it in their HTML (NFR-001, E-11/E-14).
+ */
+const NOT_FOR_CUSTOMERS = new Set(["admin", "email", "account", "reviewForm"]);
+
+/** One namespace of the active locale's messages (FR falls back to EN per key). */
+export function namespaceMessages(locale: Locale, namespace: string): Messages {
+  const value = messagesFor(locale)[namespace];
+  return typeof value === "object" && value !== null ? { [namespace]: value } : {};
+}
 const customerBundles = new Map<Locale, Messages>();
 
 /**

@@ -1,5 +1,5 @@
 # S-207: Sign in with my password and sign out safely
-Status: ready
+Status: review
 Epic: E-11-customer-accounts
 Spec: docs/specs/features/customer-accounts.md#api-contract
 Estimate: 5 pts
@@ -43,3 +43,10 @@ As a returning customer, I want to sign in with my email and password and sign o
 - Rate limit of 5 per 15 min per email+IP from spec Edge Cases.
 - Cut note: see S-206 (FR-034 Must).
 - Dependencies (R9): S-206, E-02 (`requireAdmin` redirect), E-05 (checkout). Not yet done; expected.
+
+## Build notes (2026-11-13)
+- Turnstile is not built anywhere in the app yet (checkout and admin sign-in have none either; it is the site-wide public-forms work in S-228 AC2). The `BOT_CHECK_FAILED` parts of the ACs move there; until then these forms rely on the rate limits and the generic answers. Adjusted 2026-11-13 (E-11 build).
+- AC9: the top bar shows the account icon from 1024 px ("Sign in" / "My account") and the phone menu has the same row under the 7 links. It reads a display-only cookie (`apb_customer`), never a token, so browsing pages do no auth work; `/account` verifies the session.
+- AC13: implemented as an `account` text bundle served by the account layout (not shipped with browsing pages).
+- AC7 test lives in src/app/routes/account/profile.test.ts (the guard) instead of a separate require-customer test.
+- Tests: src/app/routes/account/sign-in.test.ts, src/app/routes/account/profile.test.ts, src/tests/e2e/account.spec.ts (S-021's admin-access spec keeps covering /admin with a customer session).

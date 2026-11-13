@@ -1,5 +1,5 @@
-import { CalendarCog, ChartColumn, ChevronRight, FileText, Images, type LucideIcon, Settings, Tag, UserRound, Users, UsersRound } from "lucide-react";
-import { Form, Link, useNavigation } from "react-router";
+import { CalendarCog, ChartColumn, ChevronRight, FileText, Images, type LucideIcon, MessageSquareQuote, Settings, Tag, UserRound, Users, UsersRound } from "lucide-react";
+import { Form, Link, useNavigation, useRouteLoaderData } from "react-router";
 import { AdminErrorBoundary } from "~/components/admin/admin-states";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { t as translate } from "~/i18n/catalog.server";
@@ -10,7 +10,7 @@ import type { Route } from "./+types/more";
 /** `admin/more` (FR-047): the places that do not fit in the bottom bar. */
 export const handle = { titleKey: "admin.nav.more" };
 
-const EVERYONE = ["pages", "promotions", "gallery", "customers", "sales", "profile"] as const;
+const EVERYONE = ["reviews", "pages", "promotions", "gallery", "customers", "sales", "profile"] as const;
 const OWNER_ONLY = ["availability", "settings", "team"] as const;
 type MoreKey = (typeof EVERYONE)[number] | (typeof OWNER_ONLY)[number];
 
@@ -32,6 +32,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
 export const ErrorBoundary = AdminErrorBoundary;
 
 const ICONS: Record<MoreKey, LucideIcon> = {
+  reviews: MessageSquareQuote,
   promotions: Tag,
   pages: FileText,
   gallery: Images,
@@ -44,6 +45,9 @@ const ICONS: Record<MoreKey, LucideIcon> = {
 };
 
 function MoreList({ items, label }: { items: { key: MoreKey; href: string; label: string }[]; label: string }) {
+  // E-14 S-264 AC2: "Reviews (3)" from the frame's badge count (no extra request).
+  const frame = useRouteLoaderData("routes/admin/layout") as { badges?: { reviewsToApprove?: number } } | undefined;
+  const pending = frame?.badges?.reviewsToApprove ?? 0;
   return (
     <ul aria-label={label} className="mt-3 divide-y divide-border overflow-hidden rounded-card border border-border bg-card">
       {items.map(({ key, href, label: text }) => {
@@ -52,7 +56,7 @@ function MoreList({ items, label }: { items: { key: MoreKey; href: string; label
           <li key={key}>
             <Link to={href} prefetch="intent" className="flex min-h-14 items-center gap-3 px-4 py-2 font-semibold hover:bg-muted">
               <Icon aria-hidden="true" className="size-6 shrink-0 text-muted-foreground" />
-              <span className="min-w-0 flex-1">{text}</span>
+              <span className="min-w-0 flex-1">{key === "reviews" && pending > 0 ? `${text} (${pending})` : text}</span>
               <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
             </Link>
           </li>

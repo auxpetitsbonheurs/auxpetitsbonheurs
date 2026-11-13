@@ -73,6 +73,7 @@ No new tables. Uses `admin` (role, active, alert_push, alert_email, locale, last
 | Sign in / forgot / accept invite | yes | refused (generic) | yes | yes |
 | Any `/admin/*` page or data | no (redirect) | no (redirect to `/admin/login`, decided 2026-11-10) | yes | yes |
 | Orders, Calendar, Menu, Promotions, Gallery, Customers, Sales summary | no | no | yes | yes |
+| Reviews: approve, reject, hide, show, delete (E-14) | no | no | yes | yes |
 | Pages (brand page text and photos; E-13 S-246, S-247; Lead decision 2026-11-12) | no | no | yes | yes |
 | Availability, Settings, Team | no | no | no (403) | yes |
 | Own profile, alerts, push devices | no | no | yes | yes |

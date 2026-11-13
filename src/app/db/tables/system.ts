@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  date,
   index,
   integer,
   jsonb,
@@ -110,4 +111,20 @@ export const jobRun = pgTable(
     ranAt: timestamp("ran_at", tz).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.job, t.runKey] })],
+).enableRLS();
+
+/**
+ * Server-side usage counts (S-217, NFR-011): one row per Mauritius day, event and property
+ * set (`props`, e.g. "method=signup"), with a count. Never an email, name, phone, address,
+ * order number, IP or user id; no cookie is involved.
+ */
+export const usageCounter = pgTable(
+  "usage_counter",
+  {
+    day: date("day").notNull(),
+    event: text("event").notNull(),
+    props: text("props").notNull().default(""),
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.day, t.event, t.props] })],
 ).enableRLS();

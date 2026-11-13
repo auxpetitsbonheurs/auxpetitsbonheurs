@@ -1,5 +1,5 @@
 # S-267: Public Reviews page and footer link
-Status: ready
+Status: review
 Epic: E-14-customer-reviews
 Spec: docs/specs/features/catalogue-browsing.md (add Reviews) · Footer: E-04 S-061
 Estimate: 3 pts
@@ -31,3 +31,7 @@ As a visitor, I want a page with all the approved reviews of the bakery, so that
 ## Notes
 - Depends on: S-261, S-266 (`ReviewCard`), S-061 (footer), S-253 (sitemap and head helpers).
 - Do not use AggregateRating unless policy-safe is confirmed (a business's own reviews of itself are not eligible for star results under search-engine review guidelines; re-check at build).
+
+## Build notes (2026-11-13)
+- AC2: "Show more" is a plain link to `?shown=20` (works before JavaScript; content appends below, so nothing above moves). /reviews joins the deferred-hydration browsing pages.
+- Tests: src/app/routes/site/reviews.test.ts, src/tests/e2e/reviews.spec.ts.

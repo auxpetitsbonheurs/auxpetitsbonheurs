@@ -1,5 +1,5 @@
 # S-217: Count account usage without tracking anyone
-Status: ready
+Status: in-progress
 Epic: E-11-customer-accounts
 Spec: docs/specs/features/customer-accounts.md#analytics-events
 Estimate: 2 pts
@@ -25,3 +25,6 @@ As the Owner, I want simple counts of sign-ups, sign-ins and reorders, so that I
 ## Notes
 - Small cross-cutting story; counters stored with the existing analytics mechanism from E-01/E-09 (assumed; adapt to whatever exists). No UI.
 - Dependencies (R9): S-206, S-207, S-214, S-215. Not yet done; expected.
+
+## Build notes (2026-11-13)
+- Counter store: table `usage_counter` (day, event, props, count; migration 0017), written after the response; no PII, no cookie. `account_created` and `sign_in` are counted; the other events arrive with their stories.

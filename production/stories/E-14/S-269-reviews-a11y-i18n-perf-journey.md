@@ -1,5 +1,5 @@
 # S-269: Reviews accessibility, language, performance and journey sweep
-Status: ready
+Status: in-progress
 Epic: E-14-customer-reviews
 Spec: docs/design/design-system.md#accessibility-rules · PRD section 6
 Estimate: 3 pts
@@ -29,3 +29,7 @@ As a customer and as the Owner, I want the whole review journey to work on a pho
 ## Notes
 - Last story of the epic. Depends on S-261 to S-268.
 - The real end-to-end check (new customer confirms by email) waits for Resend on a custom domain (E-10).
+
+## Build notes (2026-11-13)
+- Done: AC1 (axe, 320/375/1280, light and dark, EN and FR on the form, Reviews page and admin Reviews), AC2 (keyboard stars), AC4 (journey e2e, sender mocked by the GoTrue stub).
+- Left: AC3 pseudo-locale +40%, AC5 (LCP with 50 reviews on staging), AC6 (security audit file), AC7 (ux-lead real-phone sign-off and the timed manual session).

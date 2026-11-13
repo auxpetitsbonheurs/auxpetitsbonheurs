@@ -9,8 +9,9 @@ import { requestDbContext } from "~/server/db.server";
 import { HANDLED_ACTIONS, HookPayload, confirmLink, metadataLocale, nextFromRedirect, verifyWebhook } from "~/server/email/auth-hook.server";
 import { emailContext } from "~/server/email/context.server";
 import { EmailSendError, sendWithTimeout } from "~/server/email/sender.server";
-import { recoveryEmail } from "~/server/email/templates.server";
+import { type RenderedEmail, customerAuthEmail, recoveryEmail } from "~/server/email/templates.server";
 import { findAdminById } from "~/server/repos/admins.server";
+import { findAccountByAuthUser } from "~/server/repos/customer-accounts.server";
 import type { Route } from "./+types/send-email";
 
 const MAX_BODY_BYTES = 64 * 1024;
@@ -30,12 +31,12 @@ function failure(status: 401 | 500, message: string) {
 const ok = () => Response.json({}, { headers: { "Cache-Control": "no-store" } });
 
 /** Claims `webhook-id` (AC6); false when an earlier delivery already claimed it. */
-async function claim(args: Route.ActionArgs, webhookId: string, to: string, locale: "en" | "fr"): Promise<boolean> {
+async function claim(args: Route.ActionArgs, webhookId: string, to: string, locale: "en" | "fr", type: string): Promise<boolean> {
   const rows = await args.context
     .get(requestDbContext)
     .db.insert(emailOutbox)
     // `dead` keeps the row away from the outbox retry job (it holds no link to send again).
-    .values({ template: "auth.recovery", toEmail: to, locale, payload: {}, dedupeKey: `auth-hook:${webhookId}`, status: "dead", lastError: "sending" })
+    .values({ template: `auth.${type}`, toEmail: to, locale, payload: {}, dedupeKey: `auth-hook:${webhookId}`, status: "dead", lastError: "sending" })
     .onConflictDoNothing({ target: emailOutbox.dedupeKey })
     .returning({ id: emailOutbox.id });
   return rows.length > 0;
@@ -93,6 +94,12 @@ function parseJson(body: string): unknown {
   }
 }
 
+/** Admins keep the S-024 recovery email; customers get the account wording (E-11). */
+function renderAuthEmail(type: string, isAdmin: boolean, locale: "en" | "fr", link: string): RenderedEmail {
+  if (type === "recovery") return isAdmin ? recoveryEmail(locale, link) : customerAuthEmail("customerRecovery", locale, link);
+  return customerAuthEmail(type === "signup" ? "signup" : "magiclink", locale, link);
+}
+
 export async function action(args: Route.ActionArgs) {
   const { request, context } = args;
   const config = context.get(emailContext);
@@ -107,13 +114,17 @@ export async function action(args: Route.ActionArgs) {
     log("not_configured", webhookId, "RESEND_API_KEY, EMAIL_FROM");
     return failure(500, "Email could not be sent.");
   }
-  const admin = await findAdminById(context.get(requestDbContext).db, payload.user.id);
-  const locale = metadataLocale(payload) ?? admin?.locale ?? "en";
-  if (!(await claim(args, webhookId, payload.user.email, locale))) {
+  const db = context.get(requestDbContext).db;
+  const admin = await findAdminById(db, payload.user.id);
+  const customer = admin ? null : await findAccountByAuthUser(db, payload.user.id);
+  // Language: what the sign-up chose, else the admin's or the customer's own (S-210 AC2), else English.
+  const locale = metadataLocale(payload) ?? admin?.locale ?? customer?.locale ?? "en";
+  const type = payload.email_data.email_action_type;
+  if (!(await claim(args, webhookId, payload.user.email, locale, type))) {
     log("duplicate", webhookId);
     return ok();
   }
-  const email = recoveryEmail(locale, confirmLink(siteUrl, payload.email_data.token_hash, payload.email_data.email_action_type, next));
+  const email = renderAuthEmail(type, Boolean(admin) || next.startsWith("/admin"), locale, confirmLink(siteUrl, payload.email_data.token_hash, type, next));
   try {
     const sent = await sendWithTimeout(config.mailer, { to: payload.user.email, ...email, idempotencyKey: `auth-hook-${webhookId}` }, config.timeoutMs);
     await settle(args, webhookId, sent);

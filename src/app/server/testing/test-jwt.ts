@@ -53,7 +53,7 @@ export async function signTestJwt(key: TestSigningKey, claims: TestTokenClaims):
 }
 
 /** The session body GoTrue answers to `POST /token`. */
-export function sessionBody(accessToken: string, refreshToken: string, user: { id: string; email: string }, now = new Date()) {
+export function sessionBody(accessToken: string, refreshToken: string, user: { id: string; email: string; metadata?: Record<string, unknown> }, now = new Date()) {
   const issued = Math.floor(now.getTime() / 1000);
   return {
     access_token: accessToken,
@@ -68,7 +68,7 @@ export function sessionBody(accessToken: string, refreshToken: string, user: { i
       email: user.email,
       email_confirmed_at: new Date(0).toISOString(),
       app_metadata: { provider: "email", providers: ["email"] },
-      user_metadata: {},
+      user_metadata: user.metadata ?? {},
       identities: [],
       created_at: new Date(0).toISOString(),
       updated_at: now.toISOString(),

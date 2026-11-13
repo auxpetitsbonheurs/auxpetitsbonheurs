@@ -1,5 +1,5 @@
 # S-263: Admin: Reviews to approve with Approve and Reject
-Status: ready
+Status: review
 Epic: E-14-customer-reviews
 Spec: docs/specs/features/bakery-reviews.md (to write) · Design: docs/design/design-system.md (Admin one-handed patterns, Tabs, Alert)
 Estimate: 5 pts
@@ -31,3 +31,8 @@ As the Owner or an Admin, I want a list of reviews waiting for approval with App
 ## Notes
 - Depends on: S-261, S-262, S-033 (frame, More). The "Reviews" row in More carries the count (S-264).
 - Admin UI is EN-first; comments display in the language they were written (no translation).
+
+## Build notes (2026-11-13)
+- AC2: the Undo is an inline status message with an Undo button for 10 s (the server accepts it from the approving admin within 30 s), not a floating toast; Reject, Hide and Delete use toasts after their confirm dialog.
+- AC8: there was no general activity log; decisions are recorded in the new `review_event` table (who, what, when; never text).
+- Tests: src/app/server/services/reviews.server.test.ts, src/app/routes/site/reviews.test.ts, src/tests/e2e/reviews.spec.ts.

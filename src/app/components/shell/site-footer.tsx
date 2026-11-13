@@ -1,6 +1,7 @@
 import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
+import { cn } from "~/lib/utils";
 import { useI18n } from "~/i18n/react";
 import { mailHref, telHref, whatsappHref } from "~/lib/contact";
 import { localePath } from "~/lib/locale";
@@ -104,8 +105,11 @@ function FooterPickup({ address, mapUrl }: { address: string; mapUrl: string | n
   );
 }
 
-/** The site's pages (FR-076 order, Home left out: the logo above links it). */
-function FooterNav() {
+/**
+ * The site's pages (FR-076 order, Home left out: the logo above links it), then Reviews once one
+ * is approved (E-14 S-267 AC5: footer only, the 7-item navigation is unchanged).
+ */
+function FooterNav({ showReviews }: { showReviews: boolean }) {
   const { t, locale } = useI18n();
   return (
     <nav aria-labelledby="footer-nav" className="flex flex-col items-center md:items-start">
@@ -120,6 +124,13 @@ function FooterNav() {
             </Link>
           </li>
         ))}
+        {showReviews && (
+          <li>
+            <Link to={localePath(locale, "/reviews")} className={cn(linkClass, "min-w-11 justify-center")}>
+              {t("reviews.footerLink")}
+            </Link>
+          </li>
+        )}
       </ul>
     </nav>
   );
@@ -131,7 +142,7 @@ function FooterNav() {
  * phones, three columns from md. Items with an empty Settings value are omitted (no blank row);
  * Settings text is rendered as React text, so markup in it shows as text (AC6).
  */
-export function SiteFooter({ contacts, year }: { contacts: FooterContacts; year: string }) {
+export function SiteFooter({ contacts, year, showReviews = false }: { contacts: FooterContacts; year: string; showReviews?: boolean }) {
   const { t, locale } = useI18n();
   return (
     <footer className="band border-t border-gold">
@@ -143,7 +154,7 @@ export function SiteFooter({ contacts, year }: { contacts: FooterContacts; year:
         <div className="mt-6 grid w-full grid-cols-1 gap-8 md:grid-cols-3 md:gap-10">
           <FooterContactList contacts={contacts} />
           {contacts.pickupAddress && <FooterPickup address={contacts.pickupAddress} mapUrl={contacts.mapUrl} />}
-          <FooterNav />
+          <FooterNav showReviews={showReviews} />
         </div>
         <span aria-hidden="true" className="mt-8 block h-px w-16 bg-band-gold" />
         <p className="mt-4 text-sm text-muted-foreground">{t("shell.footer.copyright", { year })}</p>

@@ -1,5 +1,5 @@
 # S-210: Keep my profile and email language up to date
-Status: ready
+Status: review
 Epic: E-11-customer-accounts
 Spec: docs/specs/features/customer-accounts.md#ux
 Estimate: 3 pts
@@ -34,3 +34,9 @@ As a signed-in customer, I want to see and edit my name, phone and email languag
 - FR-035 is Should; cut together with accounts (cut order #5).
 - Uses phone normalisation from S-204.
 - Dependencies (R9): S-207, S-204. Not yet done; expected.
+
+## Build notes (2026-11-13)
+- AC1/AC7: "Saved" is an inline status message next to Save (announced), not a floating toast: the customer site has no toaster and the message stays where the eye is.
+- AC2: choosing another language saves it and moves the page to its twin (/fr/account) at once.
+- AC8: the page is server-rendered with the data, so there is no skeleton state to show.
+- Tests: src/app/routes/account/profile.test.ts, src/tests/e2e/account.spec.ts.

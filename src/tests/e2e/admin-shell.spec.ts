@@ -146,8 +146,8 @@ test.describe("S-033 admin frame", () => {
     await expect(skip).toBeFocused();
     await page.keyboard.press("Enter");
     await page.keyboard.press("Tab");
-    // Pages is the first item in More since E-13 S-246.
-    await expect(page.getByRole("main").getByRole("link", { name: "Pages" })).toBeFocused();
+    // E-14: Reviews is the first More row (then Pages).
+    await expect(page.getByRole("main").getByRole("link", { name: "Reviews" })).toBeFocused();
 
     for (const path of ["/admin", "/admin/more"]) {
       await page.goto(path);

@@ -1,5 +1,5 @@
 # S-206: Sign up with email confirmation, then choose a password
-Status: ready
+Status: review
 Epic: E-11-customer-accounts
 Spec: docs/specs/features/customer-accounts.md#api-contract
 Estimate: 5 pts
@@ -41,3 +41,10 @@ As a returning customer, I want to create an account with my email and confirm i
 - Auth emails come from S-194.
 - Cut note: FR-034 is Must; the PRD cut order #5 lists customer accounts as a whole (FR-034..036). Cutting any of E-11 needs a product-director decision for FR-034.
 - Dependencies (R9): E-01 (auth shell), S-194, E-02 (admin/customer separation). Not yet done; expected.
+
+## Build notes (2026-11-13)
+- Turnstile is not built anywhere in the app yet (checkout and admin sign-in have none either; it is the site-wide public-forms work in S-228 AC2). The `BOT_CHECK_FAILED` parts of the ACs move there; until then these forms rely on the rate limits and the generic answers. Adjusted 2026-11-13 (E-11 build).
+- AC4: an admin's address gets no email at all (an admin never has a customer account; admins use /admin/forgot). A confirmed customer gets a one-time sign-in link instead of a confirmation.
+- AC7: the 60 s resend limit is enforced on the server (RL-email-resend, one account email per address per minute, silently skipped) and shown as a countdown before "Send the email again".
+- AC2: the sign-up details (name, phone, language) are kept in Auth `user_metadata` and only fill a NEW customer row at confirmation; an existing guest row keeps its own name and phone (whoever typed the form cannot change the real owner's details, G-01).
+- Tests: src/app/routes/account/sign-up.test.ts, src/app/routes/auth/confirm.customer.test.ts, src/app/routes/account/reset.test.ts, src/tests/e2e/account.spec.ts.

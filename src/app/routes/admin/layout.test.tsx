@@ -43,7 +43,7 @@ describe("admin/layout loader", () => {
     expect(data).toEqual({
       me: { id: expect.any(String), name: "Sarah", role: "owner", locale: "en" },
       nav: { ownerItems: true },
-      badges: { toReview: 0 },
+      badges: { toReview: 0, reviewsToApprove: 0 },
       vapidPublicKey: null,
     });
   });
@@ -73,12 +73,12 @@ describe("Orders badge (S-034)", () => {
     await setStatus("approved", placed[3]!.token);
     const args = await as("admin");
 
-    expect((await layoutLoader(args("/admin"))).badges).toEqual({ toReview: 3 });
+    expect((await layoutLoader(args("/admin"))).badges).toEqual({ toReview: 3, reviewsToApprove: 0 });
   });
 
   test("AC2: no orders to review gives 0, and the bar shows no dot and no extra text", async () => {
     const args = await as("admin");
-    expect((await layoutLoader(args("/admin"))).badges).toEqual({ toReview: 0 });
+    expect((await layoutLoader(args("/admin"))).badges).toEqual({ toReview: 0, reviewsToApprove: 0 });
 
     const html = render(<AdminBottomBar toReview={0} />);
     expect(html).not.toContain("data-review-dot");
@@ -120,6 +120,8 @@ describe("Orders badge (S-034)", () => {
 
 describe("More (AC3, AC4)", () => {
   const everyone = [
+    // E-14 S-263: Reviews (Admins and Owners), first so the count is seen at once.
+    { key: "reviews", href: "/admin/reviews", label: "Reviews" },
     { key: "pages", href: "/admin/pages", label: "Pages" },
     { key: "promotions", href: "/admin/promotions", label: "Promotions" },
     { key: "gallery", href: "/admin/gallery", label: "Gallery" },
@@ -155,7 +157,7 @@ describe("More (AC3, AC4)", () => {
 
     const data = await moreLoader(args("/admin/more"));
 
-    expect(data.items.map((i) => i.label)).toEqual(["Pages", "Promotions", "Galerie", "Clients", "Résumé des ventes", "Mon profil"]);
+    expect(data.items.map((i) => i.label)).toEqual(["Avis", "Pages", "Promotions", "Galerie", "Clients", "Résumé des ventes", "Mon profil"]);
     expect(data.title).toBe("Plus");
   });
 });

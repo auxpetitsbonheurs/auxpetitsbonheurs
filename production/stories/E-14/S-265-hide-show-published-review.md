@@ -1,5 +1,5 @@
 # S-265: Hide and show a published review
-Status: ready
+Status: review
 Epic: E-14-customer-reviews
 Spec: docs/specs/features/bakery-reviews.md (to write)
 Estimate: 3 pts
@@ -28,3 +28,6 @@ As the Owner or an Admin, I want to hide a review I already approved, and show i
 
 ## Notes
 - Depends on: S-263.
+
+## Build notes (2026-11-13)
+- Tests: src/app/server/services/reviews.server.test.ts (moves, REVIEW_CHANGED, events), src/tests/e2e/reviews.spec.ts (hide in the journey).

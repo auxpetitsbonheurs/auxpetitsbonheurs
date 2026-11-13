@@ -12,7 +12,20 @@ export interface AuthClaims {
    * `recovery`, or `otp` on Auth servers that report it so): when the link was used (S-026).
    */
   recoveredAt?: Date;
+  /** The session user's email from the JWT (confirmed: Auth only issues sessions to proven addresses). */
+  email?: string;
 }
+
+/** An emailed link's user once verified (E-11): what account linking needs, nothing more. */
+export interface LinkUser {
+  userId: string;
+  email: string;
+  /** `user_metadata` given at sign-up or Save my details (name, phone, locale); may be empty. */
+  metadata: Record<string, unknown>;
+}
+
+/** The emailed links a customer can open (S-206 signup, S-208 magiclink, S-209 recovery). */
+export type EmailLinkType = "signup" | "magiclink" | "recovery";
 
 export type PasswordUpdate = { ok: true } | { ok: false; reason: "weak" | "failed" };
 
@@ -49,6 +62,17 @@ export interface AuthGateway {
   updatePassword(password: string): Promise<PasswordUpdate>;
   /** Checks credentials without touching this request's session or cookies (S-036 current password). */
   checkPassword(credentials: { email: string; password: string }): Promise<boolean>;
+  /**
+   * Customer sign-up (S-206, threat-model G-01): creates an UNCONFIRMED user with the given
+   * (random, discarded) password, or resends the confirmation for one still unconfirmed; Auth
+   * emails the confirmation link back to `redirectTo`. Sets no cookie. `false` when Auth refused
+   * or failed (the caller logs it and still answers like a success: no enumeration).
+   */
+  signUp(input: { email: string; password: string; metadata: Record<string, string>; redirectTo: string }): Promise<boolean>;
+  /** Emails a one-time sign-in link to an EXISTING user only (`shouldCreateUser: false`, S-208). */
+  requestSignInLink(email: string, redirectTo: string): Promise<boolean>;
+  /** Verifies an emailed link's `token_hash` and sets that session's cookies; `null` when expired or used. */
+  verifyEmailLink(tokenHash: string, type: EmailLinkType): Promise<LinkUser | null>;
 }
 
 export const authContext = createContext<AuthGateway>();

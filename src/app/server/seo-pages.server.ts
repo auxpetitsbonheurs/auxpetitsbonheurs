@@ -7,6 +7,7 @@
 // flag of its own page read as `seoMeta({ noindex })` (lib/seo.ts): a page the client edits
 // joins the sitemap and loses noindex on the next read.
 import type { Database } from "~/server/db.server";
+import { reviewSummary } from "~/server/repos/reviews.server";
 import { getPagePlaceholders } from "~/server/services/site-page.server";
 
 /** The S-245 page keys and their unprefixed paths (docs/content/sitemap.md slugs). */
@@ -46,7 +47,19 @@ export function indexablePaths(flags: PlaceholderFlags): string[] {
   return [...ALWAYS_INDEXED_PATHS, ...edited];
 }
 
+/** The Reviews page is indexed (and in the sitemap) once one review is approved (S-267 AC5, AC6). */
+export const REVIEWS_PATH = "/reviews";
+
+async function hasApprovedReviews(db: Database): Promise<boolean> {
+  try {
+    return (await reviewSummary(db)).count > 0;
+  } catch {
+    return false;
+  }
+}
+
 /** Unprefixed paths for /sitemap.xml. */
 export async function sitemapPaths(db: Database): Promise<string[]> {
-  return indexablePaths(await contentPagePlaceholders(db));
+  const [flags, reviews] = await Promise.all([contentPagePlaceholders(db), hasApprovedReviews(db)]);
+  return [...indexablePaths(flags), ...(reviews ? [REVIEWS_PATH] : [])];
 }
