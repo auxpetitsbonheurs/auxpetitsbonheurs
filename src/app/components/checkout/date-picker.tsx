@@ -68,13 +68,14 @@ interface DayCellProps {
   focusable: boolean;
   tabbable: boolean;
   selected: boolean;
-  isToday: boolean;
+  /** The day whose reason the line under the calendar explains (tapped or focused). */
+  explained: boolean;
   onPick: (date: string) => void;
   onFocusDay: (date: string) => void;
   onKey: (event: KeyboardEvent<HTMLElement>, date: string) => void;
 }
 
-function DayCell({ day, label, focusable, tabbable, selected, isToday, onPick, onFocusDay, onKey }: DayCellProps) {
+function DayCell({ day, label, focusable, tabbable, selected, explained, onPick, onFocusDay, onKey }: DayCellProps) {
   const { locale } = useI18n();
   return (
     <td
@@ -94,7 +95,7 @@ function DayCell({ day, label, focusable, tabbable, selected, isToday, onPick, o
         className={cn(
           "mx-auto flex size-11 flex-col items-center justify-center rounded-full border-2 border-transparent leading-none",
           day.available ? "font-semibold text-foreground hover:bg-accent" : "text-muted-foreground line-through decoration-2",
-          isToday && "border-input",
+          explained && !selected && "border-dashed border-muted-foreground",
           selected && "border-primary bg-primary text-primary-foreground hover:bg-primary-strong",
         )}
       >
@@ -116,6 +117,10 @@ function dayLabel(day: DayStatus, selected: boolean, reason: string, t: T, local
 
 /** The line under the calendar: the focused day's reason, else the choice (or why it no longer works). */
 function messageFor(shown: DayStatus | null, selected: DayStatus | null, reason: (d: DayStatus) => string, t: T, locale: Locale) {
+  // The chosen day itself turned unavailable (a refusal, a basket change): say so, not just why.
+  if (selected && !selected.available && (!shown || shown.date === selected.date)) {
+    return { tone: "warning", text: t("checkout.dates.selectedUnavailable", { date: formatDayLabel(selected.date, locale), reason: reason(selected) }) } as const;
+  }
   if (shown && !shown.available) return { tone: "info", text: t("checkout.dates.dayReason", { date: formatDayLabel(shown.date, locale), reason: reason(shown) }) } as const;
   if (selected && !selected.available) return { tone: "warning", text: t("checkout.dates.selectedUnavailable", { date: formatDayLabel(selected.date, locale), reason: reason(selected) }) } as const;
   if (selected) return { tone: "ok", text: t("checkout.dates.selected", { date: formatDayLabel(selected.date, locale) }) } as const;
@@ -214,7 +219,7 @@ export default function DatePicker({ dates, today, initial, error, whatsapp }: D
             <ChevronRight aria-hidden="true" />
           </Button>
         </div>
-        <table ref={grid} role="grid" aria-labelledby="date-heading date-month" aria-describedby={describedBy} aria-invalid={error ? true : undefined} className="mt-2 block w-full border-collapse min-[20rem]:table min-[20rem]:table-fixed">
+        <table ref={grid} role="grid" aria-labelledby="date-heading date-month" aria-describedby={describedBy} className="mt-2 block w-full border-collapse min-[20rem]:table min-[20rem]:table-fixed">
           <thead className="hidden min-[20rem]:table-header-group">
             <tr role="row">
               {WEEKDAYS.map((weekday) => (
@@ -233,7 +238,7 @@ export default function DatePicker({ dates, today, initial, error, whatsapp }: D
                   const focusable = date >= cal.first && date <= cal.last;
                   const selected = cal.selected === date;
                   return (
-                    <DayCell key={date} day={day} label={dayLabel(day, selected, reason(day), t, locale)} focusable={focusable} tabbable={cal.focus === date} selected={selected} isToday={date === today} onPick={pick} onFocusDay={cal.setShown} onKey={onKey} />
+                    <DayCell key={date} day={day} label={dayLabel(day, selected, reason(day), t, locale)} focusable={focusable} tabbable={cal.focus === date} selected={selected} explained={cal.shown === date && !day.available} onPick={pick} onFocusDay={cal.setShown} onKey={onKey} />
                   );
                 })}
               </tr>
