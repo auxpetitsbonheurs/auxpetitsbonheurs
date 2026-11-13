@@ -2,7 +2,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { type AddressInfo, type Socket, createServer } from "node:net";
 import type pg from "pg";
-import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import * as schema from "~/db/schema";
 import { counter } from "~/db/schema";
 import { createAfterResponse } from "./after-response.server";
@@ -383,6 +383,10 @@ describe("transactions on real Postgres (AC5, in-process PGlite)", () => {
   beforeAll(async () => {
     await client.exec(`create table counter (name text primary key, value integer not null default 0)`);
   }, 60_000); // waits for this PGlite's initdb, slow when every core runs a test file
+  // One PGlite for the block: each test starts from an empty table, in any order.
+  beforeEach(async () => {
+    await client.exec("delete from counter");
+  });
   afterAll(async () => {
     await client.close();
   });

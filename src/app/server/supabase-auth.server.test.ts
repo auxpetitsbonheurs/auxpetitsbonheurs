@@ -20,8 +20,12 @@ const URL_BASE = "https://project.test";
 const USER = { id: "5b3e1f0a-2c4d-4e5f-8a9b-0c1d2e3f4a5b", email: "owner@example.com" };
 const SIGNED_IN = new Date("2026-11-01T10:00:00Z");
 
+/**
+ * Each fake has its own key id: the auth client caches the JWKS per isolate by key id, so a
+ * shared "test-key" made a test verify with the key cached by whichever test ran before it.
+ */
 async function fakeGoTrue() {
-  const key = await createTestSigningKey();
+  const key = await createTestSigningKey(`test-key-${crypto.randomUUID()}`);
   const calls: string[] = [];
   const fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);

@@ -17,7 +17,7 @@
 - TD: e2e `fillOrder` relies on `Date` field typing in Chromium; when the E-05 date picker replaces the native input, update the helper. Low.
 
 ## From review of S-011..S-013 (second pass, 2026-11-10)
-- TD: placeOrder accepts any future date (no upper bound) and no rate limit/Turnstile yet; staging must stay closed until E-05 (noted in S-013). Medium.
+- [x] DONE 2026-11-13 (90-day horizon in E-05; RL-order and Turnstile in S-091 AC8, drizzle/0017 `place_order_limited`). TD: placeOrder accepts any future date (no upper bound) and no rate limit/Turnstile yet; staging must stay closed until E-05 (noted in S-013). Medium.
 - [x] DONE 2026-11-10 (S-014: key lookup before validation, lost race returns the winner; tests in place-order.server.test.ts and checkout.spec.ts). TD: a repeated submit with the same `idempotencyKey` hits the unique constraint and 500s until S-014 lands. Medium.
 - TD: basket cookie is unsigned by design (no prices, ids re-validated against the DB); tampering can only add products that exist, but add a total-quantity cap if abuse appears. Low.
 - [x] DONE 2026-11-11 (reordered with contracts v0.14). Low: `contracts.md` changelog lists v0.4/v0.3 out of order; tidy when next edited.
@@ -72,4 +72,4 @@
 - 2026-11-12: Owner swapped the staging Cloudflare keys to the new format; GitHub STAGING_SUPABASE_SERVICE_ROLE_KEY uses sb_secret_ (seed-menu green).
 
 ## Order-dependent unit tests (added 2026-11-12)
-- `db.server.test.ts` ("a transaction that throws midway") and `supabase-auth.server.test.ts` ("…memoised") pass only in file order; they fail with `--sequence.shuffle --sequence.seed=4242`, on main too. Make each test set up its own state. Found by the CI speed-up work.
+- [x] DONE 2026-11-13 (leftovers job; both files pass under `--sequence.shuffle` with seeds 4242, 1, 7 and 99). Causes: the transactions block shared one PGlite, so the throwing test saw the row the completing test left (now `delete from counter` before each test); every fake GoTrue signed with the same key id "test-key", and the auth client caches the JWKS per isolate by key id, so a test verified with the key an earlier test had cached (each fake now has its own key id). Was: `db.server.test.ts` ("a transaction that throws midway") and `supabase-auth.server.test.ts` ("…memoised") pass only in file order; they fail with `--sequence.shuffle --sequence.seed=4242`, on main too. Make each test set up its own state. Found by the CI speed-up work.
