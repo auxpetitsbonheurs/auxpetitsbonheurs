@@ -1,6 +1,18 @@
 // What pages render for a photo (S-276 AC3, AC4): srcset from stored copies, else the original.
 import { describe, expect, test } from "vitest";
-import { thumbnailUrl, webPhoto } from "./images";
+import { photoOrigin, thumbnailUrl, webPhoto } from "./images";
+
+describe("photoOrigin (S-276 AC7 preconnect)", () => {
+  test("is the Supabase origin, without path or trailing slash", () => {
+    expect(photoOrigin("https://abc.supabase.co/")).toBe("https://abc.supabase.co");
+    expect(photoOrigin("http://127.0.0.1:54321")).toBe("http://127.0.0.1:54321");
+  });
+
+  test("is null when there is no usable URL", () => {
+    expect(photoOrigin("")).toBeNull();
+    expect(photoOrigin("not a url")).toBeNull();
+  });
+});
 
 const SUPABASE = "https://proj.supabase.co/";
 const BASE = "https://proj.supabase.co/storage/v1/object/public/public-images/products/a/b/p";

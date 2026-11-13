@@ -33,7 +33,7 @@ describe("view", () => {
 
     const img = html.match(/<img[^>]*g1\.webp"[^>]*>/)![0];
     expect(img).toMatch(new RegExp(`srcSet="${srcSet}"`, "i"));
-    expect(img).toContain('sizes="(min-width: 72rem) 22rem, (min-width: 48rem) 31vw, 47vw"');
+    expect(img).toContain('sizes="(min-width: 72rem) 22rem, (min-width: 48rem) 31vw, calc(50vw - 1.5rem)"');
     expect(img).toMatch(/fetchPriority="high"/i);
   });
 
