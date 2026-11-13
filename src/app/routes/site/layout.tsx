@@ -17,6 +17,7 @@ import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { photoOrigin } from "~/lib/images";
+import { whenLoadedAndIdle } from "~/lib/after-load";
 import { getSiteSettings } from "~/server/repos/settings.server";
 import { timed } from "~/server/server-timing.server";
 import type { Route } from "./+types/layout";
@@ -79,9 +80,8 @@ function useBrowserBasket(serverCount: number) {
         .then(() => basketStore.refresh())
         .catch(() => undefined);
     }
-    const warm = () => void menuStore.revalidate();
-    if ("requestIdleCallback" in window) window.requestIdleCallback(warm, { timeout: 2000 });
-    else setTimeout(warm, 1000);
+    // After load (S-276 AC7): the menu request no longer shares the bandwidth of the LCP photo.
+    return whenLoadedAndIdle(() => void menuStore.revalidate());
   }, [serverCount]);
 }
 
