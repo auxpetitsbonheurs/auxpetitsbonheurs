@@ -69,7 +69,16 @@ async function ageCachedPrice(page: Page, productId: string, priceRs: number) {
   );
 }
 
+/**
+ * On the basket the date field turns into the calendar when its lazy chunk arrives; Tab
+ * order is only stable after that (on a slow runner the swap can land mid-traversal).
+ */
+async function calendarSettled(page: Page) {
+  if ((await page.locator("#date-heading").count()) > 0) await expect(page.getByRole("grid")).toBeVisible();
+}
+
 async function expectAccessibleLayout(page: Page) {
+  await calendarSettled(page);
   for (const zoom of [1, 2]) {
     await withZoom(page, zoom, async () => {
       await expectNoHorizontalScroll(page);
