@@ -79,6 +79,31 @@ test.describe("with JavaScript, a tap before hydration still works", () => {
     await expect(page.getByRole("status").filter({ hasText: "Added to your basket" })).toBeVisible();
   });
 
+  test("with only the ordering area's chunk held after the page hydrated, a size and message chosen meanwhile are kept and Add works in the page", async ({ page, db }) => {
+    const product = await cake(db);
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    // A slow network for the ordering area's own chunk only (the readiness gap of a slow phone).
+    await page.route(/\/assets\/order-form-[^/]+\.js$/, async (route) => {
+      await gate;
+      await route.continue();
+    });
+    await page.goto(product.path);
+    await expect(page.locator("html")).toHaveAttribute("data-hydrated", "true", { timeout: 20_000 });
+
+    await page.getByRole("radio", { name: /8 inch/ }).check();
+    await page.getByLabel("Message on the cake").fill("Joyeux anniversaire");
+    release();
+
+    // Once the form hydrates it adopts what is in the plain form: the live price follows the size.
+    await expect(page.getByTestId("live-price")).toHaveText("Rs 1,800", { timeout: 20_000 });
+    await expect(page.getByRole("radio", { name: /8 inch/ })).toBeChecked();
+    await expect(page.getByLabel("Message on the cake")).toHaveValue("Joyeux anniversaire");
+    await page.getByRole("button", { name: "Add to basket" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Added to your basket" })).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`${product.path}$`));
+  });
+
   test("no script is requested before the page has loaded; the page hydrates after load", async ({ page }) => {
     const scriptsBeforeLoad: string[] = [];
     let loaded = false;
