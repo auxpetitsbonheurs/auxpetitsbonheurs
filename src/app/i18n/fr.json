@@ -82,7 +82,6 @@
       "address": "Indiquez l'adresse de livraison (au moins 5 caractères).",
       "landmark": "Le point de repère doit faire moins de 200 caractères.",
       "date": "Choisissez une date.",
-      "dateTooSoon": "Choisissez aujourd'hui ou une date ultérieure.",
       "windowId": "Choisissez une heure.",
       "acceptPolicies": "Cochez la case pour accepter les conditions de commande.",
       "form": "Veuillez recharger la page et réessayer.",
@@ -91,14 +90,47 @@
       "contactEmail": "Indiquez une adresse e-mail, par exemple nom@exemple.com.",
       "contactNote": "La note doit faire moins de 1 000 caractères.",
       "resubmit": "Merci de vérifier vos informations et de passer à nouveau votre commande.",
-      "nothingOrderable": "Rien dans votre panier ne peut être commandé pour le moment. Retirez les articles indisponibles ou choisissez autre chose."
+      "nothingOrderable": "Rien dans votre panier ne peut être commandé pour le moment. Retirez les articles indisponibles ou choisissez autre chose.",
+      "dateUnavailable": {
+        "too_soon": "Cette date est maintenant trop proche. Choisissez une autre date.",
+        "closed": "Nous sommes fermés ce jour-là. Choisissez une autre date.",
+        "blocked": "Cette date n'est plus disponible. Choisissez une autre date.",
+        "too_far": "Cette date est trop lointaine. Choisissez une date dans les 90 prochains jours.",
+        "out_of_season": "Un article de votre panier n'est pas proposé à cette date. Choisissez une autre date."
+      }
     },
     "totalUpdated": "Le total est passé de {{old}} à {{new}}",
     "leftOutLine": "{{name}} : non inclus, plus disponible",
     "notSentTitle": "Votre commande n'a pas encore été envoyée",
     "leftOutRefusal_one": "Cet article n'est plus disponible et ne fait pas partie de votre commande : {{names}}.",
     "leftOutRefusal_other": "Ces articles ne sont plus disponibles et ne font pas partie de votre commande : {{names}}.",
-    "totalChanged": "Le total est passé de {{old}} à {{new}}. Vérifiez-le, puis appuyez sur Commander pour confirmer."
+    "totalChanged": "Le total est passé de {{old}} à {{new}}. Vérifiez-le, puis appuyez sur Commander pour confirmer.",
+    "dates": {
+      "earliest": "Date la plus proche : {{date}}",
+      "previousMonth": "Mois précédent",
+      "nextMonth": "Mois suivant",
+      "instructions": "Les flèches passent d'un jour à l'autre, Page précédente et Page suivante changent de mois, Entrée choisit.",
+      "selected": "Date choisie : {{date}}",
+      "dayReason": "{{date}} : {{reason}}",
+      "chooseHint": "Touchez un jour pour le choisir. Les jours barrés expliquent pourquoi quand vous les touchez.",
+      "unavailableLabel": "{{date}}, indisponible : {{reason}}",
+      "selectedLabel": "{{date}}, choisi",
+      "selectedUnavailable": "La date choisie, {{date}}, n'est plus disponible : {{reason}}. Choisissez un autre jour.",
+      "reasons": {
+        "too_soon_one": "Trop tôt : nous avons besoin de {{count}} jour de préavis",
+        "too_soon_other": "Trop tôt : nous avons besoin de {{count}} jours de préavis",
+        "past": "Ce jour est passé",
+        "closed": "Fermé le {{weekday}}",
+        "blocked": "Indisponible",
+        "too_far": "Indisponible",
+        "out_of_season": "Indisponible : {{item}} n'est proposé que du {{start}} au {{end}}"
+      },
+      "noDates": "Aucune date disponible, contactez-nous sur WhatsApp",
+      "noDatesSeason": "{{item}} n'est proposé que du {{start}} au {{end}}. Retirez-le du panier pour voir d'autres dates.",
+      "whatsapp": "Écrivez-nous sur WhatsApp",
+      "whatsappText": "Bonjour, je voudrais commander mais aucune date n'est disponible sur le site.",
+      "contact": "Nous contacter"
+    }
   },
   "errors": {
     "notFoundTitle": "Page introuvable",

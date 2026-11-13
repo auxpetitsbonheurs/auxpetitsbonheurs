@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { insertProduct } from "~/db/testing/catalogue";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { BASKET_COOKIE, basketCookie, readBasketCount } from "~/server/basket.server";
+import { siteSettingsCache } from "~/server/repos/settings.server";
 import { cookieFrom, routeArgs } from "~/server/testing/route-context";
 import { priceBasket } from "~/domain/menu";
 import { checkoutTotals } from "~/domain/pricing";
@@ -244,6 +245,85 @@ describe("placeOrder from the basket page (S-013 AC11, AC2 envelope)", () => {
     });
     expect(refused.data.values).toMatchObject({ "contact.name": "Aisha", fulfilment: "pickup" });
     expect(refused.init.headers).toBeUndefined();
+  });
+
+  type DateRefusal = { data: { error: { code: string; fields: Record<string, string> }; reason: string; availability: unknown; values: Record<string, string> }; init: { status: number } };
+
+  test("S-087 AC5: a date blocked after the page opened is DATE_UNAVAILABLE 409 on the date, with the fresh rules and the typed values", async () => {
+    const id = await insertProduct(database.db);
+    const cookie = cookieWith([{ lineId: "a", productId: id, quantity: 1 }]);
+    await database.client.query("insert into blocked_date (starts_on, ends_on, reason) values ('2026-11-13', '2026-11-13', 'Oven repair')");
+
+    const refused = (await post(form(), cookie)) as unknown as DateRefusal;
+
+    expect(refused.init.status).toBe(409);
+    expect(refused.data.error.code).toBe("DATE_UNAVAILABLE");
+    expect(refused.data.error.fields).toEqual({ date: "This date is no longer available. Please choose another date." });
+    expect(refused.data.reason).toBe("blocked");
+    expect(refused.data.availability).toEqual({ defaultNoticeDays: 3, closedWeekdays: [7], blocked: [{ startsOn: "2026-11-13", endsOn: "2026-11-13" }] });
+    expect(refused.data.values).toMatchObject({ date: "2026-11-13", "contact.name": "Aisha" });
+    expect(JSON.stringify(refused)).not.toContain("Oven repair");
+  });
+
+  test.each([
+    ["2026-11-12", "This date is now too soon. Please choose another date."],
+    ["2026-11-15", "We are closed on that day. Please choose another date."],
+    ["2027-03-01", "This date is too far ahead. Please choose a date in the next 90 days."],
+  ])("a posted %s is refused with a calm message for its reason", async (date, message) => {
+    const id = await insertProduct(database.db);
+    const refused = (await post(form({ date }), cookieWith([{ lineId: "a", productId: id, quantity: 1 }]))) as unknown as DateRefusal;
+    expect(refused.data.error.fields.date).toBe(message);
+  });
+
+  test("S-088 AC4: a window removed from Settings after render is VALIDATION_FAILED on windowId with the refreshed lists", async () => {
+    const id = await insertProduct(database.db);
+    await database.client.query(`update settings set pickup_windows = '[{"id":"noon","start":"11:00","end":"14:00","label":{"en":"Noon","fr":"Midi"}}]'::jsonb`);
+
+    const refused = (await post(form(), cookieWith([{ lineId: "a", productId: id, quantity: 1 }]))) as unknown as {
+      data: { error: { code: string; fields: Record<string, string> }; windows: { pickup: { id: string }[]; delivery: { id: string }[] } };
+    };
+
+    expect(refused.data.error.code).toBe("VALIDATION_FAILED");
+    expect(refused.data.error.fields).toEqual({ windowId: "Choose a time." });
+    expect(refused.data.windows.pickup.map((w) => w.id)).toEqual(["noon"]);
+    expect(refused.data.windows.delivery.map((w) => w.id)).toEqual(["morning", "afternoon", "evening"]);
+  });
+
+  test("S-088 AC4: a pickup window id posted with delivery is VALIDATION_FAILED on windowId", async () => {
+    const id = await insertProduct(database.db);
+    await database.client.query(`update settings set pickup_windows = '[{"id":"noon","start":"11:00","end":"14:00","label":{"en":"Noon"}}]'::jsonb`);
+    const delivery = form({ fulfilment: "delivery", address: "12 Rue du Port, Beau Bassin", "windowId.delivery": "noon", displayedTotalRs: "1050" });
+
+    const refused = (await post(delivery, cookieWith([{ lineId: "a", productId: id, quantity: 1 }]))) as unknown as Refusal;
+    expect(refused.data.error.fields).toEqual({ windowId: "Choose a time." });
+  });
+
+  test("S-088 AC3: no window chosen is VALIDATION_FAILED on windowId", async () => {
+    const id = await insertProduct(database.db);
+    const refused = (await post(form({ "windowId.pickup": "" }), cookieWith([{ lineId: "a", productId: id, quantity: 1 }]))) as unknown as Refusal;
+    expect(refused.data.error.fields).toEqual({ windowId: "Choose a time." });
+  });
+});
+
+describe("checkout dates and windows in the loader (S-083, S-088 AC1, AC2)", () => {
+  test("the menu carries the public date rules and each product's notice for the picker", async () => {
+    await insertProduct(database.db, { noticeDays: 5 });
+
+    const data = await loader(routeArgs(database, { path: "/basket" }) as never);
+
+    expect(data.menu.data.checkout.availability).toEqual({ defaultNoticeDays: 3, closedWeekdays: [7], blocked: [] });
+    expect(data.menu.data.products[0]!.noticeDays).toBe(5);
+    expect(data.today).toBe("2026-11-10");
+  });
+
+  test("windows edited by the Owner show separately for delivery and pickup on the next load", async () => {
+    await load(); // fills this isolate's Settings cache with the old windows
+    await database.client.query(`update settings set delivery_windows = '[{"id":"late","start":"18:00","end":"21:00","label":{"en":"Late"}}]'::jsonb`);
+    siteSettingsCache.clear(); // what the Owner's Availability save does
+
+    const data = await load();
+    expect(data.windows.delivery.map((w) => w.id)).toEqual(["late"]);
+    expect(data.windows.pickup.map((w) => w.id)).toEqual(["morning", "afternoon", "evening"]);
   });
 });
 

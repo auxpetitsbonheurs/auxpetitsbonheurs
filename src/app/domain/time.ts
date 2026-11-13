@@ -112,6 +112,50 @@ export function formatDayLabel(date: string, locale: Locale): string {
   return DAY_LABEL[locale].format(parseDate(date));
 }
 
+const formatters = new Map<string, Intl.DateTimeFormat>();
+
+/** One formatter per locale and style, built on first use (client bundles pay only for what they show). */
+function formatter(locale: Locale, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = `${locale}:${JSON.stringify(options)}`;
+  let found = formatters.get(key);
+  if (!found) {
+    found = new Intl.DateTimeFormat(INTL_LOCALE[locale], { ...options, timeZone: "UTC" });
+    formatters.set(key, found);
+  }
+  return found;
+}
+
+/** "1 Dec" (EN) or "1 déc." (FR). */
+export function formatDayMonth(date: string, locale: Locale): string {
+  return formatter(locale, { day: "numeric", month: "short" }).format(parseDate(date));
+}
+
+/** "Tuesday 24 November" (EN) or "mardi 24 novembre" (FR): the date picker's spoken day. */
+export function formatWeekdayDayMonth(date: string, locale: Locale): string {
+  return formatter(locale, { weekday: "long", day: "numeric", month: "long" }).format(parseDate(date));
+}
+
+/** "November 2026" (EN) or "novembre 2026" (FR), for any date in the month. */
+export function formatMonthYear(date: string, locale: Locale): string {
+  return formatter(locale, { month: "long", year: "numeric" }).format(parseDate(date));
+}
+
+/** Monday 2026-11-09 plus (weekday - 1) days: a date with that ISO weekday. */
+const dateOfWeekday = (weekday: number) => addDays("2026-11-09", weekday - 1);
+
+/** "Monday" / "lundi" (long) or "Mon" / "lun." (short) for ISO weekday 1..7. */
+export function formatWeekday(weekday: number, locale: Locale, style: "long" | "short" = "long"): string {
+  return formatter(locale, { weekday: style }).format(parseDate(dateOfWeekday(weekday)));
+}
+
+/** A window time "HH:mm": "09:00" in English, "9 h" or "12 h 30" in French (S-088 AC5). */
+export function formatWindowTime(time: string, locale: Locale): string {
+  if (locale === "en") return time;
+  const [hours = "", minutes = ""] = time.split(":");
+  const h = String(Number(hours));
+  return minutes === "00" ? `${h}\u00a0h` : `${h}\u00a0h\u00a0${minutes}`;
+}
+
 /** A calendar date as "Sunday 14 February 2027" (EN) or "dimanche 14 février 2027" (FR). */
 export function formatLongDate(date: string, locale: Locale): string {
   // Built on call (server pages only), so client bundles importing this module carry no new formatter.

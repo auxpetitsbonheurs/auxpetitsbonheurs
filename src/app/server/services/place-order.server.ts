@@ -44,7 +44,8 @@ export type PlacedOrder = PlacedOrderRef & { ok: true; orderNumber: string; repl
 
 export type PlaceOrderResult =
   | PlacedOrder
-  | { ok: false; code: "VALIDATION_FAILED"; fields: string[] }
+  /** `windows`: the fresh lists when the window was refused, so the page shows them (S-088 AC4). */
+  | { ok: false; code: "VALIDATION_FAILED"; fields: string[]; windows?: { delivery: TimeWindow[]; pickup: TimeWindow[] } }
   /** The key belongs to an order placed under another email: nothing about it is revealed (G-21). */
   | { ok: false; code: "VALIDATION_FAILED"; fields: []; keyReused: true }
   /** `availability`: the fresh public rules, so the picker re-renders with the new statuses (S-087 AC5). */
@@ -223,7 +224,9 @@ interface Priced {
 /** Steps 1, 4, 5 and 6 on the snapshot, in the order the checkout spec gives: a refusal, or the priced order. */
 function decide(form: Record<string, unknown>, ctx: PlaceOrderContext, parsed: ReturnType<typeof parsePlaceOrder>, snapshot: Extract<ProcedureResult, { kind: "checked" | "placed" }>): Exclude<PlaceOrderResult, { ok: true }> | Priced {
   const fields = invalidFields(form, ctx.basket, parsed, snapshot.settings);
-  if (!parsed.ok || fields.length > 0) return { ok: false, code: "VALIDATION_FAILED", fields };
+  if (!parsed.ok || fields.length > 0) {
+    return fields.includes("windowId") ? { ok: false, code: "VALIDATION_FAILED", fields, windows: windowsOf(snapshot.settings) } : { ok: false, code: "VALIDATION_FAILED", fields };
+  }
   const input = parsed.data;
   const lines = priceLines(ctx.basket, productMap(snapshot.products));
   // ADR-0004: sold-out, hidden and deleted lines are left out (the page showed them dimmed

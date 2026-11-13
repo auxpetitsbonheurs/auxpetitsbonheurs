@@ -1,6 +1,6 @@
 import { Undo2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Form, type MetaArgs, redirect, useNavigation } from "react-router";
+import { Form, type MetaArgs, redirect, useNavigation, useRouteLoaderData } from "react-router";
 import { BasketLineItem, type BasketLineView, type RemovedLine } from "~/components/checkout/basket-line-item";
 import { Alert } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
@@ -9,10 +9,13 @@ import { DateSection, DetailsSection, TimeSection } from "~/components/checkout/
 import { ErrorSummary } from "~/components/checkout/error-summary";
 import { type FulfilmentChoice, FulfilmentSection } from "~/components/checkout/fulfilment-section";
 import { PlaceOrderBar, SummarySection } from "~/components/checkout/summary-section";
+import { type AvailabilityRules, type BasketDates, basketDates } from "~/domain/availability";
 import { type BasketLine, removeLine, setLineQuantity } from "~/domain/basket";
 import { type Menu, type MenuEntry, fresherEntry, menuWithServerPrices, priceBasket } from "~/domain/menu";
 import { type LocalizedName, type PricedLine, checkoutTotals, deliveryFeeFor } from "~/domain/pricing";
-import { formatDayLabel, todayMU } from "~/domain/time";
+import { todayMU } from "~/domain/time";
+import type { TimeWindow } from "~/db/tables/json-types";
+import type { FooterContacts } from "~/server/repos/settings.server";
 import { t as translate } from "~/i18n/catalog.server";
 import { localized } from "~/i18n/localized";
 import { useI18n } from "~/i18n/react";
@@ -76,7 +79,8 @@ async function goneProductNames(context: Route.LoaderArgs["context"], basket: Ba
  */
 export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
   const entry = menuStore.state().entry;
-  if (!entry || typeof crypto.randomUUID !== "function") return serverLoader();
+  // A copy cached before the date rules (S-083) cannot place a date: ask the server.
+  if (!entry?.data.checkout.availability || typeof crypto.randomUUID !== "function") return serverLoader();
   void menuStore.revalidate({ force: true });
   const clientToday = todayMU(new Date());
   return {
@@ -138,9 +142,13 @@ function refusal(result: Exclude<PlaceOrderResult, { ok: true }>, values: Record
         const fields = { form: translate("checkout.errors.resubmit", locale) };
         return actionError(result.code, locale, { fields, extra: { values: { ...values, idempotencyKey: crypto.randomUUID() } } });
       }
-      return actionError(result.code, locale, { fields: fieldMessages(result.fields, locale, basketHasLines), extra: { values } });
+      return actionError(result.code, locale, { fields: fieldMessages(result.fields, locale, basketHasLines), extra: result.windows ? { values, windows: result.windows } : { values } });
     case "DATE_UNAVAILABLE":
-      return actionError(result.code, locale, { fields: { date: translate("checkout.errors.dateTooSoon", locale) }, extra: { values, reason: result.reason } });
+      // The category only (FR-014), and the fresh public rules so the picker re-renders (S-087 AC5).
+      return actionError(result.code, locale, {
+        fields: { date: translate(`checkout.errors.dateUnavailable.${result.reason}`, locale) },
+        extra: { values, reason: result.reason, availability: result.availability },
+      });
     case "PRICE_CHANGED": {
       const { lines, itemsTotalRs, deliveryFeeRs, totalRs } = result;
       return actionError(result.code, locale, { extra: { values, lines, itemsTotalRs, deliveryFeeRs, totalRs } });
@@ -360,6 +368,10 @@ function BasketSection({ lines, itemsTotalRs, showSubtotal, lineError, onRemoved
 /** A refused placeOrder as the view reads it (the error envelope plus echoed values). */
 interface OrderRefusal extends ActionErrorBody {
   values: Record<string, string>;
+  /** DATE_UNAVAILABLE: the rules as the server saw them at submit. */
+  availability?: AvailabilityRules;
+  /** VALIDATION_FAILED on the window: the lists as the server saw them at submit. */
+  windows?: { delivery: TimeWindow[]; pickup: TimeWindow[] };
   totalRs?: number;
   deliveryFeeRs?: number;
   lines?: (Pick<PricedLine, "productId" | "unitPriceRs" | "problem"> & { name?: PricedLine["name"] })[];
@@ -385,8 +397,8 @@ function useFocusOnRefusal(refused: OrderRefusal | undefined) {
  */
 function useRefusalPrices(refused: OrderRefusal | undefined, current: MenuEntry) {
   useEffect(() => {
-    // Nothing orderable at submit (UX audit H2): fetch the menu so the page shows why.
-    if (refused?.error.fields?.basket) void menuStore.revalidate({ force: true });
+    // Nothing orderable at submit (UX audit H2), or a date or window that changed: fetch the menu so the page shows why.
+    if (refused?.error.fields?.basket || refused?.error.fields?.windowId || refused?.error.code === "DATE_UNAVAILABLE") void menuStore.revalidate({ force: true });
     if (refused?.error.code !== "PRICE_CHANGED" || !refused.lines) return;
     const fee = refused.values.fulfilment === "delivery" ? refused.deliveryFeeRs : undefined;
     menuStore.replace(menuWithServerPrices(current, refused.lines, fee));
@@ -440,6 +452,26 @@ function RefusalNoteAlert({ note }: { note: RefusalNote | undefined }) {
   );
 }
 
+/** Without rules (never expected: the loader always sends them) every day is offered and placeOrder judges. */
+const NO_RULES: AvailabilityRules = { defaultNoticeDays: 0, closedWeekdays: [], blocked: [] };
+
+/**
+ * The checkout's 90 days (S-083, S-084, S-087) for the lines that will be ordered, from the
+ * same rules placeOrder re-checks with; a DATE_UNAVAILABLE refusal's rules are the freshest.
+ */
+function useCheckoutDates(data: LoaderData, model: BasketModel, refused: OrderRefusal | undefined, locale: Locale): BasketDates<string> {
+  const rules = refused?.availability ?? model.menu.checkout.availability ?? data.menu.data.checkout.availability ?? NO_RULES;
+  const products = new Map(model.menu.products.map((p) => [p.id, p]));
+  const items = model.orderable.flatMap((line) => {
+    const product = products.get(line.productId);
+    return product ? [{ name: localized(product.name, locale), noticeDays: product.noticeDays, season: product.season }] : [];
+  });
+  const key = JSON.stringify([data.today, rules, items]);
+  // Recomputed only when the day, the rules or the basket's dated items change (INP on other edits).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(() => basketDates(data.today, rules, items), [key]);
+}
+
 function CheckoutForm({ data, model, refused }: { data: LoaderData; model: BasketModel; refused: OrderRefusal | undefined }) {
   const { t, locale } = useI18n();
   const navigation = useNavigation();
@@ -458,6 +490,8 @@ function CheckoutForm({ data, model, refused }: { data: LoaderData; model: Baske
   const items = model.orderable.map((l) => ({ lineId: l.lineId, name: localized(l.name, locale), quantity: l.quantity, lineTotalRs: l.lineTotalRs }));
   // Memoised on the refusal so the note scrolls into view once, not on every render.
   const note = useMemo(() => refusalNote(refused, t, locale), [refused, t, locale]);
+  const dates = useCheckoutDates(data, model, refused, locale);
+  const contacts = (useRouteLoaderData(`site-${locale}`) as { contacts?: FooterContacts } | undefined)?.contacts;
   return (
     <Form method="post" noValidate className="checkout-form">
       {refused && !priceChanged && <ErrorSummary ref={summaryRef} message={refused.error.message} fields={refused.error.fields} />}
@@ -467,8 +501,8 @@ function CheckoutForm({ data, model, refused }: { data: LoaderData; model: Baske
       <input type="hidden" name="displayedTotalRs.delivery" value={itemsTotalRs + deliveryFeeFor("delivery", checkout.deliveryFeeRs)} />
       <input type="hidden" name="displayedTotalRs.pickup" value={itemsTotalRs} />
       <FulfilmentSection deliveryFee={formatRupees(checkout.deliveryFeeRs)} pickupAddress={checkout.pickup.address} pickupMapUrl={checkout.pickup.mapUrl} initial={values} errors={errors} onChoose={setFulfilment} />
-      <DateSection today={data.today} todayLabel={formatDayLabel(data.today, locale)} initial={values.date} error={errors.date} />
-      <TimeSection windows={checkout.windows} initial={values} error={errors.windowId} />
+      <DateSection dates={dates} today={data.today} initial={values.date} error={errors.date} whatsapp={contacts?.whatsapp ?? null} />
+      <TimeSection windows={refused?.windows ?? checkout.windows} initial={values} error={errors.windowId} />
       <DetailsSection initial={values} errors={errors} />
       <SummarySection
         items={items}

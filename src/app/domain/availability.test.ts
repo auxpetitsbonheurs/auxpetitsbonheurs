@@ -7,6 +7,7 @@ import {
   type DayReason,
   adminDateWarnings,
   assertOrderable,
+  basketDates,
   dayStatus,
   dayStatuses,
   earliestDate,
@@ -216,6 +217,32 @@ describe("productProblem by Mauritius date (S-084 AC1..AC3, T-PRD-*)", () => {
 
   test("T-PRD-8: 2026-12-25T20:30Z is 26 Dec in Mauritius, so out of season", () => {
     expect(productProblem({ status: "available", season: christmas }, todayMU(new Date("2026-12-25T20:30:00Z")))).toBe("out_of_season");
+  });
+});
+
+describe("basketDates: the checkout's 90 days (S-087 AC1, AC6)", () => {
+  const rules = { defaultNoticeDays: 3, closedWeekdays: [7], blocked: [] };
+
+  test("the largest notice of the items sets the earliest date", () => {
+    const dates = basketDates("2026-11-09", rules, [
+      { name: "Cake", noticeDays: null, season: null },
+      { name: "Wedding cake", noticeDays: 5, season: null },
+    ]);
+    expect(dates.noticeDays).toBe(5);
+    expect(dates.earliest).toBe("2026-11-14");
+    expect(dates.days).toHaveLength(90);
+    expect(dates.seasons).toEqual([]);
+  });
+
+  test("a seasonal item until 25 Dec leaves every later date out of season and is named", () => {
+    const dates = basketDates("2026-11-09", rules, [{ name: "Yule log", noticeDays: null, season: { startsOn: "2026-11-01", endsOn: "2026-12-25" } }]);
+    expect(dates.days.find((d) => d.date === "2026-12-24")?.available).toBe(true);
+    expect(dates.days.filter((d) => d.date > "2026-12-25").every((d) => d.reason === "out_of_season" || d.reason === "closed")).toBe(true);
+    expect(dates.seasons).toEqual([{ startsOn: "2026-11-01", endsOn: "2026-12-25", name: "Yule log" }]);
+  });
+
+  test("no orderable day in the horizon gives earliest null", () => {
+    expect(basketDates("2026-11-09", { ...rules, closedWeekdays: [1, 2, 3, 4, 5, 6, 7] }, []).earliest).toBeNull();
   });
 });
 

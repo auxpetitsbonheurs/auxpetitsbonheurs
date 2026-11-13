@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { DomainError } from "./errors";
-import { addDays, diffDays, formatDayLabel, formatLogTime, instantToMuDate, isValidMuDate, isoWeekday, muDateTimeToInstant, todayMU } from "./time";
+import { addDays, diffDays, formatDayLabel, formatDayMonth, formatLogTime, formatMonthYear, formatWeekday, formatWeekdayDayMonth, formatWindowTime, instantToMuDate, isValidMuDate, isoWeekday, muDateTimeToInstant, todayMU } from "./time";
 
 describe("todayMU (AC6: UTC+4, no DST)", () => {
   test.each([
@@ -54,6 +54,25 @@ describe("formatting (AC9)", () => {
 
   test("a malformed date is a DomainError", () => {
     expect(() => formatDayLabel("2026-02-30", "en")).toThrow(DomainError);
+  });
+});
+
+describe("date picker and window labels (S-087, S-088 AC5)", () => {
+  test.each([
+    ["en", "1 Dec", "Tuesday 24 November", "November 2026", "Monday", "Sun"],
+    ["fr", "1 déc.", "mardi 24 novembre", "novembre 2026", "lundi", "dim."],
+  ] as const)("%s", (locale, dayMonth, spoken, month, monday, sunday) => {
+    expect(formatDayMonth("2026-12-01", locale)).toBe(dayMonth);
+    expect(formatWeekdayDayMonth("2026-11-24", locale)).toBe(spoken);
+    expect(formatMonthYear("2026-11-24", locale)).toBe(month);
+    expect(formatWeekday(1, locale)).toBe(monday);
+    expect(formatWeekday(7, locale, "short")).toBe(sunday);
+  });
+
+  test("window times: 24 h in English, '9 h' and '12 h 30' in French", () => {
+    expect(formatWindowTime("09:00", "en")).toBe("09:00");
+    expect(formatWindowTime("09:00", "fr")).toBe("9 h");
+    expect(formatWindowTime("12:30", "fr")).toBe("12 h 30");
   });
 });
 

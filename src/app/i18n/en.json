@@ -82,7 +82,6 @@
       "address": "Enter the delivery address (at least 5 characters).",
       "landmark": "Keep the landmark under 200 characters.",
       "date": "Choose a date.",
-      "dateTooSoon": "Choose today or a later date.",
       "windowId": "Choose a time.",
       "acceptPolicies": "Tick the box to accept the order policies.",
       "form": "Please reload the page and try again.",
@@ -91,14 +90,47 @@
       "contactEmail": "Enter an email address, for example name@example.com.",
       "contactNote": "Keep the note under 1,000 characters.",
       "resubmit": "Please check your details and place your order again.",
-      "nothingOrderable": "Nothing in your basket can be ordered right now. Remove the unavailable items or choose something else."
+      "nothingOrderable": "Nothing in your basket can be ordered right now. Remove the unavailable items or choose something else.",
+      "dateUnavailable": {
+        "too_soon": "This date is now too soon. Please choose another date.",
+        "closed": "We are closed on that day. Please choose another date.",
+        "blocked": "This date is no longer available. Please choose another date.",
+        "too_far": "This date is too far ahead. Please choose a date in the next 90 days.",
+        "out_of_season": "An item in your basket is not available on this date. Please choose another date."
+      }
     },
     "totalUpdated": "Total updated from {{old}} to {{new}}",
     "leftOutLine": "{{name}}: not included, no longer available",
     "notSentTitle": "Your order has not been sent yet",
     "leftOutRefusal_one": "This item is no longer available and was left out: {{names}}.",
     "leftOutRefusal_other": "These items are no longer available and were left out: {{names}}.",
-    "totalChanged": "The total changed from {{old}} to {{new}}. Check it, then press Place order to confirm."
+    "totalChanged": "The total changed from {{old}} to {{new}}. Check it, then press Place order to confirm.",
+    "dates": {
+      "earliest": "Earliest date: {{date}}",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "instructions": "Arrow keys move between days, Page Up and Page Down change month, Enter chooses.",
+      "selected": "Selected: {{date}}",
+      "dayReason": "{{date}}: {{reason}}",
+      "chooseHint": "Tap a day to choose it. Crossed-out days explain why when you tap them.",
+      "unavailableLabel": "{{date}}, not available: {{reason}}",
+      "selectedLabel": "{{date}}, selected",
+      "selectedUnavailable": "Your chosen date {{date}} is no longer available: {{reason}}. Please choose another day.",
+      "reasons": {
+        "too_soon_one": "Too soon: we need {{count}} day's notice",
+        "too_soon_other": "Too soon: we need {{count}} days' notice",
+        "past": "This day has passed",
+        "closed": "Closed on {{weekday}}s",
+        "blocked": "Not available",
+        "too_far": "Not available",
+        "out_of_season": "Not available: {{item}} is only available {{start}} to {{end}}"
+      },
+      "noDates": "No dates available, contact us on WhatsApp",
+      "noDatesSeason": "{{item}} is only available {{start}} to {{end}}. Remove it from your basket to see other dates.",
+      "whatsapp": "Message us on WhatsApp",
+      "whatsappText": "Hello, I would like to order but no dates are available on the website.",
+      "contact": "Contact us"
+    }
   },
   "errors": {
     "notFoundTitle": "Page not found",

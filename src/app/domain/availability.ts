@@ -162,6 +162,30 @@ export function seasonBlocking<T extends DateRange>(date: string, items: readonl
   return items.find((item) => !inRange(date, item)) ?? null;
 }
 
+/** What the date rules need from one orderable basket product (`name` only names a season). */
+export interface DatedItem<N = unknown> {
+  name: N;
+  noticeDays: number | null | undefined;
+  season: SeasonWindow | null | undefined;
+}
+
+export interface BasketDates<N = unknown> {
+  days: DayStatus[];
+  earliest: string | null;
+  noticeDays: number;
+  /** One per seasonal item, with its name for "{item} is only available {start} to {end}". */
+  seasons: (DateRange & { name: N })[];
+}
+
+/** The checkout's 90 days for these orderable items: what the picker shows and placeOrder re-checks. */
+export function basketDates<N>(today: string, rules: AvailabilityRules, items: readonly DatedItem<N>[]): BasketDates<N> {
+  const ctx: AvailabilityCtx = { today, ...rules };
+  const noticeDays = noticeDaysFor(items, rules.defaultNoticeDays);
+  const seasons = items.flatMap((item) => (item.season ? [{ startsOn: item.season.startsOn, endsOn: item.season.endsOn, name: item.name }] : []));
+  const days = dayStatuses(ctx, noticeDays, seasons);
+  return { days, earliest: days.find((day) => day.available)?.date ?? null, noticeDays, seasons };
+}
+
 /** A short id for a window added in the form ("w-3f9a1c"). */
 export function newWindowId(random: () => number = Math.random): string {
   return `w-${Math.floor(random() * 0xffffff)
