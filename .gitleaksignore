@@ -10,3 +10,5 @@ eed22d57e7b4f19f4a33bf4acbc44aa44e64d5bd:src/app/routes/site/basket.test.ts:gene
 cd2a903c4cd82cf00d69b4d1d5168729d3bb6889:src/app/lib/cpu-measure.test.ts:generic-api-key:13
 # wrangler.jsonc env "e2e": the "e2e-placeholder-…" anon key for the local GoTrue stub
 c234d0a824854c27e232ce426a5b8b6abc525afa:src/wrangler.jsonc:generic-api-key:40
+# custom-order.test.tsx: a fixed idempotency key (a UUID) in a unit-test form fixture
+99b68f965849839fd0facdc6370793ab1c539f80:src/app/routes/site/custom-order.test.tsx:generic-api-key:18
