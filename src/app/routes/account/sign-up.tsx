@@ -17,6 +17,7 @@ import { customerSession, pageLocale, safeCustomerNext } from "~/server/customer
 import { assertSameOrigin } from "~/server/origin.server";
 import { consumeSignUp, signUpCustomer } from "~/server/services/customer-auth.server";
 import type { Route } from "./+types/sign-up";
+import { PrivacyNoteLink } from "~/components/site/privacy-link";
 
 /** The page offers "Send again" after this long (Auth sends at most one email a minute per address). */
 const RESEND_AFTER_SECONDS = 60;
@@ -137,6 +138,7 @@ export default function SignUp({ loaderData, actionData }: Route.ComponentProps)
         <SubmitButton pending={pending} pendingText={t("account.signUp.creating")} size="lg" className="w-full">
           {t("account.signUp.submit")}
         </SubmitButton>
+        <PrivacyNoteLink />
       </Form>
       <p className="mt-6 border-t border-border pt-4">
         {t("account.signUp.haveAccount")}{" "}

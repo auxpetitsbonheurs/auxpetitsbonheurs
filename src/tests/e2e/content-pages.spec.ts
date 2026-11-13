@@ -1,4 +1,4 @@
-// E-13 S-251 (Contact us), S-252 (Custom order, interim) and S-253 (head and sitemap) in the
+// E-13 S-251 (Contact us), S-252 (Custom order, with the E-08 request form) and S-253 (head and sitemap) in the
 // real app, at 320, 375 and 1280 px. The e2e seed sets placeholder WhatsApp and phone numbers.
 // S-248..S-250 add their pages to PAGES.
 import {
@@ -26,6 +26,9 @@ test.describe("Contact us and Custom order at every width (S-251 AC8, S-252 AC6)
     for (const [lang, url] of [["en", path], ["fr", `/fr${path}`]] as const) {
       test(`${url}: one h1, no horizontal scroll, 44 px targets, keyboard, axe, 200% zoom`, async ({ page }) => {
         await open(page, url);
+        // The request form's calendar (E-08) is a lazy chunk that replaces the native date field
+        // after hydration: check the page once it is there, so the Tab walk sees the final controls.
+        if (path === "/custom-cake") await expect(page.getByRole("grid")).toBeVisible();
 
         await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
         await expect(page.getByRole("heading", { level: 1 })).toHaveText(h1[lang]);

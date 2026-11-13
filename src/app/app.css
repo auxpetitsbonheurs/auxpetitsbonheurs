@@ -247,6 +247,11 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  /*
+   * A single long word (French "Avancement" at 200% zoom on a 320 px phone, E-08 S-158 AC10)
+   * may break rather than push the page sideways; wider screens never reach this.
+   */
+  overflow-wrap: anywhere;
   &::after {
     content: "";
     flex: 1 1 1.5rem;

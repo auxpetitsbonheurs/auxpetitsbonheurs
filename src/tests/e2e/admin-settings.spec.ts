@@ -35,7 +35,8 @@ test.describe("S-058, S-059 Settings", () => {
       await expect(page.getByRole("textbox", { name: /^Phone/ })).toHaveAttribute("type", "tel");
       await expect(page.getByRole("textbox", { name: /^Map link/ })).toHaveAttribute("type", "url");
       await expect(page.getByLabel("Delivery fee (Rs)")).toHaveAttribute("inputmode", "numeric");
-      await expect(page.getByText("Daily email usage: not available yet.")).toBeVisible();
+      // E-10 (emails job): the live count replaces the placeholder.
+      await expect(page.getByText(/^Email usage: \d+ of \d+ today$/)).toBeVisible();
 
       await page.getByLabel("Delivery fee (Rs)").fill("lots");
       await page.getByRole("textbox", { name: "Email (optional)" }).fill("not-an-email");

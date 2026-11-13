@@ -22,6 +22,7 @@ export type OrderEmailKey =
   | "request_declined"
   | "cancellation_confirmed"
   | "quote_closed"
+  | "quote_accepted"
   | "ready_for_pickup"
   | "on_the_way"
   | "thank_you"
@@ -39,6 +40,7 @@ export const ORDER_EMAIL_KEYS: readonly OrderEmailKey[] = [
   "request_declined",
   "cancellation_confirmed",
   "quote_closed",
+  "quote_accepted",
   "ready_for_pickup",
   "on_the_way",
   "thank_you",
@@ -175,6 +177,22 @@ const BUILDERS: Record<OrderEmailKey, Builder> = {
         hello(data),
         { kind: "note", text: t("email.orderReceived.intro", locale, vars(data)) },
         ...itemBlocks(data),
+        whenWhere(data),
+        ...(data.order.status === "awaiting_payment" ? paymentBlocks(data) : []),
+        trackBlock(data),
+        { kind: "p", text: t("email.common.policy", locale) },
+      ],
+    };
+  },
+  // E-08 S-158: the quote was accepted; it is confirmed once paid by Juice (same flow as an order).
+  quote_accepted(data) {
+    const { locale } = data;
+    return {
+      subject: t("email.quoteAccepted.subject", locale, vars(data)),
+      heading: t("email.quoteAccepted.heading", locale),
+      blocks: [
+        hello(data),
+        { kind: "note", text: t("email.quoteAccepted.intro", locale, vars(data)) },
         whenWhere(data),
         ...(data.order.status === "awaiting_payment" ? paymentBlocks(data) : []),
         trackBlock(data),

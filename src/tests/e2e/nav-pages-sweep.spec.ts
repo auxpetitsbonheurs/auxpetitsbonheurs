@@ -48,7 +48,8 @@ test.describe("S-254 phone menu sweep", () => {
       await open(page, localized(lang, "/gallery"));
       await menuButton(page, "Menu").click();
       const dialog = page.getByRole("dialog");
-      await expect(dialog.getByRole("link")).toHaveText(labels);
+      // The 7 site links are the panel's navigation; E-11 adds a Sign in row below it.
+      await expect(dialog.getByRole("navigation").getByRole("link")).toHaveText(labels);
       await expectNoA11yViolations(page);
       await page.emulateMedia({ colorScheme: "dark" });
       await expectNoA11yViolations(page);

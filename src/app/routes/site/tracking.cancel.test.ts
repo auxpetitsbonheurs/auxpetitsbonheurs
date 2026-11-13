@@ -101,7 +101,7 @@ describe("final states and the quote path (S-095 AC1, AC2, AC4)", () => {
     await setOrder("source = 'custom_request', status = 'quote_needed'");
     const data = await load();
 
-    expect(data.progress).toEqual({ steps: ["quote_needed", "quote_sent", "approved", "in_preparation", "out_for_delivery", "completed"], current: 0 });
+    expect(data.progress).toEqual({ steps: ["quote_needed", "quote_sent", "awaiting_payment", "approved", "in_preparation", "out_for_delivery", "completed"], current: 0 });
     expect(data.canCancel).toBe(true);
   });
 });

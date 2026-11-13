@@ -20,6 +20,8 @@ function customerPages(locale: "en" | "fr") {
     route("workshops", "routes/site/workshops.tsx", { id: `workshops-${locale}` }),
     route("gallery", "routes/site/gallery.tsx", { id: `gallery-${locale}` }),
     route("contact", "routes/site/contact.tsx", { id: `contact-${locale}` }),
+    // The short privacy note (S-225, NFR-004), linked from the footer and every form that asks for details.
+    route("privacy", "routes/site/privacy.tsx", { id: `privacy-${locale}` }),
     route("custom-cake", "routes/site/custom-order.tsx", { id: `custom-cake-${locale}` }),
     route("menu/:slug", "routes/site/product.tsx", { id: `product-${locale}` }),
     route("basket", "routes/site/basket.tsx", { id: `basket-${locale}` }),

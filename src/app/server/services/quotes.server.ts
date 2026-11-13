@@ -5,9 +5,11 @@
 // state comes back to explain a refusal. Of two simultaneous changes with one version exactly one
 // matches. Emails are outbox rows (sending is E-10); admin push alerts arrive with E-10 too.
 //
-// Payment hand-off: an accepted quote becomes `approved` and queues `order_confirmed` (Juice number
-// and payment reminder), exactly as an admin approval does today. When the manual Juice payment
-// flow lands it takes over from that same point; no second payment model here.
+// Payment hand-off (Juice payment, S-277..S-281): an accepted quote enters the same flow as a
+// website order: Awaiting payment, with the Juice instructions on the tracking page and in the
+// `quote_accepted` email, the 12 h reminder and 24 h unpaid cancel of `paymentDeadlines` counted
+// from the acceptance (`awaiting_payment_since`, migration 0016), and the admin's "Payment
+// received" (approved + `order_confirmed`). No second payment model.
 import { sql } from "drizzle-orm";
 import type { OrderStatus } from "~/domain/status";
 import type { Database } from "~/server/db.server";
@@ -155,24 +157,26 @@ export interface QuoteAnswerInput {
 }
 
 /**
- * Customer `acceptQuote` (S-158): Quote sent, not expired, same version -> Approved, event
- * `quote_accepted`, "Order confirmed" (the payment hand-off point) and admin alerts. The date is
+ * Customer `acceptQuote` (S-158): Quote sent, not expired, same version -> Awaiting payment
+ * (the Juice flow), event `quote_accepted`, the `quote_accepted` email with how to pay, and admin
+ * alerts. "Order confirmed" follows the admin's Payment received, as for every order. The date is
  * not re-checked (owner decision 10). The amount is the server's, never the page's.
  */
 export async function acceptQuote(db: Database, input: QuoteAnswerInput): Promise<CustomerQuoteResult> {
   const at = input.now.toISOString();
   const { changed, current } = await run(db, sql`
     with changed as (
-      update orders o set status = 'approved', version = ${input.version + 1}::integer, updated_at = ${at}::timestamptz
+      update orders o set status = 'awaiting_payment', awaiting_payment_since = ${at}::timestamptz, payment_reminder_sent_at = null,
+        version = ${input.version + 1}::integer, updated_at = ${at}::timestamptz
       where o.tracking_token = ${input.token} and o.version = ${input.version}::integer and o.status = 'quote_sent'
         and exists (select 1 from custom_request cr where cr.order_id = o.id and cr.quote_expires_on >= ${input.today}::date)
       returning o.id, o.status, o.version, o.contact_email, o.locale
     ), logged as (
       insert into order_event (order_id, actor_type, type, from_status, to_status, created_at)
-      select id, 'customer', 'quote_accepted', 'quote_sent', 'approved', ${at}::timestamptz from changed
+      select id, 'customer', 'quote_accepted', 'quote_sent', 'awaiting_payment', ${at}::timestamptz from changed
     ), queued as (
       insert into email_outbox (template, to_email, locale, payload, order_id, dedupe_key)
-      select 'order_confirmed', contact_email, locale, jsonb_build_object('orderId', id), id, 'order:' || id || ':order_confirmed:v' || version
+      select 'quote_accepted', contact_email, locale, jsonb_build_object('orderId', id), id, 'order:' || id || ':quote_accepted'
       from changed where contact_email is not null
     ), alerted as (${adminAlerts("admin_alert_quote_accepted")})
     select (select json_build_object('status', c.status, 'version', c.version) from changed c) as changed, ${currentByToken(input.token)} as current

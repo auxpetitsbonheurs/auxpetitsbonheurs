@@ -117,13 +117,12 @@ test.describe("S-033 admin frame", () => {
     await expect(page.getByRole("banner")).toContainText("Admin");
   });
 
-  test("AC7: Calendar, Customers, Sales summary and Gallery show Not available yet inside the frame; Today links to orders to review", async ({ page }) => {
+  test("AC7: Calendar, Customers and Gallery show Not available yet inside the frame; Today links to orders to review", async ({ page }) => {
     await signIn(page, E2E_ACCOUNTS.owner, "/admin");
     await expect(page.getByRole("main").getByRole("link", { name: "Orders to review" })).toHaveAttribute("href", "/admin/orders?tab=review");
     for (const [path, title] of [
       ["/admin/calendar", "Calendar"],
       ["/admin/customers", "Customers"],
-      ["/admin/sales", "Sales summary"],
       ["/admin/gallery", "Gallery"],
     ] as const) {
       const response = await page.goto(path);
@@ -133,6 +132,12 @@ test.describe("S-033 admin frame", () => {
       await expect(page.getByRole("link", { name: "Back to Today" })).toBeVisible();
       await expect(bar(page)).toBeVisible();
     }
+    // The Sales summary is built (E-09): its own page inside the frame, not the placeholder.
+    expect((await page.goto("/admin/sales"))!.status()).toBe(200);
+    await expect(page.getByRole("heading", { level: 1, name: "Sales summary" })).toBeVisible();
+    await expect(page.getByRole("tablist", { name: "Period" })).toBeVisible();
+    await expect(page.getByText("Not available yet")).toHaveCount(0);
+    await expect(bar(page)).toBeVisible();
   });
 
   test("AC8: skip link jumps past the bar; keyboard order, visible focus, no clipping or sideways scroll, 44 px targets at 100% and 200%", async ({ page }) => {

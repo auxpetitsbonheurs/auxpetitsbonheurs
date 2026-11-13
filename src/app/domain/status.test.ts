@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { adminAllowed } from "./order-transitions";
 import { ACTIVE_STATUSES, CONFIRMED_STATUSES, ORDER_STATUSES, allowedActions, canCustomerCancel, customerProgress, statusTone, transitionTarget } from "./status";
 
 describe("status groups (contracts.md Conventions)", () => {
@@ -123,10 +124,18 @@ describe("Juice payment transitions (S-279, S-281)", () => {
 describe("quote path (S-095 AC1)", () => {
   test("a custom request starts at Quote needed, then Quote sent, then the fulfilment path", () => {
     expect(customerProgress("quote_sent", "pickup", "custom_request")).toEqual({
-      steps: ["quote_needed", "quote_sent", "approved", "in_preparation", "ready_for_pickup", "completed"],
+      steps: ["quote_needed", "quote_sent", "awaiting_payment", "approved", "in_preparation", "ready_for_pickup", "completed"],
       current: 1,
     });
-    expect(customerProgress("out_for_delivery", "delivery", "custom_request")?.current).toBe(4);
+    // E-08: an accepted quote waits for its Juice payment like a website order.
+    expect(customerProgress("awaiting_payment", "pickup", "custom_request")?.current).toBe(2);
+    expect(customerProgress("out_for_delivery", "delivery", "custom_request")?.current).toBe(5);
+  });
+
+  test("E-08: Send quote is offered in Quote needed and Quote sent; Decline request only in Quote needed", () => {
+    expect(adminAllowed("quote_needed", "pickup")).toMatchObject({ sendQuote: true, declineRequest: true });
+    expect(adminAllowed("quote_sent", "pickup")).toMatchObject({ sendQuote: true, declineRequest: false });
+    for (const status of ["approved", "declined", "closed", "cancelled", "awaiting_payment"] as const) expect(adminAllowed(status, "pickup").sendQuote).toBe(false);
   });
 
   test("a website order never shows the quote steps", () => {

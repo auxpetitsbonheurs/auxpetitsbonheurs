@@ -12,7 +12,7 @@ import { cn } from "~/lib/utils";
 /** One star, drawn inline (no icon chunk shared with other routes). */
 function StarIcon({ filled }: { filled: boolean }) {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className={cn("size-5", filled ? "fill-current text-gold" : "fill-none text-muted-foreground")} stroke="currentColor" strokeWidth={1.5}>
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} className={cn("size-5", filled ? "text-gold" : "text-muted-foreground")} stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinejoin="round" d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3l-5.5 2.9 1-6.2L3 9.6l6.2-.9L12 3Z" />
     </svg>
   );

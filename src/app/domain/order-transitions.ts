@@ -14,6 +14,7 @@ export type TransitionEmail =
   | "quote"
   | "cancellation_confirmed"
   | "quote_closed"
+  | "quote_accepted"
   | "ready_for_pickup"
   | "on_the_way"
   | "thank_you";
@@ -94,7 +95,9 @@ const ADMIN_RULES: Record<AdminAction, TransitionRule[]> = {
 };
 
 const CUSTOMER_RULES: Record<CustomerAction, TransitionRule[]> = {
-  acceptQuote: [{ from: "quote_sent", to: "approved", email: "order_confirmed", event: "quote_accepted" }],
+  // E-08 (Juice payment hand-off): an accepted quote waits for its payment like a website order;
+  // Payment received then approves it and sends order_confirmed.
+  acceptQuote: [{ from: "quote_sent", to: "awaiting_payment", email: "quote_accepted", event: "quote_accepted" }],
   declineQuote: [{ from: "quote_sent", to: "closed", email: "quote_closed", event: "quote_declined" }],
   expireQuote: [{ from: "quote_sent", to: "closed", email: "quote_closed", event: "quote_expired" }],
   // Tracking page (S-096): before the order is paid or approved; `domain/status` adds "and unpaid".

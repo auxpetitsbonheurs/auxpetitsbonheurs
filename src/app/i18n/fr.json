@@ -644,7 +644,7 @@
         "quote_sent": "Devis envoyé par {{actor}}, {{time}}",
         "quote_accepted": "Devis accepté par {{actor}}, {{time}}",
         "quote_declined": "Devis refusé par {{actor}}, {{time}}",
-        "quote_expired": "Devis expiré, {{time}}",
+        "quote_expired": "Devis expiré, fermé par {{actor}}, {{time}}",
         "status_advanced": "Passée à « {{status}} » par {{actor}}, {{time}}",
         "status_reverted": "Revenue à « {{status}} » par {{actor}}, {{time}}",
         "marked_paid": "Marquée payée par {{actor}}, {{time}}",
@@ -1769,6 +1769,35 @@
       "badge_other": "{{count}} avis à valider",
       "moreRow": "Avis",
       "toApprove": "De retour dans À valider."
+    },
+    "request": {
+      "title": "Demande sur mesure",
+      "photosTitle": "Photos de référence",
+      "noPhotos": "Aucune photo",
+      "photoAlt": "Photo de référence {{n}}",
+      "openPhoto": "Ouvrir la photo {{n}} sur {{total}}",
+      "photoTitle": "Photo {{n}} sur {{total}}",
+      "photoUnavailable": "La photo {{n}} n'a pas pu s'afficher. Rechargez la page.",
+      "close": "Fermer",
+      "quoteTitle": "Devis",
+      "noQuote": "Aucun devis envoyé pour l'instant.",
+      "expiresOn": "Valable jusqu'au",
+      "sendQuote": "Envoyer le devis",
+      "sendNewQuote": "Envoyer un nouveau devis",
+      "sending": "Envoi du devis…",
+      "quoteSent": "Devis envoyé",
+      "amount": "Prix de toute la commande (Rs)",
+      "amountHint": "Livraison comprise si le client l'a choisie. Entre Rs 1 et Rs 1 000 000.",
+      "note": "Message au client",
+      "noteHint": "1000 caractères maximum, envoyé avec le devis.",
+      "expiry": "Valable jusqu'au",
+      "expiryHint": "Le client peut accepter jusqu'à 23 h 59 ce jour-là (heure de Maurice).",
+      "expiryAfterEvent": "Cette date est après la date du gâteau ({{date}}). Vous pouvez quand même l'envoyer.",
+      "errors": {
+        "amountRs": "Indiquez un prix entre Rs 1 et Rs 1 000 000",
+        "note": "Le message doit faire moins de 1000 caractères",
+        "expiresOn": "Choisissez aujourd'hui ou une date plus tard"
+      }
     }
   },
   "email": {
@@ -1972,6 +2001,11 @@
         "button": "Accepter l'invitation"
       },
       "footer": "Envoyé par {{bakery}}. Merci de ne pas répondre à cet e-mail."
+    },
+    "quoteAccepted": {
+      "subject": "Devis accepté : payez pour confirmer {{number}}",
+      "heading": "Merci, vous avez accepté notre devis",
+      "intro": "Votre gâteau {{number}} est confirmé dès réception de votre paiement Juice. Voici comment payer."
     }
   },
   "nav": {
@@ -2264,7 +2298,7 @@
       "declineBody": "Nous fermerons votre demande. Vous pourrez toujours en envoyer une nouvelle.",
       "declineConfirm": "Oui, refuser",
       "cancel": "Garder le devis",
-      "accepted": "Merci, votre gâteau est confirmé.",
+      "accepted": "Merci, devis accepté. Payez par Juice ci-dessous pour confirmer votre gâteau.",
       "declined": "Votre demande est fermée. Merci de nous avoir prévenus.",
       "expired": "Ce devis a expiré. Envoyez une nouvelle demande ou écrivez-nous sur WhatsApp",
       "changed": "Ce devis a été modifié, rechargez pour voir le nouveau montant",
@@ -2275,7 +2309,8 @@
       "newRequest": "Envoyer une nouvelle demande",
       "seeMenu": "Voir notre carte",
       "requestTitle": "Votre demande",
-      "servings": "{{count}} personnes"
+      "servings": "{{count}} personnes",
+      "close": "Fermer"
     }
   },
   "account": {
@@ -2503,5 +2538,70 @@
     "tooMany": "Trop de modifications, patientez {{count}} min.",
     "forbidden": "Les avis sont réservés aux comptes clients. Connectez-vous avec votre compte client.",
     "errorSummaryTitle": "Vérifiez ces champs"
+  },
+  "privacyLink": {
+    "text": "Comment nous utilisons vos informations :",
+    "link": "note de confidentialité",
+    "footer": "Confidentialité"
+  },
+  "privacy": {
+    "title": "Note de confidentialité",
+    "metaDescription": "Ce qu'Aux petits bonheurs recueille quand vous commandez, pourquoi, qui le voit, combien de temps nous le gardons et comment en demander la suppression.",
+    "intro": "Nous sommes une petite pâtisserie à domicile. Nous demandons seulement ce qu'il faut pour préparer, livrer et vous parler de votre commande, et nous ne le vendons ni ne le partageons jamais pour de la publicité.",
+    "updated": "Mise à jour le {{date}}",
+    "toConfirm": "à confirmer",
+    "who": {
+      "heading": "Qui est responsable",
+      "body": "Aux petits bonheurs décide de l'usage de vos informations (le responsable du traitement).",
+      "name": "Nom de l'entreprise : {{value}}",
+      "address": "Adresse : {{value}}",
+      "brn": "Numéro d'enregistrement (BRN) : {{value}}"
+    },
+    "collect": {
+      "heading": "Ce que nous recueillons et pourquoi",
+      "order": "Quand vous commandez : votre nom, téléphone, e-mail, adresse et repère de livraison (pour une livraison), votre note et ce que vous commandez. Ils nous servent à préparer et livrer la commande et à vous contacter à son sujet.",
+      "request": "Quand vous demandez un gâteau sur mesure : les mêmes informations, l'occasion, vos idées et jusqu'à 5 photos. Elles nous servent à préparer un devis et le gâteau.",
+      "account": "Si vous créez un compte : votre nom, e-mail, téléphone et adresses enregistrées, pour ne pas les retaper et voir vos commandes. Votre mot de passe est géré par notre service de connexion ; nous ne le voyons jamais.",
+      "review": "Si vous laissez un avis : votre note, votre commentaire et votre prénom avec l'initiale du nom, affichés sur le site une fois l'avis approuvé par la pâtisserie.",
+      "technical": "Pour éviter les abus : une forme brouillée (hachée) de votre adresse internet et de votre e-mail, gardée un jour. Nos journaux serveur ne contiennent ni nom, ni e-mail, ni téléphone, ni lien de commande."
+    },
+    "see": {
+      "heading": "Qui voit vos informations",
+      "body": "Seulement l'équipe de la pâtisserie, connectée à l'application d'administration. Les autres clients ne les voient jamais. Ces services les stockent ou les transmettent pour nous, et uniquement pour cela :",
+      "supabase": "Supabase : base de données, connexion et stockage des photos (hébergé à {{region}}).",
+      "cloudflare": "Cloudflare : le site et la vérification anti-robot des formulaires.",
+      "resend": "Resend : l'envoi de nos e-mails.",
+      "google": "Google Drive : les sauvegardes hebdomadaires de la pâtisserie.",
+      "abroad": "Certains de ces services sont hors de Maurice."
+    },
+    "cookies": {
+      "heading": "Cookies",
+      "body": "Nous utilisons seulement les cookies nécessaires au site : votre panier, votre connexion, votre langue, un bandeau de promotion masqué et une courte note sur la page de confirmation de commande. Le navigateur garde aussi une copie du menu pour ouvrir les pages plus vite. Aucun cookie de publicité ou de suivi : il n'y a rien à accepter."
+    },
+    "links": {
+      "heading": "Le lien de votre commande",
+      "body": "Nos e-mails contiennent un lien privé vers la page de votre commande. Toute personne qui a ce lien peut voir la commande et utiliser ses boutons (par exemple l'annuler) : merci de ne pas transférer l'e-mail."
+    },
+    "keep": {
+      "heading": "Combien de temps nous les gardons",
+      "proposed": "Ces durées sont la proposition de la pâtisserie et restent à confirmer.",
+      "orders": "Les commandes et leurs coordonnées : {{years}} ans après la date de commande (pour la comptabilité), puis les informations personnelles sont effacées.",
+      "account": "Votre compte : jusqu'à ce que vous nous demandiez de le supprimer.",
+      "photos": "Les photos des gâteaux sur mesure : {{days}} jours après la clôture de la demande. Les photos envoyées mais non jointes à une demande : {{hours}} heures.",
+      "emails": "Le contenu des e-mails : {{days}} jours.",
+      "reviews": "Les avis : jusqu'à ce que vous supprimiez le vôtre ou nous le demandiez.",
+      "backups": "Les sauvegardes : les {{weeks}} dernières copies hebdomadaires."
+    },
+    "rights": {
+      "heading": "Vos choix",
+      "body": "Vous pouvez demander à voir les informations que nous avons sur vous, à les corriger ou à les supprimer. Écrivez-nous : la pâtisserie répond sous {{days}} jours. Quand nous supprimons vos informations, les montants des commandes passées restent dans nos chiffres de ventes, sans nom.",
+      "whatsapp": "WhatsApp {{value}}",
+      "email": "E-mail {{value}}"
+    },
+    "law": {
+      "heading": "La loi",
+      "body": "Nous suivons la loi mauricienne de 2017 sur la protection des données (Data Protection Act 2017, {{status}}). Si notre réponse ne vous convient pas, vous pouvez contacter le Data Protection Office de Maurice.",
+      "confirmed": "confirmé par la pâtisserie"
+    }
   }
 }

@@ -38,7 +38,8 @@ export async function loadOrderEmailData(db: Executor, orderIds: readonly string
         refundDueRs: order.refundDueRs,
         declineReason: order.declineReason,
         trackingToken: order.trackingToken,
-        createdAt: order.createdAt,
+        // The Juice deadline counts from here: an accepted quote waits from its acceptance (E-08).
+        createdAt: order.awaitingPaymentSince ?? order.createdAt,
       },
       items: lines
         .filter((line) => line.orderId === order.id)

@@ -20,6 +20,7 @@ import { findSaveDetailsOrder } from "~/server/repos/customer-accounts.server";
 import { consumeSignUp, saveDetailsAccount } from "~/server/services/customer-auth.server";
 import { recordUsage } from "~/server/usage.server";
 import type { Route } from "./+types/save-details";
+import { PrivacyNoteLink } from "~/components/site/privacy-link";
 
 async function orderFor(args: Route.LoaderArgs | Route.ActionArgs, token: unknown) {
   // A malformed token never reaches the database; unknown and wrong answer alike (AC6).
@@ -95,6 +96,7 @@ export default function SaveDetails({ loaderData, actionData }: Route.ComponentP
         <SubmitButton pending={pending} pendingText={t("account.signUp.creating")} size="lg" className="w-full">
           {t("account.saveDetails.submit")}
         </SubmitButton>
+        <PrivacyNoteLink className="mt-2" />
       </Form>
       <p className="mt-4 text-sm text-muted-foreground">{t("account.saveDetails.note")}</p>
     </AuthCard>

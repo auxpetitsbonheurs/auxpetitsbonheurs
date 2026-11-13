@@ -43,7 +43,7 @@ export interface OrderConfirmation {
 export async function findOrderConfirmation(db: Executor, token: string, leftOutIds: readonly string[]): Promise<OrderConfirmation | undefined> {
   const { rows } = (await db.execute(sql`
     select o.id as "orderId", o.number, o.tracking_token as "trackingToken", o.locale, coalesce(o.number_prefix, s.order_number_prefix) as "orderNumberPrefix",
-      o.status, o.total_rs as "totalRs", o.created_at as "createdAt", s.juice_name as "juiceName", s.juice_number as "juiceNumber", s.payment_whatsapp as "paymentWhatsapp",
+      o.status, o.total_rs as "totalRs", coalesce(o.awaiting_payment_since, o.created_at) as "createdAt", s.juice_name as "juiceName", s.juice_number as "juiceNumber", s.payment_whatsapp as "paymentWhatsapp",
       o.source = 'custom_request' as "isRequest",
       coalesce((
         select json_agg(json_build_object('id', p.id, 'name', json_build_object('en', p.name_en, 'fr', p.name_fr)))
@@ -137,7 +137,7 @@ export async function findTrackedOrder(db: Executor, token: string, bucket: Coun
     ), found as (
       select o.id, o.number, o.locale, o.source, o.status, o.fulfilment, to_char(o.fulfil_on, 'YYYY-MM-DD') as "fulfilOn", o.time_window as "window",
         o.address, o.landmark, o.items_total_rs as "itemsTotalRs", o.delivery_fee_rs as "deliveryFeeRs", o.total_rs as "totalRs",
-        o.paid, o.version, o.created_at as "createdAt", o.cancel_reason as "cancelReason", o.decline_reason as "declineReason",
+        o.paid, o.version, coalesce(o.awaiting_payment_since, o.created_at) as "createdAt", o.cancel_reason as "cancelReason", o.decline_reason as "declineReason",
         o.refund_due_rs as "refundDueRs", o.refunded_at as "refundedAt", coalesce(o.number_prefix, s.order_number_prefix) as "orderNumberPrefix",
         s.juice_name as "juiceName", s.juice_number as "juiceNumber", s.payment_whatsapp as "paymentWhatsapp", s.contact_whatsapp as "contactWhatsapp",
         coalesce((

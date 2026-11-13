@@ -94,14 +94,8 @@ function stream(chunks: AsyncGenerator<string>): ReadableStream<Uint8Array> {
 }
 
 export async function loader(args: Route.LoaderArgs) {
-  let me;
-  try {
-    me = await requireAdmin(args);
-  } catch (refusal) {
-    // A resource route answers a real Response: the sign-in redirect, never data.
-    if (refusal instanceof Response) return refusal;
-    throw refusal;
-  }
+  // Thrown, like every admin module: anonymous visitors and customers get the sign-in redirect, never data.
+  const me = await requireAdmin(args);
   const parsed = Query.safeParse(Object.fromEntries(args.url.searchParams));
   const today = todayMU(args.context.get(clockContext).now());
   const resolved = parsed.success ? resolveSalesRange(parsed.data, today) : null;

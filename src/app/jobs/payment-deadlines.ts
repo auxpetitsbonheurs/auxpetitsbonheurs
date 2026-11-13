@@ -19,7 +19,7 @@ async function cancelUnpaid(db: Database, now: Date): Promise<number> {
   const { rows } = (await db.execute(sql`
     with cancelled as (
       update orders set status = 'cancelled', cancel_reason = 'unpaid', version = version + 1, updated_at = ${at}::timestamptz
-      where status = 'awaiting_payment' and created_at <= ${before(now, PAYMENT_DEADLINE_MS)}::timestamptz
+      where status = 'awaiting_payment' and coalesce(awaiting_payment_since, created_at) <= ${before(now, PAYMENT_DEADLINE_MS)}::timestamptz
       returning id, contact_email, locale
     ), logged as (
       insert into order_event (order_id, actor_type, type, from_status, to_status, details, created_at)
@@ -42,8 +42,8 @@ async function remindUnpaid(db: Database, now: Date): Promise<number> {
     with reminded as (
       update orders set payment_reminder_sent_at = ${at}::timestamptz
       where status = 'awaiting_payment' and payment_reminder_sent_at is null
-        and created_at <= ${before(now, PAYMENT_REMINDER_AFTER_MS)}::timestamptz
-        and created_at > ${before(now, PAYMENT_DEADLINE_MS)}::timestamptz
+        and coalesce(awaiting_payment_since, created_at) <= ${before(now, PAYMENT_REMINDER_AFTER_MS)}::timestamptz
+        and coalesce(awaiting_payment_since, created_at) > ${before(now, PAYMENT_DEADLINE_MS)}::timestamptz
       returning id, contact_email, locale
     ), logged as (
       insert into order_event (order_id, actor_type, type, created_at)

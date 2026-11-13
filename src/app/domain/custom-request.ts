@@ -70,3 +70,31 @@ export function isQuoteExpired(expiresOn: string, todayMu: string): boolean {
 export function canRespondToQuote(status: OrderStatus, expiresOn: string | null, todayMu: string): boolean {
   return status === "quote_sent" && expiresOn !== null && !isQuoteExpired(expiresOn, todayMu);
 }
+
+/** A quote as stored: the whole price, the optional note and the last valid day. */
+export interface QuoteSnapshot {
+  amountRs: number;
+  note: string | null;
+  expiresOn: string;
+}
+
+/** One reference photo on the admin screen: a signed (or public gallery) URL, null when it could not be signed. */
+export interface AdminRequestPhoto {
+  url: string | null;
+  fromGallery: boolean;
+}
+
+/** The custom request part of the admin order screen (E-08 S-155, S-156). */
+export interface AdminRequestView {
+  occasion: string | null;
+  servings: number | null;
+  flavours: string | null;
+  theme: string | null;
+  cakeText: string | null;
+  budgetRs: number | null;
+  details: string | null;
+  quote: QuoteSnapshot | null;
+  photos: AdminRequestPhoto[];
+  /** The sheet's expiry: today + Settings quote validity (contracts.md `quoteDefaults`). */
+  quoteDefaults: { expiresOn: string };
+}

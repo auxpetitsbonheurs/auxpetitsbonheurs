@@ -56,7 +56,8 @@ export type OrderSource = "website" | "custom_request" | "manual";
 
 /** A custom request starts with its quote: Quote needed, Quote sent, then the fulfilment path (S-095 AC1). */
 function quotePath(fulfilment: Fulfilment): OrderStatus[] {
-  return ["quote_needed", "quote_sent", ...websitePath(fulfilment, "pending_approval").slice(1)];
+  // E-08: an accepted quote is paid by Juice like a website order (Awaiting payment first).
+  return ["quote_needed", "quote_sent", ...websitePath(fulfilment, "awaiting_payment")];
 }
 
 /**

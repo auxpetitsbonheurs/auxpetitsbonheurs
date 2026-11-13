@@ -5,6 +5,7 @@ import { useI18n } from "~/i18n/react";
 import { PlainText } from "~/components/site/plain-text";
 import { formatRupees } from "~/lib/locale";
 import type { FieldErrors } from "./fulfilment-section";
+import { PrivacyNoteLink } from "~/components/site/privacy-link";
 
 export interface SummaryItem {
   lineId: string;
@@ -70,6 +71,7 @@ export function PolicyAcceptance({ policies, error, initial }: { policies: strin
         <PlainText text={policies} className="mt-2" />
         <p className="mt-2 max-w-measure text-sm">{t("checkout.privacyNote")}</p>
       </details>
+      <PrivacyNoteLink />
     </div>
   );
 }
