@@ -4,10 +4,12 @@
 // only: no admin fields, no hidden products, no order or customer data (threat-model D13).
 import { DAY_HORIZON } from "~/domain/availability";
 import { addDays, todayMU } from "~/domain/time";
-import type { Menu, MenuEntry } from "~/domain/menu";
+import type { Menu, MenuEntry, MenuPromo } from "~/domain/menu";
+import { rankedOffers } from "~/domain/promotions";
 import { webPhoto } from "~/lib/images";
 import type { Database } from "~/server/db.server";
 import { listMenuProducts } from "~/server/repos/catalogue.server";
+import { type SitePromotion, getSitePromotions } from "~/server/repos/promotions.server";
 import { getSiteSettings } from "~/server/repos/settings.server";
 
 /** The ETag: a hash of everything but the read time, so an unchanged menu answers 304. */
@@ -20,13 +22,20 @@ export async function menuVersion(menu: Omit<Menu, "generatedAt">): Promise<stri
 export interface MenuSources {
   db: Database;
   supabaseUrl: string;
-  /** The request clock (Mauritius date for the checkout). */
+  /** The request clock (Mauritius date for the checkout, live promotions). */
   now: Date;
+  /** A test fixed the clock: promotions are read fresh (server/clock.server `fixed`). */
+  fixedClock?: boolean;
 }
 
-export async function loadMenu({ db, supabaseUrl, now }: MenuSources): Promise<MenuEntry> {
-  // Display only: Settings come from the isolate cache (60 s); placeOrder reads them fresh.
-  const [records, settings] = await Promise.all([listMenuProducts(db), getSiteSettings(db)]);
+/** The product's live promotions at `now`, best first, for the page to apply until each ends (S-082). */
+function menuPromos(productId: string, basePriceRs: number, promotions: readonly SitePromotion[], now: Date): MenuPromo[] {
+  return rankedOffers(productId, basePriceRs, promotions, now).map((o) => ({ id: o.promotionId, salePriceRs: o.salePriceRs, endsAt: o.endsAt }));
+}
+
+export async function loadMenu({ db, supabaseUrl, now, fixedClock }: MenuSources): Promise<MenuEntry> {
+  // Display only: Settings and promotions come from the isolate cache (60 s); placeOrder reads them fresh.
+  const [records, settings, promotions] = await Promise.all([listMenuProducts(db), getSiteSettings(db), getSitePromotions(db, { now: () => now, fixed: fixedClock })]);
   const { orderNumberPrefix: _private, ...shown } = settings.checkout;
   const today = todayMU(now);
   // Only the blocks the picker can meet (today to the horizon), as ranges (S-083, FR-014).
@@ -45,6 +54,7 @@ export async function loadMenu({ db, supabaseUrl, now }: MenuSources): Promise<M
     optionGroups: r.optionGroups,
     season: r.season,
     noticeDays: r.noticeDays,
+    promos: menuPromos(r.id, r.basePriceRs, promotions, now),
   }));
   const body = { products, checkout, today, limits: { cakeMessageMax: settings.cakeMessageMax } };
   // Real time, not the (test) request clock: it only orders copies of the menu.

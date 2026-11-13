@@ -15,4 +15,9 @@ export interface CustomerProduct {
   status: "available" | "sold_out";
   minQuantity: number | null;
   basePriceRs: number;
+  /** The lowest live promotion price for the base (S-082, FR-016/FR-017), or null; options are never discounted. */
+  salePriceRs: number | null;
+  promotionId: string | null;
+  /** The applied promotion's title and end instant (ISO, exclusive) for "Offer ends" (S-066 AC4), or null. */
+  promotion: { title: LocalizedName; endsAt: string } | null;
 }

@@ -19,6 +19,7 @@ import { AddToBasketInput, addToBasketFields } from "~/server/contracts/site";
 import { requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { findOrderableProduct, findProductPageBySlug, findRenamedSlug } from "~/server/repos/catalogue.server";
+import { getSitePromotions } from "~/server/repos/promotions.server";
 import { getSiteSettings } from "~/server/repos/settings.server";
 import { earliestDate } from "~/domain/availability";
 import { PRODUCT_GONE, ProductGone, ProductDetails } from "~/components/site/product-details";
@@ -50,20 +51,25 @@ async function redirectRenamed(context: Route.LoaderArgs["context"], url: URL, s
  */
 export async function loader({ params, context, url }: Route.LoaderArgs) {
   const db = context.get(requestDbContext).db;
-  const [found, settings] = await Promise.all([
+  const clock = context.get(clockContext);
+  const [found, settings, promotions] = await Promise.all([
     timed(context, "product", () => findProductPageBySlug(db, params.slug)),
     timed(context, "settings", () => getSiteSettings(db)),
+    // Cached per isolate; which one is live is judged now, so a sale ends on its exact instant (S-082).
+    timed(context, "promotions", () => getSitePromotions(db, clock)),
     // The server renders the ordering area in the HTML (works without JavaScript): see ProductOrderForm.
     loadOrderForm(),
   ]);
   if (!found) return redirectRenamed(context, url, params.slug);
   const { record, availability } = found;
-  const today = todayMU(context.get(clockContext).now());
+  const now = clock.now();
+  const today = todayMU(now);
   const problem = productProblem({ ...record, season: availability.season }, today);
   if (problem === "hidden" || problem === "out_of_season") throw data(PRODUCT_GONE, { status: 404 });
   return {
     // S-066: the option groups for the ordering area; S-067: the Settings message limit.
-    product: { ...customerProduct(record, context.get(publicConfigContext).supabaseUrl), optionGroups: record.optionGroups },
+    // S-082 / S-066 AC4: the live offer (lowest price, no stacking) with its end for "Offer ends".
+    product: { ...customerProduct(record, context.get(publicConfigContext).supabaseUrl, { promotions, now }), optionGroups: record.optionGroups },
     cakeMessageMax: settings.cakeMessageMax,
     // The date picker's own rules (domain/availability), for this product alone: the page and the
     // picker never disagree (its notice, its season, closed and blocked days, the 90-day horizon).
@@ -172,9 +178,11 @@ const takesMessage = (product: { type: string; optionGroups: { kind: string }[] 
 export default function Product({ loaderData, actionData }: Route.ComponentProps) {
   const { t, locale } = useI18n();
   const { product, cakeMessageMax } = loaderData;
-  const shown = productView(product, locale);
+  const shown = productView(product, locale, t);
   // With options the heading price is the cheapest configuration ("From Rs X"); the live price is in the ordering area.
-  const heading = product.optionGroups.length > 0 ? { ...shown, price: t("productOptions.fromPrice", { price: formatRupees(fromPriceRs(product)) }) } : shown;
+  const from = (promo: Parameters<typeof fromPriceRs>[1]) => t("productOptions.fromPrice", { price: formatRupees(fromPriceRs(product, promo)) });
+  const offer = product.promotionId && product.salePriceRs !== null ? { promotionId: product.promotionId, salePriceRs: product.salePriceRs } : null;
+  const heading = product.optionGroups.length > 0 ? { ...shown, price: from(offer), wasPrice: offer ? from(null) : null } : shown;
   const refusal = actionData && !actionData.ok ? { message: actionData.error.message, fields: actionData.error.fields, selection: (actionData as { selection?: Omit<LineInput, "productId"> | null }).selection ?? undefined } : undefined;
   return (
     <ProductArticle shown={heading} details={<ProductDetails allergens={product.allergens} earliestDate={loaderData.earliestDate} seasonEndsOn={loaderData.seasonEndsOn} />}>

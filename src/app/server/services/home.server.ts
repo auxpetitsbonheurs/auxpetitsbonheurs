@@ -1,10 +1,10 @@
 // `site/home` (FR-004, S-063): what the Home page shows, from the public menu query (the same
 // rows as /menu, so a category or card never points at something the menu hides), the cached
 // Settings (tagline, hero photo, featured ids), the live promotion cards and the first gallery
-// photos. Cold isolate: two round trips (menu + promotions; Settings and gallery are cached).
-import { and, asc, desc, eq, gt, inArray, lte, ne } from "drizzle-orm";
-import { product, promotion } from "~/db/schema";
+// photos. Cold isolate: two round trips (menu + promotions; Settings and gallery are cached;
+// promotions are cached too and judged live per request with domain/promotions, S-082).
 import { COLLECTION_TYPE_ORDER, collectionSections, fromPriceRs } from "~/domain/collection";
+import { bestPromotion, liveCards } from "~/domain/promotions";
 import type { HomeData, HomeProduct, HomePromoCard } from "~/domain/home";
 import type { MenuProduct } from "~/domain/menu";
 import { isInSeason } from "~/domain/season";
@@ -13,6 +13,8 @@ import type { Locale } from "~/lib/locale";
 import { publicImageUrl, webPhoto } from "~/lib/images";
 import type { Database } from "~/server/db.server";
 import { type MenuProductRecord, listMenuProducts } from "~/server/repos/catalogue.server";
+import { promotionHref } from "~/server/banner.server";
+import { type SitePromotion, getSitePromotions } from "~/server/repos/promotions.server";
 import { getSiteSettings } from "~/server/repos/settings.server";
 import { getGalleryPhotos } from "~/server/services/site-page.server";
 
@@ -32,6 +34,8 @@ interface HomeSources {
   db: Database;
   supabaseUrl: string;
   now: Date;
+  /** A test fixed the clock: promotions are read fresh (server/clock.server `fixed`). */
+  fixedClock?: boolean;
   locale: Locale;
   /** Names a gallery photo with no caption (localised by the caller). */
   galleryAlt: string;
@@ -52,58 +56,39 @@ function toMenuProduct(record: MenuProductRecord, supabaseUrl: string): MenuProd
   };
 }
 
-function card(p: MenuProduct): HomeProduct {
-  return { id: p.id, slug: p.slug, name: p.name, photo: p.photos[0] ?? null, fromPriceRs: fromPriceRs(p), soldOut: p.status === "sold_out" };
+/** A product card; a live offer (S-082) gives the sale "from" and keeps the original to strike (not when sold out). */
+function card(p: MenuProduct, promotions: readonly SitePromotion[], now: Date): HomeProduct {
+  const soldOut = p.status === "sold_out";
+  const offer = soldOut ? null : bestPromotion(p.id, p.basePriceRs, promotions, now);
+  const original = fromPriceRs(p);
+  return { id: p.id, slug: p.slug, name: p.name, photo: p.photos[0] ?? null, fromPriceRs: fromPriceRs(p, offer), originalFromPriceRs: offer ? original : null, soldOut };
 }
 
 const firstPhoto = (products: readonly MenuProduct[]) => products.find((p) => p.photos[0])?.photos[0] ?? null;
 
-/** Live = active and starts_at <= now < ends_at (FR-016); cards = placement card or both. */
-async function livePromoCards(db: Database, now: Date) {
-  return db
-    .select({
-      id: promotion.id,
-      titleEn: promotion.titleEn,
-      titleFr: promotion.titleFr,
-      textEn: promotion.textEn,
-      textFr: promotion.textFr,
-      imagePath: promotion.imagePath,
-      linkKind: promotion.linkKind,
-      linkCategory: promotion.linkCategory,
-      productSlug: product.slug,
-    })
-    .from(promotion)
-    .leftJoin(product, and(eq(product.id, promotion.linkProductId), ne(product.status, "hidden")))
-    .where(and(eq(promotion.active, true), lte(promotion.startsAt, now), gt(promotion.endsAt, now), inArray(promotion.placement, ["card", "both"])))
-    .orderBy(desc(promotion.startsAt), asc(promotion.id));
+/** Category links go to the section when the menu shows that type, else to the menu's top. */
+function promoHref(promo: SitePromotion, shownTypes: ReadonlySet<string>): string | null {
+  if (promo.linkKind === "category" && promo.linkCategory && !shownTypes.has(promo.linkCategory)) return "/menu";
+  return promotionHref(promo);
 }
 
-type PromoRow = Awaited<ReturnType<typeof livePromoCards>>[number];
-
-function promoHref(row: PromoRow, shownTypes: ReadonlySet<string>): string | null {
-  if (row.linkKind === "custom_request") return "/custom-cake";
-  if (row.linkKind === "product" && row.productSlug) return `/menu/${encodeURIComponent(row.productSlug)}`;
-  if (row.linkKind === "category" && row.linkCategory) return shownTypes.has(row.linkCategory) ? `/menu#type-${row.linkCategory}` : "/menu";
-  return null;
-}
-
-function promoCard(row: PromoRow, supabaseUrl: string, shownTypes: ReadonlySet<string>): HomePromoCard {
-  const text = row.textEn && row.textEn.trim() !== "" ? { en: row.textEn, ...(row.textFr ? { fr: row.textFr } : {}) } : null;
+function promoCard(promo: SitePromotion, supabaseUrl: string, shownTypes: ReadonlySet<string>): HomePromoCard {
+  const text = promo.text ? { en: promo.text.en, ...(promo.text.fr ? { fr: promo.text.fr } : {}) } : null;
   return {
-    id: row.id,
-    title: { en: row.titleEn, ...(row.titleFr ? { fr: row.titleFr } : {}) },
+    id: promo.id,
+    title: { en: promo.title.en, ...(promo.title.fr ? { fr: promo.title.fr } : {}) },
     text,
-    photo: row.imagePath ? { url: publicImageUrl(row.imagePath, supabaseUrl), ...HERO_BOX } : null,
-    href: promoHref(row, shownTypes),
+    photo: promo.imagePath ? { url: publicImageUrl(promo.imagePath, supabaseUrl), ...HERO_BOX } : null,
+    href: promoHref(promo, shownTypes),
   };
 }
 
 /** Home from the menu rows, Settings, promotions and gallery read. Pure past the reads. */
-export async function loadHome({ db, supabaseUrl, now, locale, galleryAlt }: HomeSources): Promise<HomeData> {
-  const [records, settings, promos, gallery] = await Promise.all([
+export async function loadHome({ db, supabaseUrl, now, fixedClock, locale, galleryAlt }: HomeSources): Promise<HomeData> {
+  const [records, settings, promotions, gallery] = await Promise.all([
     listMenuProducts(db),
     getSiteSettings(db),
-    livePromoCards(db, now),
+    getSitePromotions(db, { now: () => now, fixed: fixedClock }),
     getGalleryPhotos(db, locale, supabaseUrl, galleryAlt),
   ]);
   const today = todayMU(now);
@@ -124,9 +109,10 @@ export async function loadHome({ db, supabaseUrl, now, locale, galleryAlt }: Hom
   return {
     hero: { tagline: settings.home.tagline, photo: heroPhoto },
     categories,
-    promoCards: promos.map((row) => promoCard(row, supabaseUrl, shownTypes)),
-    seasonal: seasonal.map(card),
-    featured: featured.map(card),
+    // FR-004: live card or both promotions, latest start first; gone from the first request at their end.
+    promoCards: liveCards(promotions, now).map((promo) => promoCard(promo, supabaseUrl, shownTypes)),
+    seasonal: seasonal.map((p) => card(p, promotions, now)),
+    featured: featured.map((p) => card(p, promotions, now)),
     gallery: gallery.ok ? gallery.photos.slice(0, GALLERY_PREVIEW) : [],
   };
 }

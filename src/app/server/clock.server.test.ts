@@ -23,6 +23,8 @@ describe("createClock (S-005 AC6: injectable clock, test mode only)", () => {
     );
 
     expect(clock.now().toISOString()).toBe(FIXED);
+    expect(clock.fixed).toBe(true);
+    expect(createClock({ testClock: true }, request(), realNow).fixed).toBe(false);
   });
 
   test("falls back to the real clock when the cookie is missing or not an instant", () => {

@@ -1,12 +1,13 @@
 // Home page sections (S-063, FR-004) in the Owner's burgundy reference: hero, the three
 // promises, "Our collection" category cards, product rows, How it works, the custom-cake band
 // and the gallery preview. Each section renders nothing when it has no data (AC3).
+import { CardPrice } from "~/components/site/card-price";
 import { ArrowRight, Cake, CircleSlash, Cookie, Heart, Leaf, Truck } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { localized } from "~/i18n/localized";
 import { useI18n } from "~/i18n/react";
-import { formatRupees, localePath } from "~/lib/locale";
+import { localePath } from "~/lib/locale";
 import type { HomeCategory, HomeData, HomePhoto, HomeProduct, HomePromoCard } from "~/domain/home";
 import { CARD_SIZES, CATEGORY_SIZES, GALLERY_PREVIEW_SIZES, HERO_SIZES } from "~/lib/photo-sizes";
 
@@ -177,7 +178,7 @@ function ProductCard({ product }: { product: HomeProduct }) {
             {name}
           </Link>
         </h3>
-        <p className="text-sm font-semibold whitespace-nowrap text-primary-strong tabular-nums">{t("collection.fromPrice", { price: formatRupees(product.fromPriceRs, locale) })}</p>
+        <CardPrice fromRs={product.fromPriceRs} wasFromRs={product.originalFromPriceRs} />
         {product.soldOut && (
           <p className="inline-flex items-center gap-1 text-sm font-semibold">
             <CircleSlash aria-hidden="true" className="size-4" strokeWidth={1.75} />

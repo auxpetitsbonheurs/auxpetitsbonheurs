@@ -123,3 +123,29 @@ describe("sold out (S-065 AC4)", () => {
     expect(render(OPTIONS, "/fr/menu/chocolate-cake", { status: "sold_out" as never })).toContain("Épuisé cette semaine");
   });
 });
+
+describe("an offer on the page (S-066 AC4)", () => {
+  const offer = { salePriceRs: 960, promotionId: "99999999-9999-4999-8999-999999999999", promotion: { title: { en: "Spring offer", fr: null }, endsAt: "2026-11-12T14:00:00.000Z" } } as never;
+  const text = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+
+  test("the original is struck (hidden from screen readers), the sale shown, 'Was Rs X, now Rs Y' read out, and when the offer ends", () => {
+    const html = render([], undefined, offer);
+
+    expect(html).toMatch(/<s [^>]*>Rs\s1,200<\/s>/u);
+    expect(text(html)).toContain("Was Rs 1,200, now Rs 960");
+    expect(text(html)).toContain("Offer ends Thu 12 Nov at 18:00");
+    // the live price in the Add bar is the sale too, with the original struck
+    expect(html).toMatch(/data-testid="live-price"[^>]*>.*?<s [^>]*>Rs\s1,200<\/s>.*?Rs\s960/su);
+  });
+
+  test("with options: From the sale price, original From struck; options stay full price", () => {
+    const html = render(OPTIONS, undefined, offer);
+
+    expect(text(html)).toContain("Was From Rs 1,200, now From Rs 960");
+    expect(html).toContain("+Rs 600");
+  });
+
+  test("in French", () => {
+    expect(text(render([], "/fr/menu/chocolate-cake", offer))).toContain("Avant Rs 1,200, maintenant Rs 960");
+  });
+});

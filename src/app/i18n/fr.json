@@ -1472,5 +1472,13 @@
     "soldOutHintNoWhatsapp": "Nous ne pouvons pas le commander pour le moment. Revenez bientôt.",
     "soldOutWhatsapp": "Demander sur WhatsApp",
     "soldOutMessage": "Bonjour ! Le {{name}} est-il de nouveau disponible ?"
+  },
+  "promo": {
+    "wasNow": "Avant {{old}}, maintenant {{new}}",
+    "offer": "Promo",
+    "endsOn": "Offre valable jusqu’au {{date}} à {{time}}",
+    "bannerLabel": "Offre du moment",
+    "dismiss": "Masquer l’offre : {{title}}",
+    "dismissShort": "Masquer"
   }
 }

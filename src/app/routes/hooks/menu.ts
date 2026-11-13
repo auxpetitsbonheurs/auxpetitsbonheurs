@@ -21,7 +21,7 @@ export function etagMatches(header: string | null, etag: string): boolean {
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const menu = await timed(context, "menu", () =>
-    loadMenu({ db: context.get(requestDbContext).db, supabaseUrl: context.get(publicConfigContext).supabaseUrl, now: context.get(clockContext).now() }),
+    loadMenu({ db: context.get(requestDbContext).db, supabaseUrl: context.get(publicConfigContext).supabaseUrl, now: context.get(clockContext).now(), fixedClock: context.get(clockContext).fixed }),
   );
   const etag = `"${menu.v}"`;
   const headers = { ETag: etag, "Cache-Control": MENU_CACHE_CONTROL, Vary: "Accept-Encoding" };

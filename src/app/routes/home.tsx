@@ -38,6 +38,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
         db: context.get(requestDbContext).db,
         supabaseUrl: context.get(publicConfigContext).supabaseUrl,
         now: context.get(clockContext).now(),
+        fixedClock: context.get(clockContext).fixed,
         locale,
         galleryAlt: t("sitePages.gallery.photoAlt", locale),
       }),

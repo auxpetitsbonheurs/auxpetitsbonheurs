@@ -25,6 +25,9 @@ const cake = (overrides: Partial<CustomerProduct> = {}): CustomerProduct => ({
   status: "available",
   minQuantity: null,
   basePriceRs: 1200,
+  salePriceRs: null,
+  promotionId: null,
+  promotion: null,
   ...overrides,
 });
 

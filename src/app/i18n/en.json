@@ -1472,5 +1472,13 @@
     "soldOutHintNoWhatsapp": "We cannot take orders for it right now. Please check again soon.",
     "soldOutWhatsapp": "Ask on WhatsApp",
     "soldOutMessage": "Hello! Is the {{name}} available again?"
+  },
+  "promo": {
+    "wasNow": "Was {{old}}, now {{new}}",
+    "offer": "Offer",
+    "endsOn": "Offer ends {{date}} at {{time}}",
+    "bannerLabel": "Current offer",
+    "dismiss": "Dismiss offer: {{title}}",
+    "dismissShort": "Dismiss"
   }
 }

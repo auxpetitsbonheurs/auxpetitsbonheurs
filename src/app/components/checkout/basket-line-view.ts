@@ -50,6 +50,7 @@ export function basketLineViews({ basket, lines, menu, notes, goneName, noteFor 
       details: lineDetails(line, t, locale),
       quantity: line.quantity,
       unitPrice: formatRupees(line.unitPriceRs),
+      wasUnitPrice: line.promotionId && line.originalUnitPriceRs > line.unitPriceRs ? formatRupees(line.originalUnitPriceRs) : null,
       lineTotal: formatRupees(line.lineTotalRs),
       unavailable: line.problem !== null,
       optionsChanged: line.problem === "options_changed",
