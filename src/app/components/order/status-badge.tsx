@@ -12,7 +12,17 @@ const TONE: Record<StatusTone, { border: string; icon: string; Icon: typeof Cloc
 };
 
 /** Statuses with customer wording in this slice; the others show a generic label until E-06. */
-const WORDED = new Set<OrderStatus>(["pending_approval", "approved", "in_preparation", "out_for_delivery", "ready_for_pickup", "completed"]);
+const WORDED = new Set<OrderStatus>([
+  "awaiting_payment",
+  "pending_approval",
+  "approved",
+  "in_preparation",
+  "out_for_delivery",
+  "ready_for_pickup",
+  "completed",
+  "declined",
+  "cancelled",
+]);
 
 export function useStatusLabel() {
   const { t } = useI18n();

@@ -40,6 +40,7 @@ export const orderSourceEnum = pgEnum("order_source", ["website", "custom_reques
 
 /** Order lifecycle (PRD Appendix B). Transitions are enforced in app/domain/status.ts. */
 export const orderStatusEnum = pgEnum("order_status", [
+  "awaiting_payment",
   "pending_approval",
   "quote_needed",
   "quote_sent",

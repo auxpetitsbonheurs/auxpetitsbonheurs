@@ -102,8 +102,6 @@
     "note": "Note for the bakery",
     "itemLine": "{{name}} × {{quantity}}",
     "feeLine": "Delivery fee",
-    "paymentJuice": "Pay by Juice to {{number}}, or in cash when you receive your order.",
-    "paymentCash": "Pay in cash when you receive your order.",
     "acceptPolicies": "I accept the order policies",
     "readPolicies": "Read the order policies (cancellation and storage)",
     "policiesDefault": "Free cancellation until 48 hours before your order date; after that, message us on WhatsApp. Keep cream cakes in the fridge and eat them within 2 days.",
@@ -166,7 +164,8 @@
       "whatsapp": "Message us on WhatsApp",
       "whatsappText": "Hello, I would like to order but no dates are available on the website.",
       "contact": "Contact us"
-    }
+    },
+    "paymentInfo": "Payment: the full amount by MCB Juice. You get the payment details as soon as you place your order."
   },
   "errors": {
     "notFoundTitle": "Page not found",
@@ -290,7 +289,16 @@
       "address": "Address",
       "landmark": "Landmark",
       "cakeMessage": "Message on the cake: “{{message}}”",
-      "paymentTitle": "Payment"
+      "paymentTitle": "Payment",
+      "declinedTitle": "We can't make this order",
+      "declinedReason": "Our note: {{reason}}",
+      "declinedBody": "We're sorry. Message us on WhatsApp if you'd like another date or cake.",
+      "refundDue": "We are refunding {{amount}} to you by Juice.",
+      "refunded": "Refunded {{amount}} by Juice on {{date}}.",
+      "cancelledUnpaidTitle": "Cancelled: we did not receive the payment within 24 hours",
+      "cancelledUnpaidBody": "The date is free again. If you still want this order, place it again or message us on WhatsApp.",
+      "cancelledTitle": "This order was cancelled",
+      "whatsapp": "Message us on WhatsApp"
     },
     "status": {
       "pending_approval": "Pending approval",
@@ -299,7 +307,37 @@
       "out_for_delivery": "Out for delivery",
       "ready_for_pickup": "Ready for pickup",
       "completed": "Completed",
-      "other": "Order update"
+      "other": "Order update",
+      "awaiting_payment": "Awaiting payment",
+      "declined": "Refused",
+      "cancelled": "Cancelled"
+    },
+    "payment": {
+      "title": "Pay now to confirm your order",
+      "lead": "Pay {{amount}} by Juice to {{name}} ({{number}}), reference {{reference}}.",
+      "amount": "Amount",
+      "juiceNumber": "Juice number",
+      "name": "Juice account name",
+      "reference": "Reference",
+      "copyAmount": "Copy amount",
+      "copyNumber": "Copy Juice number",
+      "copyReference": "Copy reference",
+      "copiedAmount": "Amount copied",
+      "copiedNumber": "Juice number copied",
+      "copiedReference": "Reference copied",
+      "stepsTitle": "How to pay",
+      "step1": "Open MCB Juice and send {{amount}} to {{number}} ({{name}}).",
+      "step2": "Write {{reference}} as the reference, so we find your payment.",
+      "step3": "Send us the Juice confirmation screenshot on WhatsApp.",
+      "step3NoWhatsapp": "Keep the Juice confirmation: we check every payment and confirm your order.",
+      "deadline": "Please pay by {{time}}. Orders not paid within 24 hours are cancelled.",
+      "sendProof": "Send proof on WhatsApp",
+      "opensWhatsapp": "(opens WhatsApp)",
+      "proofText": "Hello, here is my Juice payment proof for order {{number}} ({{amount}}).",
+      "fallbackTitle": "We'll send you the payment details on WhatsApp",
+      "fallbackBody": "Your order is saved. We'll message you shortly with how to pay {{amount}} by Juice, reference {{reference}}.",
+      "paidTitle": "Payment received, thank you",
+      "paidBody": "Your order is confirmed. We'll keep you posted here."
     }
   },
   "admin": {
@@ -360,6 +398,19 @@
         "website": "Website",
         "custom_request": "Custom request",
         "manual": "Manual"
+      },
+      "tabsLabel": "Order lists",
+      "tabReview": "To review",
+      "tabPayment": "Payment",
+      "payment": {
+        "awaitingTitle": "Awaiting payment",
+        "awaitingEmpty": "No orders waiting for payment.",
+        "refundsTitle": "Refunds to send",
+        "cancelledTitle": "Cancelled: unpaid (last 7 days)",
+        "hoursLeft": "{{count}} h left",
+        "minutesLeft": "{{count}} min left",
+        "overdue": "Cancelling soon",
+        "refundLine": "Refund {{amount}} by Juice"
       }
     },
     "order": {
@@ -392,10 +443,44 @@
       "approving": "Approving the order…",
       "approved": "Order {{number}} approved. The customer will get a confirmation email.",
       "reload": "Reload the order",
-      "noActions": "Nothing to approve: this order is no longer waiting for review.",
+      "noActions": "No action needed on this order now.",
       "actionsLabel": "Order actions",
       "phone": "Phone",
-      "languageTerm": "Customer language"
+      "languageTerm": "Customer language",
+      "paymentTitle": "Payment",
+      "paymentAwaiting": "Awaiting payment by Juice, reference {{reference}}",
+      "paymentDeadline": "Cancelled automatically if unpaid by {{time}} ({{left}})",
+      "paymentPaid": "Paid {{amount}}, marked {{time}}",
+      "paymentUnpaid": "Not paid",
+      "markPaid": "Payment received",
+      "markPaidConfirm": "{{amount}} received by Juice for {{number}}?",
+      "markPaidHint": "Check the Juice SMS or app: amount {{amount}}, reference {{number}}. The customer gets a confirmation.",
+      "markPaidYes": "Yes, payment received",
+      "backPayment": "Orders awaiting payment",
+      "cancelStep": "Back",
+      "markingPaid": "Saving the payment…",
+      "markedPaid": "Order {{number}} marked paid and confirmed.",
+      "undo": "Undo",
+      "undoLabel": "Undo payment received for {{number}}",
+      "undoing": "Undoing…",
+      "undone": "Payment undone: {{number}} is awaiting payment again.",
+      "decline": "Refuse order",
+      "declineTitle": "Refuse order {{number}}?",
+      "declineReason": "Reason for the customer",
+      "declineHint": "Optional. Shown on the customer's tracking page. 500 characters at most.",
+      "declinePaidNote": "This order is paid: after refusing it you will refund {{amount}} by Juice.",
+      "declineYes": "Refuse order {{number}}",
+      "declining": "Refusing the order…",
+      "declined": "Order {{number}} refused.",
+      "refundTitle": "Refund {{amount}} to the customer by Juice",
+      "refundBody": "Send it back to the customer's Juice ({{phone}}), then mark it refunded.",
+      "markRefunded": "Refunded",
+      "markRefundedConfirm": "Did you send {{amount}} back by Juice?",
+      "markRefundedYes": "Yes, refunded",
+      "markingRefunded": "Saving…",
+      "refundedDone": "Refund recorded. The customer sees it on the tracking page.",
+      "refundedAt": "Refunded {{amount}}, marked {{time}}",
+      "declineReasonShown": "Reason given: {{reason}}"
     },
     "log": {
       "title": "Activity",
@@ -407,7 +492,13 @@
       "event": {
         "created": "Created by {{actor}}, {{time}}",
         "approved": "Approved by {{actor}}, {{time}}",
-        "other": "Changed by {{actor}}, {{time}}"
+        "other": "Changed by {{actor}}, {{time}}",
+        "payment_received": "Payment received, marked by {{actor}}, {{time}}",
+        "payment_undone": "Payment undone by {{actor}}, {{time}}",
+        "payment_reminder_sent": "Payment reminder queued by {{actor}}, {{time}}",
+        "declined": "Refused by {{actor}}, {{time}}",
+        "refunded": "Refund sent, marked by {{actor}}, {{time}}",
+        "cancelled": "Cancelled by {{actor}}, {{time}}"
       }
     },
     "nav": {
@@ -918,7 +1009,7 @@
       "instagram": "Instagram link",
       "paymentTitle": "Payment",
       "juice": "Juice number",
-      "juiceHint": "Shown at checkout and on the tracking page. 30 characters at most.",
+      "juiceHint": "The mobile number your Juice account uses, for example 5xxx xxxx.",
       "ordersTitle": "Orders and messages",
       "quoteValidity": "Quote valid for (days)",
       "cakeMessageMax": "Cake message length (characters)",
@@ -1013,7 +1104,7 @@
           "invalid": "Enter an email address like name@example.com."
         },
         "juiceNumber": {
-          "invalid": "The Juice number is too long (30 characters at most)."
+          "invalid": "Enter the Juice mobile number, for example 5712 3456."
         },
         "instagramUrl": {
           "invalid": "Enter the Instagram link as a full web address starting with https://"
@@ -1062,8 +1153,19 @@
           "tooMany": "Choose 6 featured products at most.",
           "invalid": "The featured products could not be read. Reload the page.",
           "unknown": "A featured product no longer exists. Reload the page."
+        },
+        "juiceName": {
+          "invalid": "The Juice account name is too long (60 characters at most)."
+        },
+        "paymentWhatsapp": {
+          "invalid": "Enter a WhatsApp number, for example 5712 3456."
         }
-      }
+      },
+      "paymentIntro": "Customers pay the full amount by MCB Juice when they order. These details are shown only to a customer who has placed an order, never on public pages.",
+      "juiceName": "Juice account name",
+      "juiceNameHint": "The name customers see in Juice when they pay, so they know it is you. 60 characters at most.",
+      "paymentWhatsapp": "WhatsApp for payment proof",
+      "paymentWhatsappHint": "Customers send their Juice screenshot here. For example 5xxx xxxx."
     },
     "availability": {
       "title": "Availability",
@@ -1375,6 +1477,13 @@
         "range": "{{field}}: percent off must be 1 to 99.",
         "order": "{{field}}: the end must be after the start."
       }
+    },
+    "payment": {
+      "cancelledUnpaid": "Cancelled: unpaid",
+      "missingTitle": "Payment details missing",
+      "missingBody": "Until the Juice name, Juice number and payment WhatsApp are set, customers are told “We'll send you the payment details on WhatsApp”.",
+      "missingLink": "Add them in Settings → Payment",
+      "missingAdmin": "Ask an Owner to add them in Settings → Payment."
     }
   },
   "email": {
@@ -1395,6 +1504,10 @@
       "button": "Accept the invitation",
       "expiry": "This link is valid until {{date}} and works once.",
       "ignore": "If you were not expecting this, ignore this email: nothing happens without you."
+    },
+    "payment": {
+      "heading": "Pay now to confirm your order",
+      "fallback": "We'll send you the payment details on WhatsApp shortly."
     }
   },
   "nav": {

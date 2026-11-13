@@ -1,7 +1,7 @@
 // Order reads for the admin app (contracts.md `admin/orders`, `admin/order`). Lists are
 // keyset-paginated on the gap-free order number (oldest first for the review queue), which is unique and
 // increases with creation, so a cursor never skips or repeats a row.
-import { and, asc, count, eq, getTableName, gt, inArray, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, getTableName, gt, gte, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { type LocalizedText, type OrderItemOption, type TimeWindow, orderItem, orders } from "~/db/schema";
 import type { OrderStatus } from "~/domain/status";
 import type { Locale } from "~/lib/locale";
@@ -60,6 +60,43 @@ export async function countReviewOrders(db: Executor): Promise<number> {
   return Number(row?.n ?? 0);
 }
 
+/** A row of the Payment tab (S-279): when it was placed (the deadline runs from it) and any refund due. */
+export interface PaymentOrderRow extends AdminOrderRow {
+  createdAt: Date;
+  refundDueRs: number | null;
+}
+
+export interface PaymentLists {
+  /** Awaiting their Juice payment, oldest first (the nearest deadline first). */
+  awaiting: PaymentOrderRow[];
+  /** Refused after payment, refund not sent yet (S-281). */
+  refunds: PaymentOrderRow[];
+  /** Cancelled by the 24 h job in the last 7 days, newest first (S-280 AC5). */
+  cancelled: PaymentOrderRow[];
+}
+
+const paymentColumns = { ...summaryColumns, createdAt: orders.createdAt, refundDueRs: orders.refundDueRs } as const;
+const LIST_CAP = 100;
+const WEEK_MS = 7 * 24 * 3_600_000;
+
+/** The three lists of the Payment tab, each capped (a bakery has a handful at a time). */
+export async function listPaymentOrders(db: Executor, now: Date): Promise<PaymentLists> {
+  const awaiting = await db.select(paymentColumns).from(orders).where(eq(orders.status, "awaiting_payment")).orderBy(asc(orders.number)).limit(LIST_CAP);
+  const refunds = await db
+    .select(paymentColumns)
+    .from(orders)
+    .where(and(eq(orders.status, "declined"), isNotNull(orders.refundDueRs), isNull(orders.refundedAt)))
+    .orderBy(asc(orders.number))
+    .limit(LIST_CAP);
+  const cancelled = await db
+    .select(paymentColumns)
+    .from(orders)
+    .where(and(eq(orders.status, "cancelled"), eq(orders.cancelReason, "unpaid"), gte(orders.updatedAt, new Date(now.getTime() - WEEK_MS))))
+    .orderBy(desc(orders.updatedAt))
+    .limit(20);
+  return { awaiting, refunds, cancelled };
+}
+
 export interface AdminOrderItem {
   name: LocalizedText;
   quantity: number;
@@ -113,6 +150,11 @@ export interface AdminOrder extends AdminOrderRow {
   customerNote: string | null;
   locale: Locale;
   createdAt: Date;
+  paidAt: Date | null;
+  cancelReason: string | null;
+  declineReason: string | null;
+  refundDueRs: number | null;
+  refundedAt: Date | null;
   items: AdminOrderItem[];
 }
 
@@ -139,6 +181,11 @@ export async function findAdminOrder(db: Executor, id: string): Promise<AdminOrd
       customerNote: orders.customerNote,
       locale: orders.locale,
       createdAt: orders.createdAt,
+      paidAt: orders.paidAt,
+      cancelReason: orders.cancelReason,
+      declineReason: orders.declineReason,
+      refundDueRs: orders.refundDueRs,
+      refundedAt: orders.refundedAt,
       items: itemsJson,
     })
     .from(orders)

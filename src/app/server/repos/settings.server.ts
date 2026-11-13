@@ -1,6 +1,7 @@
 import { eq, getTableColumns, sql } from "drizzle-orm";
 import { type LocalizedText, type TimeWindow, blockedDate, settings } from "~/db/schema";
 import type { AvailabilityRules, DateRange } from "~/domain/availability";
+import type { PaymentSettings } from "~/domain/payment";
 import { safeWebUrl } from "~/lib/contact";
 import type { Database } from "~/server/db.server";
 import { SETTINGS_TTL_MS, createTtlCache } from "~/server/settings-cache.server";
@@ -59,7 +60,6 @@ export interface CheckoutSettings {
   deliveryFeeRs: number;
   windows: { delivery: TimeWindow[]; pickup: TimeWindow[] };
   pickup: { address: string | null; mapUrl: string | null };
-  payment: { juiceNumber: string | null };
   policies: LocalizedText | null;
   orderNumberPrefix: string;
 }
@@ -69,7 +69,6 @@ function checkoutFrom(row: SettingsRow): CheckoutSettings {
     deliveryFeeRs: row.deliveryFeeRs,
     windows: { delivery: row.deliveryWindows, pickup: row.pickupWindows },
     pickup: { address: present(row.pickupAddress), mapUrl: present(row.pickupMapUrl) },
-    payment: { juiceNumber: present(row.juiceNumber) },
     policies: row.policies && row.policies.en.trim() !== "" ? row.policies : null,
     orderNumberPrefix: row.orderNumberPrefix,
   };
@@ -78,6 +77,15 @@ function checkoutFrom(row: SettingsRow): CheckoutSettings {
 /** The Settings values checkout uses (fee, windows, pickup, payment, policies, number prefix). Always fresh. */
 export async function getCheckoutSettings(db: Database): Promise<CheckoutSettings> {
   return checkoutFrom(await settingsRow(db));
+}
+
+/** The Juice payment Settings (S-277), always fresh: admin warns while any is missing. Never for a public page. */
+export async function readPaymentSettings(db: Database): Promise<PaymentSettings> {
+  const [row] = await db
+    .select({ juiceName: settings.juiceName, juiceNumber: settings.juiceNumber, paymentWhatsapp: settings.paymentWhatsapp })
+    .from(settings)
+    .where(eq(settings.id, 1));
+  return row ?? { juiceName: null, juiceNumber: null, paymentWhatsapp: null };
 }
 
 /** Home page Settings (S-063; edited in S-058/S-059): hero tagline and photo, featured products in order. */

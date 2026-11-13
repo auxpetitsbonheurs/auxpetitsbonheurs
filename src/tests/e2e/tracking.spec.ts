@@ -37,7 +37,8 @@ test.describe("S-016 tracking page", () => {
     await expect(page.getByText("Fri 20 Nov")).toBeVisible();
     await expect(page.getByText("Pickup: free")).toBeVisible();
     await expect(page.getByText("Rs 850").first()).toBeVisible();
-    await expect(page.getByText("Pay by Juice to 5000 0000, or in cash when you receive your order.")).toBeVisible();
+    // An order placed before Juice payment (pending approval) shows no payment instructions and never the Juice number.
+    await expect(page.getByRole("main").getByText(/5000 0000/)).toHaveCount(0);
 
     const progress = page.getByRole("region", { name: "Progress" });
     await expect(progress.getByText("Step 1 of 5: Pending approval")).toBeVisible();

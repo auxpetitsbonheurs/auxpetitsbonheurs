@@ -147,8 +147,28 @@ describe("date and time windows (S-013 AC3)", () => {
   });
 });
 
+describe("the payment snapshot of a new order (S-278 AC2)", () => {
+  test("carries the stored total and the Juice Settings, also when the page posts one total per fulfilment", async () => {
+    await database.client.query("update settings set juice_name = 'A. Baker', juice_number = '5000 0071', payment_whatsapp = '5000 0072'");
+    const { displayedTotalRs: _single, ...form } = pickupForm();
+
+    const result = await place({ ...form, "displayedTotalRs.pickup": "850", "displayedTotalRs.delivery": "1050" });
+
+    expect(result).toMatchObject({ ok: true, payment: { totalRs: 850, juiceName: "A. Baker", juiceNumber: "5000 0071", paymentWhatsapp: "5000 0072" } });
+  });
+
+  test("a replay carries none (the confirmation then reads the database)", async () => {
+    const form = pickupForm();
+    await place(form);
+
+    const replay = await place(form);
+    expect(replay).toMatchObject({ ok: true, replayed: true });
+    expect(replay).not.toHaveProperty("payment");
+  });
+});
+
 describe("the stored order (S-013 AC4)", () => {
-  test("a delivery order is pending approval with copied prices and the Settings fee", async () => {
+  test("S-278 AC1: a delivery order is awaiting payment with copied prices and the Settings fee", async () => {
     const result = await place(deliveryForm({ displayedTotalRs: "1900" }), { basket: [line("a", cakeId, 2)], locale: "fr" });
     expect(result.ok).toBe(true);
     expectRefusedNever(result);
@@ -156,7 +176,7 @@ describe("the stored order (S-013 AC4)", () => {
     const { rows } = await database.client.query(`select * from orders`);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
-      status: "pending_approval",
+      status: "awaiting_payment",
       source: "website",
       locale: "fr",
       fulfilment: "delivery",
@@ -230,7 +250,7 @@ describe("event and email outbox (S-013 AC6)", () => {
 
     const events = await database.client.query(`select order_id, actor_type, actor_admin_id, type, to_status from order_event`);
     expect(events.rows).toEqual([
-      { order_id: result.orderId, actor_type: "customer", actor_admin_id: null, type: "created", to_status: "pending_approval" },
+      { order_id: result.orderId, actor_type: "customer", actor_admin_id: null, type: "created", to_status: "awaiting_payment" },
     ]);
     const outbox = await database.client.query(`select template, to_email, locale, status, dedupe_key, order_id, attempts from email_outbox`);
     expect(outbox.rows).toEqual([

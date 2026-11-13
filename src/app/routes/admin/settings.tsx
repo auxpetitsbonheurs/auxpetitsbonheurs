@@ -22,6 +22,7 @@ import {
   QUOTE_VALIDITY_MAX,
   QUOTE_VALIDITY_MIN,
 } from "~/domain/settings";
+import { JUICE_NAME_MAX } from "~/domain/payment";
 import { t as translate } from "~/i18n/catalog.server";
 import { localized } from "~/i18n/localized";
 import { useI18n } from "~/i18n/react";
@@ -97,7 +98,9 @@ const ANCHORS: Record<string, string> = {
   contactWhatsapp: "contact-whatsapp",
   contactEmail: "contact-email",
   instagramUrl: "instagram",
+  juiceName: "juice-name",
   juiceNumber: "juice",
+  paymentWhatsapp: "payment-whatsapp",
   quoteValidityDays: "quote-validity",
   cakeMessageMax: "cake-message-max",
   eveningReminderAt: "evening-reminder",
@@ -136,8 +139,11 @@ function BusinessSections({ settings, errors }: { settings: Settings; errors: Er
         <TextField id="contact-email" name="contactEmail" type="email" inputMode="email" label={t("admin.settings.contactEmail")} optionalLabel={optional} autoComplete="off" autoCapitalize="none" spellCheck={false} defaultValue={settings.contactEmail ?? ""} error={errors.contactEmail} />
         <TextField id="instagram" name="instagramUrl" type="url" inputMode="url" label={t("admin.settings.instagram")} optionalLabel={optional} hint={t("admin.settings.urlHint")} autoComplete="off" autoCapitalize="none" spellCheck={false} defaultValue={settings.instagramUrl ?? ""} error={errors.instagramUrl} />
       </SettingsSection>
-      <SettingsSection id="payment" title={t("admin.settings.paymentTitle")}>
-        <TextField id="juice" name="juiceNumber" inputMode="tel" label={t("admin.settings.juice")} optionalLabel={optional} hint={t("admin.settings.juiceHint")} maxLength={JUICE_NUMBER_MAX} autoComplete="off" defaultValue={settings.juiceNumber ?? ""} error={errors.juiceNumber} className="max-w-sm" />
+      {/* Juice payment (S-277): shown only on an order's own pages, never on public ones. */}
+      <SettingsSection id="payment" title={t("admin.settings.paymentTitle")} intro={t("admin.settings.paymentIntro")}>
+        <TextField id="juice-name" name="juiceName" label={t("admin.settings.juiceName")} optionalLabel={optional} hint={t("admin.settings.juiceNameHint")} maxLength={JUICE_NAME_MAX} autoComplete="off" defaultValue={settings.juiceName ?? ""} error={errors.juiceName} />
+        <TextField id="juice" name="juiceNumber" type="tel" inputMode="tel" label={t("admin.settings.juice")} optionalLabel={optional} hint={t("admin.settings.juiceHint")} maxLength={JUICE_NUMBER_MAX} autoComplete="off" defaultValue={settings.juiceNumber ?? ""} error={errors.juiceNumber} className="max-w-sm" />
+        <TextField id="payment-whatsapp" name="paymentWhatsapp" type="tel" inputMode="tel" label={t("admin.settings.paymentWhatsapp")} optionalLabel={optional} hint={t("admin.settings.paymentWhatsappHint")} maxLength={20} autoComplete="off" defaultValue={settings.paymentWhatsapp ?? ""} error={errors.paymentWhatsapp} className="max-w-sm" />
       </SettingsSection>
       <SettingsSection id="orders" title={t("admin.settings.ordersTitle")}>
         <TextField id="quote-validity" name="quoteValidityDays" label={t("admin.settings.quoteValidity")} hint={t("admin.settings.rangeHint", { min: QUOTE_VALIDITY_MIN, max: QUOTE_VALIDITY_MAX })} inputMode="numeric" pattern="[0-9]*" autoComplete="off" defaultValue={settings.quoteValidityDays} error={errors.quoteValidityDays} className="max-w-sm" />

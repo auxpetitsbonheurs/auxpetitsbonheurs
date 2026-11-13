@@ -12,7 +12,14 @@ describe("status groups (contracts.md Conventions)", () => {
 });
 
 describe("customer progress (S-016 AC2, tracking spec)", () => {
-  test("a pending delivery order is step 1 of 5 on the delivery path", () => {
+  test("a new order awaiting payment is step 1 of 5 on the paid path (S-278 AC5)", () => {
+    expect(customerProgress("awaiting_payment", "delivery")).toEqual({
+      steps: ["awaiting_payment", "approved", "in_preparation", "out_for_delivery", "completed"],
+      current: 0,
+    });
+  });
+
+  test("a pending delivery order (placed before Juice payment) keeps the approval path", () => {
     expect(customerProgress("pending_approval", "delivery")).toEqual({
       steps: ["pending_approval", "approved", "in_preparation", "out_for_delivery", "completed"],
       current: 0,
@@ -21,7 +28,7 @@ describe("customer progress (S-016 AC2, tracking spec)", () => {
 
   test("the pickup path has Ready for pickup instead of Out for delivery", () => {
     expect(customerProgress("approved", "pickup")).toEqual({
-      steps: ["pending_approval", "approved", "in_preparation", "ready_for_pickup", "completed"],
+      steps: ["awaiting_payment", "approved", "in_preparation", "ready_for_pickup", "completed"],
       current: 1,
     });
   });
@@ -67,8 +74,48 @@ describe("admin transitions (S-017 AC6; PRD Appendix B)", () => {
   });
 
   test("allowed actions for the order screen follow the table", () => {
-    expect(allowedActions("pending_approval")).toEqual({ approve: true });
-    expect(allowedActions("approved")).toEqual({ approve: false });
-    expect(allowedActions("quote_needed")).toEqual({ approve: false });
+    expect(allowedActions("pending_approval")).toEqual({ approve: true, markPaid: false, decline: true, markRefunded: false });
+    expect(allowedActions("approved")).toEqual({ approve: false, markPaid: false, decline: true, markRefunded: false });
+    expect(allowedActions("quote_needed")).toEqual({ approve: false, markPaid: false, decline: false, markRefunded: false });
+  });
+});
+
+describe("Juice payment transitions (S-279, S-281)", () => {
+  test("a new website order starts awaiting payment, before pending approval in the enum order", () => {
+    expect(ORDER_STATUSES[0]).toBe("awaiting_payment");
+    expect(ACTIVE_STATUSES.has("awaiting_payment")).toBe(true);
+    expect(CONFIRMED_STATUSES.has("awaiting_payment")).toBe(false);
+  });
+
+  test("markPaid moves awaiting_payment to approved and nothing else", () => {
+    for (const status of ORDER_STATUSES) {
+      expect(transitionTarget("markPaid", status)).toBe(status === "awaiting_payment" ? "approved" : null);
+    }
+  });
+
+  test("undoPaid moves approved back to awaiting_payment only", () => {
+    for (const status of ORDER_STATUSES) {
+      expect(transitionTarget("undoPaid", status)).toBe(status === "approved" ? "awaiting_payment" : null);
+    }
+  });
+
+  test("decline is allowed before preparation is done: awaiting payment, pending, approved, in preparation", () => {
+    const allowed = ORDER_STATUSES.filter((s) => transitionTarget("decline", s) !== null);
+    expect(allowed).toEqual(["awaiting_payment", "pending_approval", "approved", "in_preparation"]);
+    expect(transitionTarget("decline", "approved")).toBe("declined");
+  });
+
+  test("the order screen offers Payment received and Refuse while awaiting payment", () => {
+    expect(allowedActions("awaiting_payment")).toEqual({ approve: false, markPaid: true, decline: true, markRefunded: false });
+  });
+
+  test("Refunded is offered only for a declined order with a refund still to send", () => {
+    expect(allowedActions("declined", { refundPending: true }).markRefunded).toBe(true);
+    expect(allowedActions("declined", { refundPending: false }).markRefunded).toBe(false);
+    expect(allowedActions("declined").decline).toBe(false);
+  });
+
+  test("awaiting payment is an action status for the badge", () => {
+    expect(statusTone("awaiting_payment")).toBe("action");
   });
 });

@@ -35,13 +35,14 @@ async function rejection(promise: Promise<unknown>) {
 }
 
 describe("tracking page content (S-016 AC1)", () => {
-  test("a delivery order shows number, status, paid, items, date, window, address, fee, total and Juice payment", async () => {
+  test("a delivery order shows number, status, paid, items, date, window, address, fee, total and the Juice payment (S-278 AC5)", async () => {
+    await database.client.query("update settings set juice_name = 'A. Baker', juice_number = '5000 0001', payment_whatsapp = '5000 0002'");
     const { token } = await placeTestOrder(database, { quantity: 2, overrides: DELIVERY_ORDER });
 
     const data = await load(`/t/${token}`, token);
     expect(data.order).toMatchObject({
       number: "APB-0001",
-      status: "pending_approval",
+      status: "awaiting_payment",
       paid: false,
       fulfilment: "delivery",
       fulfilOn: "2026-11-12",
@@ -57,31 +58,67 @@ describe("tracking page content (S-016 AC1)", () => {
     expect(data.order.items).toEqual([
       { name: { en: "Chocolate cake", fr: "Gâteau au chocolat" }, quantity: 2, lineTotalRs: 1700, options: [], cakeMessage: null },
     ]);
-    expect(data.payment).toEqual({ juiceNumber: "5000 0000" });
+    expect(data.payment).toMatchObject({ totalRs: 1900, reference: "APB-0001", details: { juiceName: "A. Baker", juiceNumber: "5000 0001" } });
+    expect(data.payment?.proofUrl).toMatch(/^https:\/\/wa\.me\/23050000002\?text=/);
+    expect(data.refund).toBeNull();
   });
 
-  test("a pickup order has no address and no fee; no Juice number means cash", async () => {
-    await database.client.query("update settings set juice_number = null");
+  test("a pickup order has no address and no fee; without the Juice name the payment falls back calmly (S-278 AC4)", async () => {
     const { token } = await placeTestOrder(database);
 
     const data = await load(`/t/${token}`, token);
     expect(data.order).toMatchObject({ fulfilment: "pickup", address: null, landmark: null, deliveryFeeRs: 0, totalRs: 850 });
-    expect(data.payment).toEqual({ juiceNumber: null });
+    expect(data.payment).toMatchObject({ totalRs: 850, details: null, proofUrl: null });
+  });
+});
+
+describe("after payment, refusal or the unpaid cancel (S-279 AC5, S-280 AC5, S-281 AC4)", () => {
+  test("paid: no instructions any more", async () => {
+    const { token } = await placeTestOrder(database);
+    await database.client.query("update orders set status = 'approved', paid = true");
+
+    const data = await load(`/t/${token}`, token);
+    expect(data.order).toMatchObject({ status: "approved", paid: true });
+    expect(data.payment).toBeNull();
+  });
+
+  test("refused after payment: the reason and the refund due, then the refund date", async () => {
+    const { token } = await placeTestOrder(database);
+    await database.client.query("update orders set status = 'declined', paid = true, decline_reason = 'Our calendar is full.', refund_due_rs = 850");
+
+    const due = await load(`/t/${token}`, token);
+    expect(due.order).toMatchObject({ status: "declined", declineReason: "Our calendar is full." });
+    expect(due.refund).toEqual({ amountRs: 850, refundedOn: null });
+    expect(due.progress).toBeNull();
+
+    await database.client.query("update orders set refunded_at = '2026-11-14T06:00:00Z'");
+    expect((await load(`/t/${token}`, token)).refund).toEqual({ amountRs: 850, refundedOn: "Sat 14 Nov" });
+  });
+
+  test("cancelled as unpaid: says so, with the bakery's WhatsApp", async () => {
+    await database.client.query("update settings set contact_whatsapp = '5000 0003'");
+    const { token } = await placeTestOrder(database);
+    await database.client.query("update orders set status = 'cancelled', cancel_reason = 'unpaid'");
+
+    const data = await load(`/t/${token}`, token);
+    expect(data.order).toMatchObject({ status: "cancelled", cancelReason: "unpaid" });
+    expect(data.payment).toBeNull();
+    expect(data.whatsappUrl).toBe("https://wa.me/23050000003");
   });
 });
 
 describe("progress (S-016 AC2)", () => {
-  test("pending is step 1 of the delivery path; approved is step 2 of the pickup path", async () => {
+  test("awaiting payment is step 1 of the delivery path; approved is step 2 of the pickup path", async () => {
     const delivery = await placeTestOrder(database, { overrides: { ...DELIVERY_ORDER, displayedTotalRs: "1050" } });
     const pickup = await placeTestOrder(database);
     await database.client.query("update orders set status = 'approved' where tracking_token = $1", [pickup.token]);
 
     expect((await load(`/t/${delivery.token}`, delivery.token)).progress).toEqual({
-      steps: ["pending_approval", "approved", "in_preparation", "out_for_delivery", "completed"],
+      steps: ["awaiting_payment", "approved", "in_preparation", "out_for_delivery", "completed"],
       current: 0,
     });
     expect((await load(`/t/${pickup.token}`, pickup.token)).progress).toEqual({
-      steps: ["pending_approval", "approved", "in_preparation", "ready_for_pickup", "completed"],
+      steps: ["awaiting_payment", "approved", "in_preparation", "ready_for_pickup", "completed"],
       current: 1,
     });
   });

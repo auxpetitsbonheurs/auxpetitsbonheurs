@@ -18,9 +18,13 @@ afterEach(async () => {
   await database.close();
 });
 
+/** An order on the approval path (placed before Juice payment, 2026-11-13): these tests are about Approve. */
 async function placed(overrides: Record<string, string> = {}, quantity = 1) {
   const { token } = await placeTestOrder(database, { overrides, quantity });
-  return (await database.client.query<{ id: string }>("select id from orders where tracking_token = $1", [token])).rows[0]!.id;
+  const id = (await database.client.query<{ id: string }>("select id from orders where tracking_token = $1", [token])).rows[0]!.id;
+  await database.client.query("update orders set status = 'pending_approval' where id = $1", [id]);
+  await database.client.query("update order_event set to_status = 'pending_approval' where order_id = $1", [id]);
+  return id;
 }
 
 const load = (id: string, path = `/admin/orders/${id}`) => loader(routeArgs(database, { path, params: { id }, auth: session.auth, cookie: session.cookie }) as never);
@@ -67,7 +71,7 @@ describe("order detail (S-017 AC2)", () => {
     expect(page.customer).toEqual({ name: "Aisha", phone: "+23057123456", email: "aisha@example.com" });
     expect(page.telUrl).toBe("tel:+23057123456");
     expect(page.mapsUrl).toBe("https://www.google.com/maps/search/?api=1&query=12%20Royal%20Road%2C%20Rose%20Hill");
-    expect(page.allowed).toEqual({ approve: true });
+    expect(page.allowed).toEqual({ approve: true, markPaid: false, decline: true, markRefunded: false });
   });
 
   test("pickup has no maps link; an approved order no longer allows approve", async () => {
@@ -77,7 +81,7 @@ describe("order detail (S-017 AC2)", () => {
     const page = await load(id);
 
     expect(page.mapsUrl).toBeNull();
-    expect(page.allowed).toEqual({ approve: false });
+    expect(page.allowed).toEqual({ approve: false, markPaid: false, decline: true, markRefunded: false });
     expect(page.order.version).toBe(2);
   });
 
@@ -93,7 +97,7 @@ describe("approve intent", () => {
   test("success returns the new status and version (S-017 AC3)", async () => {
     const id = await placed();
 
-    expect(await post(id, { intent: "approve", version: "1" })).toEqual({ ok: true, order: { status: "approved", version: 2 } });
+    expect(await post(id, { intent: "approve", version: "1" })).toEqual({ ok: true, intent: "approve", order: { status: "approved", version: 2 } });
   });
 
   test("a stale version is ORDER_CHANGED 409 \"This order changed. Reload\" (AC4)", async () => {
@@ -119,7 +123,7 @@ describe("approve intent", () => {
   test.each([
     ["no version", { intent: "approve" }],
     ["a version of 0", { intent: "approve", version: "0" }],
-    ["an unknown intent", { intent: "decline", version: "1" }],
+    ["an unknown intent", { intent: "quote", version: "1" }],
   ])("%s is VALIDATION_FAILED and changes nothing", async (_label, form) => {
     const id = await placed();
 

@@ -55,7 +55,6 @@ export interface MenuCheckout {
   deliveryFeeRs: number;
   windows: { delivery: TimeWindow[]; pickup: TimeWindow[] };
   pickup: { address: string | null; mapUrl: string | null };
-  payment: { juiceNumber: string | null };
   policies: LocalizedText | null;
   /**
    * The public date rules (S-083): notice, closed weekdays, blocked ranges from today (never

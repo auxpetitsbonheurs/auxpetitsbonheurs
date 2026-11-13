@@ -32,12 +32,19 @@ async function caught(run: () => unknown): Promise<Response> {
   throw new Error("expected a thrown response");
 }
 
+/** An order still on the approval path (placed before Juice payment, 2026-11-13). */
+async function placePending(options: Parameters<typeof placeTestOrder>[1] = {}) {
+  const placed = await placeTestOrder(database, options);
+  await database.client.query("update orders set status = 'pending_approval' where tracking_token = $1", [placed.token]);
+  return placed;
+}
+
 describe("orders to review (S-017 AC1)", () => {
   test("lists pending orders oldest first (the longest wait first) with number, name, date, window, total and source", async () => {
     const session = await signedInAdmin(database);
-    await placeTestOrder(database, { overrides: { "contact.name": "First" } });
-    await placeTestOrder(database, { overrides: { ...DELIVERY_ORDER, displayedTotalRs: "1050", "contact.name": "Second" } });
-    const approvedToken = (await placeTestOrder(database, { overrides: { "contact.name": "Approved already" } })).token;
+    await placePending({ overrides: { "contact.name": "First" } });
+    await placePending({ overrides: { ...DELIVERY_ORDER, displayedTotalRs: "1050", "contact.name": "Second" } });
+    const approvedToken = (await placePending({ overrides: { "contact.name": "Approved already" } })).token;
     await database.client.query("update orders set status = 'approved' where tracking_token = $1", [approvedToken]);
 
     const page = await loader(routeArgs(database, { path: "/admin/orders?tab=review", auth: session.auth, cookie: session.cookie }) as never);
@@ -61,7 +68,7 @@ describe("orders to review (S-017 AC1)", () => {
 
   test("30 per page, then the cursor gives the rest without overlap", async () => {
     const session = await signedInAdmin(database);
-    for (let i = 0; i < 31; i += 1) await placeTestOrder(database);
+    for (let i = 0; i < 31; i += 1) await placePending();
     const args = (path: string) => routeArgs(database, { path, auth: session.auth, cookie: session.cookie }) as never;
 
     const first = await loader(args("/admin/orders?tab=review"));
@@ -77,7 +84,7 @@ describe("orders to review (S-017 AC1)", () => {
 
   test("limit is capped at 100 and a broken cursor starts from the top", async () => {
     const session = await signedInAdmin(database);
-    await placeTestOrder(database);
+    await placePending();
     const args = (path: string) => routeArgs(database, { path, auth: session.auth, cookie: session.cookie }) as never;
 
     expect((await loader(args("/admin/orders?tab=review&cursor=%3Cscript%3E"))).data).toHaveLength(1);
@@ -93,7 +100,7 @@ describe("orders to review (S-017 AC1)", () => {
     expect(page).toMatchObject({ data: [], nextCursor: null });
   });
 
-  test("another or missing tab goes to the review tab (the only one in this slice)", async () => {
+  test("an unknown or missing tab goes to the review tab", async () => {
     const session = await signedInAdmin(database);
 
     for (const path of ["/admin/orders", "/admin/orders?tab=upcoming"]) {
@@ -105,7 +112,7 @@ describe("orders to review (S-017 AC1)", () => {
 
 describe("who may see and approve (S-017 AC7)", () => {
   test("an anonymous visitor and a customer get no order data; approve redirects them or is FORBIDDEN (S-021 AC3)", async () => {
-    const { token } = await placeTestOrder(database);
+    const { token } = await placePending();
     const id = await idOf(token);
     const session = await signedInAdmin(database);
     const customer = await insertCustomerAccount(database, session.auth);
@@ -131,7 +138,7 @@ describe("who may see and approve (S-017 AC7)", () => {
   });
 
   test.each(["owner", "admin"] as const)("an %s may approve", async (role) => {
-    const { token } = await placeTestOrder(database);
+    const { token } = await placePending();
     const id = await idOf(token);
     const session = await signedInAdmin(database, { role });
 
@@ -152,5 +159,104 @@ describe("who may see and approve (S-017 AC7)", () => {
 
     expect(result.init.status).toBe(404);
     expect(result.data.error.code).toBe("NOT_FOUND");
+  });
+});
+
+describe("orders awaiting payment (S-279 AC1, S-280 AC5, S-281 AC2)", () => {
+  // Placed at TEST_ORDER_PLACED_AT (5 Nov 08:00Z); the page is read 12 h later.
+  const READ_AT = "2026-11-05T20:00:00Z";
+  const paymentTab = (session: Awaited<ReturnType<typeof signedInAdmin>>, now = READ_AT) =>
+    loader(routeArgs(database, { path: "/admin/orders?tab=payment", auth: session.auth, cookie: session.cookie, now }) as never);
+
+  test("lists them oldest first with a time-left badge; paid and pending orders are not in it", async () => {
+    const session = await signedInAdmin(database);
+    await placeTestOrder(database, { overrides: { "contact.name": "First" } });
+    await placeTestOrder(database, { overrides: { "contact.name": "Second" } });
+    await placePending({ overrides: { "contact.name": "Old flow" } });
+    const paid = await placeTestOrder(database, { overrides: { "contact.name": "Paid" } });
+    await database.client.query("update orders set status = 'approved', paid = true where tracking_token = $1", [paid.token]);
+
+    const page = await paymentTab(session);
+
+    expect(page.tab).toBe("payment");
+    expect(page.payment!.awaiting.map((o) => [o.contactName, o.timeLeft])).toEqual([
+      ["First", "12 h left"],
+      ["Second", "12 h left"],
+    ]);
+    expect(page.payment!.awaiting[0]).toMatchObject({ number: "APB-0001", totalRs: 850, overdue: false });
+  });
+
+  test("minutes in the last hour, then Cancelling soon once overdue", async () => {
+    const session = await signedInAdmin(database);
+    await placeTestOrder(database);
+
+    expect((await paymentTab(session, "2026-11-06T07:15:00Z")).payment!.awaiting[0]!.timeLeft).toBe("45 min left");
+    expect((await paymentTab(session, "2026-11-06T08:30:00Z")).payment!.awaiting[0]).toMatchObject({ timeLeft: "Cancelling soon", overdue: true });
+  });
+
+  test("refunds to send and recent unpaid cancellations have their own lists", async () => {
+    const session = await signedInAdmin(database);
+    const refused = await placeTestOrder(database, { overrides: { "contact.name": "Refused" } });
+    const unpaid = await placeTestOrder(database, { overrides: { "contact.name": "Unpaid" } });
+    await database.client.query("update orders set status = 'declined', paid = true, refund_due_rs = 850 where tracking_token = $1", [refused.token]);
+    await database.client.query("update orders set status = 'cancelled', cancel_reason = 'unpaid', updated_at = '2026-11-05T19:00:00Z' where tracking_token = $1", [unpaid.token]);
+
+    const page = await paymentTab(session);
+
+    expect(page.payment!.refunds.map((o) => [o.contactName, o.refundDueRs])).toEqual([["Refused", 850]]);
+    expect(page.payment!.cancelled.map((o) => o.contactName)).toEqual(["Unpaid"]);
+    expect(page.payment!.awaiting).toEqual([]);
+  });
+
+  test("warns when the payment details are missing; the Owner gets the Settings link, an Admin is told to ask (S-277 AC5)", async () => {
+    const owner = await signedInAdmin(database, { role: "owner" });
+    expect(await paymentTab(owner)).toMatchObject({ paymentMissing: true, canEditSettings: true });
+
+    await database.client.query("update settings set juice_name = 'A. Baker', juice_number = '5000 0001', payment_whatsapp = '5000 0002'");
+    expect(await paymentTab(owner)).toMatchObject({ paymentMissing: false });
+  });
+
+  test("an Admin sees the warning without the Settings link", async () => {
+    const admin = await signedInAdmin(database, { role: "admin" });
+
+    expect(await paymentTab(admin)).toMatchObject({ paymentMissing: true, canEditSettings: false });
+  });
+});
+
+describe("Payment received, Refuse and Refunded from the order screen (S-279 AC2, S-281)", () => {
+  const post = async (id: string, form: Record<string, string>) => {
+    const session = await signedInAdmin(database);
+    return orderAction(routeArgs(database, { path: `/admin/orders/${id}`, params: { id }, auth: session.auth, cookie: session.cookie, form }) as never);
+  };
+
+  test("markPaid then undoPaid answer the new status and version", async () => {
+    const id = await idOf((await placeTestOrder(database)).token);
+
+    expect(await post(id, { intent: "markPaid", version: "1" })).toMatchObject({ ok: true, intent: "markPaid", order: { status: "approved", version: 2 } });
+    expect(await post(id, { intent: "undoPaid", version: "2" })).toMatchObject({ ok: true, intent: "undoPaid", order: { status: "awaiting_payment", version: 3 } });
+  });
+
+  test("decline takes an optional reason of 500 characters at most", async () => {
+    const id = await idOf((await placeTestOrder(database)).token);
+
+    const tooLong = (await post(id, { intent: "decline", version: "1", reason: "x".repeat(501) })) as { data: { error: { code: string } } };
+    expect(tooLong.data.error.code).toBe("VALIDATION_FAILED");
+    expect(await post(id, { intent: "decline", version: "1", reason: "  Full that day.  " })).toMatchObject({ ok: true, intent: "decline" });
+    expect((await database.client.query("select decline_reason from orders where id = $1", [id])).rows).toEqual([{ decline_reason: "Full that day." }]);
+  });
+
+  test("markRefunded on an order without a refund due is INVALID_TRANSITION (409)", async () => {
+    const id = await idOf((await placeTestOrder(database)).token);
+
+    const result = (await post(id, { intent: "markRefunded", version: "1" })) as { data: { error: { code: string } }; init: { status: number } };
+    expect(result.init.status).toBe(409);
+    expect(result.data.error.code).toBe("INVALID_TRANSITION");
+  });
+
+  test("an unknown intent is VALIDATION_FAILED", async () => {
+    const id = await idOf((await placeTestOrder(database)).token);
+
+    const result = (await post(id, { intent: "explode", version: "1" })) as { data: { error: { code: string } } };
+    expect(result.data.error.code).toBe("VALIDATION_FAILED");
   });
 });

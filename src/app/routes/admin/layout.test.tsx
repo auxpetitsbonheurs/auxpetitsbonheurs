@@ -57,10 +57,18 @@ describe("admin/layout loader", () => {
 
 describe("Orders badge (S-034)", () => {
   const setStatus = (status: string, token: string) => database.client.query("update orders set status = $1 where tracking_token = $2", [status, token]);
+  /** An order on the approval path (placed before Juice payment, 2026-11-13). */
+  const placePending = async () => {
+    const order = await placeTestOrder(database);
+    await setStatus("pending_approval", order.token);
+    return order;
+  };
 
   test("AC1: 3 orders in Pending approval or Quote needed give toReview 3; other statuses do not count", async () => {
     const placed = [];
-    for (let i = 0; i < 4; i += 1) placed.push(await placeTestOrder(database));
+    for (let i = 0; i < 4; i += 1) placed.push(await placePending());
+    // An order awaiting its Juice payment is listed in Orders → Payment, not counted as to review.
+    await placeTestOrder(database);
     await setStatus("quote_needed", placed[1]!.token);
     await setStatus("approved", placed[3]!.token);
     const args = await as("admin");
@@ -78,8 +86,8 @@ describe("Orders badge (S-034)", () => {
   });
 
   test("AC3: after an order is approved the next load counts one fewer (default revalidation kept)", async () => {
-    const first = await placeTestOrder(database);
-    await placeTestOrder(database);
+    const first = await placePending();
+    await placePending();
     const args = await as("owner");
     expect((await layoutLoader(args("/admin"))).badges.toReview).toBe(2);
 

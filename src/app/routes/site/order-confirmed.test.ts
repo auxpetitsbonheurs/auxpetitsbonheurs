@@ -196,3 +196,62 @@ describe("right after Place order, no database (spec AC48, contracts.md v0.31)",
     expect(await loader({ ...args, request } as never)).toMatchObject({ number: "APB-0001" });
   });
 });
+
+describe("Juice payment instructions (S-278 AC2-AC4)", () => {
+  const setPayment = (name: string | null, number: string | null, whatsapp: string | null) =>
+    database.client.query("update settings set juice_name = $1, juice_number = $2, payment_whatsapp = $3", [name, number, whatsapp]);
+
+  test("amount, reference, the account, the deadline 24 h after placing and the prefilled proof link, from the database", async () => {
+    await setPayment("A. Baker", "5000 0001", "5000 0002");
+    const { path, token } = await placeOrder();
+
+    const data = (await load(path, token)) as { payment: unknown };
+    expect(data.payment).toEqual({
+      totalRs: 850,
+      reference: "APB-0001",
+      deadline: "2026-11-11T08:00:00.000Z",
+      deadlineLabel: "Wed 11 Nov, 12:00",
+      details: { juiceName: "A. Baker", juiceNumber: "5000 0001" },
+      proofUrl: `https://wa.me/23050000002?text=${encodeURIComponent("Hello, here is my Juice payment proof for order APB-0001 (Rs 850).")}`,
+    });
+  });
+
+  test("right after placing, the signed cookie gives the same instructions without the database (AC48)", async () => {
+    await setPayment("A. Baker", "5000 0001", "5000 0002");
+    const { path, token, confirmationCookie } = await placeOrder();
+
+    const fromCookie = await load(path, token, { cookie: confirmationCookie }, { noDatabase: true });
+    expect(fromCookie).toEqual(await load(path, token));
+  });
+
+  test("in French the proof message is French", async () => {
+    await setPayment("A. Baker", "5000 0001", "5000 0002");
+    const { path, token } = await placeOrder("/fr/basket");
+
+    const data = (await load(path, token)) as { payment: { proofUrl: string } };
+    expect(decodeURIComponent(data.payment.proofUrl)).toContain("Bonjour, voici la preuve de mon paiement Juice pour la commande APB-0001 (Rs 850).");
+  });
+
+  test("without the Juice name or number: no details and no proof link (calm fallback); the order is still placed", async () => {
+    await setPayment(null, "5000 0001", "5000 0002");
+    const { path, token } = await placeOrder();
+
+    const data = (await load(path, token)) as { payment: { details: unknown; proofUrl: unknown } };
+    expect(data.payment).toMatchObject({ details: null, proofUrl: null });
+  });
+
+  test("without the payment WhatsApp: the instructions show, without the proof link", async () => {
+    await setPayment("A. Baker", "5000 0001", null);
+    const { path, token } = await placeOrder();
+
+    const data = (await load(path, token)) as { payment: { details: unknown; proofUrl: unknown } };
+    expect(data.payment).toMatchObject({ details: { juiceName: "A. Baker" }, proofUrl: null });
+  });
+
+  test("once paid, the confirmation shows no instructions", async () => {
+    const { path, token } = await placeOrder();
+    await database.client.query("update orders set status = 'approved', paid = true");
+
+    expect(((await load(path, token)) as { payment: unknown }).payment).toBeNull();
+  });
+});

@@ -41,6 +41,8 @@ describe("S-058 AC5: invalid business values", () => {
       contactWhatsapp: "call me",
       contactEmail: "not-an-email",
       juiceNumber: "x".repeat(31),
+      juiceName: "x".repeat(61),
+      paymentWhatsapp: "not a phone",
       instagramUrl: "instagram",
       quoteValidityDays: "61",
       cakeMessageMax: "9",
@@ -52,7 +54,7 @@ describe("S-058 AC5: invalid business values", () => {
     expect(refused.init.status).toBe(400);
     expect(refused.data.error.code).toBe("VALIDATION_FAILED");
     expect(Object.keys(refused.data.error.fields ?? {}).sort()).toEqual(
-      ["cakeMessageMax", "contactEmail", "contactPhone", "contactWhatsapp", "deliveryFeeRs", "eveningReminderAt", "instagramUrl", "juiceNumber", "orderNumberPrefix", "pickupMapUrl", "quoteValidityDays"].sort(),
+      ["cakeMessageMax", "contactEmail", "contactPhone", "contactWhatsapp", "deliveryFeeRs", "eveningReminderAt", "instagramUrl", "juiceName", "juiceNumber", "orderNumberPrefix", "paymentWhatsapp", "pickupMapUrl", "quoteValidityDays"].sort(),
     );
     expect(refused.data.error.fields?.orderNumberPrefix).toBe("Use 1 to 5 capital letters and an optional dash, for example APB-.");
     expect(await stored()).toEqual({ version: 1, delivery_fee_rs: 200 });
@@ -71,6 +73,14 @@ describe("S-058 AC5: invalid business values", () => {
   ])("the edge value %s = %s is accepted", async (field, value) => {
     const { result } = await post({ [field]: value });
     expect(result).toMatchObject({ ok: true });
+  });
+
+  test("S-277 AC1: the Juice name, number and payment WhatsApp are saved as typed (trimmed)", async () => {
+    const { result } = await post({ juiceName: "  A. Baker ", juiceNumber: "5000 0001", paymentWhatsapp: "+230 5000 0002" });
+    expect(result).toMatchObject({ ok: true });
+    expect((await database.client.query("select juice_name, juice_number, payment_whatsapp from settings")).rows).toEqual([
+      { juice_name: "A. Baker", juice_number: "5000 0001", payment_whatsapp: "+230 5000 0002" },
+    ]);
   });
 
   test("blank optional contacts are saved as none", async () => {

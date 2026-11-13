@@ -8,7 +8,7 @@ export function menuProduct(id: string, basePriceRs: number, overrides: Partial<
 export function menu(products: MenuProduct[], generatedAt = 1000, deliveryFeeRs = 200): Menu {
   return {
     products,
-    checkout: { deliveryFeeRs, windows: { delivery: [], pickup: [] }, pickup: { address: null, mapUrl: null }, payment: { juiceNumber: null }, policies: null },
+    checkout: { deliveryFeeRs, windows: { delivery: [], pickup: [] }, pickup: { address: null, mapUrl: null }, policies: null },
     today: "2026-11-20",
     generatedAt,
   };

@@ -78,14 +78,13 @@ export interface SummarySectionProps {
   leftOut?: { lineId: string; name: string }[];
   itemsTotalRs: number;
   deliveryFeeRs: number;
-  juiceNumber: string | null;
   policies: string;
   errors: FieldErrors;
   initialAccepted?: boolean;
 }
 
 /** Step 6 (FR-022): items, fee line or "Pickup: free", total, payment info, policies. */
-export function SummarySection({ items, leftOut = [], itemsTotalRs, deliveryFeeRs, juiceNumber, policies, errors, initialAccepted }: SummarySectionProps) {
+export function SummarySection({ items, leftOut = [], itemsTotalRs, deliveryFeeRs, policies, errors, initialAccepted }: SummarySectionProps) {
   const { t } = useI18n();
   return (
     <section aria-labelledby="summary-heading" className="mt-10">
@@ -114,7 +113,8 @@ export function SummarySection({ items, leftOut = [], itemsTotalRs, deliveryFeeR
         <p data-when="pickup">{t("checkout.pickupFree")}</p>
         <TotalByChoice itemsTotalRs={itemsTotalRs} deliveryFeeRs={deliveryFeeRs} />
       </div>
-      <p className="mt-4 max-w-measure">{juiceNumber ? t("checkout.paymentJuice", { number: juiceNumber }) : t("checkout.paymentCash")}</p>
+      {/* Full payment by Juice; the account is shown only once the order is placed (S-278 AC6, S-277 AC4). */}
+      <p className="mt-4 max-w-measure">{t("checkout.paymentInfo")}</p>
       <PolicyAcceptance policies={policies} error={errors.acceptPolicies} initial={initialAccepted} />
     </section>
   );

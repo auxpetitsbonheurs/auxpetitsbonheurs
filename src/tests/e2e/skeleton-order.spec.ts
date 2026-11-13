@@ -1,15 +1,16 @@
 // The walking skeleton end to end (E-01 success measure, S-018 AC6; also S-016 AC6).
 // Runs in its own project before every other spec, so the database is still clean:
 // a guest orders for delivery on a 375 px phone, a double click still makes one order
-// (APB-0001), the Owner signs in on a phone and approves it, the activity log shows
-// both steps and the customer's tracking page shows Approved.
+// (APB-0001) awaiting its Juice payment, the Owner signs in on a phone and marks Payment
+// received (juice-payment spec: that confirms it), the activity log shows both steps and the
+// customer's tracking page shows Approved.
 import { chooseDate } from "./support/checkout-date";
 import { signIn } from "./support/admin";
 import { setClock } from "./support/clock";
 import { E2E_ACCOUNTS, SAMPLE_PRODUCT } from "./support/database";
 import { expect, test } from "./support/fixtures";
 
-test("S-018 AC6, S-016 AC6: guest order to APB-0001, double click still one order, Owner approves, log and tracking show it", async ({ page, context, browser, baseURL, db }) => {
+test("S-018 AC6, S-016 AC6, S-279: guest order to APB-0001, double click still one order, Owner marks it paid, log and tracking show it", async ({ page, context, browser, baseURL, db }) => {
   expect(page.viewportSize()?.width).toBe(375);
   expect(await db`select id from orders`).toEqual([]);
 
@@ -38,21 +39,24 @@ test("S-018 AC6, S-016 AC6: guest order to APB-0001, double click still one orde
   await page.getByRole("link", { name: "Follow my order" }).click();
   await expect(page).toHaveURL(/\/t\/[A-Za-z0-9_-]{43}$/);
   const progress = page.getByRole("region", { name: "Progress" });
-  await expect(progress.getByText("Step 1 of 5: Pending approval")).toBeVisible();
+  await expect(progress.getByText("Step 1 of 5: Awaiting payment")).toBeVisible();
 
-  // The Owner signs in on a phone and approves it from the review list.
+  // The Owner signs in on a phone and marks the Juice payment received from the Payment list.
   const phone = await browser.newContext({ viewport: { width: 375, height: 667 } });
+  // The same test clock as the guest, two hours later: the order's created time is the guest's clock.
+  await setClock(phone, baseURL!, "2026-11-20T08:00:00Z");
   const owner = await phone.newPage();
-  await signIn(owner, E2E_ACCOUNTS.owner, "/admin/orders?tab=review");
+  await signIn(owner, E2E_ACCOUNTS.owner, "/admin/orders?tab=payment");
   await owner.getByRole("link", { name: "Order APB-0001", exact: true }).click();
   await expect(owner.getByRole("heading", { level: 1, name: "Order APB-0001" })).toBeVisible();
   await expect(owner.locator("html")).toHaveAttribute("data-hydrated", "true");
-  await owner.getByRole("button", { name: "Approve" }).click();
-  await expect(owner.getByRole("status").filter({ hasText: "Order APB-0001 approved." })).toBeVisible();
+  await owner.getByRole("button", { name: "Payment received" }).click();
+  await owner.getByRole("button", { name: "Yes, payment received" }).click();
+  await expect(owner.getByRole("status").filter({ hasText: "Order APB-0001 marked paid and confirmed." })).toBeVisible();
 
   // The log shows both steps, oldest first.
   const log = owner.getByRole("list", { name: "Activity" });
-  await expect(log.getByRole("listitem")).toHaveText([/^Created by customer, \d{1,2} [A-Z][a-z]{2} \d{2}:\d{2}$/, /^Approved by E2E Owner, \d{1,2} [A-Z][a-z]{2} \d{2}:\d{2}$/]);
+  await expect(log.getByRole("listitem")).toHaveText([/^Created by customer, \d{1,2} [A-Z][a-z]{2} \d{2}:\d{2}$/, /^Payment received, marked by E2E Owner, \d{1,2} [A-Z][a-z]{2} \d{2}:\d{2}$/]);
   await phone.close();
 
   // The customer's tracking page shows Approved after a reload.

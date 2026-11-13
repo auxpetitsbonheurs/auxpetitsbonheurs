@@ -194,9 +194,11 @@ function refusal(result: Exclude<PlaceOrderResult, { ok: true }>, values: Record
 async function submitOrder(form: Record<string, unknown>, args: Route.ActionArgs, locale: Locale) {
   const { request, context } = args;
   const basket = readBasket(request);
+  // One instant for the order's created_at and its confirmation cookie (the payment deadline runs from it).
+  const now = context.get(clockContext).now();
   const result = await timed(context, "place-order", () => placeOrder(form, {
     db: context.get(requestDbContext).db,
-    now: context.get(clockContext).now(),
+    now,
     locale,
     basket,
   }));
@@ -212,8 +214,9 @@ async function submitOrder(form: Record<string, unknown>, args: Route.ActionArgs
   // A replay sets none: the first answer's cookie (with its left-out names) stays, or the page reads the database.
   const signer = context.get(confirmationContext);
   if (signer && !result.replayed) {
-    const snapshot = { number: result.orderNumber, locale: result.locale, leftOut: result.leftOutNames.map((name) => localized(name, result.locale)) };
-    headers.append("Set-Cookie", await signer.cookie(result.trackingToken, snapshot, orderPath, context.get(clockContext).now()));
+    const payment = result.payment ? { ...result.payment, placedAt: now.toISOString() } : undefined;
+    const snapshot = { number: result.orderNumber, locale: result.locale, leftOut: result.leftOutNames.map((name) => localized(name, result.locale)), payment };
+    headers.append("Set-Cookie", await signer.cookie(result.trackingToken, snapshot, orderPath, now));
   }
   return redirect(confirmation, { headers });
 }
@@ -533,7 +536,6 @@ function CheckoutForm({ data, model, refused }: { data: LoaderData; model: Baske
         leftOut={model.leftOut}
         itemsTotalRs={itemsTotalRs}
         deliveryFeeRs={checkout.deliveryFeeRs}
-        juiceNumber={checkout.payment.juiceNumber}
         policies={checkout.policies ? localized(checkout.policies, locale) : t("checkout.policiesDefault")}
         errors={errors}
         initialAccepted={values.acceptPolicies === "on"}

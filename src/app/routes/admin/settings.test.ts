@@ -52,7 +52,9 @@ describe("S-058 AC1: the Owner sees every business value", () => {
       contactPhone: null,
       contactWhatsapp: null,
       contactEmail: null,
+      juiceName: null,
       juiceNumber: "5000 0000",
+      paymentWhatsapp: null,
       instagramUrl: null,
       quoteValidityDays: 5,
       cakeMessageMax: 40,
@@ -78,24 +80,25 @@ describe("S-058 AC2: a new delivery fee applies to new orders only", () => {
 });
 
 describe("S-058 AC3, AC4: checkout, footer and tracking show a change on the next request", () => {
-  test("a new pickup address and Juice number reach checkout and the footer at once", async () => {
+  test("a new pickup address reaches checkout and the footer at once; the Juice details never reach the public checkout (S-277 AC4)", async () => {
     await getSiteSettings(db()); // warm the per-isolate cache with the old values
 
-    await save({ pickupAddress: "12 Royal Road, Beau Bassin", juiceNumber: "5999 1234" });
+    await save({ pickupAddress: "12 Royal Road, Beau Bassin", juiceName: "A. Baker", juiceNumber: "5999 1234", paymentWhatsapp: "5999 4321" });
 
     const basket = await basketLoader(routeArgs(database, { path: "/basket" }) as never);
     expect(basket.menu.data.checkout.pickup.address).toBe("12 Royal Road, Beau Bassin");
-    expect(basket.menu.data.checkout.payment.juiceNumber).toBe("5999 1234");
+    expect(basket.menu.data.checkout).not.toHaveProperty("payment");
+    expect(JSON.stringify(basket)).not.toMatch(/5999 1234|5999 4321|A\. Baker/);
     expect((await getSiteSettings(db())).footer.pickupAddress).toBe("12 Royal Road, Beau Bassin");
   });
 
-  test("the tracking page shows the new Juice number", async () => {
+  test("the tracking page of an order awaiting payment shows the new Juice details (S-278 AC5)", async () => {
     const { token } = await placeTestOrder(database);
 
-    await save({ juiceNumber: "5999 1234" });
+    await save({ juiceName: "A. Baker", juiceNumber: "5999 1234", paymentWhatsapp: "5999 4321" });
 
-    const page = (await trackingLoader(routeArgs(database, { path: `/t/${token}`, params: { token } }) as never)) as { payment: { juiceNumber: string | null } };
-    expect(page.payment.juiceNumber).toBe("5999 1234");
+    const page = (await trackingLoader(routeArgs(database, { path: `/t/${token}`, params: { token } }) as never)) as { payment: { details: unknown } };
+    expect(page.payment.details).toEqual({ juiceName: "A. Baker", juiceNumber: "5999 1234" });
   });
 });
 
@@ -110,8 +113,9 @@ describe("S-058 AC6: a new order number prefix is for new orders only", () => {
     expect(await number(first.token)).toBe("APB-0001");
     expect(await number(second.token)).toBe("CK-0002");
     const session = await owner();
-    const list = await ordersLoader(routeArgs(database, { path: "/admin/orders?tab=review", auth: session.auth, cookie: session.cookie }) as never);
-    expect(list.data.map((o: { number: string }) => o.number)).toEqual(["APB-0001", "CK-0002"]);
+    // New orders wait for their Juice payment: the Payment tab lists them (S-279).
+    const list = await ordersLoader(routeArgs(database, { path: "/admin/orders?tab=payment", auth: session.auth, cookie: session.cookie }) as never);
+    expect(list.payment!.awaiting.map((o: { number: string }) => o.number)).toEqual(["APB-0001", "CK-0002"]);
   });
 });
 

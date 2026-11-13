@@ -18,6 +18,7 @@ import { type AvailabilityCtx, type AvailabilityRules, type DateRange, type DayR
 import type { BasketLine } from "~/domain/basket";
 import { formatOrderNumber, newTrackingToken } from "~/domain/order-number";
 import { type CheckoutTotals, type LocalizedName, type PricedLine, type PricingGroup, type ProductPricing, cleanText, graphemeLength, priceBasket } from "~/domain/pricing";
+import type { PaymentSettings } from "~/domain/payment";
 import { type PromotionRule, bestPromotion } from "~/domain/promotions";
 import { todayMU } from "~/domain/time";
 import type { Locale } from "~/lib/locale";
@@ -41,7 +42,22 @@ export interface PlaceOrderContext {
  * `leftOutNames`: the names of those that still exist (a deleted product has none), in the
  * same order, so the confirmation can render without reading them back (checkout AC48).
  */
-export type PlacedOrder = PlacedOrderRef & { ok: true; orderNumber: string; replayed: boolean; leftOut: string[]; leftOutNames: LocalizedName[] };
+export type PlacedOrder = PlacedOrderRef & {
+  ok: true;
+  orderNumber: string;
+  replayed: boolean;
+  leftOut: string[];
+  leftOutNames: LocalizedName[];
+  /**
+   * A new order only: what its Juice payment instructions need (S-278 AC2), from the same
+   * Settings snapshot the order was placed with, so the confirmation renders without a read.
+   */
+  payment?: PlacedPayment;
+};
+
+export interface PlacedPayment extends PaymentSettings {
+  totalRs: number;
+}
 
 export type PlaceOrderResult =
   | PlacedOrder
@@ -59,6 +75,10 @@ interface SnapshotSettings {
   deliveryWindows: TimeWindow[];
   pickupWindows: TimeWindow[];
   orderNumberPrefix: string;
+  /** Juice payment details (migration 0013); shown only on the order's own pages. */
+  juiceName?: string | null;
+  juiceNumber?: string | null;
+  paymentWhatsapp?: string | null;
   defaultNoticeDays: number;
   closedWeekdays: number[];
   /** Ranges only (never the private reason) that touch the 90-day horizon (drizzle/0009). */
@@ -119,7 +139,10 @@ interface ProcedureInput {
   idempotencyKey: string | null;
   /** The request's Mauritius date: the procedure judges notice and horizon from it. */
   today: string;
-  /** The request instant (ISO): the procedure judges the promotion window from it (0012). */
+  /**
+   * The request instant (ISO): the procedure judges the promotion window from it (0012), and
+   * it is the order's `created_at`, from which its 24 h payment deadline runs (0013, S-278, S-280).
+   */
   now: string;
   insert: boolean;
   basket: ProcedureLine[];
@@ -332,7 +355,12 @@ export async function placeOrder(form: Record<string, unknown>, ctx: PlaceOrderC
     // The order is committed. The procedure and domain/pricing must agree; a difference is a bug to fix, never the customer's problem.
     if ("ok" in decision || decision.totals.totalRs !== decision.input.displayedTotalRs) logDrift("placed_but_refused_here");
     const lines = "ok" in decision ? [] : decision.lines;
-    return placedOrder(result.settings.orderNumberPrefix, result.placed, false, leftOutOf(lines, result.products));
+    const placed = placedOrder(result.settings.orderNumberPrefix, result.placed, false, leftOutOf(lines, result.products));
+    // The procedure wrote the order only when its total equals the displayed one (parsed: a single
+    // total or the one of the chosen fulfilment, as the page posts both).
+    if (!parsed.ok) return placed;
+    const { juiceName = null, juiceNumber = null, paymentWhatsapp = null } = result.settings;
+    return { ...placed, payment: { totalRs: parsed.data.displayedTotalRs, juiceName, juiceNumber, paymentWhatsapp } };
   }
   if ("ok" in decision) return decision;
   // Here everything passed but the procedure did not write: its rules and ours disagree. Ask

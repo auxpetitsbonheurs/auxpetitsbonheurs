@@ -1,16 +1,20 @@
 import { data, isRouteErrorResponse, redirect } from "react-router";
 import { OrderNotFound } from "~/components/order/order-not-found";
+import { PaymentInstructions } from "~/components/order/payment-instructions";
 import { StatusBadge } from "~/components/order/status-badge";
 import { StatusProgress } from "~/components/order/status-progress";
 import { Alert } from "~/components/ui/alert";
 import { formatOrderNumber } from "~/domain/order-number";
 import { customerProgress } from "~/domain/status";
-import { formatDayLabel } from "~/domain/time";
+import { normalizePhone } from "~/domain/phone";
+import { formatDayLabel, todayMU } from "~/domain/time";
 import { t as translate } from "~/i18n/catalog.server";
 import { localized } from "~/i18n/localized";
 import { useI18n } from "~/i18n/react";
 import { formatRupees, localeFromPathname } from "~/lib/locale";
+import { whatsappHref } from "~/lib/contact";
 import { requestDbContext } from "~/server/db.server";
+import { paymentView } from "~/server/payment-view.server";
 import { findTrackedOrder } from "~/server/repos/orders.server";
 import { isTrackingToken, orderLanguageRedirect, tokenPageHeaders } from "~/server/token-page.server";
 import type { Route } from "./+types/tracking";
@@ -32,13 +36,24 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
   if (moveTo) throw redirect(moveTo);
   const locale = localeFromPathname(url.pathname);
   // One query: the order, its items and the Settings it is shown with (ADR-0003 amendment 3).
-  const { id: _id, locale: _orderLocale, number, orderNumberPrefix, juiceNumber, ...shown } = order;
+  const { id: _id, locale: _orderLocale, number, orderNumberPrefix, payment: settings, createdAt, refundDueRs, refundedAt, contactWhatsapp, ...shown } = order;
+  const reference = formatOrderNumber(orderNumberPrefix, number);
   return {
     title: translate("order.tracking.metaTitle", locale),
-    order: { ...shown, number: formatOrderNumber(orderNumberPrefix, number), dateLabel: formatDayLabel(order.fulfilOn, locale) },
-    payment: { juiceNumber: juiceNumber?.trim() ? juiceNumber.trim() : null },
+    order: { ...shown, number: reference, dateLabel: formatDayLabel(order.fulfilOn, locale) },
+    // The Juice instructions only while the order waits for its payment (S-278 AC5).
+    payment: order.status === "awaiting_payment" ? paymentView({ totalRs: order.totalRs, reference, createdAt, settings, locale }) : null,
+    // A refused paid order (S-281 AC4): the refund still to come, or the day it was sent.
+    refund: refundDueRs === null ? null : { amountRs: refundDueRs, refundedOn: refundedAt ? formatDayLabel(todayMU(refundedAt), locale) : null },
     progress: customerProgress(order.status, order.fulfilment),
+    whatsappUrl: whatsappUrl(contactWhatsapp),
   };
+}
+
+/** The bakery's public WhatsApp as a wa.me link (a local number gets +230). */
+function whatsappUrl(number: string | null): string | null {
+  const e164 = number ? normalizePhone(number) : null;
+  return e164 ? whatsappHref(e164) : null;
 }
 
 export function meta({ loaderData }: Route.MetaArgs) {
@@ -105,6 +120,54 @@ function ItemsAndTotal({ order }: { order: TrackedView }) {
   );
 }
 
+function WhatsappLink({ href }: { href: string | null }) {
+  const { t } = useI18n();
+  if (!href) return null;
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex min-h-11 items-center font-semibold link">
+      {t("order.tracking.whatsapp")}
+    </a>
+  );
+}
+
+/** Where the order stands beyond the progress list: paid, refused (with the refund), cancelled. */
+function OrderState({ data: { order, refund, whatsappUrl } }: { data: Route.ComponentProps["loaderData"] }) {
+  const { t } = useI18n();
+  if (order.status === "approved" && order.paid) {
+    return (
+      <Alert tone="success" title={t("order.payment.paidTitle")} className="mt-6">
+        <p>{t("order.payment.paidBody")}</p>
+      </Alert>
+    );
+  }
+  if (order.status === "declined") {
+    return (
+      <Alert tone="warning" title={t("order.tracking.declinedTitle")} className="mt-6">
+        {order.declineReason && <p className="wrap-anywhere">{t("order.tracking.declinedReason", { reason: order.declineReason })}</p>}
+        {refund && (
+          <p className="mt-1 font-semibold">
+            {refund.refundedOn
+              ? t("order.tracking.refunded", { amount: formatRupees(refund.amountRs), date: refund.refundedOn })
+              : t("order.tracking.refundDue", { amount: formatRupees(refund.amountRs) })}
+          </p>
+        )}
+        <p className="mt-1">{t("order.tracking.declinedBody")}</p>
+        <WhatsappLink href={whatsappUrl} />
+      </Alert>
+    );
+  }
+  if (order.status === "cancelled") {
+    const unpaid = order.cancelReason === "unpaid";
+    return (
+      <Alert tone="warning" title={unpaid ? t("order.tracking.cancelledUnpaidTitle") : t("order.tracking.cancelledTitle")} className="mt-6">
+        {unpaid && <p>{t("order.tracking.cancelledUnpaidBody")}</p>}
+        <WhatsappLink href={whatsappUrl} />
+      </Alert>
+    );
+  }
+  return null;
+}
+
 export default function Tracking({ loaderData }: Route.ComponentProps) {
   const { t } = useI18n();
   const { order, payment, progress } = loaderData;
@@ -118,6 +181,8 @@ export default function Tracking({ loaderData }: Route.ComponentProps) {
           {order.paid ? t("order.tracking.paid") : t("order.tracking.unpaid")}
         </span>
       </div>
+      {payment && <PaymentInstructions view={payment} />}
+      <OrderState data={loaderData} />
       {order.status === "pending_approval" && (
         <Alert tone="info" title={t("order.confirmed.notConfirmedTitle")} className="mt-6">
           <p>{t("order.confirmed.notConfirmedBody")}</p>
@@ -130,12 +195,6 @@ export default function Tracking({ loaderData }: Route.ComponentProps) {
         </h2>
         <OrderFacts order={order} />
         <ItemsAndTotal order={order} />
-      </section>
-      <section aria-labelledby="payment-heading" className="mt-8">
-        <h2 id="payment-heading" className="section-title-start text-h2">
-          {t("order.tracking.paymentTitle")}
-        </h2>
-        <p className="mt-2 max-w-measure">{payment.juiceNumber ? t("checkout.paymentJuice", { number: payment.juiceNumber }) : t("checkout.paymentCash")}</p>
       </section>
     </>
   );

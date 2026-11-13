@@ -69,6 +69,14 @@ export const orders = pgTable(
     idempotencyKey: uuid("idempotency_key").unique(),
     policiesAcceptedAt: timestamp("policies_accepted_at", tz),
     pendingAlertSentAt: timestamp("pending_alert_sent_at", tz),
+    /** Juice payment (migration 0013): the 12 h unpaid reminder was queued (S-280). */
+    paymentReminderSentAt: timestamp("payment_reminder_sent_at", tz),
+    /** Why a cancelled order was cancelled: `unpaid` (24 h job, S-280); E-06 adds others. */
+    cancelReason: text("cancel_reason"),
+    /** Money to send back by Juice after a paid order was refused (S-281); null = none due. */
+    refundDueRs: integer("refund_due_rs"),
+    refundedAt: timestamp("refunded_at", tz),
+    refundedBy: uuid("refunded_by").references(() => admin.id, { onDelete: "restrict" }),
     version: integer("version").notNull().default(1),
     createdAt: timestamp("created_at", tz).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", tz).notNull().defaultNow(),
@@ -89,6 +97,7 @@ export const orders = pgTable(
     ),
     check("orders_paid_ck", sql`${t.paid} or (${t.paidAt} is null and ${t.paidBy} is null)`),
     check("orders_version_ck", sql`${t.version} >= 1`),
+    check("orders_refund_ck", sql`(${t.refundDueRs} is null or ${t.refundDueRs} >= 0) and (${t.refundedAt} is null or ${t.refundDueRs} is not null)`),
   ],
 ).enableRLS();
 
