@@ -15,6 +15,8 @@ import { LOCALE_COOKIE, decideLocale, localeCookie, twinPath } from "~/lib/local
 import { readBasketCount } from "~/server/basket.server";
 import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
+import { publicConfigContext } from "~/server/public-config.server";
+import { photoOrigin } from "~/lib/images";
 import { getSiteSettings } from "~/server/repos/settings.server";
 import { timed } from "~/server/server-timing.server";
 import type { Route } from "./+types/layout";
@@ -49,6 +51,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const { footer: contacts } = await timed(context, "settings", () => getSiteSettings(context.get(requestDbContext).db));
   return {
     basketCount: readBasketCount(request),
+    photoOrigin: photoOrigin(context.get(publicConfigContext).supabaseUrl),
     contacts,
     year: todayMU(context.get(clockContext).now()).slice(0, 4),
   };
@@ -108,6 +111,8 @@ export default function SiteLayout({ loaderData }: Route.ComponentProps) {
     <div className="flex min-h-dvh flex-col">
       {/* React hoists this into <head>: the phone's browser bar matches the burgundy header band (tokens color.band). */}
       <meta name="theme-color" content={SITE_BAND} />
+      {/* Hoisted to the top of <head> by React: the photo host's connection opens while the page parses (S-276 AC7). */}
+      {loaderData.photoOrigin && <link rel="preconnect" href={loaderData.photoOrigin} />}
       <BrandShareImage />
       <NavProgress />
       <SkipLink />

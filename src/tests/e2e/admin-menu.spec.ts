@@ -531,7 +531,7 @@ test.describe("S-047 product photos", () => {
     await page.goto(`/menu/${slug!.slug}`);
     const photo = page.getByRole("img", { name }).first();
     await expect(photo).toHaveAttribute("srcset", new RegExp(`-480w\\.webp 480w, .*-960w\\.webp 960w, .*\\.webp 1600w$`));
-    await expect(photo).toHaveAttribute("sizes", /90vw$/);
+    await expect(photo).toHaveAttribute("sizes", /90vw, 20rem$/);
   });
 
   test("AC1: a HEIC photo is converted in the browser and stored as WebP", async ({ page, db }) => {

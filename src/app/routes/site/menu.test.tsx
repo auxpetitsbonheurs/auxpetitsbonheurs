@@ -61,7 +61,7 @@ describe("Our collection page (S-244)", () => {
 
     const img = html.match(/<img[^>]*cdn\.test\/p\.webp[^>]*>/)![0];
     expect(img).toMatch(new RegExp(`srcSet="${srcSet}"`, "i"));
-    expect(img).toContain('sizes="(min-width: 64rem) 17rem, (min-width: 48rem) 31vw, (min-width: 20rem) 47vw, 100vw"');
+    expect(img).toContain('sizes="(min-width: 64rem) 17rem, (min-width: 48rem) 31vw, (min-width: 20rem) calc(50vw - 1.5rem), 100vw"');
     expect(img).toContain('width="1600" height="1200" loading="eager"');
     expect(img).toMatch(/fetchPriority="high"/i);
   });

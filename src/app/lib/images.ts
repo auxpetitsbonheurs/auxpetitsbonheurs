@@ -37,6 +37,19 @@ export function webPhoto(storagePath: string, width: number, height: number, var
   return { url, width, height, srcSet, thumbUrl: urls[0]!.url };
 }
 
+/**
+ * Origin the photos come from, for a `preconnect` (S-276 AC7): the page warms that connection
+ * while the HTML still parses, so the LCP photo does not wait for its own DNS, TCP and TLS.
+ * Null for no or a malformed URL (sample data, a test without Supabase).
+ */
+export function photoOrigin(supabaseUrl: string): string | null {
+  try {
+    return supabaseUrl ? new URL(supabaseUrl).origin : null;
+  } catch {
+    return null;
+  }
+}
+
 /** URL of the smallest stored copy of a photo (admin thumbnails), else the original. */
 export function thumbnailUrl(storagePath: string, width: number, variants: readonly number[] | null | undefined, supabaseUrl: string): string {
   const photo = webPhoto(storagePath, width, width, variants, supabaseUrl);

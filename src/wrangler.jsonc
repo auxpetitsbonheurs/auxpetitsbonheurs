@@ -33,10 +33,11 @@
 			"name": "auxpetitsbonheurs-staging",
 			"workers_dev": true,
 			"preview_urls": false,
-			// Smart Placement (ADR-0003 amendment 2026-11-11, all plans incl. Free): run the Worker
-			// near Supabase instead of near the visitor, since a page makes several database round
-			// trips and the visitor only one. Static assets are still served from the nearest edge.
-			"placement": { "mode": "smart" },
+			// Run the Worker near Supabase instead of near the visitor, since a page makes several
+			// database round trips and the visitor only one. Static assets are still served from the
+			// nearest edge. Targeted at the database's region (Mumbai, ap-south-1; ADR-0003 amendment
+			// 6): Smart Placement stayed `local-…` for days, so every query paid edge-to-Mumbai.
+			"placement": { "mode": "targeted", "region": "aws:ap-south-1" },
 			"vars": {
 				"APP_ENV": "staging",
 				"APP_TIME_ZONE": "Indian/Mauritius"

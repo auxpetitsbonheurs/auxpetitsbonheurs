@@ -272,3 +272,16 @@ Hyperdrive removes the ~0.7 s connection on every request; this change removes t
 confirmation's remaining query and connection altogether, ~0.2 s per Place order with Hyperdrive
 and ~0.9 s if staging goes back to the pooler without it. One cold-isolate run read the layout's
 Settings once (208 ms, the 60 s display cache); the order itself never.
+
+## Amendment 2026-11-13 (6): staging Worker placed in the database's region
+Appended. Trigger: S-276 AC7 (LCP ≤ 2.5 s). Staging Server-Timing from the US test machine
+still showed `cf-placement: local-ORD` two days after Smart Placement, and every query ~175-190
+ms (Home: up to 5 sequential queries, ~0.97 s of `app`; product page ~0.55 s), which put the
+simulated TTFB at 1.3-1.6 s.
+
+Decision: staging uses `"placement": { "mode": "targeted", "region": "aws:ap-south-1" }`
+(wrangler 4 targeted placement), the region recorded in `docs/runbooks/deploy-keys.md`. A page
+then pays one edge-to-Mumbai trip instead of one per query. Verify after the deploy: the
+`cf-placement` header names a remote location and `db-query` falls to a few ms. If not (wrong
+region, or the plan refuses targeted placement), go back to `"mode": "smart"`. Production gets
+the same line in a release once staging confirms it.
