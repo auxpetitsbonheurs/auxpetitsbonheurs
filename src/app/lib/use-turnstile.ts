@@ -9,7 +9,7 @@ const SCRIPT_URL = "https://challenges.cloudflare.com/turnstile/v0/api.js?render
 export const TURNSTILE_LOAD_TIMEOUT_MS = 10_000;
 const TOKEN_WAIT_MS = 15_000;
 
-interface TurnstileApi {
+export interface TurnstileApi {
   render(element: HTMLElement, options: Record<string, unknown>): string;
   reset(widgetId: string): void;
   remove(widgetId: string): void;
@@ -23,7 +23,8 @@ declare global {
 
 let loading: Promise<TurnstileApi> | null = null;
 
-function loadScript(): Promise<TurnstileApi> {
+/** The Cloudflare script, loaded once per page (shared with the checkout's widget, S-091 AC8). */
+export function loadScript(): Promise<TurnstileApi> {
   if (window.turnstile) return Promise.resolve(window.turnstile);
   loading ??= new Promise<TurnstileApi>((resolve, reject) => {
     const script = document.createElement("script");

@@ -90,6 +90,12 @@ describe("sold-out product (S-011 AC3)", () => {
     expect(productView(data.product, "en").addable).toBe(false);
   });
 
+  test("gives no earliest date: the Sold out area says what to do instead (leftovers bug)", async () => {
+    await insertProduct(database.db, { status: "sold_out" });
+
+    expect((await view("/menu/chocolate-cake")).earliestDate).toBeNull();
+  });
+
   test("a forged addToBasket is refused with PRODUCT_UNAVAILABLE (409) and the basket is unchanged", async () => {
     const id = await insertProduct(database.db, { status: "sold_out" });
 

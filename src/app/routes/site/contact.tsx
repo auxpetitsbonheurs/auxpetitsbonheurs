@@ -1,4 +1,4 @@
-import { Clock, ExternalLink, MapPin, MessageCircle, Phone } from "lucide-react";
+import { Clock, ExternalLink, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import type { ReactNode } from "react";
 import { data } from "react-router";
 import { SitePageError } from "~/components/site/page-error";
@@ -6,7 +6,7 @@ import { PlainText } from "~/components/site/plain-text";
 import { Button } from "~/components/ui/button";
 import { t as serverT } from "~/i18n/catalog.server";
 import { useI18n } from "~/i18n/react";
-import { safeWebUrl, telHref, whatsappHref } from "~/lib/contact";
+import { mailHref, safeWebUrl, telHref, whatsappHref } from "~/lib/contact";
 import { type Locale, localeFromPathname } from "~/lib/locale";
 import { SEO_HANDLE, SITE_NAME, canonicalUrl, rootOrigin, seoMeta } from "~/lib/seo";
 import { requestDbContext } from "~/server/db.server";
@@ -37,8 +37,8 @@ export const handle = SEO_HANDLE;
 
 /**
  * `site/contact` loader (S-251, FR-079): contact details from Settings (Owner only, S-058; the
- * isolate cache, so a change shows within 60 s) and the page text. No email address is read
- * into the page: there is no form and no email until a custom domain exists.
+ * isolate cache, so a change shows within 60 s) and the page text. The email is the footer's
+ * own Settings value (S-251 AC4 amended), so the page and the footer never disagree; no form.
  */
 export async function loader({ url, context }: Route.LoaderArgs) {
   const locale = localeFromPathname(url.pathname);
@@ -53,6 +53,7 @@ export async function loader({ url, context }: Route.LoaderArgs) {
     description: serverT("contactPage.metaDescription", locale),
     whatsapp: settings.footer.whatsapp,
     phone: settings.footer.phone,
+    email: settings.footer.email,
     address: exactAddress(settings.footer.pickupAddress),
     mapUrl: safeWebUrl(settings.checkout.pickup.mapUrl),
     text,
@@ -110,8 +111,8 @@ const iconProps = { "aria-hidden": true, className: "size-5 shrink-0 text-primar
 const NARROW_BUTTON = "w-full px-3 wrap-anywhere min-[20rem]:px-6";
 const NARROW_ICON = "hidden min-[20rem]:block";
 
-/** WhatsApp (primary) and phone (outline), full width on phones; each omitted without its Settings value (AC2). */
-function ReachCard({ whatsapp, phone }: { whatsapp: string | null; phone: string | null }) {
+/** WhatsApp (primary), phone and email (outline), full width on phones; each omitted without its Settings value (AC2, AC4). */
+function ReachCard({ whatsapp, phone, email }: { whatsapp: string | null; phone: string | null; email: string | null }) {
   const { t } = useI18n();
   return (
     <InfoCard id="contact-reach" title={t("contactPage.reachHeading")} icon={<MessageCircle {...iconProps} />}>
@@ -129,6 +130,15 @@ function ReachCard({ whatsapp, phone }: { whatsapp: string | null; phone: string
             <a href={telHref(phone)}>
               <Phone aria-hidden="true" strokeWidth={1.75} className={NARROW_ICON} />
               <span>{t("sitePage.call", { number: phone })}</span>
+            </a>
+          </Button>
+        )}
+        {email && (
+          <Button asChild variant="outline" className={NARROW_BUTTON}>
+            <a href={mailHref(email)}>
+              <Mail aria-hidden="true" strokeWidth={1.75} className={NARROW_ICON} />
+              {/* Long addresses may break anywhere at narrow widths (as in the footer). */}
+              <span className="min-w-0 wrap-anywhere">{t("contactPage.email", { email })}</span>
             </a>
           </Button>
         )}
@@ -157,7 +167,7 @@ function PickupCard({ address, note, mapUrl }: { address: string | null; note: s
 
 export default function Contact({ loaderData }: Route.ComponentProps) {
   const { t } = useI18n();
-  const { whatsapp, phone, address, mapUrl, text } = loaderData;
+  const { whatsapp, phone, email, address, mapUrl, text } = loaderData;
   return (
     <>
       <header className="text-center">
@@ -167,7 +177,7 @@ export default function Contact({ loaderData }: Route.ComponentProps) {
       </header>
       {/* One column on phones; two at md, the reach card first so WhatsApp is never below the fold. */}
       <div className="mx-auto mt-8 grid max-w-4xl gap-4 md:grid-cols-2 md:gap-6">
-        {(whatsapp || phone) && <ReachCard whatsapp={whatsapp} phone={phone} />}
+        {(whatsapp || phone || email) && <ReachCard whatsapp={whatsapp} phone={phone} email={email} />}
         <PickupCard address={address} note={text.pickupNote} mapUrl={mapUrl} />
         {text.hours && (
           <InfoCard id="contact-hours" title={t("contactPage.hoursHeading")} icon={<Clock {...iconProps} />}>

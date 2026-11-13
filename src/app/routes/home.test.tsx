@@ -201,6 +201,22 @@ describe("loader", () => {
     expect((await load("2026-11-10T14:00:00Z")).home.promoCards).toEqual([]);
   });
 
+  test("S-053 AC8: a card promotion's photo carries its 480/960 copies for srcset; without copies, the original only", async () => {
+    await exec("delete from promotion");
+    await exec(`insert into promotion (title_en, starts_at, ends_at, placement, image_path, image_variants) values
+      ('With copies', '2026-11-01T00:00:00Z', '2026-12-01T00:00:00Z', 'card', 'promotions/a/b/c.webp', '{480,960}'),
+      ('Original only', '2026-11-02T00:00:00Z', '2026-12-01T00:00:00Z', 'card', 'promotions/a/b/d.webp', '{}')`);
+
+    const cards = (await load()).home.promoCards;
+
+    expect(cards.map((c) => c.title.en)).toEqual(["Original only", "With copies"]);
+    const withCopies = cards.find((c) => c.title.en === "With copies")!.photo!;
+    expect(withCopies.url).toBe("https://storage.test/storage/v1/object/public/public-images/promotions/a/b/c.webp");
+    expect(withCopies.srcSet).toContain("promotions/a/b/c-480w.webp 480w");
+    expect(withCopies.srcSet).toContain("promotions/a/b/c-960w.webp 960w");
+    expect(cards.find((c) => c.title.en === "Original only")!.photo!.srcSet).toBeUndefined();
+  });
+
   test("AC4: a seasonal product shows only while today (Mauritius) is inside its window", async () => {
     await exec("delete from product");
     await addProduct("log", "seasonal", "available", ["2026-11-01", "2026-11-10"]);

@@ -92,7 +92,8 @@ test.describe("S-041 menu list", () => {
         await expectNoHorizontalScroll(page);
         await expectNothingClipped(page);
         await expectTapTargets(page);
-        await expectKeyboardOperable(page, MENU_TAB_LIMIT);
+        // Hundreds of stops: the batched walk (same checks, one read per 40 presses; was 48 s).
+        await expectKeyboardOperable(page, MENU_TAB_LIMIT, { batched: true });
       });
     }
   });

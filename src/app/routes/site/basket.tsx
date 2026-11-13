@@ -6,6 +6,8 @@ import { basketLineViews } from "~/components/checkout/basket-line-view";
 import { Alert } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import { leftOutNames, nameList } from "~/lib/left-out";
+import { whenLoadedAndIdle } from "~/lib/after-load";
+import type { OrderTurnstile } from "~/lib/order-turnstile";
 import { DateSection, DetailsSection, TimeSection } from "~/components/checkout/checkout-steps";
 import { ErrorSummary } from "~/components/checkout/error-summary";
 import { FulfilmentSection } from "~/components/checkout/fulfilment-section";
@@ -29,19 +31,19 @@ import { type Locale, formatRupees, localeFromPathname, localePath } from "~/lib
 import { type ActionErrorBody, actionError } from "~/server/action-result.server";
 import { basketCookie, clearBasketCookie, readBasket } from "~/server/basket.server";
 import { leftOutCookie } from "~/server/left-out.server";
+import { clientIp } from "~/server/auth-rate-limit.server";
 import { clockContext } from "~/server/clock.server";
 import { confirmationContext } from "~/server/confirmation-cookie.server";
 import { Uuid } from "~/server/contracts/shared";
 import { RemoveLineInput, UpdateLineInput } from "~/server/contracts/site";
 import { requestDbContext } from "~/server/db.server";
-import { clientIp } from "~/server/auth-rate-limit.server";
-import { consumeOrderRateLimit } from "~/server/order-rate-limit.server";
 import { loadMenu } from "~/server/menu.server";
 import { noStore } from "~/server/response-headers.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { findProductsByIds } from "~/server/repos/catalogue.server";
 import { timed } from "~/server/server-timing.server";
 import { type PlaceOrderResult, placeOrder } from "~/server/services/place-order.server";
+import { turnstileContext } from "~/server/turnstile.server";
 import type { Route } from "./+types/basket";
 
 /** no-store on the page, data requests and action results: the form carries a per-render idempotency key (M2). */
@@ -204,6 +206,15 @@ function refusal(result: Exclude<PlaceOrderResult, { ok: true }>, values: Record
       const { lines, itemsTotalRs, deliveryFeeRs, totalRs } = result;
       return actionError(result.code, locale, { extra: { values, lines, itemsTotalRs, deliveryFeeRs, totalRs } });
     }
+    // Step 3 (S-091 AC8): calm, the form and its key kept, so the next press is still one order.
+    case "RATE_LIMITED": {
+      const minutes = Math.max(1, Math.ceil(result.retryAfterSeconds / 60));
+      const fields = { form: translate("checkout.errors.rateLimited", locale, { minutes }) };
+      // The basket and typed details stay on the page, which names WhatsApp as the way to finish now.
+      return actionError(result.code, locale, { fields, extra: { values, retryAfterSeconds: result.retryAfterSeconds }, headers: { "Retry-After": String(result.retryAfterSeconds) } });
+    }
+    case "BOT_CHECK_FAILED":
+      return actionError(result.code, locale, { fields: { form: translate("checkout.errors.botCheck", locale) }, extra: { values } });
   }
 }
 
@@ -212,22 +223,14 @@ async function submitOrder(form: Record<string, unknown>, args: Route.ActionArgs
   const basket = readBasket(request);
   // One instant for the order's created_at and its confirmation cookie (the payment deadline runs from it).
   const now = context.get(clockContext).now();
-  // RL-order (S-228 AC2; a replay of a placed order is never counted): bot and spam orders stop here, before any order or email is written. The
-  // basket and typed details stay on the page, which names WhatsApp as the way to finish now.
-  const limited = await consumeOrderRateLimit(context.get(requestDbContext).db, clientIp(request), form.idempotencyKey, now);
-  if (!limited.ok) {
-    const minutes = Math.max(1, Math.ceil(limited.retryAfterSeconds / 60));
-    return actionError("RATE_LIMITED", locale, {
-      fields: { form: translate("checkout.errors.rateLimited", locale, { minutes }) },
-      extra: { values: echo(form), retryAfterSeconds: limited.retryAfterSeconds },
-      headers: { "Retry-After": String(limited.retryAfterSeconds) },
-    });
-  }
+  // RL-order (S-228 AC2, S-091 AC8) and Turnstile are pipeline step 3 inside placeOrder: counted in
+  // the same CALL as the order (no extra round trip), and a replay of a placed order is never counted.
   const result = await timed(context, "place-order", () => placeOrder(form, {
     db: context.get(requestDbContext).db,
     now,
     locale,
     basket,
+    guard: { ip: clientIp(request), turnstile: context.get(turnstileContext) },
   }));
   if (!result.ok) return refusal(result, echo(form), locale, basket.length > 0);
   // The order's own locale: a replay from either language returns the original redirect (S-014 AC2).
@@ -526,6 +529,46 @@ function useCheckoutDates(data: LoaderData, model: BasketModel, refused: OrderRe
   return useMemo(() => basketDates(data.today, rules, items), [key]);
 }
 
+/**
+ * S-091 AC8: the invisible bot check. A hidden `turnstileToken` the widget fills; the widget is
+ * loaded only when Turnstile is configured, after load and idle. A refusal (any) means the token
+ * was spent, so the widget makes a fresh one. Without JavaScript, or before a token exists, the
+ * form posts without one and the server applies the stricter rate limit: never a blocked order.
+ */
+function OrderBotCheck({ siteKey, refused }: { siteKey: string | null; refused: OrderRefusal | undefined }) {
+  const { locale } = useI18n();
+  const container = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const widget = useRef<OrderTurnstile | null>(null);
+  useEffect(() => {
+    if (!siteKey) return;
+    let gone = false;
+    const cancel = whenLoadedAndIdle(() => {
+      if (!container.current || !input.current) return;
+      void import("~/lib/order-turnstile")
+        .then(({ mountOrderTurnstile }) => mountOrderTurnstile(container.current!, input.current!, siteKey, locale))
+        .then((mounted) => (gone ? mounted.remove() : (widget.current = mounted)))
+        // No script (blocked, offline): the form still posts, under the stricter limit.
+        .catch(() => undefined);
+    });
+    return () => {
+      gone = true;
+      cancel();
+      widget.current?.remove();
+      widget.current = null;
+    };
+  }, [siteKey, locale]);
+  useEffect(() => {
+    if (refused) widget.current?.reset();
+  }, [refused]);
+  return (
+    <>
+      <input ref={input} type="hidden" name="turnstileToken" defaultValue="" />
+      {siteKey && <div ref={container} className="mt-4 empty:hidden" />}
+    </>
+  );
+}
+
 function CheckoutForm({ data, model, refused }: { data: LoaderData; model: BasketModel; refused: OrderRefusal | undefined }) {
   const { t, locale } = useI18n();
   const navigation = useNavigation();
@@ -542,7 +585,8 @@ function CheckoutForm({ data, model, refused }: { data: LoaderData; model: Baske
   // Memoised on the refusal so the note scrolls into view once, not on every render.
   const note = useMemo(() => refusalNote(refused, t, locale), [refused, t, locale]);
   const dates = useCheckoutDates(data, model, refused, locale);
-  const contacts = (useRouteLoaderData(`site-${locale}`) as { contacts?: FooterContacts } | undefined)?.contacts;
+  const site = useRouteLoaderData(`site-${locale}`) as { contacts?: FooterContacts; turnstileSiteKey?: string | null } | undefined;
+  const contacts = site?.contacts;
   return (
     <Form method="post" noValidate className="checkout-form">
       {refused && !priceChanged && <ErrorSummary ref={summaryRef} message={refused.error.message} fields={refused.error.fields} />}
@@ -565,6 +609,7 @@ function CheckoutForm({ data, model, refused }: { data: LoaderData; model: Baske
         initialAccepted={values.acceptPolicies === "on"}
       />
       <RefusalNoteAlert note={note} />
+      <OrderBotCheck siteKey={site?.turnstileSiteKey ?? null} refused={refused} />
       <PlaceOrderBar itemsTotalRs={itemsTotalRs} deliveryFeeRs={checkout.deliveryFeeRs} label={label} submitting={submitting} />
     </Form>
   );

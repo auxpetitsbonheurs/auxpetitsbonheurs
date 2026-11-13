@@ -86,6 +86,7 @@ id · group_id FK → option_group CASCADE · name_en/name_fr · price_delta_rs 
 | id | uuid | no | PK |
 | title_en/_fr, text_en/_fr | text | en no, fr yes | |
 | image_path | text | yes | bucket `public-images` |
+| image_variants | smallint[] | no | default `{}`; widths of the stored 480/960 copies (S-053 AC8, S-276; migration 0020) |
 | starts_at / ends_at | timestamptz | no | entered in MU time; CHECK ends_at > starts_at |
 | active | boolean | no | default true; "end early" switch |
 | placement | enum `promo_placement` (banner, card, both) | no | |

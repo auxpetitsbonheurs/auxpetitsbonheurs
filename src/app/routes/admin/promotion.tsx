@@ -1,5 +1,6 @@
 import { ChevronLeft } from "lucide-react";
-import { type ChangeEvent, useEffect, useRef, useState } from "react";
+import { type ChangeEvent, Suspense, lazy, useEffect, useRef, useState } from "react";
+import type { ImageState } from "~/components/admin/site-image-field";
 import { Link, data, useFetcher, useNavigate } from "react-router";
 import { AdminErrorBoundary } from "~/components/admin/admin-states";
 import { LeaveDialog, keepAboveSaveBar, useUnsavedGuard } from "~/components/admin/unsaved-guard";
@@ -21,6 +22,10 @@ import { clockContext } from "~/server/clock.server";
 import { DISCOUNT_CHOICES, PROMO_LINK_KINDS, PROMO_PLACEMENTS, PROMO_TEXT_MAX, PROMO_TITLE_MAX, type PromotionProblem, parsePromotionForm } from "~/server/contracts/promotions";
 import { Uuid } from "~/server/contracts/shared";
 import { requestDbContext } from "~/server/db.server";
+import { afterResponseContext } from "~/server/after-response.server";
+import { publicImageUrl } from "~/lib/images";
+import { publicConfigContext } from "~/server/public-config.server";
+import { storageContext, uploadContext } from "~/server/storage.server";
 import { type EditablePromotion, type PromotionProductChoice, findPromotion, listPromotionProducts, savePromotion } from "~/server/services/save-promotion.server";
 import type { Route } from "./+types/promotion";
 
@@ -28,7 +33,7 @@ import type { Route } from "./+types/promotion";
 export const handle = { titleKey: "admin.nav.promotions" };
 
 /** The form's starting values: the saved promotion, or a new one from today 00:00 for a week. */
-function editorValues(found: EditablePromotion | undefined, now: Date) {
+function editorValues(found: EditablePromotion | undefined, now: Date, supabaseUrl: string) {
   const today = todayMU(now);
   return {
     id: found?.id ?? null,
@@ -40,6 +45,8 @@ function editorValues(found: EditablePromotion | undefined, now: Date) {
     placement: found?.placement ?? "both",
     link: found?.link ?? { kind: "none" as const, productId: null, category: null },
     discounts: found?.discounts ?? [],
+    imagePath: found?.imagePath ?? null,
+    imageUrl: found?.imagePath ? publicImageUrl(found.imagePath, supabaseUrl) : null,
   };
 }
 
@@ -53,7 +60,7 @@ export async function loader(args: Route.LoaderArgs) {
   if (id && !found) throw data(null, { status: 404 });
   return {
     title: translate(found ? "admin.promotions.editTitle" : "admin.promotions.newTitle", me.locale),
-    promotion: editorValues(found, now),
+    promotion: editorValues(found, now, args.context.get(publicConfigContext).supabaseUrl),
     products: await listPromotionProducts(db, now, found?.id ?? null),
   };
 }
@@ -82,7 +89,16 @@ export async function action(args: Route.ActionArgs) {
   if (!parsed.ok) return actionError("VALIDATION_FAILED", me.locale, { fields: problemMessages(parsed.problems, products, me.locale) });
   // An edit saves to the promotion in the URL only, never to an id posted from another page.
   if ((args.params.id ?? null) !== parsed.input.id) return actionError("VALIDATION_FAILED", me.locale);
-  const result = await savePromotion(db, parsed.input, { adminId: me.id, now });
+  const session = Uuid.safeParse(form.get("uploadSessionId"));
+  const result = await savePromotion(db, parsed.input, {
+    adminId: me.id,
+    now,
+    uploadSessionId: session.success ? session.data.toLowerCase() : undefined,
+    uploads: args.context.get(uploadContext),
+    storage: args.context.get(storageContext),
+    after: args.context.get(afterResponseContext),
+  });
+  if (!result.ok && result.code === "UPLOAD_REJECTED") return actionError(result.code, me.locale, { fields: { imagePath: translate("admin.promotions.imageRejected", me.locale) } });
   if (!result.ok) return actionError("NOT_FOUND", me.locale);
   console.log(JSON.stringify({ level: "info", event: "promotion_saved", id: result.id, isNew: !parsed.input.id, actorRole: me.role }));
   return { ok: true as const, id: result.id };
@@ -110,6 +126,7 @@ const ANCHORS: Record<string, string> = {
   placement: "placement-banner",
   linkProductId: "link-product",
   linkCategory: "link-category",
+  imagePath: "promotion-image",
 };
 const anchorsFor = (fields: Fields | undefined) => ({ ...ANCHORS, ...Object.fromEntries(Object.keys(fields ?? {}).flatMap((f) => (f.startsWith("discounts.") ? [[f, `discount-${f.slice(10)}`]] : []))) });
 
@@ -307,6 +324,35 @@ function DiscountsSection({ values, products, errors }: { values: Values; produc
   );
 }
 
+// The photo field and its upload code are their own chunk (NFR-001: this route sits near its
+// 170 kB budget). Server rendering includes it; on an in-app visit the fallback shows for the
+// moment the chunk takes and still posts the stored image unchanged.
+const PromotionImage = lazy(() => import("~/components/admin/promotion-image"));
+
+function PhotoFallback({ values }: { values: Values }) {
+  const { t } = useI18n();
+  return (
+    <div className="min-w-0">
+      <p className="font-semibold">{t("admin.promotions.imageLabel")}</p>
+      <p className="text-sm text-muted-foreground">{t("admin.promotions.imageHint")}</p>
+      <input type="hidden" name="imagePath" value={values.imagePath ?? ""} />
+      <span aria-hidden="true" className="mt-2 block size-24 rounded-md border border-border bg-decorative" />
+    </div>
+  );
+}
+
+function PhotoSection({ values, error, onState }: { values: Values; error?: string; onState: (state: ImageState) => void }) {
+  const { t } = useI18n();
+  return (
+    <fieldset className="min-w-0">
+      <legend className="mb-2 text-xl font-semibold">{t("admin.promotions.imageSection")}</legend>
+      <Suspense fallback={<PhotoFallback values={values} />}>
+        <PromotionImage path={values.imagePath} url={values.imageUrl} error={error} onState={onState} />
+      </Suspense>
+    </fieldset>
+  );
+}
+
 /** After a save: toast and back to the list, or focus on the error summary. */
 function useSaveFeedback(fetcher: { state: string; data?: unknown }, onSaved: () => void) {
   const { t } = useI18n();
@@ -342,6 +388,8 @@ function PromotionEditor({ loaderData }: { loaderData: LoaderData }) {
   });
   const errors = refusal?.fields ?? {};
   const markDirty = () => setDirty(true);
+  // Save waits for a photo still uploading (the posted path must be the finished upload).
+  const [image, setImage] = useState<ImageState>("idle");
   return (
     <>
       <Link to="/admin/promotions" className="inline-flex min-h-11 items-center gap-1 font-semibold link">
@@ -354,11 +402,24 @@ function PromotionEditor({ loaderData }: { loaderData: LoaderData }) {
         <input type="hidden" name="intent" value="save" />
         <input type="hidden" name="id" value={values.id ?? ""} />
         <TextsSection values={values} errors={errors} />
+        <PhotoSection
+          values={values}
+          error={errors.imagePath}
+          onState={(state) => {
+            setImage(state);
+            markDirty();
+          }}
+        />
         <WhenSection values={values} errors={errors} />
         <WhereSection values={values} products={loaderData.products} errors={errors} />
         <DiscountsSection values={values} products={loaderData.products} errors={errors} />
         <div data-editor-bar="" className="sticky bottom-0 z-30 -mx-4 border-t border-border bg-card px-4 py-3 shadow-md min-[20rem]:bottom-[calc(3.5rem+env(safe-area-inset-bottom))] md:-mx-6 md:px-6">
-          <SubmitButton pending={fetcher.state !== "idle"} pendingText={t("admin.product.savingLabel")} pendingLabel={t("admin.product.savingLabel")} className="w-full md:w-auto">
+          <SubmitButton
+            pending={fetcher.state !== "idle" || image === "working"}
+            pendingText={image === "working" ? t("admin.settings.image.working") : t("admin.product.savingLabel")}
+            pendingLabel={image === "working" ? t("admin.settings.image.working") : t("admin.product.savingLabel")}
+            className="w-full md:w-auto"
+          >
             {t("admin.promotions.save")}
           </SubmitButton>
         </div>

@@ -18,7 +18,7 @@ export interface RateLimitClass {
 /** Sign-in, sign-in link and password reset: 5 per 15 minutes per email + IP. */
 export const RL_AUTH: RateLimitClass = { name: "RL-auth", max: 5, windowMs: 15 * 60 * 1000 };
 
-/** Placing an order (checkout spec step 3, S-228 AC2): 5 per 10 minutes per IP. */
+/** Placing an order (checkout spec step 3, S-228 AC2): 5 per 10 minutes per IP, with a verified Turnstile token or without Turnstile keys (S-091 AC8). */
 export const RL_ORDER: RateLimitClass = { name: "RL-order", max: 5, windowMs: 10 * 60 * 1000 };
 
 /** Custom cake requests (S-162 AC2): 3 per 10 minutes per IP. */
@@ -35,6 +35,11 @@ export const RL_EMAIL_RESEND: RateLimitClass = { name: "RL-email-resend", max: 1
 
 /** Posting or editing a review: 5 per hour per account (S-262 AC8). */
 export const RL_REVIEW: RateLimitClass = { name: "RL-review", max: 5, windowMs: 60 * 60 * 1000 };
+/**
+ * Place order that Turnstile could not vouch for (no token: no JavaScript or a blocked script;
+ * Cloudflare unreachable; a stale token): allowed, with a stricter limit on the same count (S-091 AC8).
+ */
+export const RL_ORDER_UNVERIFIED: RateLimitClass = { name: "RL-order-unverified", max: 3, windowMs: 10 * 60 * 1000 };
 
 /** Buckets are kept one day, then purged (data-model retention "Rate-limit keys"). */
 export const RATE_LIMIT_RETENTION_MS = 24 * 60 * 60 * 1000;

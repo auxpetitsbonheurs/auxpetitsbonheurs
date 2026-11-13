@@ -25,6 +25,7 @@ import { getSitePromotions } from "~/server/repos/promotions.server";
 import { getSiteSettings } from "~/server/repos/settings.server";
 import { publicFirstPage } from "~/server/services/reviews.server";
 import { timed } from "~/server/server-timing.server";
+import { turnstileContext } from "~/server/turnstile.server";
 import type { Route } from "./+types/layout";
 
 /**
@@ -79,6 +80,8 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     // S-062: the live banner promotion at this request's instant, unless dismissed in this session.
     banner: siteBanner(promotions, now, dismissedBanners(request)),
     showReviews: reviewCount > 0,
+    // S-091 AC8: the public key the checkout's bot check renders with (null: not configured). From env, no query.
+    turnstileSiteKey: context.get(turnstileContext).siteKey,
   };
 }
 

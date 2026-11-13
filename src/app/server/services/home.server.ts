@@ -10,7 +10,7 @@ import type { MenuProduct } from "~/domain/menu";
 import { isInSeason } from "~/domain/season";
 import { todayMU } from "~/domain/time";
 import type { Locale } from "~/lib/locale";
-import { publicImageUrl, webPhoto } from "~/lib/images";
+import { webPhoto } from "~/lib/images";
 import type { Database } from "~/server/db.server";
 import { type MenuProductRecord, listMenuProducts } from "~/server/repos/catalogue.server";
 import { promotionHref } from "~/server/banner.server";
@@ -78,7 +78,8 @@ function promoCard(promo: SitePromotion, supabaseUrl: string, shownTypes: Readon
     id: promo.id,
     title: { en: promo.title.en, ...(promo.title.fr ? { fr: promo.title.fr } : {}) },
     text,
-    photo: promo.imagePath ? { url: publicImageUrl(promo.imagePath, supabaseUrl), ...HERO_BOX } : null,
+    // The 480/960 copies too (S-053 AC8), so a phone fetches the small one.
+    photo: promo.imagePath ? webPhoto(promo.imagePath, HERO_BOX.width, HERO_BOX.height, promo.imageVariants, supabaseUrl) : null,
     href: promoHref(promo, shownTypes),
   };
 }

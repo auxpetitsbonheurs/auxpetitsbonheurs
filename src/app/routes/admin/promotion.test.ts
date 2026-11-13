@@ -8,6 +8,8 @@ import { action as saveAction, loader as editorLoader } from "~/routes/admin/pro
 import { action as listAction, loader as listLoader } from "~/routes/admin/promotions";
 import { signedInAdmin } from "~/server/testing/admin-session";
 import { routeArgs } from "~/server/testing/route-context";
+import { MemoryStorage } from "~/server/testing/memory-storage";
+import { variantPath, withVariantPaths } from "~/domain/upload";
 
 let database: TestDatabase;
 
@@ -140,5 +142,95 @@ describe("S-053 AC10: permissions", () => {
     const id = "00000000-0000-4000-8000-000000000000";
     const answer = await editorLoader(routeArgs(database, { path: `/admin/promotions/${id}`, params: { id }, auth: session.auth, cookie: session.cookie }) as never).catch((r: unknown) => r);
     expect((answer as { init?: { status: number } }).init?.status).toBe(404);
+  });
+});
+
+describe("S-053 AC8: an optional image, with the product photo rules", () => {
+  const SESSION = "6f1c1f4e-3b7a-4d5e-9c3b-2a1d0e9f8c7b";
+  const WEBP = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50, 0, 0, 0, 0, 1, 2, 3]);
+  const image = async () => (await database.client.query<{ image_path: string | null; image_variants: number[] }>("select image_path, image_variants from promotion")).rows[0];
+
+  async function editor(role: "admin" | "owner" = "admin") {
+    const storage = new MemoryStorage();
+    const session = await signedInAdmin(database, { role });
+    const path = (name: string) => `promotions/${session.admin.id}/${SESSION}/${name}.webp`;
+    const put = (p: string) => storage.objects.set(`public-images/${p}`, { bytes: WEBP, contentType: "image/webp" });
+    const send = async (form: Record<string, string>, params: Record<string, string> = {}) =>
+      (await saveAction(
+        routeArgs(database, { path: params.id ? `/admin/promotions/${params.id}` : "/admin/promotions/new", params, auth: session.auth, cookie: session.cookie, uploads: storage.gateway, storage: storage.gateway, form: { uploadSessionId: SESSION, ...form }, now: NOW }) as never,
+      )) as unknown;
+    return { storage, path, put, send };
+  }
+
+  test("an Admin's uploaded WebP is saved with its 480/960 copies; replacing it removes the old one and its copies", async () => {
+    const { storage, path, put, send } = await editor("admin");
+    const first = path("0b8e7c52-6a3f-4a1e-9d2c-5f4b3a2e1d0c");
+    const second = path("1c9f8d63-7b4a-4b2f-8e3d-6a5c4b3f2e1d");
+    for (const p of [first, variantPath(first, 480), variantPath(first, 960), second]) put(p);
+
+    const created = (await send({ ...base, imagePath: first })) as { ok: true; id: string };
+    expect(created.ok).toBe(true);
+    expect(await image()).toEqual({ image_path: first, image_variants: [480, 960] });
+
+    expect(await send({ ...base, id: created.id, imagePath: first }, { id: created.id })).toMatchObject({ ok: true });
+    expect(await image()).toEqual({ image_path: first, image_variants: [480, 960] });
+    expect(storage.removed).toEqual([]);
+
+    expect(await send({ ...base, id: created.id, imagePath: second }, { id: created.id })).toMatchObject({ ok: true });
+    expect(await image()).toEqual({ image_path: second, image_variants: [] });
+    expect(storage.removed).toEqual(withVariantPaths([first]));
+  });
+
+  test("Remove clears the image and removes the file", async () => {
+    const { storage, path, put, send } = await editor();
+    const first = path("2d0a9e74-8c5b-4c3a-9f4e-7b6d5c4a3f2e");
+    put(first);
+    const created = (await send({ ...base, imagePath: first })) as { id: string };
+
+    expect(await send({ ...base, id: created.id, imagePath: "" }, { id: created.id })).toMatchObject({ ok: true });
+
+    expect(await image()).toEqual({ image_path: null, image_variants: [] });
+    expect(storage.removed).toEqual(withVariantPaths([first]));
+  });
+
+  test("a stored file that is not an image, or a path not issued to this editor, is UPLOAD_REJECTED with a plain message; nothing is saved", async () => {
+    const { storage, path, send } = await editor();
+    const fake = path("3e1b0f85-9d6c-4d4b-8a5f-8c7e6d5b4a3f");
+    storage.objects.set(`public-images/${fake}`, { bytes: new TextEncoder().encode("<script>alert(1)</script>"), contentType: "image/webp" });
+
+    const notImage = (await send({ ...base, imagePath: fake })) as Refusal;
+    const foreign = (await send({ ...base, imagePath: "site/00000000-0000-4000-8000-000000000000/6f1c1f4e-3b7a-4d5e-9c3b-2a1d0e9f8c7b/3e1b0f85-9d6c-4d4b-8a5f-8c7e6d5b4a3f.webp" })) as Refusal;
+
+    for (const refused of [notImage, foreign]) {
+      expect(refused.init.status).toBe(422);
+      expect(refused.data.error).toMatchObject({ code: "UPLOAD_REJECTED", fields: { imagePath: "The photo could not be used. Choose it again." } });
+    }
+    expect(await rows()).toEqual([]);
+  });
+
+  test("deleting a promotion removes its image", async () => {
+    const { storage, path, put, send } = await editor();
+    const first = path("4f2c1a96-0e7d-4e5c-9b6a-9d8f7e6c5b4a");
+    put(first);
+    const created = (await send({ ...base, startsAt: "2026-12-01T00:00", endsAt: "2026-12-02T00:00", imagePath: first })) as { id: string };
+    const session = await signedInAdmin(database);
+
+    await listAction(routeArgs(database, { path: "/admin/promotions", auth: session.auth, cookie: session.cookie, storage: storage.gateway, form: { intent: "delete", id: created.id }, now: NOW }) as never);
+
+    expect(await rows()).toEqual([]);
+    expect(storage.removed).toEqual(withVariantPaths([first]));
+  });
+
+  test("the editor loader gives the saved image's path and public URL", async () => {
+    const { path, put, send } = await editor();
+    const first = path("5a3d2b07-1f8e-4f6d-8c7b-0e9a8f7d6c5b");
+    put(first);
+    const created = (await send({ ...base, imagePath: first })) as { id: string };
+    const session = await signedInAdmin(database);
+
+    const data = (await editorLoader(routeArgs(database, { path: `/admin/promotions/${created.id}`, params: { id: created.id }, auth: session.auth, cookie: session.cookie, now: NOW }) as never)) as { promotion: { imagePath: string | null; imageUrl: string | null } };
+
+    expect(data.promotion.imagePath).toBe(first);
+    expect(data.promotion.imageUrl).toContain(first);
   });
 });

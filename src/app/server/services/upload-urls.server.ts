@@ -14,6 +14,7 @@ import {
   UPLOAD_MAX_BYTES,
   type UploadScope,
   isIssuedPhotoPath,
+  isIssuedPromotionPath,
   isIssuedSitePath,
   isPhotoVariantWidth,
   isUploadType,
@@ -29,7 +30,7 @@ export type UploadUrlsResult = { ok: true; uploads: SignedUpload[] } | { ok: fal
 
 export interface UploadRequest {
   uploadSessionId: string;
-  /** `products` (editor; the default), `site` (Settings images; the route lets Owners only) or a brand page (`page:<key>`, E-13 S-247; any admin). */
+  /** `products` (editor; the default), `site` (Settings images; the route lets Owners only), `promotions` (S-053; any admin) or a brand page (`page:<key>`, E-13 S-247; any admin). */
   scope: UploadScope | { page: SitePageKey };
   files: { type: string; size: number }[];
   /** S-276: the issued original these files are smaller copies of, one per `widths` entry. */
@@ -46,7 +47,7 @@ export function parseUploadRequest(form: FormData): UploadRequest | null {
   const sizes = form.getAll("size").map((s) => (/^\d{1,9}$/.test(String(s)) ? Number(s) : Number.NaN));
   const raw = form.get("scope") ?? "products";
   const pageKey = typeof raw === "string" && raw.startsWith("page:") ? raw.slice(5) : null;
-  const scope = raw === "products" || raw === "site" ? raw : isSitePageKey(pageKey) ? { page: pageKey } : null;
+  const scope = raw === "products" || raw === "site" || raw === "promotions" ? raw : isSitePageKey(pageKey) ? { page: pageKey } : null;
   if (!session.success || types.length !== sizes.length || types.length === 0 || !scope) return null;
   const request: UploadRequest = { uploadSessionId: session.data.toLowerCase(), scope, files: types.map((type, i) => ({ type, size: sizes[i]! })) };
   const variantOf = form.get("variantOf");
@@ -59,6 +60,7 @@ export function parseUploadRequest(form: FormData): UploadRequest | null {
 /** True when `path` was issued to this admin, in this session, for this scope. */
 function isIssuedFor(scope: UploadRequest["scope"], path: string, adminId: string, uploadSessionId: string): boolean {
   if (typeof scope === "object") return isIssuedPagePhotoPath(path, scope.page, adminId, uploadSessionId);
+  if (scope === "promotions") return isIssuedPromotionPath(path, adminId, uploadSessionId);
   return scope === "site" ? isIssuedSitePath(path, adminId, uploadSessionId) : isIssuedPhotoPath(path, adminId, uploadSessionId);
 }
 

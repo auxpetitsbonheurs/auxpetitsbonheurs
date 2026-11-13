@@ -63,10 +63,13 @@ describe("site/contact loader (S-251)", () => {
     expect((await load()).mapUrl).toBeNull();
   });
 
-  test("AC4: no email address reaches the page, even when Settings has one", async () => {
-    await setSettings(`contact_email = 'hello@example.com'`);
+  test("AC4 (amended): the email is the footer's Settings value, and omitted when blank", async () => {
+    await setSettings(`contact_email = ' hello@example.com '`);
+    expect((await load()).email).toBe("hello@example.com");
 
-    expect(JSON.stringify(await load())).not.toContain("hello@example.com");
+    await setSettings(`contact_email = ''`);
+    siteSettingsCache.clear();
+    expect((await load()).email).toBeNull();
   });
 
   test("AC6: Settings changes show on the next read after the cache window", async () => {

@@ -1,6 +1,6 @@
 import { Plus, Tag } from "lucide-react";
 import { type FormEvent, useEffect, useRef } from "react";
-import { Link, useFetcher } from "react-router";
+import { Link, isRouteErrorResponse, useFetcher, useRevalidator, useRouteError } from "react-router";
 import { AdminErrorBoundary } from "~/components/admin/admin-states";
 import { Alert } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
@@ -15,6 +15,8 @@ import { requireAdmin } from "~/server/auth.server";
 import { clockContext } from "~/server/clock.server";
 import { PromotionActiveInput, PromotionIdInput } from "~/server/contracts/promotions";
 import { requestDbContext } from "~/server/db.server";
+import { afterResponseContext } from "~/server/after-response.server";
+import { storageContext } from "~/server/storage.server";
 import { deletePromotion, listAdminPromotions, setPromotionActive } from "~/server/services/save-promotion.server";
 import type { Route } from "./+types/promotions";
 
@@ -63,7 +65,7 @@ export async function action(args: Route.ActionArgs) {
   if (intent === "delete") {
     const parsed = PromotionIdInput.safeParse({ id: form.get("id") });
     if (!parsed.success) return actionError("VALIDATION_FAILED", me.locale, { extra: { intent } });
-    const outcome = await deletePromotion(db, parsed.data.id, args.context.get(clockContext).now());
+    const outcome = await deletePromotion(db, parsed.data.id, args.context.get(clockContext).now(), { storage: args.context.get(storageContext), after: args.context.get(afterResponseContext) });
     if (outcome === "not_found") return actionError("NOT_FOUND", me.locale, { extra: { intent } });
     if (outcome === "live") return actionError("VALIDATION_FAILED", me.locale, { fields: { id: translate("admin.promotions.endFirst", me.locale) }, extra: { intent } });
     console.log(JSON.stringify({ level: "info", event: "promotion_deleted", id: parsed.data.id, actorRole: me.role }));
@@ -76,7 +78,24 @@ export function meta({ loaderData }: Route.MetaArgs) {
   return [{ title: `${loaderData?.title ?? ""} | Aux petits bonheurs` }, { name: "robots", content: "noindex, nofollow" }];
 }
 
-export const ErrorBoundary = AdminErrorBoundary;
+/** Load failure (S-052 AC6): the page keeps its heading and offers Retry in place; 403/404 as any admin page. */
+export function ErrorBoundary(props: Route.ErrorBoundaryProps) {
+  const error = useRouteError();
+  const { t } = useI18n();
+  const revalidator = useRevalidator();
+  if (isRouteErrorResponse(error) && (error.status === 403 || error.status === 404)) return <AdminErrorBoundary error={props.error} />;
+  return (
+    <>
+      <h1>{t("admin.nav.promotions")}</h1>
+      <Alert tone="danger" role="alert" title={t("admin.promotions.loadFailedTitle")} className="mt-6">
+        <p>{t("admin.promotions.loadFailedBody")}</p>
+        <Button type="button" variant="outline" className="mt-3" onClick={() => void revalidator.revalidate()} aria-busy={revalidator.state === "loading" || undefined}>
+          {t("admin.states.retry")}
+        </Button>
+      </Alert>
+    </>
+  );
+}
 
 type Row = Route.ComponentProps["loaderData"]["promotions"][number];
 type Answer = { ok: true; intent: string; active?: boolean } | { ok: false; error: { message: string; fields?: Record<string, string> } };

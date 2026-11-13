@@ -12,6 +12,7 @@ import { mkdirSync } from "node:fs";
 import { createProduct } from "./support/catalogue";
 import { chooseDate } from "./support/checkout-date";
 import { setClock } from "./support/clock";
+import { orderFormReady } from "./support/product";
 import { E2E_POLICIES, SAMPLE_PRODUCT, createOrder } from "./support/database";
 import { type Page, expect, test, testIp } from "./support/fixtures";
 
@@ -68,7 +69,7 @@ test.describe("S-011 product page", () => {
 
   test("AC4: Add to basket stays on the page, confirms it and the header count shows 1", async ({ page }) => {
     await page.goto(PRODUCT_PATH);
-    await hydrated(page);
+    await orderFormReady(page);
     await page.getByRole("button", { name: "Add to basket" }).click();
 
     await expect(page.getByRole("status").filter({ hasText: "Added to your basket" })).toBeVisible();
@@ -654,7 +655,7 @@ test.describe("S-014 double tap creates one order", () => {
 
   test("AC6: 20 concurrent placements against Postgres get unique numbers with no gaps", async ({ page, db, playwright, baseURL }) => {
     await basketWithCake(page);
-    const api = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { cookie: await cookieHeader(page), origin: baseURL! } });
+    const api = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { cookie: await cookieHeader(page), origin: baseURL!, "cf-connecting-ip": testIp() } });
     const email = uniqueEmail("burst");
 
     // Twenty visitors at once, each its own IP (RL-order's 5 per IP is not what is tested here).

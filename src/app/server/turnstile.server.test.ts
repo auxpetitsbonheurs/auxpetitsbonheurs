@@ -16,7 +16,7 @@ describe("cloudflareTurnstile (S-162 AC1, AC6)", () => {
     expect(Object.fromEntries(posted)).toEqual({ secret: "test-secret", response: "tok", remoteip: "203.0.113.5" });
   });
 
-  test("a refused token, a missing token or an unreachable Cloudflare fails closed", async () => {
+  test("a refused token or a missing token fails; an unreachable Cloudflare is unverified (never ok)", async () => {
     expect(await cloudflareTurnstile({ siteKey: "s", secret: "x", fetch: answer({ success: false }) }).verify("tok", "1.2.3.4")).toBe("failed");
     const neverCalled = answer({ success: true });
     expect(await cloudflareTurnstile({ siteKey: "s", secret: "x", fetch: neverCalled }).verify(undefined, "1.2.3.4")).toBe("failed");
@@ -24,7 +24,14 @@ describe("cloudflareTurnstile (S-162 AC1, AC6)", () => {
     const down = vi.fn(async () => {
       throw new TypeError("network");
     });
-    expect(await cloudflareTurnstile({ siteKey: "s", secret: "x", fetch: down }).verify("tok", "1.2.3.4")).toBe("failed");
+    expect(await cloudflareTurnstile({ siteKey: "s", secret: "x", fetch: down }).verify("tok", "1.2.3.4")).toBe("unverified");
+  });
+
+  test("S-091 AC8: an expired or already used token is unverified, a forged one failed", async () => {
+    const stale = answer({ success: false, "error-codes": ["timeout-or-duplicate"] });
+    expect(await cloudflareTurnstile({ siteKey: "s", secret: "x", fetch: stale }).verify("tok", "1.2.3.4")).toBe("unverified");
+    const forged = answer({ success: false, "error-codes": ["invalid-input-response"] });
+    expect(await cloudflareTurnstile({ siteKey: "s", secret: "x", fetch: forged }).verify("tok", "1.2.3.4")).toBe("failed");
   });
 
   test("AC6: without both keys in env there is no widget and no network call", async () => {

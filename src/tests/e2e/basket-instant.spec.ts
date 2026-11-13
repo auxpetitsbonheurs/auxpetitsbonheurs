@@ -5,6 +5,7 @@
 import { chooseDate } from "./support/checkout-date";
 import { expectKeyboardOperable, expectNoA11yViolations, expectNoHorizontalScroll, expectNothingClipped, expectTapTargets, withZoom } from "./support/a11y";
 import { setClock } from "./support/clock";
+import { orderFormReady } from "./support/product";
 import { SAMPLE_PRODUCT } from "./support/database";
 import { type Page, expect, test } from "./support/fixtures";
 import type postgres from "postgres";
@@ -44,7 +45,7 @@ async function requestsDuring(page: Page, action: () => Promise<void>) {
 
 async function addFromProductPage(page: Page, path: string) {
   await page.goto(path);
-  await hydrated(page);
+  await orderFormReady(page);
   await menuCached(page);
   await page.getByRole("button", { name: /Add to basket|Ajouter au panier/ }).click();
   await expect(page.getByRole("status").filter({ hasText: /Added to your basket|Ajouté à votre panier/ })).toBeVisible();

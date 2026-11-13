@@ -8,7 +8,13 @@ import { createContext } from "react-router";
 export const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 export const TURNSTILE_TIMEOUT_MS = 3000;
 
-export type TurnstileVerdict = "ok" | "failed";
+/**
+ * "unverified": Cloudflare could not vouch either way (unreachable, or the token expired or was
+ * already used). Custom requests treat it as a failure (anything but "ok"); Place order
+ * allows it under a stricter rate limit (S-091 AC8, checkout spec step 3: "Turnstile outage:
+ * allow, stricter limit, logged").
+ */
+export type TurnstileVerdict = "ok" | "failed" | "unverified";
 
 export interface TurnstileCheck {
   /** Public site key the page renders the widget with; null = not configured (no widget, no check). */
@@ -24,11 +30,16 @@ export const turnstileContext = createContext<TurnstileCheck>(NO_TURNSTILE);
 
 interface SiteverifyBody {
   success?: unknown;
+  "error-codes"?: unknown;
 }
 
+/** A token that timed out or was already redeemed: an honest page left open, or a double submit. */
+const isStale = (result: SiteverifyBody | null) => Array.isArray(result?.["error-codes"]) && result["error-codes"].includes("timeout-or-duplicate");
+
 /**
- * The real check. A missing token, a Cloudflare "no" or an unreachable Cloudflare all fail
- * closed (BOT_CHECK_FAILED): the customer keeps the form and can try again or use WhatsApp.
+ * The real check. A missing token or a Cloudflare "no" is "failed"; an unreachable Cloudflare
+ * or a stale token is "unverified". Custom requests fail closed on both (BOT_CHECK_FAILED): the
+ * customer keeps the form and can try again or use WhatsApp.
  */
 export function cloudflareTurnstile(options: { siteKey: string; secret: string; fetch?: typeof fetch }): TurnstileCheck {
   const send = options.fetch ?? fetch;
@@ -41,10 +52,11 @@ export function cloudflareTurnstile(options: { siteKey: string; secret: string; 
       try {
         const response = await send(TURNSTILE_VERIFY_URL, { method: "POST", body, signal: AbortSignal.timeout(TURNSTILE_TIMEOUT_MS) });
         const result = (await response.json().catch(() => null)) as SiteverifyBody | null;
-        return response.ok && result?.success === true ? "ok" : "failed";
+        if (response.ok && result?.success === true) return "ok";
+        return isStale(result) ? "unverified" : "failed";
       } catch {
         console.log(JSON.stringify({ level: "warn", event: "turnstile_unreachable" }));
-        return "failed";
+        return "unverified";
       }
     },
   };

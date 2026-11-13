@@ -79,7 +79,8 @@ export async function loader({ params, context, url }: Route.LoaderArgs) {
     cakeMessageMax: settings.cakeMessageMax,
     // The date picker's own rules (domain/availability), for this product alone: the page and the
     // picker never disagree (its notice, its season, closed and blocked days, the 90-day horizon).
-    earliestDate: earliestDate({ today, ...settings.availability }, availability.noticeDays ?? settings.availability.defaultNoticeDays, availability.season ? [availability.season] : []),
+    // Sold out: no date to offer; the Sold out area says what to do instead.
+    earliestDate: problem === "sold_out" ? null : earliestDate({ today, ...settings.availability }, availability.noticeDays ?? settings.availability.defaultNoticeDays, availability.season ? [availability.season] : []),
     seasonEndsOn: availability.season?.endsOn ?? null,
   };
 }

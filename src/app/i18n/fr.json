@@ -133,7 +133,8 @@
         "blocked": "Cette date n'est plus disponible. Choisissez une autre date.",
         "too_far": "Cette date est trop lointaine. Choisissez une date dans les 90 prochains jours.",
         "out_of_season": "Un article de votre panier n'est pas proposé à cette date. Choisissez une autre date."
-      }
+      },
+      "botCheck": "Nous n'avons pas pu confirmer que cette commande vient de vous. Votre commande n'est pas encore envoyée : appuyez de nouveau sur Commander."
     },
     "totalUpdated": "Le total est passé de {{old}} à {{new}}",
     "leftOutLine": "{{name}} : non inclus, plus disponible",
@@ -1689,7 +1690,13 @@
         "format": "{{field}} : saisissez une valeur valide.",
         "range": "{{field}} : le pourcentage doit être entre 1 et 99.",
         "order": "{{field}} : la fin doit être après le début."
-      }
+      },
+      "loadFailedTitle": "Les promotions ne se sont pas chargées",
+      "loadFailedBody": "Vérifiez votre connexion et réessayez. Rien n'a été modifié.",
+      "imageRejected": "La photo n'a pas pu être utilisée. Choisissez-la de nouveau.",
+      "imageSection": "Photo",
+      "imageLabel": "Photo de la carte et du bandeau",
+      "imageHint": "Facultatif. JPEG, PNG, WebP ou HEIC ; nous la réduisons avant l'envoi. Affichée large et basse (3 pour 1) sur la page d'accueil."
     },
     "payment": {
       "cancelledUnpaid": "Annulée : non payée",
@@ -2022,7 +2029,8 @@
     "pickupHeading": "Retrait",
     "pickupArea": "Retrait à Beau Bassin",
     "mapLink": "Voir sur la carte",
-    "hoursHeading": "Horaires"
+    "hoursHeading": "Horaires",
+    "email": "Écrire à {{email}}"
   },
   "customOrderPage": {
     "title": "Gâteau sur mesure",

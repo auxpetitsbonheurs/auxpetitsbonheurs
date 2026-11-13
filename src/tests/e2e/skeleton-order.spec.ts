@@ -7,6 +7,7 @@
 import { chooseDate } from "./support/checkout-date";
 import { signIn } from "./support/admin";
 import { setClock } from "./support/clock";
+import { orderFormReady } from "./support/product";
 import { E2E_ACCOUNTS, SAMPLE_PRODUCT } from "./support/database";
 import { expect, test } from "./support/fixtures";
 
@@ -17,7 +18,7 @@ test("S-018 AC6, S-016 AC6, S-279: guest order to APB-0001, double click still o
   // A guest orders for delivery.
   await setClock(context, baseURL!, "2026-11-20T06:00:00Z");
   await page.goto(`/menu/${SAMPLE_PRODUCT.slug}`);
-  await expect(page.locator("html")).toHaveAttribute("data-hydrated", "true");
+  await orderFormReady(page);
   await page.getByRole("button", { name: "Add to basket" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Added to your basket" })).toBeVisible();
   await page.getByRole("link", { name: "View basket" }).click();

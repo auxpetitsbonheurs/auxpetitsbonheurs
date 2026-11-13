@@ -133,7 +133,8 @@
         "blocked": "This date is no longer available. Please choose another date.",
         "too_far": "This date is too far ahead. Please choose a date in the next 90 days.",
         "out_of_season": "An item in your basket is not available on this date. Please choose another date."
-      }
+      },
+      "botCheck": "We could not confirm this order came from you. Your order has not been sent yet: press Place order again."
     },
     "totalUpdated": "Total updated from {{old}} to {{new}}",
     "leftOutLine": "{{name}}: not included, no longer available",
@@ -1689,7 +1690,13 @@
         "format": "{{field}}: enter a valid value.",
         "range": "{{field}}: percent off must be 1 to 99.",
         "order": "{{field}}: the end must be after the start."
-      }
+      },
+      "loadFailedTitle": "The promotions did not load",
+      "loadFailedBody": "Check your connection and try again. Nothing was changed.",
+      "imageRejected": "The photo could not be used. Choose it again.",
+      "imageSection": "Photo",
+      "imageLabel": "Photo for the card and banner",
+      "imageHint": "Optional. JPEG, PNG, WebP or HEIC; we make it smaller before upload. Shown wide and short (3 to 1) on the home page."
     },
     "payment": {
       "cancelledUnpaid": "Cancelled: unpaid",
@@ -2022,7 +2029,8 @@
     "pickupHeading": "Pickup",
     "pickupArea": "Pickup in Beau Bassin",
     "mapLink": "View on map",
-    "hoursHeading": "Opening hours"
+    "hoursHeading": "Opening hours",
+    "email": "Email {{email}}"
   },
   "customOrderPage": {
     "title": "Custom order",
