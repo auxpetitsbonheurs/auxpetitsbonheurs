@@ -1,5 +1,5 @@
 # S-228: Security review before launch
-Status: ready
+Status: done (SEC-REVIEW CONCERNS: open mediums SEC-04..07 with owners, production/audits/security-2026.md)
 Epic: E-12-polish-test-launch
 Spec: docs/product/prd.md#6-non-functional-requirements
 Estimate: 5 pts
@@ -33,3 +33,4 @@ As the Owner, I want the site checked for common attacks before real customers u
 ## Notes
 - Static/dynamic checks run against staging only; no third-party contact or paid scanners without the user's instruction.
 - Dependencies (R9): E-01..E-11. Not yet done; expected.
+- 2026-11-13 (security-lead): AC1, AC3 and AC4 are covered by the existing specs and unit tests named in the audit (route-guards, admin-access, guard, upload magic bytes, tracking). No separate security-roles, security-uploads or security-tracking spec was added. AC7 is in tests/e2e/security-headers.spec.ts. Rate-limit e2e (security-rate-limits.spec.ts) is replaced by the unit tests of each class.

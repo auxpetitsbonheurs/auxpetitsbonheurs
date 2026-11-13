@@ -1,5 +1,5 @@
 # S-229: Privacy audit: data minimisation, cookies, emails and push
-Status: ready
+Status: in progress (audit done; PRV-01..03 retention gaps with other jobs, production/audits/privacy-2026.md)
 Epic: E-12-polish-test-launch
 Spec: docs/product/prd.md#6-non-functional-requirements
 Estimate: 3 pts

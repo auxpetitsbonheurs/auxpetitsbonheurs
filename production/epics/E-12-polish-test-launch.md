@@ -22,11 +22,11 @@ Phase 6 exit: section 6 requirements met on a real mid-range phone. Phase 7 exit
 | S-222 | Real texts and natural French, reviewed by the Owner | ready | 3 |
 | S-223 | The bakery's visual identity is applied and still accessible | ready | 3 |
 | S-224 | Pretty share previews and good search basics | ready | 3 |
-| S-225 | A short privacy note and every [TO CONFIRM] item settled | ready | 3 |
+| S-225 | A short privacy note and every [TO CONFIRM] item settled | blocked (Owner) | 3 |
 | S-226 | Performance meets the budget on a real mid-range phone | ready | 5 |
 | S-227 | Accessibility audit: WCAG 2.2 AA, keyboard, zoom, contrast | ready | 5 |
-| S-228 | Security review before launch | ready | 5 |
-| S-229 | Privacy audit: data minimisation, cookies, emails and push | ready | 3 |
+| S-228 | Security review before launch | done (concerns) | 5 |
+| S-229 | Privacy audit: data minimisation, cookies, emails and push | in progress | 3 |
 | S-230 | Browsers and phones matrix, incl. admin push on iPhone and Android | ready | 3 |
 | S-231 | Weekly automatic backups to bakery-owned storage | ready | 3 |
 | S-232 | A backup is restored on a clean environment and verified | ready | 3 |
