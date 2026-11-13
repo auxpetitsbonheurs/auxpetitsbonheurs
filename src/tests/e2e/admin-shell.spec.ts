@@ -119,7 +119,7 @@ test.describe("S-033 admin frame", () => {
 
   test("AC7: Calendar, Customers and Gallery show Not available yet inside the frame; Today links to orders to review", async ({ page }) => {
     await signIn(page, E2E_ACCOUNTS.owner, "/admin");
-    await expect(page.getByRole("main").getByRole("link", { name: "Orders to review" })).toHaveAttribute("href", "/admin/orders?tab=review");
+    await expect(page.getByRole("main").getByRole("link", { name: /^To review: \d+ orders?$/ })).toHaveAttribute("href", "/admin/orders?tab=review");
     for (const [path, title] of [
       ["/admin/calendar", "Calendar"],
       ["/admin/customers", "Customers"],
