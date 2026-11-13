@@ -1,5 +1,5 @@
 # S-225: A short privacy note and every [TO CONFIRM] item settled
-Status: ready
+Status: blocked (built; Owner answers needed, production/audits/privacy-2026.md "Questions for the Owner")
 Epic: E-12-polish-test-launch
 Spec: docs/product/prd.md#6-non-functional-requirements
 Estimate: 3 pts
