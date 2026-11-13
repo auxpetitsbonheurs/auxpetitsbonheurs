@@ -292,3 +292,10 @@ better. Follow-up the same day: placement targets the database host instead,
 `{ "mode": "targeted", "host": "db.<project-ref>.supabase.co:5432" }` (the project reference is
 public, in every photo URL; no credential), so Cloudflare probes it and places the Worker next
 to it whatever the region. Same verification and the same way back.
+
+Result of the host probe (deploy 43422079138, a121a83): `cf-placement: local-ORD`, queries
+still 178-232 ms, so the probe did not move the Worker (likely it cannot reach the IPv6-only
+direct host). Triangulation: a query takes ~185 ms from Chicago and ~165 ms from Mumbai, and an
+uncached Supabase origin call ~210 ms from Chicago; that fits Sydney (`ap-southeast-2`), not
+Mumbai or Singapore. Next try: `{ "mode": "targeted", "region": "aws:ap-southeast-2" }`. The Owner
+should confirm the region in Supabase (Project Settings → General) and correct the runbook.

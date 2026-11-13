@@ -26,8 +26,8 @@ describe("wrangler.jsonc environments (S-002 AC1)", () => {
     expect(env.triggers?.crons).toEqual(["0 * * * *"]);
   });
 
-  test("staging runs next to the database host (ADR-0003 amendment 6)", () => {
-    expect(staging.placement).toEqual({ mode: "targeted", host: "db.hagjrexcnkewguwivdjc.supabase.co:5432" });
+  test("staging runs in the database region (ADR-0003 amendment 6)", () => {
+    expect(staging.placement).toEqual({ mode: "targeted", region: "aws:ap-southeast-2" });
   });
 
   test("holds no secret and no account id", () => {
