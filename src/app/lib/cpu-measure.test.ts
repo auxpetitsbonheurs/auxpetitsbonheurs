@@ -225,6 +225,13 @@ describe("cpu-measure workflow", () => {
     expect(workflow).not.toMatch(/path:[^\n]*(tail|cpu-raw)/);
     expect(workflow).not.toMatch(/continue-on-error:\s*true/);
   });
+
+  test("S-097: a `lines` input (1 to 10, default 1) reaches the load script as --lines", () => {
+    expect(workflow).toMatch(/\n {6}lines:\n(?: {8}[^\n]*\n)*? {8}default: "1"/);
+    expect(workflow).toContain("LINES: ${{ inputs.lines || '1' }}");
+    expect(workflow).toContain('[ "$LINES" -gt 10 ]');
+    expect(workflow).toContain('--lines "$LINES"');
+  });
 });
 
 describe("timed-out routes are explained by the matching tail event", () => {
