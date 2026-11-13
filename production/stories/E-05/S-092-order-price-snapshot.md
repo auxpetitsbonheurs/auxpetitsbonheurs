@@ -29,5 +29,5 @@ As the bakery owner, I want each order to keep the prices and promotion it was p
 
 ## Done notes (2026-11-13, Sprint 4 job 1)
 - Migration `src/drizzle/0010_place_order_options.sql` (additive): `order_line_price` + `place_order` body with options; no table change (the columns existed). Unit price = `unit_base_price_rs` + options (data-model.md), line total stored.
-- AC3: no promotion engine yet (S-082), so every item stores `promotion_id` NULL; the "references the applied promotion" half is exercised when S-082 passes one.
+- AC3 (2026-11-13, S-082, migration 0012): a line priced with a live promotion stores its `promotion_id`, `promotion_title_en` and the sale base in `unit_base_price_rs` (`original_base_price_rs` keeps the base); without one, NULL. Tested in place-order-options.server.test.ts.
 - Tests as built: all in `src/app/server/services/place-order-options.server.test.ts` (AC5 included; the procedure and domain/pricing are asserted never to drift).

@@ -96,7 +96,7 @@ id · group_id FK → option_group CASCADE · name_en/name_fr · price_delta_rs 
 Live = `active AND starts_at ≤ now() < ends_at` (computed, never stored, so promotions start/end with no job, FR-016). Index (starts_at, ends_at) WHERE active.
 
 ### promotion_product
-PK (promotion_id, product_id), both FK CASCADE · discount_kind enum (percent, sale_price) · percent_off smallint CHECK 1..99 · sale_price_rs integer CHECK ≥ 0 · CHECK exactly one of percent_off / sale_price_rs matches discount_kind. Lowest price across live promotions wins, never stacked (FR-017, `domain/promotions.ts`).
+PK (promotion_id, product_id), both FK CASCADE · discount_kind enum (percent, sale_price) · percent_off smallint CHECK 1..99 · sale_price_rs integer CHECK ≥ 0 · CHECK exactly one of percent_off / sale_price_rs matches discount_kind. Lowest price across live promotions wins, never stacked (FR-017, `domain/promotions.ts`). As built (S-082, 2026-11-13): percent = floor((base x (100 - pct) + 50) / 100) (half up); a result at or above base is ignored; ties: earlier starts_at, then lower id. The same rule runs in SQL as `product_promotion(product_id, base, now)` (migration 0012), which `place_order` uses to price each line and fill `order_item.promotion_id`, `promotion_title_en` and `unit_base_price_rs`; a property test keeps the two in agreement.
 
 ### customer
 | Field | Type | Null | Notes |
@@ -214,7 +214,7 @@ Zero rows → transaction rolls back, action returns `409 ORDER_CHANGED` and the
 | Query | Frequency | Index used |
 |---|---|---|
 | Menu grid (available/sold_out, by type, sorted) | every menu view | product (status, type, sort_order) |
-| Live promotions now | every page (banner) | promotion (starts_at, ends_at) WHERE active |
+| Live promotions now | every page (banner), menu, product, home (one query cached 60 s per isolate; live judged per request) | promotion (starts_at, ends_at) WHERE active |
 | Tracking page by token | per customer visit | orders.tracking_token UNIQUE |
 | Admin tabs / Today / counts | every admin view | orders (status, fulfil_on) |
 | Calendar month counts, prep list for a day | daily | orders (fulfil_on) partial |
