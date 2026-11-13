@@ -236,7 +236,11 @@
     "removed": "Retiré de votre panier : {{name}}.",
     "undo": "Annuler",
     "undoRemove": "Annuler le retrait de {{name}}",
-    "restored": "De retour dans votre panier : {{name}}."
+    "restored": "De retour dans votre panier : {{name}}.",
+    "optionText": "{{group}} : {{text}}",
+    "optionQuantity": "{{name}} × {{count}}",
+    "cakeMessage": "Message sur le gâteau : {{text}}",
+    "optionsChanged": "Les choix pour cet article ont changé. Il ne fera pas partie de votre commande. Retirez-le, puis choisissez à nouveau dans le menu."
   },
   "order": {
     "confirmed": {
@@ -1423,5 +1427,50 @@
     "goneTitle": "Ce produit n'est plus disponible",
     "goneBody": "Il n'est peut-être plus de saison ou a été retiré de la carte. Découvrez ce que nous préparons en ce moment.",
     "backToMenu": "Voir notre collection"
+  },
+  "productOptions": {
+    "required": "Obligatoire",
+    "optional": "Facultatif",
+    "chooseOne": "Veuillez choisir : {{group}}",
+    "chooseSome": "Choisissez au moins une option : {{group}}",
+    "chooseHowMany": "Choisissez combien : {{group}}",
+    "fillIn": "Veuillez remplir : {{group}}",
+    "priceUp": "+{{price}}",
+    "priceDown": "−{{price}}",
+    "eachUnit": "{{price}} l’unité",
+    "price": "Prix",
+    "priceAnnounce": "Prix {{price}}",
+    "totalFor": "{{price}} pour {{count}}",
+    "quantity": "Quantité",
+    "quantityOf": "Quantité de {{name}}",
+    "increase": "Augmenter la quantité de {{name}}",
+    "decrease": "Diminuer la quantité de {{name}}",
+    "decreaseGroup": "Moins : {{name}}",
+    "increaseGroup": "Plus : {{name}}",
+    "atMinimum": "La plus petite quantité est {{min}}.",
+    "atMaximum": "La plus grande quantité est {{max}}.",
+    "minimumNote": "Commande minimum : {{min}}",
+    "message": "Message sur le gâteau",
+    "messageHint": "Facultatif. Jusqu’à {{max}} caractères, écrit sur le gâteau tel que vous le tapez.",
+    "textHint": "Jusqu’à {{max}} caractères.",
+    "counter": "{{count}} / {{max}}",
+    "charactersLeft_one": "{{count}} caractère restant",
+    "charactersLeft_other": "{{count}} caractères restants",
+    "limitReached": "Limite atteinte : {{max}} caractères",
+    "pasteTooLong": "Ce texte dépasse {{max}} caractères, il n’a donc pas été ajouté. Raccourcissez-le, puis collez-le ou tapez-le à nouveau.",
+    "errors": {
+      "quantity": "Choisissez une quantité de 1 à 50.",
+      "belowMin": "La plus petite quantité pour cet article est {{min}}.",
+      "tooLong": "Trop long : jusqu’à {{max}} caractères.",
+      "changed": "Ce choix n’est plus proposé. Veuillez choisir à nouveau.",
+      "form": "Veuillez vérifier vos choix."
+    },
+    "none": "Aucun",
+    "fromPrice": "À partir de {{price}}",
+    "soldOutTitle": "Épuisé cette semaine",
+    "soldOutHint": "Nous ne pouvons pas le commander pour le moment. Écrivez-nous sur WhatsApp pour savoir quand il revient.",
+    "soldOutHintNoWhatsapp": "Nous ne pouvons pas le commander pour le moment. Revenez bientôt.",
+    "soldOutWhatsapp": "Demander sur WhatsApp",
+    "soldOutMessage": "Bonjour ! Le {{name}} est-il de nouveau disponible ?"
   }
 }

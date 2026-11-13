@@ -12,11 +12,15 @@ export interface BasketLineView {
   lineId: string;
   name: string;
   imageUrl: string | null;
+  /** Chosen options and the cake message, in words ("8 inch", "Message on cake: Happy birthday"). */
+  details?: string[];
   quantity: number;
   unitPrice: string;
   lineTotal: string;
   /** Sold out, hidden or deleted: shown dimmed with "No longer available", left out of the total. */
   unavailable: boolean;
+  /** Left out because its options are no longer offered (S-066): "choose again" rather than "no longer available". */
+  optionsChanged?: boolean;
   /** The product's name is unknown (deleted): `name` already says it is no longer available. */
   nameUnknown?: boolean;
   /** "Price updated from Rs X to Rs Y" when the menu price changed since it was shown, else null. */
@@ -169,7 +173,7 @@ function LineNote({ line }: { line: BasketLineView }) {
           <CircleSlash aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
           <span>
             {!line.nameUnknown && <span className="sr-only">{line.name}: </span>}
-            {t(line.nameUnknown ? "basket.notInOrder" : "basket.noLongerAvailable")}
+            {t(line.nameUnknown ? "basket.notInOrder" : line.optionsChanged ? "basket.optionsChanged" : "basket.noLongerAvailable")}
           </span>
         </span>
       )}
@@ -199,6 +203,13 @@ export function BasketLineItem({ line, onRemoved }: { line: BasketLineView; onRe
       )}
       <div className="min-w-0 flex-1 basis-40">
         <p className={cn("font-semibold", line.unavailable && "text-muted-foreground")}>{line.name}</p>
+        {line.details && line.details.length > 0 && (
+          <ul className="text-sm wrap-anywhere">
+            {line.details.map((detail) => (
+              <li key={detail}>{detail}</li>
+            ))}
+          </ul>
+        )}
         {!line.unavailable && <p className="text-sm text-muted-foreground">{t("basket.eachPrice", { price: line.unitPrice })}</p>}
         <LineNote line={line} />
       </div>

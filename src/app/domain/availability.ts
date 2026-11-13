@@ -2,7 +2,7 @@
 // the saves (contracts.md `AvailabilityInput`, `addBlock`), and (S-083, S-084) the customer
 // date rules shared by the checkout date picker and placeOrder's server re-check.
 import { DomainError } from "./errors";
-import { type SeasonWindow, isInSeason } from "./season";
+import type { ProductStatusProblem, SeasonWindow } from "./season";
 import { TIME_PATTERN } from "./settings";
 import { addDays, isValidMuDate, isoWeekday } from "./time";
 
@@ -148,14 +148,10 @@ export function adminDateWarnings(date: string, ctx: AvailabilityCtx, noticeDays
   return warnings;
 }
 
-export type AvailabilityProblem = "hidden" | "out_of_season" | "sold_out";
+export type AvailabilityProblem = ProductStatusProblem;
 
-/** Display by today's Mauritius date (S-084 AC1..3): hidden > out_of_season > sold_out. */
-export function productProblem(product: { status: "available" | "sold_out" | "hidden"; season: SeasonWindow | null | undefined }, today: string): AvailabilityProblem | null {
-  if (product.status === "hidden") return "hidden";
-  if (!isInSeason(product.season ?? null, today)) return "out_of_season";
-  return product.status === "sold_out" ? "sold_out" : null;
-}
+/** Display by today's Mauritius date (S-084 AC1..3): hidden > out_of_season > sold_out (the one rule, domain/season.ts). */
+export { productProblem } from "./season";
 
 /** The first seasonal item whose window leaves `date` out (the picker names it), or null. */
 export function seasonBlocking<T extends DateRange>(date: string, items: readonly T[]): T | null {

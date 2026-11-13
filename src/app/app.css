@@ -403,3 +403,14 @@ html:has([data-editor-bar]) {
 html:has(.checkout-form [data-sticky-bar]) {
   scroll-padding-bottom: 10rem;
 }
+
+/*
+ * Product page Add bar (S-066 AC11): on phones it sticks to the bottom; focused or
+ * scrolled-to controls stop above it (WCAG 2.4.11). It does not unstick while a field has
+ * focus: the jump back when focus moves on could land on the next control.
+ */
+@media (max-width: 47.99rem) {
+  html:has([data-add-bar]) {
+    scroll-padding-bottom: 10rem;
+  }
+}

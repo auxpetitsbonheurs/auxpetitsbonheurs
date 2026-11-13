@@ -8,7 +8,7 @@
 //
 // One database round trip (ADR-0003 amendment 3): everything the database decides (replay,
 // Settings, products, the checked write) is one CALL of the `place_order` procedure
-// (drizzle/0004). The checks that need no database (form, date) run here first and decide
+// (drizzle/0004, 0009 date rules, 0010 options: S-081/S-092). The checks that need no database (form, date) run here first and decide
 // whether the procedure may write; every refusal is then worked out here from the snapshot
 // the procedure returns, with the same domain rules as before, so the page sees the same
 // codes, fields, lines and totals.
@@ -17,7 +17,7 @@ import type { TimeWindow } from "~/db/schema";
 import { type AvailabilityCtx, type AvailabilityRules, type DateRange, type DayReason, dayStatus, noticeDaysFor } from "~/domain/availability";
 import type { BasketLine } from "~/domain/basket";
 import { formatOrderNumber, newTrackingToken } from "~/domain/order-number";
-import { type CheckoutTotals, type LocalizedName, type PricedLine, type PricingProduct, checkoutTotals, priceLines } from "~/domain/pricing";
+import { type CheckoutTotals, type LocalizedName, type PricedLine, type PricingGroup, type ProductPricing, cleanText, graphemeLength, priceBasket } from "~/domain/pricing";
 import { todayMU } from "~/domain/time";
 import type { Locale } from "~/lib/locale";
 import { type PlaceOrderInput, parsePlaceOrder } from "~/server/contracts/site";
@@ -62,17 +62,21 @@ interface SnapshotSettings {
   closedWeekdays: number[];
   /** Ranges only (never the private reason) that touch the 90-day horizon (drizzle/0009). */
   blocked: DateRange[];
+  /** Settings cake message limit (S-067); a text group without its own limit uses it too. */
+  cakeMessageMax: number;
 }
 
 interface SnapshotProduct {
   id: string;
-  status: PricingProduct["status"];
+  status: ProductPricing["status"];
   nameEn: string;
   nameFr: string | null;
   basePriceRs: number;
   noticeDays: number | null;
   seasonStartsOn: string | null;
   seasonEndsOn: string | null;
+  minQuantity: number | null;
+  optionGroups: PricingGroup[];
 }
 
 type ExistingOrder = PlacedOrderRef & { contactEmail: string | null; orderNumberPrefix: string };
@@ -83,13 +87,25 @@ export type ProcedureResult =
   | { kind: "checked"; settings: SnapshotSettings; products: SnapshotProduct[] }
   | { kind: "placed"; settings: SnapshotSettings; products: SnapshotProduct[]; placed: PlacedOrderRef };
 
+/**
+ * One basket line for the procedure: ids, quantities and cleaned texts with their grapheme
+ * lengths (computed here, never by the client; SQL cannot count grapheme clusters).
+ */
+interface ProcedureLine {
+  productId: string;
+  quantity: number;
+  cakeMessage: string | null;
+  cakeMessageLength: number;
+  options: { groupId: string; choiceIds: string[]; quantity: number | null; text: string | null; textLength: number }[];
+}
+
 /** The procedure's input: ids, quantities and the parsed form only, never a price from the client except the displayed total. */
 interface ProcedureInput {
   idempotencyKey: string | null;
   /** The request's Mauritius date: the procedure judges notice and horizon from it. */
   today: string;
   insert: boolean;
-  basket: { productId: string; quantity: number; cakeMessage: string | null }[];
+  basket: ProcedureLine[];
   order: {
     contactName: string;
     contactPhone: string;
@@ -151,9 +167,23 @@ function preflight(form: Record<string, unknown>, basket: BasketLine[], now: Dat
   return { parsed, insert: parsed.ok && basket.length > 0 && datePassed };
 }
 
+function procedureLine(line: BasketLine): ProcedureLine {
+  const message = cleanText(line.cakeMessage) ?? null;
+  return {
+    productId: line.productId,
+    quantity: line.quantity,
+    cakeMessage: message,
+    cakeMessageLength: message ? graphemeLength(message) : 0,
+    options: line.options.map((o) => {
+      const text = cleanText(o.text) ?? null;
+      return { groupId: o.groupId, choiceIds: o.choiceIds, quantity: o.quantity ?? null, text, textLength: text ? graphemeLength(text) : 0 };
+    }),
+  };
+}
+
 function procedureInput(form: Record<string, unknown>, ctx: PlaceOrderContext, parsed: ReturnType<typeof parsePlaceOrder>, insert: boolean): ProcedureInput {
   const key = Uuid.safeParse(form.idempotencyKey);
-  const basket = ctx.basket.map((l) => ({ productId: l.productId, quantity: l.quantity, cakeMessage: l.cakeMessage ?? null }));
+  const basket = ctx.basket.map(procedureLine);
   const today = todayMU(ctx.now);
   if (!parsed.ok) return { idempotencyKey: key.success ? key.data : null, today, insert: false, basket, order: null };
   const input = parsed.data;
@@ -181,8 +211,16 @@ function procedureInput(form: Record<string, unknown>, ctx: PlaceOrderContext, p
   };
 }
 
-function productMap(products: SnapshotProduct[]): Map<string, PricingProduct> {
-  return new Map(products.map((p) => [p.id, { id: p.id, status: p.status, basePriceRs: p.basePriceRs, name: { en: p.nameEn, fr: p.nameFr } }]));
+function productMap(products: SnapshotProduct[]): Map<string, ProductPricing> {
+  return new Map(products.map((p) => [p.id, {
+    id: p.id,
+    status: p.status,
+    basePriceRs: p.basePriceRs,
+    name: { en: p.nameEn, fr: p.nameFr },
+    minQuantity: p.minQuantity ?? null,
+    optionGroups: p.optionGroups ?? [],
+    season: p.seasonStartsOn && p.seasonEndsOn ? { startsOn: p.seasonStartsOn, endsOn: p.seasonEndsOn } : null,
+  }]));
 }
 
 const windowsOf = (settings: SnapshotSettings) => ({ delivery: settings.deliveryWindows, pickup: settings.pickupWindows });
@@ -228,13 +266,20 @@ function decide(form: Record<string, unknown>, ctx: PlaceOrderContext, parsed: R
     return fields.includes("windowId") ? { ok: false, code: "VALIDATION_FAILED", fields, windows: windowsOf(snapshot.settings) } : { ok: false, code: "VALIDATION_FAILED", fields };
   }
   const input = parsed.data;
-  const lines = priceLines(ctx.basket, productMap(snapshot.products));
-  // ADR-0004: sold-out, hidden and deleted lines are left out (the page showed them dimmed
-  // and outside the total); only a basket with nothing orderable is refused.
+  // Server prices only (S-081): the snapshot's products, options and Settings, never the client's.
+  const { lines, ...totals } = priceBasket(ctx.basket, productMap(snapshot.products), {
+    fulfilment: input.fulfilment,
+    deliveryFeeRs: snapshot.settings.deliveryFeeRs,
+    limits: { cakeMessageMax: snapshot.settings.cakeMessageMax },
+    // S-084 AC7: a line out of its season today is left out, as the procedure does.
+    today: todayMU(ctx.now),
+  });
+  // ADR-0004: sold-out, hidden and deleted lines, and lines whose options are no longer
+  // offered, are left out (the page showed them dimmed and outside the total); only a basket
+  // with nothing orderable is refused.
   if (!lines.some((l) => l.problem === null)) return { ok: false, code: "VALIDATION_FAILED", fields: ["basket"] };
   const reason = dateProblem(input.date, ctx.now, lines, snapshot);
   if (reason) return { ok: false, code: "DATE_UNAVAILABLE", reason, availability: publicRules(snapshot.settings) };
-  const totals = checkoutTotals(lines, input.fulfilment, snapshot.settings.deliveryFeeRs);
   if (input.displayedTotalRs !== totals.totalRs) return { ok: false, code: "PRICE_CHANGED", lines, ...totals };
   return { input, lines, totals };
 }

@@ -98,6 +98,8 @@ export interface SiteSettings {
    */
   availability: AvailabilityRules;
   home: HomeSettings;
+  /** Message-on-cake limit (S-067); placeOrder re-reads it fresh. */
+  cakeMessageMax: number;
 }
 
 function homeFrom(row: SettingsRow): HomeSettings {
@@ -130,6 +132,6 @@ export function getSiteSettings(db: Database): Promise<SiteSettings> {
   return siteSettingsCache.get(async () => {
     const row = await siteSettingsRow(db);
     const availability = { defaultNoticeDays: row.defaultNoticeDays, closedWeekdays: row.closedWeekdays, blocked: row.blocked };
-    return { footer: footerFrom(row), checkout: checkoutFrom(row), noticeDays: row.defaultNoticeDays, availability, home: homeFrom(row) };
+    return { footer: footerFrom(row), checkout: checkoutFrom(row), noticeDays: row.defaultNoticeDays, availability, home: homeFrom(row), cakeMessageMax: row.cakeMessageMax };
   });
 }

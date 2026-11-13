@@ -38,7 +38,9 @@ test.describe("S-011 product page", () => {
 
     await expect(page.getByRole("heading", { level: 1, name: SAMPLE_PRODUCT.nameEn })).toBeVisible();
     await expect(page.getByText(SAMPLE_PRODUCT.descriptionEn)).toBeVisible();
-    await expect(page.getByText("Rs 850", { exact: true })).toBeVisible();
+    // The price under the name, and the same price in the Add bar (S-066).
+    await expect(page.getByRole("paragraph").filter({ hasText: /^Rs 850$/ })).toBeVisible();
+    await expect(page.getByTestId("live-price")).toHaveText("Rs 850");
     const photo = page.getByRole("img", { name: SAMPLE_PRODUCT.nameEn });
     await expect(photo).toBeVisible();
     await expect(photo).toHaveJSProperty("complete", true);

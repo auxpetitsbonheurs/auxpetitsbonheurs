@@ -17,3 +17,4 @@ Planned 2026-11-13. The Owner chose "Ordering essentials" as the next step.
 
 ## Daily log
 - 2026-11-13: planned; jobs 1 to 3 started in parallel.
+- 2026-11-13 (job 1): S-081, S-066, S-067, S-092 in review, plus S-065 AC4 (sold out + WhatsApp) and S-084 AC7 (season-ended line left out). Migration 0010 (`order_line_price`; `place_order` prices options and stores the snapshot, keeps 0009's date rules and refusal codes); contracts v0.37. S-066 AC4 (promotion on the page) waits for S-082. Fixed on the finishing pass: the product form was missing without JavaScript (streamed Suspense segment); now inline in the server HTML. JS: basket-en 169.96/170 kB (pricing loads after hydration), product-en 164.5 (ordering area lazy), admin-product 169.7. Affected e2e specs green (305 passed, 5 skipped).

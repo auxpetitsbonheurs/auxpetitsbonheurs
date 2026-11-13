@@ -14,6 +14,14 @@ export const handleError: HandleErrorFunction = (error, { request }) => {
 
 export const streamTimeout = 5_000;
 
+/**
+ * A Suspense boundary that is already finished stays inline in the HTML. React's default
+ * (12.8 kB) moves a finished boundary after that much page into a hidden element that a
+ * script reveals, which a browser without JavaScript never runs (the product page's ordering
+ * area must work as a plain form, S-066 AC5). Nothing here streams data late, so nothing is lost.
+ */
+export const DOCUMENT_STREAM_OPTIONS = { progressiveChunkSize: Number.POSITIVE_INFINITY } as const;
+
 export default async function handleRequest(
   request: Request,
   responseStatusCode: number,
@@ -35,6 +43,7 @@ export default async function handleRequest(
   const body = await renderToReadableStream(
     <ServerRouter context={routerContext} url={request.url} />,
     {
+      ...DOCUMENT_STREAM_OPTIONS,
       signal: AbortSignal.timeout(streamTimeout + 1000),
       onError(error: unknown) {
         responseStatusCode = 500;

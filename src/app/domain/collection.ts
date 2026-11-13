@@ -23,18 +23,10 @@ export function needsOptions(product: Pick<MenuProduct, "optionGroups">): boolea
 }
 
 /**
- * The lowest price a customer can pay for one unit ("from Rs X"): the base price plus, for
- * each required pick-one or pick-several group, its cheapest choice. Optional groups, text
- * and quantity groups add nothing to the lowest price.
+ * "from Rs X" on the cards is the S-081 pricing rule (`fromPriceRs`, re-exported by domain/pricing): base
+ * plus the cheapest valid choice of each group, never below 0.
  */
-export function fromPriceRs(product: Pick<MenuProduct, "basePriceRs" | "optionGroups">): number {
-  let price = product.basePriceRs;
-  for (const group of product.optionGroups) {
-    if (!group.required || (group.kind !== "single" && group.kind !== "multiple") || group.choices.length === 0) continue;
-    price += Math.min(...group.choices.map((c) => c.priceDeltaRs));
-  }
-  return Math.max(0, price);
-}
+export { fromPriceRs } from "./option-prices";
 
 /** Seasonal products show only inside their window on `today` (Mauritius date, ends included). */
 function inSeasonToday(product: MenuProduct, today: string): boolean {

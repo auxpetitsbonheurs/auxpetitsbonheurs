@@ -67,9 +67,22 @@ describe("fromPriceRs (S-244 AC2)", () => {
   });
 
   test("adds the cheapest choice of each required pick-one or pick-several group", () => {
-    const product = menuProduct("c1", 0, { optionGroups: [group(true, [1200, 900, 1500]), group(true, [50, 0], "multiple"), group(false, [-100])] });
+    const product = menuProduct("c1", 0, { optionGroups: [group(true, [1200, 900, 1500]), group(true, [50, 0], "multiple"), group(false, [100])] });
 
     expect(fromPriceRs(product)).toBe(900);
+  });
+
+  test("S-081: the cheapest valid configuration, so an optional discount choice counts too", () => {
+    const product = menuProduct("c1", 0, { optionGroups: [group(true, [1200, 900]), group(false, [-100])] });
+
+    expect(fromPriceRs(product)).toBe(800);
+  });
+
+  test("real menu: cookies Box of 6/12/18 from Rs 420; a cake from its 6 inch price", () => {
+    const box = { ...group(true, [0, 360, 660]), name: { en: "Box", fr: "Boîte" } };
+
+    expect(fromPriceRs(menuProduct("k1", 420, { type: "dessert", optionGroups: [box] }))).toBe(420);
+    expect(fromPriceRs(menuProduct("c1", 1200, { optionGroups: [group(true, [0, 300, 600])] }))).toBe(1200);
   });
 });
 

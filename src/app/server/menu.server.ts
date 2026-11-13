@@ -12,7 +12,7 @@ import { getSiteSettings } from "~/server/repos/settings.server";
 
 /** The ETag: a hash of everything but the read time, so an unchanged menu answers 304. */
 export async function menuVersion(menu: Omit<Menu, "generatedAt">): Promise<string> {
-  const bytes = new TextEncoder().encode(JSON.stringify([menu.products, menu.checkout, menu.today]));
+  const bytes = new TextEncoder().encode(JSON.stringify([menu.products, menu.checkout, menu.today, menu.limits]));
   const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
   return `m-${Array.from(digest.slice(0, 12), (b) => b.toString(16).padStart(2, "0")).join("")}`;
 }
@@ -46,7 +46,7 @@ export async function loadMenu({ db, supabaseUrl, now }: MenuSources): Promise<M
     season: r.season,
     noticeDays: r.noticeDays,
   }));
-  const body = { products, checkout, today };
+  const body = { products, checkout, today, limits: { cakeMessageMax: settings.cakeMessageMax } };
   // Real time, not the (test) request clock: it only orders copies of the menu.
   return { v: await menuVersion(body), data: { ...body, generatedAt: Date.now() } };
 }

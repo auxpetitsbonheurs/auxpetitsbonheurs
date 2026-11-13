@@ -8,6 +8,7 @@ import type { LocalizedText, OrderItemOption, TimeWindow } from "~/db/schema";
 import type { OrderStatus } from "~/domain/status";
 import type { Locale } from "~/lib/locale";
 import type { Executor } from "~/server/db.server";
+import { orderOptionLabels } from "~/server/order-options.server";
 import type { Localized } from "./catalogue.server";
 
 export interface PlacedOrderRef {
@@ -111,7 +112,7 @@ export async function findTrackedOrder(db: Executor, token: string): Promise<Tra
     name: item.nameFr ? { en: item.nameEn, fr: item.nameFr } : { en: item.nameEn },
     quantity: item.quantity,
     lineTotalRs: item.lineTotalRs,
-    options: item.options.flatMap((option) => (option.choice ? [{ label: option.choice }] : [])),
+    options: orderOptionLabels(item.options),
     cakeMessage: item.cakeMessage,
   }));
   return { ...row, fulfilOn: isoDate(row.fulfilOn), window: json(row.window), items };

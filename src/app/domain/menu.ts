@@ -2,11 +2,12 @@
 // included), its options and price, plus the checkout Settings the basket page shows. Served
 // by GET /api/menu, embedded in the basket loader, and cached in the browser so the basket
 // renders without a round trip. Pure: no I/O. Prices here are for display only; placeOrder
-// re-prices on the server.
+// re-prices on the server. Pricing a basket from the menu lives in menu-pricing.ts, so pages
+// that only show the header count do not load the pricing rules.
 import type { LocalizedText, TimeWindow } from "~/db/tables/json-types";
 import type { AvailabilityRules } from "./availability";
 import type { BasketLine } from "./basket";
-import { type LocalizedName, type PricedLine, type PricingProduct, priceLines } from "./pricing";
+import type { LocalizedName, PricingLimits } from "./pricing";
 import type { SeasonWindow } from "./season";
 
 export interface MenuOptionGroup {
@@ -61,6 +62,8 @@ export interface Menu {
   today: string;
   /** Server time the menu was read (ms). Orders two copies; not part of the version. */
   generatedAt: number;
+  /** Settings limits the product page and basket check against (S-067). Optional: older cached copies have none. */
+  limits?: PricingLimits;
 }
 
 /** A versioned menu: `v` is the ETag (a hash of products and checkout, not `generatedAt`). */
@@ -69,10 +72,15 @@ export interface MenuEntry {
   data: Menu;
 }
 
+/** A product whose prices changed since the page first saw it: its earlier pricing (ADR-0004 notes). */
 export interface PriceNote {
-  fromRs: number;
-  toRs: number;
+  before: MenuProduct;
 }
+
+/** Text limits when a cached copy has none: the most any field takes (the server still decides). */
+export const FALLBACK_LIMITS: PricingLimits = { cakeMessageMax: 200 };
+
+export const menuLimits = (menu: Pick<Menu, "limits">): PricingLimits => menu.limits ?? FALLBACK_LIMITS;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
 
@@ -89,15 +97,6 @@ export function fresherEntry(a: MenuEntry | null | undefined, b: MenuEntry): Men
   return a && a.data.generatedAt >= b.data.generatedAt ? a : b;
 }
 
-function pricingProducts(menu: Menu): Map<string, PricingProduct> {
-  return new Map(menu.products.map((p) => [p.id, { id: p.id, name: p.name, basePriceRs: p.basePriceRs, status: p.status }]));
-}
-
-/** Basket lines priced from the menu; a product missing from it (hidden, deleted) is `hidden`. */
-export function priceBasket(lines: readonly BasketLine[], menu: Menu): PricedLine[] {
-  return priceLines(lines, pricingProducts(menu));
-}
-
 /**
  * Items that will be ordered (header count, UX audit M1): lines whose product the menu has
  * as sold out, or that are known to have left the menu (`gone`), are not counted. A product
@@ -109,43 +108,31 @@ export function orderableItemCount(lines: readonly BasketLine[], menu: Menu | nu
   return lines.reduce((sum, line) => (leftOut(line.productId) ? sum : sum + line.quantity), 0);
 }
 
-/** Products whose price differs between two menus (products in both). */
+/** Everything that sets a product's prices: base and every choice's delta. */
+function pricingSignature(product: MenuProduct): string {
+  return JSON.stringify([product.basePriceRs, product.optionGroups.map((g) => [g.id, g.kind, g.choices.map((c) => [c.id, c.priceDeltaRs])])]);
+}
+
+/** Products (in both menus) whose base price or option prices differ: their earlier copy. */
 export function priceChanges(previous: Menu, next: Menu): Map<string, PriceNote> {
-  const before = new Map(previous.products.map((p) => [p.id, p.basePriceRs]));
+  const before = new Map(previous.products.map((p) => [p.id, p]));
   const changes = new Map<string, PriceNote>();
   for (const product of next.products) {
-    const fromRs = before.get(product.id);
-    if (fromRs !== undefined && fromRs !== product.basePriceRs) changes.set(product.id, { fromRs, toRs: product.basePriceRs });
+    const old = before.get(product.id);
+    if (old && pricingSignature(old) !== pricingSignature(product)) changes.set(product.id, { before: old });
   }
   return changes;
 }
 
-/** Accumulates notes: the first "from" is kept, the latest "to" wins, a round trip clears it. */
-export function mergePriceNotes(notes: ReadonlyMap<string, PriceNote>, changes: ReadonlyMap<string, PriceNote>): Map<string, PriceNote> {
+/** Accumulates notes against the latest menu: the first earlier copy is kept; a round trip back clears it. */
+export function mergePriceNotes(notes: ReadonlyMap<string, PriceNote>, changes: ReadonlyMap<string, PriceNote>, next: Menu): Map<string, PriceNote> {
   const merged = new Map(notes);
-  for (const [id, change] of changes) {
-    const fromRs = notes.get(id)?.fromRs ?? change.fromRs;
-    if (fromRs === change.toRs) merged.delete(id);
-    else merged.set(id, { fromRs, toRs: change.toRs });
+  for (const [id, change] of changes) if (!merged.has(id)) merged.set(id, change);
+  const current = new Map(next.products.map((p) => [p.id, p]));
+  for (const [id, note] of merged) {
+    const now = current.get(id);
+    if (!now || pricingSignature(now) === pricingSignature(note.before)) merged.delete(id);
   }
   return merged;
 }
 
-/**
- * The menu as a placeOrder refusal (PRICE_CHANGED) describes it: each line's server unit
- * price, sold-out and hidden products, and the delivery fee. Same version family, so the
- * next network copy replaces it.
- */
-export function menuWithServerPrices(entry: MenuEntry, lines: readonly Pick<PricedLine, "productId" | "unitPriceRs" | "problem">[], deliveryFeeRs: number | undefined): MenuEntry {
-  const byId = new Map(lines.map((l) => [l.productId, l]));
-  const products = entry.data.products
-    .filter((p) => byId.get(p.id)?.problem !== "hidden" && byId.get(p.id)?.problem !== "out_of_season")
-    .map((p) => {
-      const line = byId.get(p.id);
-      if (!line) return p;
-      if (line.problem === "sold_out") return { ...p, status: "sold_out" as const };
-      return { ...p, basePriceRs: line.unitPriceRs, status: "available" as const };
-    });
-  const checkout = deliveryFeeRs === undefined ? entry.data.checkout : { ...entry.data.checkout, deliveryFeeRs };
-  return { v: `${entry.v}+refused`, data: { ...entry.data, products, checkout } };
-}

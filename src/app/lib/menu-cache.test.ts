@@ -87,7 +87,7 @@ describe("revalidation", () => {
     await store.revalidate({ force: true });
 
     expect(listener).toHaveBeenCalled();
-    expect(store.state().notes.get(CAKE)).toEqual({ fromRs: 850, toRs: 900 });
+    expect(store.state().notes.get(CAKE)?.before.basePriceRs).toBe(850);
   });
 
   test("an older copy (an HTTP-cached answer) never replaces a newer one", () => {
@@ -135,6 +135,6 @@ describe("revalidation", () => {
     const store = createMenuStore(io());
     store.offer(entry("v1", 1000, 850));
     store.replace(entry("v1+refused", 1000, 950));
-    expect(store.state().notes.get(CAKE)).toEqual({ fromRs: 850, toRs: 950 });
+    expect(store.state().notes.get(CAKE)?.before.basePriceRs).toBe(850);
   });
 });

@@ -2,7 +2,7 @@
 // (v = ETag, ts = when this browser last stored or confirmed it, data = the public menu).
 // The basket and checkout render from it at once and it is revalidated in the background
 // against GET /api/menu. When a newer copy changes a price, a note is kept for that product
-// ("Price updated from Rs X to Rs Y"). Every storage access is in try/catch: private mode,
+// (its earlier pricing; each basket line then says "Price updated from Rs X to Rs Y"). Every storage access is in try/catch: private mode,
 // a full quota or blocked storage just means no cache.
 import { useSyncExternalStore } from "react";
 import { type LocalizedName } from "~/domain/pricing";
@@ -93,7 +93,7 @@ export function createMenuStore(io: MenuStoreIo): MenuStore {
     const kept = new Set(entry.data.products.map((p) => p.id));
     const goneNames = new Map(state.goneNames);
     for (const product of current?.data.products ?? []) if (!kept.has(product.id)) goneNames.set(product.id, product.name);
-    set({ entry, notes: mergePriceNotes(state.notes, changes), goneNames });
+    set({ entry, notes: mergePriceNotes(state.notes, changes, entry.data), goneNames });
   };
 
   const store: MenuStore = {
