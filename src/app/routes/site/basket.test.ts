@@ -4,7 +4,7 @@ import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { BASKET_COOKIE, basketCookie, readBasketCount } from "~/server/basket.server";
 import { siteSettingsCache } from "~/server/repos/settings.server";
 import { cookieFrom, routeArgs } from "~/server/testing/route-context";
-import { priceBasket } from "~/domain/menu";
+import { priceBasketFromMenu } from "~/domain/menu-pricing";
 import { checkoutTotals } from "~/domain/pricing";
 import { signedInAdmin } from "~/server/testing/admin-session";
 import { action as adminMenuAction } from "../admin/menu";
@@ -23,11 +23,11 @@ afterEach(async () => {
 const cookieWith = (lines: { lineId: string; productId: string; quantity: number }[]) =>
   cookieFrom(basketCookie(lines.map((l) => ({ ...l, options: [] }))));
 
-/** The loader's data as the view prices it (ADR-0004: lines are priced from the menu by `priceBasket`). */
+/** The loader's data as the view prices it (ADR-0004: lines are priced from the menu by `priceBasketFromMenu`). */
 async function load(cookie?: string, path = "/basket") {
   const data = await loader(routeArgs(database, { path, cookie }) as never);
   const menu = data.menu.data;
-  const lines = priceBasket(data.basket, menu).map((line) => ({ ...line, imageUrl: menu.products.find((p) => p.id === line.productId)?.photos[0]?.url ?? null }));
+  const lines = priceBasketFromMenu(data.basket, menu).map((line) => ({ ...line, imageUrl: menu.products.find((p) => p.id === line.productId)?.photos[0]?.url ?? null }));
   return { ...data, ...menu.checkout, lines, itemsTotalRs: checkoutTotals(lines, null, 0).itemsTotalRs };
 }
 const post = (form: Record<string, string>, cookie?: string) => action(routeArgs(database, { path: "/basket", cookie, form }) as never);

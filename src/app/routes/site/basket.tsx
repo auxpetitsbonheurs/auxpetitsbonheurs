@@ -2,6 +2,7 @@ import { Undo2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Form, type MetaArgs, redirect, useNavigation, useRouteLoaderData } from "react-router";
 import { BasketLineItem, type BasketLineView, type RemovedLine } from "~/components/checkout/basket-line-item";
+import { basketLineViews } from "~/components/checkout/basket-line-view";
 import { Alert } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import { leftOutNames, nameList } from "~/lib/left-out";
@@ -10,9 +11,11 @@ import { ErrorSummary } from "~/components/checkout/error-summary";
 import { type FulfilmentChoice, FulfilmentSection } from "~/components/checkout/fulfilment-section";
 import { PlaceOrderBar, SummarySection } from "~/components/checkout/summary-section";
 import { type AvailabilityRules, type BasketDates, basketDates } from "~/domain/availability";
-import { type BasketLine, removeLine, setLineQuantity } from "~/domain/basket";
-import { type Menu, type MenuEntry, fresherEntry, menuWithServerPrices, priceBasket } from "~/domain/menu";
-import { type LocalizedName, type PricedLine, checkoutTotals, deliveryFeeFor } from "~/domain/pricing";
+import { type BasketLine, checkoutTotals, deliveryFeeFor, removeLine, setLineQuantity } from "~/domain/basket";
+import { type Menu, type MenuEntry, fresherEntry } from "~/domain/menu";
+import { priceBasketFromMenu } from "~/domain/menu-pricing";
+import type { RefusedLine } from "~/domain/menu-refusal";
+import type { LocalizedName, PricedLine } from "~/domain/pricing-core";
 import { todayMU } from "~/domain/time";
 import type { TimeWindow } from "~/db/tables/json-types";
 import type { FooterContacts } from "~/server/repos/settings.server";
@@ -56,6 +59,8 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   return {
     basket,
     menu,
+    // Priced here for the first paint; the browser loads the pricing rules after hydration.
+    priced: priceBasketFromMenu(basket, menu.data, menu.data.today),
     goneNames: await goneProductNames(context, basket, menu),
     today: menu.data.today,
     // Fresh per render; a repeated submit with it returns the same order (FR-023, S-014).
@@ -72,6 +77,32 @@ async function goneProductNames(context: Route.LoaderArgs["context"], basket: Ba
   return Object.fromEntries([...found].map(([id, record]) => [id, record.name]));
 }
 
+type Pricing = typeof import("~/domain/menu-pricing");
+let pricing: Pricing | null = null;
+
+/** The pricing rules, loaded on demand (the basket route is at its JS budget); kept once loaded. */
+function loadPricing(): Promise<Pricing> {
+  return import("~/domain/menu-pricing").then((module) => (pricing = module));
+}
+
+/** The pricing module once loaded (after hydration, or by the client loader). */
+function usePricing(): Pricing | null {
+  const [loaded, setLoaded] = useState(pricing);
+  useEffect(() => {
+    if (!loaded) void loadPricing().then(setLoaded);
+  }, [loaded]);
+  return loaded;
+}
+
+/** Until the rules load: the loader's priced lines, following quantity changes and removals. */
+function fromLoader(priced: readonly PricedLine[], basket: readonly BasketLine[]): PricedLine[] {
+  const byId = new Map(priced.map((l) => [l.lineId, l]));
+  return basket.flatMap((line) => {
+    const known = byId.get(line.lineId);
+    return known ? [{ ...known, quantity: line.quantity, lineTotalRs: known.unitPriceRs * line.quantity }] : [];
+  });
+}
+
 /**
  * Client navigation (ADR-0004): render at once from the menu cached in the phone and the
  * basket cookie, then revalidate the menu in the background. No cache yet (or no
@@ -83,11 +114,15 @@ export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
   if (!entry?.data.checkout.availability || typeof crypto.randomUUID !== "function") return serverLoader();
   void menuStore.revalidate({ force: true });
   const clientToday = todayMU(new Date());
+  const today = clientToday > entry.data.today ? clientToday : entry.data.today;
+  const { priceBasketFromMenu: price } = await loadPricing();
+  const basket = basketStore.lines();
   return {
-    basket: basketStore.lines(),
+    basket,
     menu: entry,
+    priced: price(basket, entry.data, today),
     goneNames: {} as Record<string, LocalizedName>,
-    today: clientToday > entry.data.today ? clientToday : entry.data.today,
+    today,
     idempotencyKey: crypto.randomUUID(),
   };
 }
@@ -231,25 +266,10 @@ function useBasketModel(data: LoaderData, t: T, locale: Locale): BasketModel {
   useEffect(() => menuStore.rememberGone(data.goneNames), [data.goneNames]);
   const menu = fresherEntry(cached.entry, data.menu).data;
   const basket = useBasketLines(data.basket);
-  const lines = priceBasket(basket, menu);
-  const products = new Map(menu.products.map((p) => [p.id, p]));
-  const views = lines.map((line): BasketLineView => {
-    const product = products.get(line.productId);
-    const goneName = data.goneNames[line.productId] ?? cached.goneNames.get(line.productId);
-    const name = product?.name ?? goneName;
-    const note = cached.notes.get(line.productId);
-    return {
-      lineId: line.lineId,
-      name: name ? localized(name, locale) : t("basket.unavailableItem"),
-      imageUrl: product?.photos[0]?.url ?? null,
-      quantity: line.quantity,
-      unitPrice: formatRupees(line.unitPriceRs),
-      lineTotal: formatRupees(line.lineTotalRs),
-      unavailable: line.problem !== null,
-      nameUnknown: !name,
-      priceNote: note ? t("basket.priceUpdated", { old: formatRupees(note.fromRs), new: formatRupees(note.toRs) }) : null,
-    };
-  });
+  const rules = usePricing();
+  const lines = rules ? rules.priceBasketFromMenu(basket, menu, data.today) : fromLoader(data.priced, basket);
+  const goneName = (id: string) => data.goneNames[id] ?? cached.goneNames.get(id);
+  const views = basketLineViews({ basket, lines, menu, notes: cached.notes, goneName, noteFor: rules?.linePriceNote }, t, locale);
   const orderable = lines.filter((l) => l.problem === null);
   const leftOut = views.filter((v) => v.unavailable).map((v) => ({ lineId: v.lineId, name: v.name }));
   return { menu, lines, views, itemsTotalRs: checkoutTotals(lines, null, menu.checkout.deliveryFeeRs).itemsTotalRs, orderable, leftOut };
@@ -374,7 +394,7 @@ interface OrderRefusal extends ActionErrorBody {
   windows?: { delivery: TimeWindow[]; pickup: TimeWindow[] };
   totalRs?: number;
   deliveryFeeRs?: number;
-  lines?: (Pick<PricedLine, "productId" | "unitPriceRs" | "problem"> & { name?: PricedLine["name"] })[];
+  lines?: (RefusedLine & { name?: PricedLine["name"] })[];
 }
 
 /** Refusal of placeOrder (has `values`) vs. a basket line refusal. */
@@ -401,8 +421,12 @@ function useRefusalPrices(refused: OrderRefusal | undefined, current: MenuEntry)
     if (refused?.error.fields?.basket || refused?.error.fields?.windowId || refused?.error.code === "DATE_UNAVAILABLE") void menuStore.revalidate({ force: true });
     if (refused?.error.code !== "PRICE_CHANGED" || !refused.lines) return;
     const fee = refused.values.fulfilment === "delivery" ? refused.deliveryFeeRs : undefined;
-    menuStore.replace(menuWithServerPrices(current, refused.lines, fee));
-    void menuStore.revalidate({ force: true });
+    const lines = refused.lines;
+    // Loaded on demand (rare path; the basket route is at its JS budget).
+    void import("~/domain/menu-refusal").then(({ menuWithServerPrices }) => {
+      menuStore.replace(menuWithServerPrices(current, lines, fee));
+      void menuStore.revalidate({ force: true });
+    });
     // Only a new refusal patches the menu.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refused]);
