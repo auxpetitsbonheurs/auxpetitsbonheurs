@@ -285,3 +285,10 @@ then pays one edge-to-Mumbai trip instead of one per query. Verify after the dep
 `cf-placement` header names a remote location and `db-query` falls to a few ms. If not (wrong
 region, or the plan refuses targeted placement), go back to `"mode": "smart"`. Production gets
 the same line in a release once staging confirms it.
+
+Result (deploy 43419501773, 29b6011): `cf-placement: remote-BOM`, but `db-query` stayed at
+158-214 ms, so the database is not in Mumbai, and the extra edge-to-Mumbai hop made US TTFB no
+better. Follow-up the same day: placement targets the database host instead,
+`{ "mode": "targeted", "host": "db.<project-ref>.supabase.co:5432" }` (the project reference is
+public, in every photo URL; no credential), so Cloudflare probes it and places the Worker next
+to it whatever the region. Same verification and the same way back.
