@@ -220,8 +220,50 @@ describe("customer emails (E-11: S-206 signup, S-208 sign-in link, S-209 reset)"
   });
 });
 
+describe("every Supabase email type (S-194 AC1, AC4, AC7)", () => {
+  test.each([
+    ["signup", "en", /Confirm your email/],
+    ["signup", "fr", /Confirmez votre e-mail/],
+    ["magiclink", "en", /sign-in link/],
+    ["magiclink", "fr", /connexion/],
+    ["email_change", "en", /new email/],
+    ["invite", "fr", /invité/],
+  ] as const)("%s in %s is sent through Resend with its own link and the shared layout", async (type, locale, subject) => {
+    const mailer = new FakeMailer();
+
+    const result = await deliver({ payload: payload({ type, locale }), mailer });
+
+    expect(result).toEqual({ status: 200, body: {} });
+    expect(mailer.sent).toHaveLength(1);
+    const [email] = mailer.sent;
+    expect(email!.subject).toMatch(subject);
+    expect(email!.text).toContain(`${SITE}/auth/confirm?token_hash=linkhash&type=${type}&next=/admin/reset`);
+    expect(email!.html).toContain(`lang="${locale}"`);
+    expect(email!.html).toContain("min-height:44px");
+    const rows = await database.client.query<{ template: string }>("select template from email_outbox where template = $1 limit 1", [`auth.${type}`]);
+    expect(rows.rows).toEqual([{ template: `auth.${type}` }]);
+  });
+});
+
+describe("the daily limit (S-187 AC2)", () => {
+  test("at 100 sent today the hook answers a safe 500 and sends nothing", async () => {
+    await database.client.query(
+      "insert into email_outbox (template, to_email, locale, payload, dedupe_key, status, sent_at) select 'order_received', 'a@example.com', 'en', '{}', 'k' || g, 'sent', $1 from generate_series(1, 100) g",
+      [NOW.toISOString()],
+    );
+    const mailer = new FakeMailer();
+
+    const result = await deliver({ payload: payload({ type: "signup" }), mailer });
+    // The database is shared by this file's tests: take the filler rows away again.
+    await database.client.query("delete from email_outbox where dedupe_key like 'k%'");
+
+    expect(result).toEqual({ status: 500, body: { error: { http_code: 500, message: "Email could not be sent." } } });
+    expect(mailer.sent).toEqual([]);
+  });
+});
+
 describe("unsupported types (AC8)", () => {
-  test.each(["email_change", "invite"])("%s is 500 unsupported and sends nothing", async (type) => {
+  test.each(["reauthentication"])("%s is 500 unsupported and sends nothing", async (type) => {
     const mailer = new FakeMailer();
 
     const result = await deliver({ payload: payload({ type }), mailer });

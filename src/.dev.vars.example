@@ -5,7 +5,7 @@
 # Only the four Supabase/database keys are required. Integration keys (Resend, VAPID, auth
 # hook, Turnstile, Sentry) are optional everywhere: their feature is off until set, and
 # `npm run check:launch -- <env>` / the deploy summary list the missing ones. Production's
-# public launch needs email (RESEND_API_KEY, EMAIL_FROM) and TURNSTILE_SECRET_KEY.
+# public launch needs email (RESEND_API_KEY, EMAIL_FROM, SITE_URL) and TURNSTILE_SECRET_KEY.
 
 # Non-secret; set per environment in wrangler.jsonc "vars" (listed here for completeness)
 APP_ENV=development
@@ -22,6 +22,9 @@ DATABASE_URL=postgresql://postgres.your-project-ref:replace-with-password@aws-0-
 # Resend (transactional email, EN/FR templates)
 RESEND_API_KEY=re_replace_with_key
 EMAIL_FROM=Aux petits bonheurs <orders@example.com>
+# The site's public address (origin only): every link in an email starts with it. Without
+# RESEND_API_KEY, EMAIL_FROM and SITE_URL nothing is sent: emails wait in the outbox.
+SITE_URL=https://replace-with-your-domain.example
 
 # Web push (VAPID). Generate once per environment: npx web-push generate-vapid-keys
 VAPID_PUBLIC_KEY=replace-with-vapid-public-key

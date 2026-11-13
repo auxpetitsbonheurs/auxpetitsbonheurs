@@ -1,5 +1,5 @@
 # S-194: Sign-in, confirmation, reset and invitation emails arrive from Supabase in EN/FR
-Status: ready
+Status: done (2026-11-13; sending untested live: no sender domain yet)
 Epic: E-10-notifications
 Spec: docs/specs/features/notifications.md#api-contract
 Estimate: 5 pts

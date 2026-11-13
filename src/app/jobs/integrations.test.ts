@@ -46,8 +46,8 @@ describe("integrationsCheck job", () => {
       level: "warn",
       event: "integration_missing",
       integration: "email",
-      missing: ["EMAIL_FROM"],
-      effect: "order emails stay queued in the outbox; nothing is sent",
+      missing: ["EMAIL_FROM", "SITE_URL"],
+      effect: "not sent: email not set up. Order emails stay queued in the outbox and go out once it is",
       queuedEmails: 2,
     });
     expect(result).toEqual({ job: "integrations", ran: true, processed: 5 });
@@ -59,7 +59,7 @@ describe("integrationsCheck job", () => {
   test("everything configured: no warn line", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     const env = {
-      RESEND_API_KEY: SECRET, EMAIL_FROM: "x", VAPID_PUBLIC_KEY: "x", VAPID_PRIVATE_KEY: "x", VAPID_SUBJECT: "x",
+      RESEND_API_KEY: SECRET, EMAIL_FROM: "x", SITE_URL: "x", VAPID_PUBLIC_KEY: "x", VAPID_PRIVATE_KEY: "x", VAPID_SUBJECT: "x",
       SUPABASE_AUTH_HOOK_SECRET: "x", TURNSTILE_SITE_KEY: "x", TURNSTILE_SECRET_KEY: "x", SENTRY_DSN: "https://k@o0.ingest.sentry.io/0",
     };
 

@@ -1,84 +1,12 @@
-// Auth email templates E-02 needs (S-024: recovery; S-028 adds the invitation). EN/FR
-// from the server catalogue (FR falls back to EN per key, NFR-007). Each email holds the
-// bakery name, one sentence saying why it was sent, the link and when it expires: never a
-// password, never order data (NFR-004). Wording reviewed by `copywriter` before launch (E-12).
-import { formatDayLabel } from "~/domain/time";
+// Account email re-exports and the Juice payment block. The layout and every template now live
+// in ./templates (S-188); this module keeps the E-02 import path working.
 import { t } from "~/i18n/catalog.server";
 import { type Locale, formatRupees } from "~/lib/locale";
+import { authEmail } from "./templates/auth-emails";
+import { BAKERY_NAME, type RenderedEmail, escapeHtml } from "./templates/layout";
 
-export const BAKERY_NAME = "Aux petits bonheurs";
-
-export interface RenderedEmail {
-  subject: string;
-  html: string;
-  text: string;
-}
-
-const escapeHtml = (value: string) =>
-  value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
-
-/** Recovery links last as long as Supabase's email OTP expiry (default 1 hour). */
-export const RECOVERY_LINK_MINUTES = 60;
-
-/**
- * The cream logo badge (brand v0.3, version 1) as a PNG on the site's own origin: email clients
- * do not render SVG. Both emails link to the site, so the link's origin is the site; without a
- * usable origin the bakery name is written out instead.
- */
-function logoHtml(link: string): string {
-  let origin: string;
-  try {
-    origin = new URL(link).origin;
-  } catch {
-    return `<p style="font-family:Georgia,serif;font-size:22px;margin:0;color:#660c0c">${escapeHtml(BAKERY_NAME)}</p>`;
-  }
-  return `<img src="${escapeHtml(origin)}/brand/logo-badge-cream-160.png" width="80" height="80" alt="${escapeHtml(BAKERY_NAME)}" style="display:block;margin:0 auto;border:0">`;
-}
-
-/** Inline styles only (email clients drop <style>); colours from the light theme tokens (brand v0.3). */
-function layout(locale: Locale, parts: { heading: string; reason: string; button: string; link: string; expiry: string; ignore: string }): string {
-  const link = escapeHtml(parts.link);
-  return `<!doctype html>
-<html lang="${locale}">
-<body style="margin:0;padding:24px;background:#fbf3e8;color:#3b1512;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5">
-<div style="max-width:520px;margin:0 auto">
-<div style="margin:0 0 20px;padding-bottom:16px;border-bottom:1px solid #ba8430;text-align:center">${logoHtml(parts.link)}</div>
-<h1 style="font-size:20px;margin:0 0 12px">${escapeHtml(parts.heading)}</h1>
-<p style="margin:0 0 20px">${escapeHtml(parts.reason)}</p>
-<p style="margin:0 0 20px"><a href="${link}" style="display:inline-block;padding:12px 20px;background:#660c0c;color:#fcead8;text-decoration:none;border-radius:8px;font-weight:bold">${escapeHtml(parts.button)}</a></p>
-<p style="margin:0 0 12px;word-break:break-all;font-size:14px"><a href="${link}" style="color:#520909">${link}</a></p>
-<p style="margin:0 0 12px">${escapeHtml(parts.expiry)}</p>
-<p style="margin:0;font-size:14px">${escapeHtml(parts.ignore)}</p>
-</div>
-</body>
-</html>`;
-}
-
-export interface InvitationDetails {
-  inviterName: string;
-  role: "owner" | "admin";
-  link: string;
-  /** Mauritius calendar date the link lasts until (`YYYY-MM-DD`). */
-  expiresOn: string;
-}
-
-/**
- * The invitation email (S-028 AC7): bakery name, who invited, the role in plain words,
- * the link and "valid until Thu 19 Nov". Not the invitee's email or anything else personal.
- */
-export function invitationEmail(locale: Locale, details: InvitationDetails): RenderedEmail {
-  const vars = { bakery: BAKERY_NAME, inviter: details.inviterName };
-  const parts = {
-    heading: t("email.invitation.heading", locale, vars),
-    reason: t(`email.invitation.reason_${details.role}`, locale, vars),
-    button: t("email.invitation.button", locale),
-    link: details.link,
-    expiry: t("email.invitation.expiry", locale, { date: formatDayLabel(details.expiresOn, locale) }),
-    ignore: t("email.invitation.ignore", locale),
-  };
-  const text = [BAKERY_NAME, "", parts.heading, "", parts.reason, "", details.link, "", parts.expiry, parts.ignore].join("\n");
-  return { subject: t("email.invitation.subject", locale, vars), html: layout(locale, parts), text };
-}
+export { BAKERY_NAME, type RenderedEmail };
+export { RECOVERY_LINK_MINUTES, type CustomerAuthEmail, type InvitationDetails, customerAuthEmail, invitationEmail } from "./templates/auth-emails";
 
 /** What the payment block needs: the confirmation page's PaymentView (S-278 AC8). */
 export interface EmailPayment {
@@ -106,7 +34,7 @@ export function paymentBlock(locale: Locale, payment: EmailPayment): { html: str
   const heading = t("email.payment.heading", locale);
   const lead = t("order.payment.lead", locale, vars);
   const button = payment.proofUrl
-    ? `<p style="margin:0 0 12px"><a href="${escapeHtml(payment.proofUrl)}" style="display:inline-block;padding:12px 20px;background:#660c0c;color:#fcead8;text-decoration:none;border-radius:8px;font-weight:bold">${escapeHtml(t("order.payment.sendProof", locale))}</a></p>`
+    ? `<p style="margin:0 0 12px"><a href="${escapeHtml(payment.proofUrl)}" style="display:block;box-sizing:border-box;min-height:44px;padding:13px 20px;background:#660c0c;color:#fcead8;font-size:16px;line-height:1.3;text-align:center;text-decoration:none;border-radius:8px;font-weight:bold">${escapeHtml(t("order.payment.sendProof", locale))}</a></p>`
     : "";
   const html = [
     `<h2 style="font-size:18px;margin:0 0 8px">${escapeHtml(heading)}</h2>`,
@@ -121,33 +49,5 @@ export function paymentBlock(locale: Locale, payment: EmailPayment): { html: str
 
 /** The password reset email (S-024 AC1, AC4, AC7). */
 export function recoveryEmail(locale: Locale, link: string): RenderedEmail {
-  const parts = {
-    heading: t("email.recovery.heading", locale),
-    reason: t("email.recovery.reason", locale, { bakery: BAKERY_NAME }),
-    button: t("email.recovery.button", locale),
-    link,
-    expiry: t("email.recovery.expiry", locale, { count: RECOVERY_LINK_MINUTES / 60 }),
-    ignore: t("email.recovery.ignore", locale),
-  };
-  const text = [BAKERY_NAME, "", parts.heading, "", parts.reason, "", link, "", parts.expiry, parts.ignore].join("\n");
-  return { subject: t("email.recovery.subject", locale, { bakery: BAKERY_NAME }), html: layout(locale, parts), text };
-}
-
-/** The customer account emails (E-11): confirm a sign-up, a one-time sign-in link, a password reset. */
-export type CustomerAuthEmail = "signup" | "magiclink" | "customerRecovery";
-
-/** S-206 confirmation, S-208 sign-in link, S-209 reset: why it was sent, the link, 1 hour, ignore it. */
-export function customerAuthEmail(kind: CustomerAuthEmail, locale: Locale, link: string): RenderedEmail {
-  const key = `email.${kind}`;
-  const vars = { bakery: BAKERY_NAME };
-  const parts = {
-    heading: t(`${key}.heading`, locale, vars),
-    reason: t(`${key}.reason`, locale, vars),
-    button: t(`${key}.button`, locale),
-    link,
-    expiry: t("email.recovery.expiry", locale, { count: RECOVERY_LINK_MINUTES / 60 }),
-    ignore: t(`${key}.ignore`, locale),
-  };
-  const text = [BAKERY_NAME, "", parts.heading, "", parts.reason, "", link, "", parts.expiry, parts.ignore].join("\n");
-  return { subject: t(`${key}.subject`, locale, vars), html: layout(locale, parts), text };
+  return authEmail("password_reset", locale, link);
 }

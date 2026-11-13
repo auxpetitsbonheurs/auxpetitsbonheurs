@@ -193,7 +193,7 @@ environment, in this order:
    `npx wrangler secret put <NAME> --env staging|production`). **To start, only the four
    core secrets**: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
    `DATABASE_URL`. The site runs with just these (ADR-0002 amendment).
-   Later, one integration at a time: `RESEND_API_KEY` + `EMAIL_FROM` (email),
+   Later, one integration at a time: `RESEND_API_KEY` + `EMAIL_FROM` + `SITE_URL` (email),
    `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` + `VAPID_SUBJECT` (phone notifications),
    `SUPABASE_AUTH_HOOK_SECRET`, `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `SENTRY_DSN`. While one is missing its
    feature is off and says so (hourly `integration_missing` line in Workers Logs; queued

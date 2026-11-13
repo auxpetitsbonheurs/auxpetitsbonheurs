@@ -27,9 +27,9 @@ describe("the key lists", () => {
 
 describe("integrationConfigured / missingKeys", () => {
   test("an integration is usable only when all its keys are set and non-empty", () => {
-    expect(integrationConfigured({ RESEND_API_KEY: "k", EMAIL_FROM: "a <a@example.com>" }, "email")).toBe(true);
+    expect(integrationConfigured({ RESEND_API_KEY: "k", EMAIL_FROM: "a <a@example.com>", SITE_URL: "https://x.test" }, "email")).toBe(true);
     expect(integrationConfigured({ RESEND_API_KEY: "k" }, "email")).toBe(false);
-    expect(missingKeys({ RESEND_API_KEY: "", EMAIL_FROM: "x" }, "email")).toEqual(["RESEND_API_KEY"]);
+    expect(missingKeys({ RESEND_API_KEY: "", EMAIL_FROM: "x", SITE_URL: "x" }, "email")).toEqual(["RESEND_API_KEY"]);
     expect(missingKeys({}, "sentry")).toEqual(["SENTRY_DSN"]);
   });
 });
@@ -49,7 +49,7 @@ describe("launchReadiness", () => {
   });
 
   test("optional extras missing only (push, hook, Sentry) do not block the launch", () => {
-    const report = launchReadiness([...CORE_SECRETS, "RESEND_API_KEY", "EMAIL_FROM", "TURNSTILE_SITE_KEY", "TURNSTILE_SECRET_KEY"]);
+    const report = launchReadiness([...CORE_SECRETS, "RESEND_API_KEY", "EMAIL_FROM", "SITE_URL", "TURNSTILE_SITE_KEY", "TURNSTILE_SECRET_KEY"]);
 
     expect(report.launchReady).toBe(true);
     expect(report.missing.map((i) => i.name)).toEqual(["push", "authEmailHook", "sentry"]);
@@ -83,8 +83,8 @@ describe("readinessAnnotations (names only)", () => {
     const lines = readinessAnnotations(launchReadiness(CORE_SECRETS), "production");
 
     expect(lines.filter((l) => l.startsWith("::warning::"))).toHaveLength(6);
-    expect(lines.at(-1)).toBe("::warning::production is NOT ready for public launch: set RESEND_API_KEY, EMAIL_FROM, TURNSTILE_SITE_KEY, TURNSTILE_SECRET_KEY first.");
-    expect(lines.join("\n")).toContain("email not configured (RESEND_API_KEY, EMAIL_FROM): order emails stay queued in the outbox");
+    expect(lines.at(-1)).toBe("::warning::production is NOT ready for public launch: set RESEND_API_KEY, EMAIL_FROM, SITE_URL, TURNSTILE_SITE_KEY, TURNSTILE_SECRET_KEY first.");
+    expect(lines.join("\n")).toContain("email not configured (RESEND_API_KEY, EMAIL_FROM, SITE_URL): not sent: email not set up. Order emails stay queued in the outbox");
   });
 
   test("staging only notes missing integrations, but warns about missing core secrets", () => {

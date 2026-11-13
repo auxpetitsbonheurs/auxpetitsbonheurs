@@ -81,6 +81,7 @@ launch" until they are.
 | `DATABASE_URL` | **high** | each project's own | Project → **Connect** → Method **Transaction pooler** (port 6543) → URI, with the database password. This one is for the running site (not the Session pooler URL used by GitHub) |
 | `RESEND_API_KEY` | **high** | one key per environment | resend.com → API Keys → Create API Key → Permission **Sending access** → copy (shown once) |
 | `EMAIL_FROM` | no | staging: `Aux petits bonheurs <onboarding@resend.dev>`; production: see note | Note: the free `workers.dev` address cannot be verified in Resend (you do not own its DNS). Until the bakery domain exists, use Resend's test sender `onboarding@resend.dev`, which only delivers to the Resend account's own email address: fine for staging, **not** for customers. Before launch, verify `mail.<bakery domain>` in Resend → Domains and set `Aux petits bonheurs <orders@mail.<bakery domain>>` (launch blocker G-03) |
+| `SITE_URL` | no | staging: the Worker's `workers.dev` address; production: `https://<bakery domain>` | The origin every email link starts with (cron has no request to read it from). Origin only, no path. Email stays off until it, `RESEND_API_KEY` and `EMAIL_FROM` are all set (section 3b) |
 | `VAPID_PUBLIC_KEY` | no | one pair per environment | On your computer: `npx web-push generate-vapid-keys` → "Public Key" |
 | `VAPID_PRIVATE_KEY` | **high** | same pair as above | Same command → "Private Key" |
 | `VAPID_SUBJECT` | no | both: `mailto:<bakery address>` | The bakery email address |
@@ -109,6 +110,29 @@ When the bakery domain goes live, change the production values to `https://<bake
 and `https://<bakery domain>/auth/confirm`, then delete the workers.dev entry.
 
 Authentication → Sign In / Providers → Email: keep **Confirm email** on.
+
+## 3b. Email: when the bakery domain is bought (E-10)
+
+Until then **nothing is sent**: orders queue their emails, the hourly job logs
+`not sent: email not set up`, and every order still works. Settings → Email usage shows the
+daily count (free limit 100). Do these once per environment, in this order.
+
+1. Resend: resend.com → sign up (free plan) → Domains → **Add Domain** → `mail.<bakery domain>` → region closest to Mauritius' customers (any).
+2. At the domain registrar (DNS): add each record Resend lists (SPF `TXT`, DKIM `CNAME`/`TXT`, MX for the `send` sub-name). Add a DMARC `TXT` on `_dmarc.<bakery domain>`: `v=DMARC1; p=none; rua=mailto:<bakery address>`.
+3. Resend → Domains → **Verify DNS Records**; wait for "Verified" (minutes to a few hours).
+4. Resend → API Keys → **Create API Key** → name `apb-staging` or `apb-production` → Permission **Sending access** → Domain `mail.<bakery domain>` → copy the key (shown once).
+5. Cloudflare → Workers & Pages → the Worker → Settings → Variables and Secrets → **+ Add**, type **Secret**, one per line:
+   - `RESEND_API_KEY` = the key
+   - `EMAIL_FROM` = `Aux petits bonheurs <orders@mail.<bakery domain>>`
+   - `SITE_URL` = `https://<bakery domain>` (origin only, no path)
+6. Deploy (or wait for the next deploy): the next hourly tick sends everything that was queued.
+7. Supabase auth emails (pick **A**, the one this app is built for):
+   - A. Supabase → Authentication → Hooks → **Send Email hook** → HTTPS → URL `https://<bakery domain>/hooks/supabase/send-email` → **Generate secret** → copy `v1,whsec_…` → Cloudflare Secret `SUPABASE_AUTH_HOOK_SECRET` (same screen as step 5) → deploy → back in Supabase set the hook **Enabled**. Do not enable it before step 5 is deployed.
+   - B. (only if A is not wanted) Supabase → Project Settings → Authentication → SMTP Settings → host `smtp.resend.com`, port `465`, user `resend`, password = the Resend key, sender `orders@mail.<bakery domain>`. Supabase then sends its own English emails.
+8. Test: Team → invite a test address you own; place a test order with your own address; check the email and Settings → Email usage.
+
+GitHub Actions never needs these keys (they are Worker secrets). Rollback: empty
+`RESEND_API_KEY`; rows stay queued and send after it is restored.
 
 ## 4. Order of the one-time steps
 

@@ -37,6 +37,7 @@ import { requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { listFeaturableProducts, readOwnerSettings } from "~/server/repos/owner-settings.server";
 import { saveSettings } from "~/server/services/save-settings.server";
+import { DAILY_LIMIT, sentToday } from "~/server/email/daily-cap";
 import { storageContext, uploadContext } from "~/server/storage.server";
 import type { Route } from "./+types/settings";
 
@@ -54,8 +55,7 @@ export async function loader(args: Route.LoaderArgs) {
     settings,
     imageUrls: { hero: url(settings.heroImagePath), about: url(settings.aboutImagePath) },
     products,
-    // Produced by notifications (E-10); the page says "Not available yet" until then.
-    resendUsage: null as { sentToday: number; dailyLimit: number } | null,
+    resendUsage: { sentToday: await sentToday(db, args.context.get(clockContext).now()), dailyLimit: DAILY_LIMIT },
   };
 }
 

@@ -1,5 +1,5 @@
 # S-191: Customer is told about declines, cancellations and order changes
-Status: ready
+Status: done (2026-11-13; sending untested live: no sender domain yet)
 Epic: E-10-notifications
 Spec: docs/specs/features/notifications.md#email-catalogue
 Estimate: 3 pts
