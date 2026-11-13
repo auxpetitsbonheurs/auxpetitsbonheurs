@@ -154,6 +154,13 @@ export function ProductOrderForm({ product, cakeMessageMax, takesMessage, refusa
     if (serverAdded) basketStore.refresh();
   }, [serverAdded]);
 
+  // This form is a lazy chunk: it can hydrate after the root's `data-hydrated` marker, and a tap
+  // before that is a plain post to the basket. e2e specs wait for this marker before testing
+  // the instant Add (it is set once the submit handler is attached).
+  useEffect(() => {
+    form.current?.setAttribute("data-enhanced", "");
+  }, []);
+
   // A corrected field loses its message at once (calm validation).
   const clear = (field: string) => setErrors(({ [field]: _gone, ...rest }) => rest);
 

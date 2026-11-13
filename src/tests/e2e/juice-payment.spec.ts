@@ -11,6 +11,7 @@ import { expectKeyboardOperable, expectNoA11yViolations, expectNoHorizontalScrol
 import { signIn } from "./support/admin";
 import { chooseDate } from "./support/checkout-date";
 import { setClock } from "./support/clock";
+import { orderFormReady } from "./support/product";
 import { E2E_ACCOUNTS, E2E_DATABASE_URL, SAMPLE_PRODUCT, connectE2eDatabase, createOrder } from "./support/database";
 import { type Page, expect, test } from "./support/fixtures";
 import { withSettingsLock } from "./support/settings-lock";
@@ -62,7 +63,7 @@ const isPhone375 = () => test.info().project.name === "phone-375";
 
 async function placePickupOrder(page: Page, email: string) {
   await page.goto(`/menu/${SAMPLE_PRODUCT.slug}`);
-  await expect(page.locator("html")).toHaveAttribute("data-hydrated", "true");
+  await orderFormReady(page);
   await page.getByRole("button", { name: "Add to basket" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Added to your basket" })).toBeVisible();
   await page.goto("/basket");
