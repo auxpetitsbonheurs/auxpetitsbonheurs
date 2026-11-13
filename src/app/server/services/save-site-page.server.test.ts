@@ -8,6 +8,7 @@ import { signedInAdmin } from "~/server/testing/admin-session";
 import { MemoryStorage } from "~/server/testing/memory-storage";
 import { routeArgs } from "~/server/testing/route-context";
 import { getSitePage } from "./site-page.server";
+import { variantPath, withVariantPaths } from "~/domain/upload";
 
 let database: TestDatabase;
 let editor: Awaited<ReturnType<typeof signedInAdmin>>;
@@ -177,7 +178,32 @@ describe("S-247: photos", () => {
 
     expect(answer).toMatchObject({ ok: true, version: 3 });
     expect((await database.client.query("select storage_path from site_page_photo")).rows).toEqual([{ storage_path: keep }]);
-    expect(storage.removed).toEqual([drop]);
+    expect(storage.removed).toEqual(withVariantPaths([drop]));
+  });
+
+  test("S-276 AC2: a new photo's stored copies are checked and their widths saved; the page renders them as srcset", async () => {
+    const storage = new MemoryStorage();
+    const path = issued(storage, "our_story", 1);
+    storage.objects.set(`public-images/${variantPath(path, 480)}`, { bytes: WEBP, contentType: "image/webp" });
+
+    const answer = await save("our_story", { "intro.en": "Hi", ...photoFields(0, path), uploadSessionId: SESSION }, storage);
+
+    expect(answer).toMatchObject({ ok: true });
+    expect((await database.client.query("select variant_widths from site_page_photo")).rows).toEqual([{ variant_widths: [480] }]);
+    const read = await getSitePage(db(), "our_story", "en", "https://storage.test");
+    expect(read.ok && read.page.photos[0]!.srcSet).toBe(
+      `https://storage.test/storage/v1/object/public/public-images/${variantPath(path, 480)} 480w, https://storage.test/storage/v1/object/public/public-images/${path} 1200w`,
+    );
+  });
+
+  test("S-276 AC2: a copy that is not an image refuses the save", async () => {
+    const storage = new MemoryStorage();
+    const path = issued(storage, "our_story", 1);
+    storage.objects.set(`public-images/${variantPath(path, 960)}`, { bytes: new TextEncoder().encode("<html>"), contentType: "image/webp" });
+
+    const answer = refusal(await save("our_story", { "intro.en": "Hi", ...photoFields(0, path), uploadSessionId: SESSION }, storage));
+
+    expect(answer?.data.error.code).toBe("UPLOAD_REJECTED");
   });
 
   test("AC9: when Storage refuses the removal, the file is queued in storage_purge", async () => {

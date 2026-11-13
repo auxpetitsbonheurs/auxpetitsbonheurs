@@ -84,6 +84,8 @@ export async function getCheckoutSettings(db: Database): Promise<CheckoutSetting
 export interface HomeSettings {
   tagline: LocalizedText | null;
   heroImagePath: string | null;
+  /** Widths of the hero image's smaller copies (S-276). Optional: absent from copies cached before. */
+  heroImageVariants?: number[];
   featuredProductIds: string[];
 }
 
@@ -104,7 +106,7 @@ export interface SiteSettings {
 
 function homeFrom(row: SettingsRow): HomeSettings {
   const tagline = row.hero?.tagline && row.hero.tagline.en.trim() !== "" ? row.hero.tagline : null;
-  return { tagline, heroImagePath: present(row.hero?.imagePath), featuredProductIds: row.featuredProductIds };
+  return { tagline, heroImagePath: present(row.hero?.imagePath), heroImageVariants: row.heroImageVariants, featuredProductIds: row.featuredProductIds };
 }
 
 /** Every block as a range only, in the same statement as the Settings row (one round trip). */

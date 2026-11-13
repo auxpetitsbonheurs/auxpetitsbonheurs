@@ -508,6 +508,32 @@ test.describe("S-047 product photos", () => {
     expect(bytes.includes(Buffer.from("Exif"))).toBe(false);
   });
 
+  test("S-276 AC1, AC2, AC3: the 480 and 960 px WebP copies are stored beside the photo, recorded on save and served as srcset", async ({ page, db }) => {
+    const name = `Sized cake ${Date.now()}`;
+    await newProductWithName(page, name);
+    await addPhotos(page).setInputFiles(JPEG_WITH_EXIF);
+    await uploadsSettled(page);
+    await page.getByRole("radio", { name: "Available" }).check();
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+
+    const productId = await productIdFromUrl(page);
+    const [row] = await db<{ storage_path: string; variant_widths: number[] }[]>`select storage_path, variant_widths from product_photo where product_id = ${productId}`;
+    expect(row!.variant_widths).toEqual([480, 960]);
+    for (const width of [480, 960]) {
+      const copy = await storedBytes(row!.storage_path.replace(/\.webp$/, `-${width}w.webp`));
+      expect(copy.subarray(8, 12).toString("latin1")).toBe("WEBP");
+      expect(copy.includes(Buffer.from("E2E-CAMERA"))).toBe(false);
+      expect(copy.length).toBeLessThan((await storedBytes(row!.storage_path)).length);
+    }
+
+    const [slug] = await db<{ slug: string }[]>`select slug from product where id = ${productId}`;
+    await page.goto(`/menu/${slug!.slug}`);
+    const photo = page.getByRole("img", { name }).first();
+    await expect(photo).toHaveAttribute("srcset", new RegExp(`-480w\\.webp 480w, .*-960w\\.webp 960w, .*\\.webp 1600w$`));
+    await expect(photo).toHaveAttribute("sizes", /100vw$/);
+  });
+
   test("AC1: a HEIC photo is converted in the browser and stored as WebP", async ({ page, db }) => {
     test.slow(); // the HEIC decoder is a large download, fetched only for HEIC files
     const name = `Heic cake ${Date.now()}`;

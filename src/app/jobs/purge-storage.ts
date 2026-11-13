@@ -3,6 +3,8 @@
 // for the next tick. Never throws for a Storage failure (the dispatcher logs the result).
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { storagePurge } from "~/db/schema";
+import { withVariantPaths } from "~/domain/upload";
+import { PUBLIC_IMAGES_BUCKET } from "~/lib/images";
 import { type StorageGateway, supabaseStorage } from "~/server/storage.server";
 import type { JobContext, JobResult } from "./types";
 
@@ -23,7 +25,8 @@ export async function purgeStorage(context: JobContext, storage: StorageGateway 
     const paths = queued.filter((q) => q.bucket === bucket).map((q) => q.path);
     const inBucket = and(eq(storagePurge.bucket, bucket), inArray(storagePurge.path, paths));
     try {
-      await storage.remove(bucket, paths);
+      // Queued originals take their smaller copies with them (S-276; missing ones are a no-op).
+      await storage.remove(bucket, bucket === PUBLIC_IMAGES_BUCKET ? withVariantPaths(paths) : paths);
       await context.db.delete(storagePurge).where(inBucket);
       processed += paths.length;
     } catch (error) {

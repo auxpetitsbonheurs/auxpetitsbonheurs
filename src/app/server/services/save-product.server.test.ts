@@ -8,6 +8,7 @@ import type { StorageGateway, StoredObject, UploadGateway } from "~/server/stora
 import { signedInAdmin } from "~/server/testing/admin-session";
 import { findAdminProduct, listAdminMenu } from "~/server/repos/admin-menu.server";
 import { saveProduct } from "./save-product.server";
+import { variantPath, withVariantPaths } from "~/domain/upload";
 
 let database: TestDatabase;
 let adminId: string;
@@ -357,7 +358,7 @@ describe("photos (S-047)", () => {
       { storage_path: c, sort_order: 0 },
       { storage_path: a, sort_order: 1 },
     ]);
-    expect(files.removed).toEqual([[b]]);
+    expect(files.removed).toEqual([withVariantPaths([b])]);
   });
 
   test("a kept photo keeps its stored size whatever is posted", async () => {
@@ -398,6 +399,55 @@ describe("photos (S-047)", () => {
   test("a malformed photo list is VALIDATION_FAILED on photos", async () => {
     const data = form({ ...BASE, photos: "[{" });
     expect(parseProductForm(data)).toEqual({ ok: false, problems: { photos: "invalid" } });
+  });
+});
+
+describe("smaller copies (S-276 AC2, AC4)", () => {
+  const variantWidths = async (id: string) =>
+    (await database.client.query<{ variant_widths: number[] }>("select variant_widths from product_photo where product_id = $1 order by sort_order", [id])).rows.map((r) => r.variant_widths);
+  const withCopy = (path: string, width: number, object: StoredObject = { size: 40_000, contentType: "image/webp", head: WEBP_HEAD }) => files.objects.set(variantPath(path, width), object);
+
+  test("copies stored beside a new photo are checked and their widths saved with it", async () => {
+    const a = uploaded();
+    withCopy(a, 480);
+    withCopy(a, 960);
+
+    const created = (await saveWithPhotos(BASE, [photo(a)])) as { ok: true; id: string };
+
+    expect(created.ok).toBe(true);
+    expect(await variantWidths(created.id)).toEqual([[480, 960]]);
+  });
+
+  test("a missing copy is simply not used (the original serves); a photo too narrow for a copy gets none", async () => {
+    const [a, b] = [uploaded(), uploaded()];
+    withCopy(a, 480);
+    withCopy(b, 480);
+
+    const created = (await saveWithPhotos(BASE, [photo(a), photo(b, 480, 360)])) as { ok: true; id: string };
+
+    expect(await variantWidths(created.id)).toEqual([[480], []]);
+  });
+
+  test.each([
+    ["not an image by its bytes", { size: 40_000, contentType: "image/webp", head: PDF_HEAD }],
+    ["another type than the original", { size: 40_000, contentType: "image/jpeg", head: JPEG_HEAD }],
+    ["over 1 MB", { size: 1_048_577, contentType: "image/webp", head: WEBP_HEAD }],
+  ])("a copy that is %s refuses the save like a bad original", async (_label, object) => {
+    const a = uploaded();
+    withCopy(a, 960, object);
+
+    expect(await saveWithPhotos(BASE, [photo(a)])).toMatchObject({ ok: false, code: "UPLOAD_REJECTED" });
+  });
+
+  test("a kept photo keeps its stored widths; a copy added later is not linked without a new upload", async () => {
+    const a = uploaded();
+    withCopy(a, 480);
+    const created = (await saveWithPhotos(BASE, [photo(a)])) as { id: string };
+    withCopy(a, 960);
+
+    await saveWithPhotos({ ...BASE, id: created.id }, [photo(a)]);
+
+    expect(await variantWidths(created.id)).toEqual([[480]]);
   });
 });
 

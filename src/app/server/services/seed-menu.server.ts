@@ -132,7 +132,7 @@ async function seedOne(db: Database, entry: MenuSeedProduct, slug: string, conte
       const id = await writeProduct(tx, entry, slug, context.now, sampleId);
       // The sample's bundled photo leaves the list; it is not a Storage file, so nothing to remove.
       if (photo || sampleId) {
-        const written = await replacePhotos(tx, id, photo ? [photo] : [], new Set(photo ? [photo.path] : []));
+        const written = await replacePhotos(tx, id, photo ? [photo] : [], new Map(photo ? [[photo.path, []]] : []));
         if (!written.ok) throw new Error("photo could not be linked");
       }
       await replaceOptionGroups(tx, id, optionGroups(entry));

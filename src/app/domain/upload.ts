@@ -88,3 +88,59 @@ export function isIssuedSitePath(path: string, adminId: string, uploadSessionId:
   const match = SITE_PHOTO_PATH.exec(path);
   return match !== null && match[1] === adminId.toLowerCase() && match[2] === uploadSessionId.toLowerCase();
 }
+
+// ---------------------------------------------------------------------------
+// Responsive sizes (S-276): next to each stored photo, smaller copies of the same type at
+// these widths, named `<stem>-<width>w.<ext>` beside the original. Only widths below the
+// original's width are made; which ones really exist is stored with the photo's row.
+
+/** Widths of the smaller copies: a phone card at 1x-2x, a two-column card at 2x-3x. */
+export const PHOTO_VARIANT_WIDTHS = [480, 960] as const;
+export type PhotoVariantWidth = (typeof PHOTO_VARIANT_WIDTHS)[number];
+
+export function isPhotoVariantWidth(value: number): value is PhotoVariantWidth {
+  return (PHOTO_VARIANT_WIDTHS as readonly number[]).includes(value);
+}
+
+/** The variant widths worth making for a photo `width` px wide (strictly narrower). */
+export function variantWidthsFor(width: number): PhotoVariantWidth[] {
+  return PHOTO_VARIANT_WIDTHS.filter((w) => w < width);
+}
+
+/** Size of the `variantWidth` copy of a `width` x `height` photo (the ratio is kept). */
+export function variantSize(width: number, height: number, variantWidth: number): { width: number; height: number } {
+  return { width: variantWidth, height: Math.max(1, Math.round((height * variantWidth) / width)) };
+}
+
+const EXTENSION = /\.(webp|jpg|png)$/;
+const VARIANT_SUFFIX = /-\d+w\.(webp|jpg|png)$/;
+
+/** `a/b/c.webp` + 480 → `a/b/c-480w.webp`. */
+export function variantPath(path: string, width: number): string {
+  return path.replace(EXTENSION, `-${width}w.$1`);
+}
+
+/** True for a path that names a variant, not an original. */
+export function isVariantPath(path: string): boolean {
+  return VARIANT_SUFFIX.test(path);
+}
+
+/** The stored type a path's extension stands for; null for anything else. */
+export function typeOfPath(path: string): UploadType | null {
+  const ext = EXTENSION.exec(path)?.[1];
+  return UPLOAD_TYPES.find((type) => UPLOAD_EXTENSIONS[type] === ext) ?? null;
+}
+
+/**
+ * Every object a stored photo may own: the original and each possible variant. Removals use
+ * it, so a purge never needs to know which variants were made (removing a missing one is a no-op).
+ */
+export function withVariantPaths(paths: readonly string[]): string[] {
+  return paths.flatMap((path) => (EXTENSION.test(path) && !isVariantPath(path) ? [path, ...PHOTO_VARIANT_WIDTHS.map((w) => variantPath(path, w))] : [path]));
+}
+
+/** Stored widths cleaned for rendering: known widths below the photo's width, ascending, once each. */
+export function cleanVariantWidths(widths: readonly number[] | null | undefined, width: number): PhotoVariantWidth[] {
+  const set = new Set(widths ?? []);
+  return variantWidthsFor(width).filter((w) => set.has(w));
+}

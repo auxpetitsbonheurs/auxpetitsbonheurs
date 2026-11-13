@@ -2,6 +2,7 @@
 // Storage is asked once; on any failure the paths are queued in `storage_purge` for the
 // hourly job and the caller carries on: a leftover file never fails a user's action.
 import { storagePurge } from "~/db/schema";
+import { withVariantPaths } from "~/domain/upload";
 import { PUBLIC_IMAGES_BUCKET } from "~/lib/images";
 import type { Database } from "~/server/db.server";
 import type { StorageGateway } from "~/server/storage.server";
@@ -14,7 +15,8 @@ export async function removePhotos(db: Database, storage: StorageGateway | null,
   if (paths.length === 0) return 0;
   try {
     if (!storage) throw new Error("no storage gateway configured");
-    await storage.remove(PUBLIC_IMAGES_BUCKET, paths);
+    // Each photo with its smaller copies (S-276): a copy that was never made is a no-op.
+    await storage.remove(PUBLIC_IMAGES_BUCKET, withVariantPaths(paths));
     return 0;
   } catch (error) {
     const lastError = error instanceof Error ? error.message.slice(0, 200) : "unknown";

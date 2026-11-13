@@ -39,6 +39,28 @@ describe("view", () => {
     expect(links(html).find((l) => l.text.startsWith("Discover our collection"))?.href).toBe("/menu");
   });
 
+  test("S-276 AC3: with smaller copies the hero img and its preload carry the same srcset and sizes; cards below are lazy with their own sizes", () => {
+    const srcSet = "https://cdn.test/hero-480w.webp 480w, https://cdn.test/hero-960w.webp 960w, https://cdn.test/hero.webp 1600w";
+    const cardSet = "https://cdn.test/c-480w.webp 480w, https://cdn.test/c.webp 900w";
+    const html = render({
+      ...full,
+      hero: { ...full.hero, photo: { url: "https://cdn.test/hero.webp", width: 1600, height: 1200, srcSet } },
+      featured: [{ ...full.featured[0]!, photo: { url: "https://cdn.test/c.webp", width: 900, height: 600, srcSet: cardSet } }],
+    });
+
+    const hero = html.match(/<img[^>]*hero\.webp[^>]*>/)![0];
+    expect(hero).toMatch(new RegExp(`srcSet="${srcSet}"`, "i"));
+    expect(hero).toContain('sizes="(min-width: 72rem) 40rem, (min-width: 48rem) 55vw, 100vw"');
+    expect(hero).toMatch(/fetchPriority="high"/i);
+    expect(hero).not.toContain('loading="lazy"');
+    const preload = html.match(/<link[^>]*rel="preload"[^>]*as="image"[^>]*>/)![0];
+    expect(preload).toMatch(new RegExp(`imageSrcSet="${srcSet}"`, "i"));
+    expect(preload).toMatch(/imageSizes="\(min-width: 72rem\) 40rem, \(min-width: 48rem\) 55vw, 100vw"/i);
+    const card = html.match(/<img[^>]*c\.webp"[^>]*>/)![0];
+    expect(card).toContain('sizes="(min-width: 72rem) 22rem, (min-width: 48rem) 31vw, (min-width: 20rem) 47vw, 100vw"');
+    expect(card).toContain('loading="lazy"');
+  });
+
   test("AC1: the three promises, How it works in 3 steps and the custom-cake band", () => {
     const html = render(full);
 

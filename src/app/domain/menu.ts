@@ -30,7 +30,8 @@ export interface MenuProduct {
   /** Hidden products are left out of the menu altogether. */
   status: "available" | "sold_out";
   minQuantity: number | null;
-  photos: { url: string; width: number; height: number }[];
+  /** `srcSet`/`thumbUrl` when smaller copies exist (S-276). */
+  photos: { url: string; width: number; height: number; srcSet?: string; thumbUrl?: string }[];
   optionGroups: MenuOptionGroup[];
   /**
    * Seasonal window (S-049, Mauritius dates, ends included), null when not seasonal. Optional:

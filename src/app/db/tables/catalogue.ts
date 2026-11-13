@@ -92,6 +92,8 @@ export const productPhoto = pgTable(
       .notNull()
       .references(() => product.id, { onDelete: "cascade" }),
     storagePath: text("storage_path").notNull(),
+    /** Widths of the smaller copies stored beside it (S-276); empty = original only. */
+    variantWidths: smallint("variant_widths").array().notNull().default(sql`'{}'::smallint[]`),
     width: integer("width").notNull(),
     height: integer("height").notNull(),
     sortOrder: smallint("sort_order").notNull(),
@@ -206,6 +208,8 @@ export const galleryPhoto = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     storagePath: text("storage_path").notNull(),
+    /** Widths of the smaller copies stored beside it (S-276); empty = original only. */
+    variantWidths: smallint("variant_widths").array().notNull().default(sql`'{}'::smallint[]`),
     width: integer("width").notNull(),
     height: integer("height").notNull(),
     occasion: text("occasion"),

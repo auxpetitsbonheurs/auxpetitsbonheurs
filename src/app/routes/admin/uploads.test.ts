@@ -170,3 +170,56 @@ describe("Brand page photos (E-13 S-247 AC6, AC8): scope page:<key>", () => {
     expect(uploads.signUpload).not.toHaveBeenCalled();
   });
 });
+
+describe("S-276 AC2: URLs for a photo's smaller copies, beside it", () => {
+  const OTHER = "6a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d";
+  const original = (adminId: string, session_ = SESSION) => `products/${adminId}/${session_}/0b0f5d3e-2a4c-4e8b-9c1d-7e6f5a4b3c2d.webp`;
+
+  test("variantOf an issued photo: one URL per width, named <stem>-<width>w with the original's extension", async () => {
+    const uploads = gateway();
+    const path = original(session.admin.id);
+
+    const response = await post({ uploadSessionId: SESSION, variantOf: path, type: ["image/webp", "image/webp"], size: ["30000", "90000"], width: ["480", "960"] }, session, uploads);
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { uploads: { path: string }[] };
+    expect(body.uploads.map((u) => u.path)).toEqual([path.replace(".webp", "-480w.webp"), path.replace(".webp", "-960w.webp")]);
+    expect(uploads.signUpload).toHaveBeenCalledTimes(2);
+  });
+
+  test("a brand page photo's copies are signed under its page scope", async () => {
+    const uploads = gateway();
+    const path = `site/pages/our_story/${session.admin.id}/${SESSION}/0b0f5d3e-2a4c-4e8b-9c1d-7e6f5a4b3c2d.jpg`;
+
+    const response = await post({ uploadSessionId: SESSION, scope: "page:our_story", variantOf: path, type: "image/jpeg", size: "30000", width: "480" }, session, uploads);
+
+    expect(response.status).toBe(200);
+    expect(((await response.json()) as { uploads: { path: string }[] }).uploads[0]!.path).toBe(path.replace(".jpg", "-480w.jpg"));
+  });
+
+  test.each<[string, (adminId: string) => Record<string, string | string[]>]>([
+    ["another admin's photo", () => ({ variantOf: original(OTHER), type: "image/webp", size: "1000", width: "480" })],
+    ["another editor session's photo", (id) => ({ variantOf: original(id, OTHER), type: "image/webp", size: "1000", width: "480" })],
+    ["a path outside the scope's prefix", () => ({ variantOf: "site/hero.webp", type: "image/webp", size: "1000", width: "480" })],
+    ["a path that already names a copy", (id) => ({ variantOf: original(id).replace(".webp", "-480w.webp"), type: "image/webp", size: "1000", width: "480" })],
+    ["a width that is not 480 or 960", (id) => ({ variantOf: original(id), type: "image/webp", size: "1000", width: "1200" })],
+    ["the same width twice", (id) => ({ variantOf: original(id), type: ["image/webp", "image/webp"], size: ["1000", "1000"], width: ["480", "480"] })],
+    ["a type other than the original's", (id) => ({ variantOf: original(id), type: "image/jpeg", size: "1000", width: "480" })],
+    ["a copy over 1 MB", (id) => ({ variantOf: original(id), type: "image/webp", size: "1048577", width: "480" })],
+  ])("%s is UPLOAD_REJECTED and nothing is signed", async (_label, form) => {
+    const uploads = gateway();
+
+    const response = await post({ uploadSessionId: SESSION, ...form(session.admin.id) }, session, uploads);
+
+    expect(response.status).toBe(422);
+    expect(uploads.signUpload).not.toHaveBeenCalled();
+  });
+
+  test("widths without variantOf, or a width count that does not match the files, is VALIDATION_FAILED", async () => {
+    const uploads = gateway();
+
+    expect((await post({ uploadSessionId: SESSION, type: "image/webp", size: "1000", width: "480" }, session, uploads)).status).toBe(400);
+    expect((await post({ uploadSessionId: SESSION, variantOf: original(session.admin.id), type: "image/webp", size: "1000" }, session, uploads)).status).toBe(400);
+    expect(uploads.signUpload).not.toHaveBeenCalled();
+  });
+});

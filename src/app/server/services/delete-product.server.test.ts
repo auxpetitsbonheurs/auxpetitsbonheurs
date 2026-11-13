@@ -12,6 +12,7 @@ import { signedInAdmin } from "~/server/testing/admin-session";
 import { placeTestOrder } from "~/server/testing/orders";
 import { routeArgs } from "~/server/testing/route-context";
 import { deleteProduct } from "./delete-product.server";
+import { withVariantPaths } from "~/domain/upload";
 
 let database: TestDatabase;
 let db: Database;
@@ -106,7 +107,7 @@ describe("photo files (S-045 AC6)", () => {
 
     expect(await deleteProduct(db, gateway, id)).toEqual({ ok: true, id, photosQueued: 0 });
 
-    expect(removed).toEqual([{ bucket: "public-images", paths: ["products/p1/a.webp", "products/p1/b.webp"] }]);
+    expect(removed).toEqual([{ bucket: "public-images", paths: withVariantPaths(["products/p1/a.webp", "products/p1/b.webp"]) }]);
     expect(await rows("select count(*)::int as n from storage_purge")).toEqual([{ n: 0 }]);
   });
 

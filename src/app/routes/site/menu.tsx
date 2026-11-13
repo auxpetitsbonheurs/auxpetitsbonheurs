@@ -17,6 +17,7 @@ import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
 import { loadMenu } from "~/server/menu.server";
 import { publicConfigContext } from "~/server/public-config.server";
+import { MENU_CARD_SIZES } from "~/lib/photo-sizes";
 import { timed } from "~/server/server-timing.server";
 import type { Route } from "./+types/menu";
 
@@ -96,6 +97,8 @@ function ProductCard({ product, index }: { product: MenuProduct; index: number }
       {photo ? (
         <img
           src={photo.url}
+          srcSet={photo.srcSet}
+          sizes={photo.srcSet && MENU_CARD_SIZES}
           alt={name}
           width={photo.width}
           height={photo.height}

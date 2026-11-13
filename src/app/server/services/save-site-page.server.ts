@@ -2,7 +2,8 @@
 // workshop in one versioned write. Photos follow the S-047 rules: a path the page already has
 // is kept as stored; any other must be issued to this admin for this page and editor session
 // (`site/pages/<key>/<adminId>/<uploadSessionId>/`), used by no page, and stored in the bucket
-// as a JPEG, PNG or WebP of at most 1 MB by its first bytes. The row is locked and its
+// as a JPEG, PNG or WebP of at most 1 MB by its first bytes; its smaller copies (S-276) are
+// checked the same way and their widths stored with the row. The row is locked and its
 // version compared (stale → PAGE_CHANGED, nothing saved). The first save clears
 // `is_placeholder`. Removed photo files are deleted after commit (or queued in storage_purge).
 import { eq, inArray } from "drizzle-orm";
@@ -12,7 +13,7 @@ import type { AfterResponse } from "~/server/after-response.server";
 import type { PagePhotoInput, SitePageInput } from "~/server/contracts/site-pages";
 import type { Database } from "~/server/db.server";
 import type { StorageGateway, UploadGateway } from "~/server/storage.server";
-import { isStoredImage } from "./product-photos.server";
+import { type VerifiedPhotos, checkNewPhoto } from "./product-photos.server";
 import { clearSitePageCache } from "./site-page.server";
 import { removePhotos } from "./storage-cleanup.server";
 
@@ -42,15 +43,20 @@ function postedRows(input: SitePageInput): Row[] {
   return rows;
 }
 
-async function storedPaths(db: Database | Tx, key: SitePageKey): Promise<Map<string, { width: number; height: number }>> {
-  const rows = await db.select({ path: sitePagePhoto.storagePath, width: sitePagePhoto.width, height: sitePagePhoto.height }).from(sitePagePhoto).where(eq(sitePagePhoto.pageKey, key));
-  return new Map(rows.map((r) => [r.path, { width: r.width, height: r.height }]));
+async function storedPaths(db: Database | Tx, key: SitePageKey): Promise<Map<string, { width: number; height: number; variantWidths: number[] }>> {
+  const rows = await db
+    .select({ path: sitePagePhoto.storagePath, width: sitePagePhoto.width, height: sitePagePhoto.height, variantWidths: sitePagePhoto.variantWidths })
+    .from(sitePagePhoto)
+    .where(eq(sitePagePhoto.pageKey, key));
+  return new Map(rows.map((r) => [r.path, { width: r.width, height: r.height, variantWidths: r.variantWidths }]));
 }
 
-/** Fields of new photos that fail the S-047 checks (AC6); [] when all may be saved. */
-async function rejectedPhotos(db: Database, key: SitePageKey, rows: Row[], known: Map<string, unknown>, context: SaveSitePageContext): Promise<string[]> {
+type PhotoChecks = { rejected: string[]; verified: VerifiedPhotos };
+
+/** Fields of new photos that fail the S-047 checks (AC6), and the new ones that pass with their variants (S-276). */
+async function checkPhotos(db: Database, key: SitePageKey, rows: Row[], known: Map<string, unknown>, context: SaveSitePageContext): Promise<PhotoChecks> {
   const fresh = rows.filter((r) => !known.has(r.photo.path));
-  if (fresh.length === 0) return [];
+  if (fresh.length === 0) return { rejected: [], verified: new Map() };
   const { uploads, uploadSessionIds, adminId } = context;
   const issued = (r: Row) => uploads && uploadSessionIds.some((session) => isIssuedPagePhotoPath(r.photo.path, key, adminId, session));
   const used = await db
@@ -58,8 +64,11 @@ async function rejectedPhotos(db: Database, key: SitePageKey, rows: Row[], known
     .from(sitePagePhoto)
     .where(inArray(sitePagePhoto.storagePath, fresh.map((r) => r.photo.path)));
   const usedPaths = new Set(used.map((u) => u.path));
-  const checks = await Promise.all(fresh.map(async (r) => Boolean(issued(r)) && !usedPaths.has(r.photo.path) && (await isStoredImage(uploads!, r.photo.path))));
-  return fresh.filter((_, i) => !checks[i]).map((r) => r.field);
+  const checks = await Promise.all(fresh.map(async (r) => (issued(r) && !usedPaths.has(r.photo.path) ? checkNewPhoto(uploads!, r.photo) : null)));
+  return {
+    rejected: fresh.filter((_, i) => !checks[i]).map((r) => r.field),
+    verified: new Map(fresh.flatMap((r, i) => (checks[i] ? [[r.photo.path, checks[i]] as const] : []))),
+  };
 }
 
 function storedEvent(input: SitePageInput): PageEvent | null {
@@ -68,7 +77,7 @@ function storedEvent(input: SitePageInput): PageEvent | null {
   return { title, date, seats, text };
 }
 
-async function writePhotos(tx: Tx, key: SitePageKey, rows: Row[], verified: Set<string>): Promise<string[] | null> {
+async function writePhotos(tx: Tx, key: SitePageKey, rows: Row[], verified: VerifiedPhotos): Promise<string[] | null> {
   const current = await storedPaths(tx, key);
   if (rows.some((r) => !current.has(r.photo.path) && !verified.has(r.photo.path))) return null;
   await tx.delete(sitePagePhoto).where(eq(sitePagePhoto.pageKey, key));
@@ -76,7 +85,8 @@ async function writePhotos(tx: Tx, key: SitePageKey, rows: Row[], verified: Set<
     await tx.insert(sitePagePhoto).values(
       rows.map(({ role, photo, slot }) => {
         const kept = current.get(photo.path);
-        return { pageKey: key, role, storagePath: photo.path, width: kept?.width ?? photo.width, height: kept?.height ?? photo.height, altEn: photo.alt.en, altFr: photo.alt.fr ?? null, sortOrder: slot };
+        const variantWidths = [...(kept?.variantWidths ?? verified.get(photo.path) ?? [])];
+        return { pageKey: key, role, storagePath: photo.path, width: kept?.width ?? photo.width, height: kept?.height ?? photo.height, variantWidths, altEn: photo.alt.en, altFr: photo.alt.fr ?? null, sortOrder: slot };
       }),
     );
   }
@@ -89,9 +99,8 @@ export async function saveSitePage(db: Database, key: SitePageKey, version: numb
   const pagePaths = rows.map((r) => r.photo.path);
   if (input.photos.length > PAGE_PHOTO_LIMITS[key] || new Set(pagePaths).size !== pagePaths.length) return { ok: false, code: "UPLOAD_REJECTED", fields: { photos: "rejected" } };
   const known = await storedPaths(db, key);
-  const rejected = await rejectedPhotos(db, key, rows, known, context);
+  const { rejected, verified } = await checkPhotos(db, key, rows, known, context);
   if (rejected.length > 0) return { ok: false, code: "UPLOAD_REJECTED", fields: Object.fromEntries(rejected.map((field) => [field, "rejected"])) };
-  const verified = new Set(rows.filter((r) => !known.has(r.photo.path)).map((r) => r.photo.path));
   const saved = await db.transaction(async (tx) => {
     const [row] = await tx.select({ version: sitePage.version }).from(sitePage).where(eq(sitePage.key, key)).for("update");
     if (!row) return { code: "NOT_FOUND" as const };

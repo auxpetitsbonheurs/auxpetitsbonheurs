@@ -7,6 +7,7 @@ import { signedInAdmin } from "~/server/testing/admin-session";
 import { MemoryStorage } from "~/server/testing/memory-storage";
 import { routeArgs } from "~/server/testing/route-context";
 import { loadedSettingsForm } from "~/server/testing/settings-form";
+import { variantPath, withVariantPaths } from "~/domain/upload";
 
 let database: TestDatabase;
 
@@ -142,7 +143,24 @@ describe("S-059 AC6: hero and About images follow the product photo rules", () =
     expect(await send(second)).toMatchObject({ ok: true });
 
     expect((await database.client.query("select hero->>'imagePath' as path from settings")).rows).toEqual([{ path: second }]);
-    expect(storage.removed).toEqual([first]);
+    expect(storage.removed).toEqual(withVariantPaths([first]));
+  });
+
+  test("S-276 AC2: the hero image's stored copies are recorded, kept while it stays, cleared when it goes", async () => {
+    const storage = new MemoryStorage();
+    const session = await signedInAdmin(database, { role: "owner" });
+    const hero = `site/${session.admin.id}/${SESSION}/2d0a9e74-8c5b-4c3a-9f4e-7b6d5c4a3f2e.webp`;
+    for (const path of [hero, variantPath(hero, 480), variantPath(hero, 960)]) storage.objects.set(`public-images/${path}`, { bytes: WEBP, contentType: "image/webp" });
+    const send = async (path: string | null) =>
+      action(routeArgs(database, { path: "/admin/settings", auth: session.auth, cookie: session.cookie, uploads: storage.gateway, storage: storage.gateway, form: await loadedSettingsForm(database, { heroImagePath: path ?? "", uploadSessionId: SESSION }) }) as never);
+    const widths = async () => (await database.client.query("select hero_image_variants from settings")).rows[0];
+
+    expect(await send(hero)).toMatchObject({ ok: true });
+    expect(await widths()).toEqual({ hero_image_variants: [480, 960] });
+    expect(await send(hero)).toMatchObject({ ok: true });
+    expect(await widths()).toEqual({ hero_image_variants: [480, 960] });
+    expect(await send(null)).toMatchObject({ ok: true });
+    expect(await widths()).toEqual({ hero_image_variants: [] });
   });
 
   test("a path not issued to this Owner, or a stored file that is not an image, is UPLOAD_REJECTED and nothing is saved", async () => {

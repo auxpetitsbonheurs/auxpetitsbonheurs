@@ -30,6 +30,8 @@ export interface EditorPhoto {
   path: string;
   width: number;
   height: number;
+  /** Widths of the stored smaller copies (S-276): the editor's tiles load the smallest. */
+  variantWidths: number[];
   alt: { en: string; fr: string };
 }
 
@@ -49,13 +51,13 @@ export async function readSitePageForEditor(db: Database, key: SitePageKey): Pro
     .where(eq(sitePage.key, key));
   if (!page) return null;
   const photos = await db
-    .select({ role: sitePagePhoto.role, path: sitePagePhoto.storagePath, width: sitePagePhoto.width, height: sitePagePhoto.height, altEn: sitePagePhoto.altEn, altFr: sitePagePhoto.altFr })
+    .select({ role: sitePagePhoto.role, path: sitePagePhoto.storagePath, width: sitePagePhoto.width, height: sitePagePhoto.height, variantWidths: sitePagePhoto.variantWidths, altEn: sitePagePhoto.altEn, altFr: sitePagePhoto.altFr })
     .from(sitePagePhoto)
     .where(eq(sitePagePhoto.pageKey, key))
     .orderBy(asc(sitePagePhoto.role), asc(sitePagePhoto.sortOrder));
   return {
     key,
     ...page,
-    photos: photos.map((p) => ({ role: p.role === "event" ? "event" : "page", path: p.path, width: p.width, height: p.height, alt: { en: p.altEn, fr: p.altFr ?? "" } })),
+    photos: photos.map((p) => ({ role: p.role === "event" ? "event" : "page", path: p.path, width: p.width, height: p.height, variantWidths: p.variantWidths, alt: { en: p.altEn, fr: p.altFr ?? "" } })),
   };
 }
