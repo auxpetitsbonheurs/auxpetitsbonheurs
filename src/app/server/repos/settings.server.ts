@@ -1,5 +1,6 @@
-import { eq } from "drizzle-orm";
-import { type LocalizedText, type TimeWindow, settings } from "~/db/schema";
+import { eq, getTableColumns, sql } from "drizzle-orm";
+import { type LocalizedText, type TimeWindow, blockedDate, settings } from "~/db/schema";
+import type { AvailabilityRules, DateRange } from "~/domain/availability";
 import type { Database } from "~/server/db.server";
 import { SETTINGS_TTL_MS, createTtlCache } from "~/server/settings-cache.server";
 
@@ -73,6 +74,23 @@ export interface SiteSettings {
   checkout: CheckoutSettings;
   /** Default notice in days, shown on the Custom order page (S-252 AC5): never typed twice. */
   noticeDays: number;
+  /**
+   * The public date rules (S-083): notice, closed weekdays and every blocked range without
+   * its private reason (FR-014). Callers keep the ranges that matter from their own today.
+   */
+  availability: AvailabilityRules;
+}
+
+/** Every block as a range only, in the same statement as the Settings row (one round trip). */
+const blockedRanges = sql<DateRange[] | string>`coalesce((
+  select json_agg(json_build_object('startsOn', to_char(b.starts_on, 'YYYY-MM-DD'), 'endsOn', to_char(b.ends_on, 'YYYY-MM-DD')) order by b.starts_on, b.ends_on)
+  from ${blockedDate} b
+), '[]'::json)`;
+
+async function siteSettingsRow(db: Database): Promise<SettingsRow & { blocked: DateRange[] }> {
+  const [row] = await db.select({ ...getTableColumns(settings), blocked: blockedRanges }).from(settings).where(eq(settings.id, 1));
+  if (!row) throw new Error("settings row 1 is missing (run the migrations)");
+  return { ...row, blocked: typeof row.blocked === "string" ? (JSON.parse(row.blocked) as DateRange[]) : row.blocked };
 }
 
 /** Per isolate, for SETTINGS_TTL_MS: pages that only display Settings skip the round trip. */
@@ -85,7 +103,8 @@ export const siteSettingsCache = createTtlCache<SiteSettings>(SETTINGS_TTL_MS);
  */
 export function getSiteSettings(db: Database): Promise<SiteSettings> {
   return siteSettingsCache.get(async () => {
-    const row = await settingsRow(db);
-    return { footer: footerFrom(row), checkout: checkoutFrom(row), noticeDays: row.defaultNoticeDays };
+    const row = await siteSettingsRow(db);
+    const availability = { defaultNoticeDays: row.defaultNoticeDays, closedWeekdays: row.closedWeekdays, blocked: row.blocked };
+    return { footer: footerFrom(row), checkout: checkoutFrom(row), noticeDays: row.defaultNoticeDays, availability };
   });
 }

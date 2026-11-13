@@ -1,5 +1,6 @@
 // `placeOrder` pipeline (checkout spec, order is normative). Built in S-013: steps 1
-// (parse), 4 (product problems: unavailable lines are left out, ADR-0004), 5 (date today or later + window in the list), 6
+// (parse), 4 (product problems: unavailable lines are left out, ADR-0004), 5 (window in the list; S-083/S-084: the
+// date by domain/availability.ts, the same module as the date picker), 6
 // (server prices vs displayed total), 7 (one transaction) and 9 (caller redirects).
 // S-014 adds step 2 (idempotency: a known key returns the original order, also when a
 // race is lost on the unique index), bound to the submitter's email (threat-model G-21). Later: step 3 rate limit + Turnstile and the full
@@ -13,6 +14,7 @@
 // codes, fields, lines and totals.
 import { sql } from "drizzle-orm";
 import type { TimeWindow } from "~/db/schema";
+import { type AvailabilityCtx, type AvailabilityRules, type DateRange, type DayReason, dayStatus, noticeDaysFor } from "~/domain/availability";
 import type { BasketLine } from "~/domain/basket";
 import { formatOrderNumber, newTrackingToken } from "~/domain/order-number";
 import { type CheckoutTotals, type LocalizedName, type PricedLine, type PricingProduct, checkoutTotals, priceLines } from "~/domain/pricing";
@@ -45,7 +47,8 @@ export type PlaceOrderResult =
   | { ok: false; code: "VALIDATION_FAILED"; fields: string[] }
   /** The key belongs to an order placed under another email: nothing about it is revealed (G-21). */
   | { ok: false; code: "VALIDATION_FAILED"; fields: []; keyReused: true }
-  | { ok: false; code: "DATE_UNAVAILABLE"; reason: "too_soon" }
+  /** `availability`: the fresh public rules, so the picker re-renders with the new statuses (S-087 AC5). */
+  | { ok: false; code: "DATE_UNAVAILABLE"; reason: DayReason; availability: AvailabilityRules }
   | ({ ok: false; code: "PRICE_CHANGED"; lines: PricedLine[] } & CheckoutTotals);
 
 /** The Settings values the procedure returns (only what checkout decides with). */
@@ -54,6 +57,10 @@ interface SnapshotSettings {
   deliveryWindows: TimeWindow[];
   pickupWindows: TimeWindow[];
   orderNumberPrefix: string;
+  defaultNoticeDays: number;
+  closedWeekdays: number[];
+  /** Ranges only (never the private reason) that touch the 90-day horizon (drizzle/0009). */
+  blocked: DateRange[];
 }
 
 interface SnapshotProduct {
@@ -62,6 +69,9 @@ interface SnapshotProduct {
   nameEn: string;
   nameFr: string | null;
   basePriceRs: number;
+  noticeDays: number | null;
+  seasonStartsOn: string | null;
+  seasonEndsOn: string | null;
 }
 
 type ExistingOrder = PlacedOrderRef & { contactEmail: string | null; orderNumberPrefix: string };
@@ -75,6 +85,8 @@ export type ProcedureResult =
 /** The procedure's input: ids, quantities and the parsed form only, never a price from the client except the displayed total. */
 interface ProcedureInput {
   idempotencyKey: string | null;
+  /** The request's Mauritius date: the procedure judges notice and horizon from it. */
+  today: string;
   insert: boolean;
   basket: { productId: string; quantity: number; cakeMessage: string | null }[];
   order: {
@@ -141,11 +153,13 @@ function preflight(form: Record<string, unknown>, basket: BasketLine[], now: Dat
 function procedureInput(form: Record<string, unknown>, ctx: PlaceOrderContext, parsed: ReturnType<typeof parsePlaceOrder>, insert: boolean): ProcedureInput {
   const key = Uuid.safeParse(form.idempotencyKey);
   const basket = ctx.basket.map((l) => ({ productId: l.productId, quantity: l.quantity, cakeMessage: l.cakeMessage ?? null }));
-  if (!parsed.ok) return { idempotencyKey: key.success ? key.data : null, insert: false, basket, order: null };
+  const today = todayMU(ctx.now);
+  if (!parsed.ok) return { idempotencyKey: key.success ? key.data : null, today, insert: false, basket, order: null };
   const input = parsed.data;
   const delivery = input.fulfilment === "delivery" ? input : undefined;
   return {
     idempotencyKey: input.idempotencyKey,
+    today,
     insert,
     basket,
     order: {
@@ -182,6 +196,24 @@ function invalidFields(form: Record<string, unknown>, basket: BasketLine[], pars
   return [...fields];
 }
 
+const publicRules = (settings: SnapshotSettings): AvailabilityRules => ({
+  defaultNoticeDays: settings.defaultNoticeDays,
+  closedWeekdays: settings.closedWeekdays,
+  blocked: settings.blocked,
+});
+
+/**
+ * Step 5 (FR-013..015, owner Q2): the date judged against the fresh Settings with the
+ * orderable lines' largest notice and every seasonal window among them; null when fine.
+ */
+function dateProblem(date: string, now: Date, lines: PricedLine[], snapshot: Extract<ProcedureResult, { kind: "checked" | "placed" }>): DayReason | null {
+  const products = new Map(snapshot.products.map((p) => [p.id, p]));
+  const orderable = lines.filter((l) => l.problem === null).flatMap((l) => (products.has(l.productId) ? [products.get(l.productId)!] : []));
+  const ctx: AvailabilityCtx = { today: todayMU(now), ...publicRules(snapshot.settings) };
+  const seasons = orderable.flatMap((p) => (p.seasonStartsOn && p.seasonEndsOn ? [{ startsOn: p.seasonStartsOn, endsOn: p.seasonEndsOn }] : []));
+  return dayStatus(date, ctx, noticeDaysFor(orderable, ctx.defaultNoticeDays), seasons).reason;
+}
+
 interface Priced {
   input: PlaceOrderInput;
   lines: PricedLine[];
@@ -197,7 +229,8 @@ function decide(form: Record<string, unknown>, ctx: PlaceOrderContext, parsed: R
   // ADR-0004: sold-out, hidden and deleted lines are left out (the page showed them dimmed
   // and outside the total); only a basket with nothing orderable is refused.
   if (!lines.some((l) => l.problem === null)) return { ok: false, code: "VALIDATION_FAILED", fields: ["basket"] };
-  if (input.date < todayMU(ctx.now)) return { ok: false, code: "DATE_UNAVAILABLE", reason: "too_soon" };
+  const reason = dateProblem(input.date, ctx.now, lines, snapshot);
+  if (reason) return { ok: false, code: "DATE_UNAVAILABLE", reason, availability: publicRules(snapshot.settings) };
   const totals = checkoutTotals(lines, input.fulfilment, snapshot.settings.deliveryFeeRs);
   if (input.displayedTotalRs !== totals.totalRs) return { ok: false, code: "PRICE_CHANGED", lines, ...totals };
   return { input, lines, totals };

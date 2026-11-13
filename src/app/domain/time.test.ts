@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { DomainError } from "./errors";
-import { formatDayLabel, formatLogTime, muDateTimeToInstant, todayMU } from "./time";
+import { addDays, diffDays, formatDayLabel, formatLogTime, instantToMuDate, isValidMuDate, isoWeekday, muDateTimeToInstant, todayMU } from "./time";
 
 describe("todayMU (AC6: UTC+4, no DST)", () => {
   test.each([
@@ -54,5 +54,44 @@ describe("formatting (AC9)", () => {
 
   test("a malformed date is a DomainError", () => {
     expect(() => formatDayLabel("2026-02-30", "en")).toThrow(DomainError);
+  });
+});
+
+describe("calendar helpers (S-083 AC13, T-TM-1..8)", () => {
+  test("T-TM-1, T-TM-2: Mauritius midnight is 20:00Z", () => {
+    expect(todayMU(new Date("2026-11-09T19:59:59Z"))).toBe("2026-11-09");
+    expect(instantToMuDate(new Date("2026-11-09T20:00:00Z"))).toBe("2026-11-10");
+  });
+
+  test("T-TM-3: addDays crosses month and year ends", () => {
+    expect(addDays("2026-11-30", 1)).toBe("2026-12-01");
+    expect(addDays("2026-12-31", 1)).toBe("2027-01-01");
+  });
+
+  test("T-TM-4: addDays knows leap days and goes backwards", () => {
+    expect(addDays("2028-02-28", 1)).toBe("2028-02-29");
+    expect(addDays("2026-03-01", -1)).toBe("2026-02-28");
+  });
+
+  test("T-TM-5: isoWeekday is Monday 1 to Sunday 7", () => {
+    expect(isoWeekday("2026-11-15")).toBe(7);
+    expect(isoWeekday("2026-11-09")).toBe(1);
+  });
+
+  test("T-TM-6: muDateTimeToInstant takes a date and a time too", () => {
+    expect(muDateTimeToInstant("2026-11-12", "18:00").toISOString()).toBe("2026-11-12T14:00:00.000Z");
+  });
+
+  test("T-TM-7: isValidMuDate is strict", () => {
+    expect(["2026-02-30", "2026-2-3", "", "2028-02-29"].map((value) => isValidMuDate(value))).toEqual([false, false, false, true]);
+  });
+
+  test("T-TM-8: diffDays counts calendar days, signed", () => {
+    expect(diffDays("2026-11-09", "2026-11-12")).toBe(3);
+    expect(diffDays("2026-11-12", "2026-11-09")).toBe(-3);
+  });
+
+  test("addDays on an impossible date is a DomainError", () => {
+    expect(() => addDays("2026-02-30", 1)).toThrow(DomainError);
   });
 });

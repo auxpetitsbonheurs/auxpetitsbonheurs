@@ -48,6 +48,29 @@ describe("GET /api/menu", () => {
     expect(JSON.stringify(body)).not.toContain(TEST_SUPABASE_URL.replace("https://", "x"));
   });
 
+  test("S-083: the public date rules and each product's notice, blocks from today to the horizon without their private reason", async () => {
+    await insertProduct(database.db, { noticeDays: 5 });
+    // The route tests' clock is Tue 2026-11-10: the horizon ends before 2027-02-08.
+    await database.client.query(
+      `insert into blocked_date (starts_on, ends_on, reason) values
+        ('2026-11-01', '2026-11-09', 'Past holiday'), ('2026-11-09', '2026-11-11', 'Oven repair'),
+        ('2026-12-24', '2026-12-26', 'Family wedding'), ('2027-02-08', '2027-02-10', 'Too far to matter')`,
+    );
+
+    const menu = (await (await get()).json()) as { data: { products: { noticeDays: number | null }[]; checkout: { availability: unknown } } };
+
+    expect(menu.data.products[0]!.noticeDays).toBe(5);
+    expect(menu.data.checkout.availability).toEqual({
+      defaultNoticeDays: 3,
+      closedWeekdays: [7],
+      blocked: [
+        { startsOn: "2026-11-09", endsOn: "2026-11-11" },
+        { startsOn: "2026-12-24", endsOn: "2026-12-26" },
+      ],
+    });
+    expect(JSON.stringify(menu)).not.toMatch(/holiday|Oven|wedding|Too far/i);
+  });
+
   test("If-None-Match with the current ETag answers 304 with no body; a changed price changes the ETag", async () => {
     await insertProduct(database.db);
     const etag = (await get()).headers.get("ETag")!;

@@ -51,4 +51,24 @@ describe("getSiteSettings (cached for display)", () => {
     expect(first.noticeDays).toBe(3); // S-252 AC5: the Settings default, shown on Custom order
     siteSettingsCache.clear();
   });
+
+  test("S-083: the public date rules come in the same query, blocks as ranges without the private reason", async () => {
+    siteSettingsCache.clear();
+    await database.client.query("insert into blocked_date (starts_on, ends_on, reason) values ('2026-12-24', '2026-12-26', 'Family wedding'), ('2026-11-20', '2026-11-20', null)");
+    const query = vi.spyOn(database.client, "query");
+
+    const { availability } = await getSiteSettings(database.db);
+
+    expect(query).toHaveBeenCalledTimes(1);
+    expect(availability).toEqual({
+      defaultNoticeDays: 3,
+      closedWeekdays: [7],
+      blocked: [
+        { startsOn: "2026-11-20", endsOn: "2026-11-20" },
+        { startsOn: "2026-12-24", endsOn: "2026-12-26" },
+      ],
+    });
+    expect(JSON.stringify(availability)).not.toContain("Family wedding");
+    siteSettingsCache.clear();
+  });
 });

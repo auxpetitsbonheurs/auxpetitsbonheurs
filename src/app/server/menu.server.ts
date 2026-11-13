@@ -2,7 +2,8 @@
 // are not hidden (names, photos, options, prices, availability) and the checkout Settings a
 // customer sees anyway (fee, windows, pickup address, Juice number, policies). Public data
 // only: no admin fields, no hidden products, no order or customer data (threat-model D13).
-import { todayMU } from "~/domain/time";
+import { DAY_HORIZON } from "~/domain/availability";
+import { addDays, todayMU } from "~/domain/time";
 import type { Menu, MenuEntry } from "~/domain/menu";
 import { publicImageUrl } from "~/lib/images";
 import type { Database } from "~/server/db.server";
@@ -26,7 +27,12 @@ export interface MenuSources {
 export async function loadMenu({ db, supabaseUrl, now }: MenuSources): Promise<MenuEntry> {
   // Display only: Settings come from the isolate cache (60 s); placeOrder reads them fresh.
   const [records, settings] = await Promise.all([listMenuProducts(db), getSiteSettings(db)]);
-  const { orderNumberPrefix: _private, ...checkout } = settings.checkout;
+  const { orderNumberPrefix: _private, ...shown } = settings.checkout;
+  const today = todayMU(now);
+  // Only the blocks the picker can meet (today to the horizon), as ranges (S-083, FR-014).
+  const horizon = addDays(today, DAY_HORIZON);
+  const blocked = settings.availability.blocked.filter((b) => b.endsOn >= today && b.startsOn < horizon);
+  const checkout = { ...shown, availability: { ...settings.availability, blocked } };
   const products = records.map((r) => ({
     id: r.id,
     slug: r.slug,
@@ -38,8 +44,9 @@ export async function loadMenu({ db, supabaseUrl, now }: MenuSources): Promise<M
     photos: r.photos.map((p) => ({ url: publicImageUrl(p.storagePath, supabaseUrl), width: p.width, height: p.height })),
     optionGroups: r.optionGroups,
     season: r.season,
+    noticeDays: r.noticeDays,
   }));
-  const body = { products, checkout, today: todayMU(now) };
+  const body = { products, checkout, today };
   // Real time, not the (test) request clock: it only orders copies of the menu.
   return { v: await menuVersion(body), data: { ...body, generatedAt: Date.now() } };
 }

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { BasketLine } from "~/domain/basket";
 import { insertProduct } from "~/db/testing/catalogue";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
-import { type PlaceOrderResult, placeOrder } from "./place-order.server";
+import { type PlaceOrderResult, callPlaceOrder, placeOrder } from "./place-order.server";
 
 let database: TestDatabase;
 let cakeId: string;
@@ -17,7 +17,7 @@ afterEach(async () => {
   await database.close();
 });
 
-/** 2026-11-10 12:00 in Mauritius. */
+/** Tue 2026-11-10 12:00 in Mauritius: with the default notice of 3 days, Fri 13 is the earliest date. */
 const NOW = new Date("2026-11-10T08:00:00Z");
 const line = (lineId: string, productId: string, quantity = 1): BasketLine => ({ lineId, productId, options: [], quantity });
 
@@ -29,7 +29,7 @@ function deliveryForm(overrides: Record<string, string> = {}): Record<string, st
     fulfilment: "delivery",
     address: "12 Royal Road, Rose Hill",
     landmark: "Opposite the church",
-    date: "2026-11-12",
+    date: "2026-11-13",
     "windowId.delivery": "morning",
     "contact.name": "Aisha",
     "contact.phone": "5712 3456",
@@ -118,9 +118,10 @@ describe("validation (S-013 AC2)", () => {
 });
 
 describe("date and time windows (S-013 AC3)", () => {
-  test("yesterday in Mauritius is DATE_UNAVAILABLE; today is accepted", async () => {
+  test("yesterday in Mauritius is DATE_UNAVAILABLE; today is accepted with notice 0", async () => {
     // 2026-11-10 22:30 UTC is already 2026-11-11 02:30 in Mauritius.
     const lateNight = new Date("2026-11-10T22:30:00Z");
+    await database.client.query("update settings set default_notice_days = 0");
 
     const refused = expectRefused(await place(deliveryForm({ date: "2026-11-10" }), { now: lateNight }), "DATE_UNAVAILABLE");
     expect(refused.reason).toBe("too_soon");
@@ -514,14 +515,135 @@ describe("one database round trip (ADR-0003 amendment 3)", () => {
 
   test("a rule difference between the procedure and domain/pricing is logged and shown calmly as PRICE_CHANGED", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
-    const settings = { deliveryFeeRs: 200, deliveryWindows: [{ id: "morning", start: "09:00", end: "12:00", label: { en: "Morning" } }], pickupWindows: [], orderNumberPrefix: "APB-" };
-    const products = [{ id: cakeId, status: "available", nameEn: "Cake", nameFr: null, basePriceRs: 850 }];
+    const settings = { deliveryFeeRs: 200, deliveryWindows: [{ id: "morning", start: "09:00", end: "12:00", label: { en: "Morning" } }], pickupWindows: [], orderNumberPrefix: "APB-", ...OPEN_RULES };
+    const products = [{ id: cakeId, status: "available", nameEn: "Cake", nameFr: null, basePriceRs: 850, noticeDays: null, seasonStartsOn: null, seasonEndsOn: null }];
 
     const result = await placeOrder(deliveryForm(), { db: answering({ kind: "checked", settings, products }), now: NOW, locale: "en", basket: [line("a", cakeId)] });
 
     expect(expectRefused(result, "PRICE_CHANGED")).toMatchObject({ totalRs: 1050 });
     expect(error.mock.calls.map((c) => String(c[0]))).toContain(JSON.stringify({ level: "error", event: "place_order_rule_drift", kind: "accepted_here_refused_there" }));
     error.mockRestore();
+  });
+});
+
+/** Settings date rules of the procedure's snapshot: notice 3, Sunday closed, nothing blocked. */
+const OPEN_RULES = { defaultNoticeDays: 3, closedWeekdays: [7], blocked: [] };
+
+describe("the date rules at submit (S-083, S-084 AC5, S-087 AC5, AC7)", () => {
+  async function block(startsOn: string, endsOn: string, reason: string | null = "Family wedding") {
+    await database.client.query("insert into blocked_date (starts_on, ends_on, reason) values ($1, $2, $3)", [startsOn, endsOn, reason]);
+  }
+
+  test("too soon for the default notice of 3 days: DATE_UNAVAILABLE too_soon and no order", async () => {
+    const refused = expectRefused(await place(deliveryForm({ date: "2026-11-12" })), "DATE_UNAVAILABLE");
+
+    expect(refused.reason).toBe("too_soon");
+    await expectNoOrder();
+  });
+
+  test("a closed Sunday is refused with reason closed", async () => {
+    expect(expectRefused(await place(deliveryForm({ date: "2026-11-15" })), "DATE_UNAVAILABLE").reason).toBe("closed");
+    await expectNoOrder();
+  });
+
+  test("a date blocked after the form opened is refused with the category only, and fresh public rules (AC29)", async () => {
+    await block("2026-11-13", "2026-11-14");
+
+    const refused = expectRefused(await place(deliveryForm()), "DATE_UNAVAILABLE");
+
+    expect(refused.reason).toBe("blocked");
+    expect(refused.availability).toEqual({ defaultNoticeDays: 3, closedWeekdays: [7], blocked: [{ startsOn: "2026-11-13", endsOn: "2026-11-14" }] });
+    expect(JSON.stringify(refused)).not.toContain("Family wedding");
+    await expectNoOrder();
+  });
+
+  test("beyond the 90-day horizon is too_far", async () => {
+    expect(expectRefused(await place(deliveryForm({ date: "2027-02-08" })), "DATE_UNAVAILABLE").reason).toBe("too_far");
+    expect((await place(deliveryForm({ date: "2027-02-06" }))).ok).toBe(true);
+  });
+
+  test("the largest notice of the basket items counts (a 5-day cake)", async () => {
+    const slow = await insertProduct(database.db, { slug: "slow-cake", noticeDays: 5 });
+    const basket = [line("a", cakeId), line("b", slow)];
+
+    expect(expectRefused(await place(deliveryForm({ date: "2026-11-14", displayedTotalRs: "1900" }), { basket }), "DATE_UNAVAILABLE").reason).toBe("too_soon");
+    expect((await place(deliveryForm({ date: "2026-11-16", displayedTotalRs: "1900" }), { basket })).ok).toBe(true);
+  });
+
+  test("a sold-out line's notice does not count (it is left out)", async () => {
+    const slow = await insertProduct(database.db, { slug: "slow-cake", noticeDays: 10, status: "sold_out" });
+
+    expect((await place(deliveryForm(), { basket: [line("a", cakeId), line("b", slow)] })).ok).toBe(true);
+  });
+
+  test("S-084 AC5: a seasonal item until 25 Dec refuses 27 Dec (out_of_season) and accepts 24 Dec", async () => {
+    await database.client.query("update product set seasonal_starts_on = '2026-11-01', seasonal_ends_on = '2026-12-25' where id = $1", [cakeId]);
+    // 27 Dec 2026 is a Sunday: open every day so the season is the only rule in play.
+    await database.client.query("update settings set closed_weekdays = '{}'");
+
+    expect(expectRefused(await place(deliveryForm({ date: "2026-12-27" })), "DATE_UNAVAILABLE").reason).toBe("out_of_season");
+    await expectNoOrder();
+    expect((await place(deliveryForm({ date: "2026-12-24" }))).ok).toBe(true);
+  });
+
+  test("S-087 AC7: a page left open across Mauritius midnight is judged against the new today", async () => {
+    const before = new Date("2026-11-10T19:59:00Z");
+    const after = new Date("2026-11-10T20:00:00Z");
+
+    expect(expectRefused(await place(deliveryForm(), { now: after }), "DATE_UNAVAILABLE").reason).toBe("too_soon");
+    expect((await place(deliveryForm(), { now: before })).ok).toBe(true);
+  });
+
+  describe("the procedure's own guard (drizzle/0009 mirrors domain/availability.ts)", () => {
+    const order = (fulfilOn: string) => ({
+      contactName: "Aisha",
+      contactPhone: "+23057123456",
+      contactEmail: "aisha@example.com",
+      fulfilment: "pickup" as const,
+      address: null,
+      landmark: null,
+      fulfilOn,
+      windowId: "morning",
+      customerNote: null,
+      locale: "en" as const,
+      trackingToken: randomUUID().replaceAll("-", ""),
+      displayedTotalRs: 850,
+      policiesAcceptedAt: NOW.toISOString(),
+    });
+    const call = (fulfilOn: string) =>
+      callPlaceOrder(database.db, { idempotencyKey: randomUUID(), today: "2026-11-10", insert: true, basket: [{ productId: cakeId, quantity: 1, cakeMessage: null }], order: order(fulfilOn) });
+
+    test.each([
+      ["too soon", "2026-11-12"],
+      ["closed Sunday", "2026-11-15"],
+      ["too far", "2027-02-08"],
+    ])("writes nothing when told to insert on a %s date", async (_label, date) => {
+      expect((await call(date)).kind).toBe("checked");
+      await expectNoOrder();
+    });
+
+    test("writes nothing on a blocked date or outside a season, and writes on a good date", async () => {
+      await block("2026-11-13", "2026-11-13");
+      await database.client.query("update product set seasonal_starts_on = '2026-11-01', seasonal_ends_on = '2026-11-20' where id = $1", [cakeId]);
+
+      expect((await call("2026-11-13")).kind).toBe("checked");
+      expect((await call("2026-11-21")).kind).toBe("checked");
+      await expectNoOrder();
+      expect((await call("2026-11-14")).kind).toBe("placed");
+    });
+
+    test("the snapshot carries the public rules and each product's notice and season, never a block reason", async () => {
+      await block("2026-11-20", "2026-11-22");
+      await block("2026-01-01", "2026-01-02", "Long gone");
+
+      const result = await call("2026-11-12");
+
+      expect(result.kind).toBe("checked");
+      if (result.kind !== "checked") return;
+      expect(result.settings).toMatchObject({ defaultNoticeDays: 3, closedWeekdays: [7], blocked: [{ startsOn: "2026-11-20", endsOn: "2026-11-22" }] });
+      expect(result.products[0]).toMatchObject({ noticeDays: null, seasonStartsOn: null, seasonEndsOn: null });
+      expect(JSON.stringify(result)).not.toMatch(/Family wedding|Long gone/);
+    });
   });
 });
 

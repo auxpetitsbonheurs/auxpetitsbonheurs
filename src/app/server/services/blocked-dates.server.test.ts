@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { action, loader } from "~/routes/admin/availability";
 import { signedInAdmin } from "~/server/testing/admin-session";
+import { getSiteSettings } from "~/server/repos/settings.server";
 import { placeTestOrder } from "~/server/testing/orders";
 import { routeArgs } from "~/server/testing/route-context";
 
@@ -110,5 +111,19 @@ describe("S-057 AC6: single days and overlapping blocks", () => {
       ["2026-12-20", "2026-12-31"],
       ["2026-12-25", "2026-12-25"],
     ]);
+  });
+});
+
+describe("S-083: the customer date rules follow a block at once on this isolate", () => {
+  test("adding and removing a block refreshes the cached Settings", async () => {
+    expect((await getSiteSettings(database.db)).availability.blocked).toEqual([]);
+
+    await post({ intent: "addBlock", startsOn: "2026-12-24", endsOn: "2026-12-26", reason: "Christmas holidays" });
+    const { blocked } = (await getSiteSettings(database.db)).availability;
+    expect(blocked).toEqual([{ startsOn: "2026-12-24", endsOn: "2026-12-26" }]);
+
+    const [row] = (await database.client.query<{ id: string }>("select id from blocked_date")).rows;
+    await post({ intent: "removeBlock", id: row!.id });
+    expect((await getSiteSettings(database.db)).availability.blocked).toEqual([]);
   });
 });

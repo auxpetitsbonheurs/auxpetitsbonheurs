@@ -4,6 +4,7 @@
 // renders without a round trip. Pure: no I/O. Prices here are for display only; placeOrder
 // re-prices on the server.
 import type { LocalizedText, TimeWindow } from "~/db/tables/json-types";
+import type { AvailabilityRules } from "./availability";
 import type { BasketLine } from "./basket";
 import { type LocalizedName, type PricedLine, type PricingProduct, priceLines } from "./pricing";
 import type { SeasonWindow } from "./season";
@@ -35,6 +36,8 @@ export interface MenuProduct {
    * a copy cached before S-244 has none, which reads as "not seasonal".
    */
   season?: SeasonWindow | null;
+  /** Own notice in days, null = the Settings default (S-083). Optional: absent from copies cached before. */
+  noticeDays?: number | null;
 }
 
 export interface MenuCheckout {
@@ -43,6 +46,12 @@ export interface MenuCheckout {
   pickup: { address: string | null; mapUrl: string | null };
   payment: { juiceNumber: string | null };
   policies: LocalizedText | null;
+  /**
+   * The public date rules (S-083): notice, closed weekdays, blocked ranges from today (never
+   * the private reason). Optional: a copy cached before has none, and the basket then asks
+   * the server instead of guessing dates.
+   */
+  availability?: AvailabilityRules;
 }
 
 export interface Menu {

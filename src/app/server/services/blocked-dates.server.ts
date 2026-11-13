@@ -6,6 +6,7 @@ import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
 import { blockedDate, orders, settings } from "~/db/schema";
 import type { BlockInput } from "~/server/contracts/settings";
 import type { Database, Executor } from "~/server/db.server";
+import { siteSettingsCache } from "~/server/repos/settings.server";
 import { type OrderBrief, activeOrders, briefColumns, briefs } from "./save-availability.server";
 
 export interface BlockView {
@@ -44,11 +45,14 @@ export async function addBlock(db: Database, input: BlockInput, context: { admin
     .where(and(activeOrders, gte(orders.fulfilOn, input.startsOn), lte(orders.fulfilOn, input.endsOn)))
     .orderBy(asc(orders.fulfilOn), asc(orders.number))
     .limit(100);
+  // The customer date picker reads blocks with the cached Settings: this isolate shows the change at once.
+  siteSettingsCache.clear();
   console.log(JSON.stringify({ level: "info", event: "date_blocked", actorRole: "owner", existing: rows.length }));
   return { ok: true, block: block!, existingOrders: briefs(rows, rows.some((r) => r.numberPrefix === null) ? await numberPrefix(db) : "") };
 }
 
 export async function removeBlock(db: Database, id: string): Promise<{ ok: true; id: string } | { ok: false; code: "NOT_FOUND" }> {
   const removed = await db.delete(blockedDate).where(eq(blockedDate.id, id)).returning({ id: blockedDate.id });
+  if (removed.length > 0) siteSettingsCache.clear();
   return removed.length > 0 ? { ok: true, id } : { ok: false, code: "NOT_FOUND" };
 }
