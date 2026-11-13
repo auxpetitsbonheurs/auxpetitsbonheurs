@@ -17,7 +17,7 @@ import {
   type QuickAdd,
   kindHasChoices,
 } from "~/domain/options";
-import { type PricedOptionGroup, optionsCanGoBelowZero } from "~/domain/pricing";
+import { type PricedOptionGroup, optionsCanGoBelowZero } from "~/domain/option-prices";
 import { useI18n } from "~/i18n/react";
 import { formatRupees } from "~/lib/locale";
 import { moveItem, useDragSort } from "~/lib/use-drag-sort";

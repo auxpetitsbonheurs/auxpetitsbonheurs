@@ -2,6 +2,7 @@
 // parsing live in app/server/basket.server.ts. Lines hold ids, choices, quantity and
 // the cake message only, never prices (prices are always recomputed on the server).
 import { DomainError } from "./errors";
+import type { CheckoutTotals, Fulfilment, PricedLine } from "./pricing-core";
 
 /** Shared limits (contracts.md "Limits"); re-exported by app/server/contracts/shared.ts. */
 export const BASKET_MAX_LINES = 10;
@@ -81,4 +82,19 @@ export function restoreLine(lines: readonly BasketLine[], line: BasketLine, inde
 /** Items in the basket (sum of quantities). */
 export function basketItemCount(lines: readonly BasketLine[]): number {
   return lines.reduce((sum, line) => sum + line.quantity, 0);
+}
+
+// Order totals (FR-011, FR-019): here with the basket rules, which every page already loads
+// (header count), so the basket page shows totals without the pricing core on first paint.
+
+/** Delivery costs the Settings fee at the time of the request; pickup is free (FR-019). */
+export function deliveryFeeFor(fulfilment: Fulfilment | null, settingsFeeRs: number): number {
+  return fulfilment === "delivery" ? settingsFeeRs : 0;
+}
+
+/** Items (orderable lines only) + fee = total. */
+export function checkoutTotals(lines: readonly Pick<PricedLine, "problem" | "lineTotalRs">[], fulfilment: Fulfilment | null, settingsFeeRs: number): CheckoutTotals {
+  const itemsTotalRs = lines.filter((l) => l.problem === null).reduce((sum, l) => sum + l.lineTotalRs, 0);
+  const deliveryFeeRs = deliveryFeeFor(fulfilment, settingsFeeRs);
+  return { itemsTotalRs, deliveryFeeRs, totalRs: itemsTotalRs + deliveryFeeRs };
 }

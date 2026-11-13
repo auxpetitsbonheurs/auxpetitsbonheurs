@@ -38,3 +38,17 @@ export function checkSeason(startsOn: string, endsOn: string): { ok: true; windo
   if (start > end) return { ok: false, problem: "order" };
   return { ok: true, window: { startsOn: start, endsOn: end } };
 }
+
+export type ProductStatusProblem = "hidden" | "out_of_season" | "sold_out";
+
+/**
+ * Why a product cannot be ordered now (the one rule; S-084 AC1..3, FR-005, FR-006): a missing
+ * (deleted) product counts as hidden; then out of its season on `today` (Mauritius date, when
+ * given); then sold out. Used by the product page, the menu, the basket and placeOrder.
+ */
+export function productProblem(product: { status: "available" | "sold_out" | "hidden"; season?: SeasonWindow | null } | undefined, today?: string): ProductStatusProblem | null {
+  if (!product || product.status === "hidden") return "hidden";
+  if (today !== undefined && !isInSeason(product.season ?? null, today)) return "out_of_season";
+  return product.status === "sold_out" ? "sold_out" : null;
+}
+

@@ -71,6 +71,13 @@
       "when": 1794546639490,
       "tag": "0009_place_order_availability",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794547041473,
+      "tag": "0010_place_order_options",
+      "breakpoints": true
     }
   ]
 }

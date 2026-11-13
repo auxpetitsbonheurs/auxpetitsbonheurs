@@ -3,12 +3,40 @@ import { z } from "zod";
 import { normalizePhone } from "~/domain/phone";
 import { BasketLine, Contact, DeliveryDetail, MuDate, Phone, Rs, Uuid, WindowId } from "./shared";
 
-/** `site/product` addToBasket: BasketLine minus lineId; the minimal slice posts no options. */
+/** `site/product` addToBasket: BasketLine minus lineId (no price field: any posted price is ignored). */
 export const AddToBasketInput = BasketLine.omit({ lineId: true }).extend({
   intent: z.literal("addToBasket"),
   options: BasketLine.shape.options.default([]),
   quantity: BasketLine.shape.quantity.default(1),
 });
+
+/**
+ * The product page form as `AddToBasketInput` fields (S-066). The form posts one field per
+ * group: `option.<groupId>` (the chosen choice id, repeated for pick-several),
+ * `optionQty.<groupId>` (quantity groups) and `optionText.<groupId>` (text groups), plus
+ * `cakeMessage` and `quantity`. Unknown fields (a forged price) are dropped here.
+ */
+export function addToBasketFields(form: FormData): Record<string, unknown> {
+  const picks = new Map<string, { groupId: string; choiceIds: string[]; text?: string; quantity?: string }>();
+  const pickFor = (groupId: string) => picks.get(groupId) ?? picks.set(groupId, { groupId, choiceIds: [] }).get(groupId)!;
+  for (const [key, value] of form) {
+    if (typeof value !== "string") continue;
+    const [kind, groupId] = key.split(/\.(.*)/s, 2) as [string, string | undefined];
+    if (!groupId) continue;
+    if (kind === "option" && value !== "") pickFor(groupId).choiceIds.push(value);
+    else if (kind === "optionQty") pickFor(groupId).quantity = value;
+    else if (kind === "optionText") pickFor(groupId).text = value;
+  }
+  const text = (key: string) => (typeof form.get(key) === "string" ? (form.get(key) as string) : undefined);
+  const cakeMessage = text("cakeMessage");
+  return {
+    intent: text("intent"),
+    productId: text("productId"),
+    quantity: text("quantity"),
+    options: [...picks.values()],
+    ...(cakeMessage ? { cakeMessage } : {}),
+  };
+}
 
 /** `site/basket` updateLine (quantity 1..50, else VALIDATION_FAILED fields.quantity). */
 export const UpdateLineInput = z.object({

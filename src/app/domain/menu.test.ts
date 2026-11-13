@@ -3,7 +3,9 @@
 import { describe, expect, test } from "vitest";
 import type { BasketLine } from "./basket";
 import { menu, menuProduct } from "./testing/menu";
-import { type MenuEntry, fresherEntry, isMenuEntry, menuWithServerPrices, mergePriceNotes, orderableItemCount, priceBasket, priceChanges } from "./menu";
+import { type MenuEntry, type MenuOptionGroup, fresherEntry, isMenuEntry, mergePriceNotes, orderableItemCount, priceChanges } from "./menu";
+import { linePriceNote, priceBasketFromMenu } from "./menu-pricing";
+import { menuWithServerPrices } from "./menu-refusal";
 import { checkoutTotals } from "./pricing";
 
 const CAKE = "11111111-1111-4111-8111-111111111111";
@@ -12,26 +14,76 @@ const GONE = "33333333-3333-4333-8333-333333333333";
 
 const line = (lineId: string, productId: string, quantity = 1): BasketLine => ({ lineId, productId, options: [], quantity });
 
-describe("priceBasket", () => {
+describe("priceBasketFromMenu", () => {
   test("prices lines from the menu; sold out and missing products are problems left out of the total", () => {
-    const priced = priceBasket([line("a", CAKE, 2), line("b", TART), line("c", GONE)], menu([menuProduct(CAKE, 850), menuProduct(TART, 400, { status: "sold_out" })]));
+    const priced = priceBasketFromMenu([line("a", CAKE, 2), line("b", TART), line("c", GONE)], menu([menuProduct(CAKE, 850), menuProduct(TART, 400, { status: "sold_out" })]));
 
     expect(priced.map((l) => [l.lineId, l.lineTotalRs, l.problem])).toEqual([["a", 1700, null], ["b", 400, "sold_out"], ["c", 0, "hidden"]]);
     expect(checkoutTotals(priced, "delivery", 200)).toEqual({ itemsTotalRs: 1700, deliveryFeeRs: 200, totalRs: 1900 });
   });
 });
 
+const SIZE: MenuOptionGroup = {
+  id: "44444444-4444-4444-8444-444444444444",
+  name: { en: "Size", fr: "Taille" },
+  kind: "single",
+  required: true,
+  textMaxLength: null,
+  quantityMin: null,
+  quantityMax: null,
+  choices: [
+    { id: "55555555-5555-4555-8555-555555555555", name: { en: "6 inch", fr: null }, priceDeltaRs: 0 },
+    { id: "66666666-6666-4666-8666-666666666666", name: { en: "8 inch", fr: null }, priceDeltaRs: 600 },
+  ],
+};
+const EIGHT = SIZE.choices[1]!.id;
+const sized = (deltaRs: number, base = 1000) => menuProduct(CAKE, base, { optionGroups: [{ ...SIZE, choices: [SIZE.choices[0]!, { ...SIZE.choices[1]!, priceDeltaRs: deltaRs }] }] });
+const eightInch: BasketLine = { lineId: "a", productId: CAKE, options: [{ groupId: SIZE.id, choiceIds: [EIGHT] }], quantity: 1 };
+
+describe("priceBasketFromMenu and seasons (S-084 AC7)", () => {
+  test("a line whose season ended today is out_of_season and left out; inside its window it is priced", () => {
+    const xmas = menuProduct(CAKE, 900, { season: { startsOn: "2026-12-01", endsOn: "2026-12-25" } });
+    const cached = { ...menu([xmas, menuProduct(TART, 400)]), today: "2026-12-26" };
+
+    expect(priceBasketFromMenu([line("a", CAKE), line("b", TART)], cached).map((l) => l.problem)).toEqual(["out_of_season", null]);
+    expect(priceBasketFromMenu([line("a", CAKE)], cached, "2026-12-25")[0]?.problem).toBeNull();
+  });
+});
+
+describe("priceBasketFromMenu with options (S-066 AC2)", () => {
+  test("a line is priced with its chosen size; an unknown choice is options_changed and left out", () => {
+    const cached = menu([sized(600)]);
+    const unknown: BasketLine = { ...eightInch, lineId: "b", options: [{ groupId: SIZE.id, choiceIds: [GONE] }] };
+    const priced = priceBasketFromMenu([eightInch, unknown], cached);
+
+    expect(priced.map((l) => [l.unitPriceRs, l.problem])).toEqual([[1600, null], [1000, "options_changed"]]);
+    expect(checkoutTotals(priced, null, 0).itemsTotalRs).toBe(1600);
+  });
+});
+
 describe("price notes", () => {
-  test("a changed price is a note from the old to the new price", () => {
-    const changes = priceChanges(menu([menuProduct(CAKE, 700), menuProduct(TART, 400)]), menu([menuProduct(CAKE, 850), menuProduct(TART, 400)]));
-    expect([...changes]).toEqual([[CAKE, { fromRs: 700, toRs: 850 }]]);
+  test("a changed base or option price keeps the product's earlier copy", () => {
+    const changes = priceChanges(menu([sized(600), menuProduct(TART, 400)]), menu([sized(700), menuProduct(TART, 400)]));
+    expect([...changes.keys()]).toEqual([CAKE]);
+    expect(changes.get(CAKE)?.before.optionGroups[0]?.choices[1]?.priceDeltaRs).toBe(600);
   });
 
-  test("notes keep the first price, follow the latest, and vanish when the price returns", () => {
-    let notes = mergePriceNotes(new Map(), new Map([[CAKE, { fromRs: 700, toRs: 850 }]]));
-    notes = mergePriceNotes(notes, new Map([[CAKE, { fromRs: 850, toRs: 900 }]]));
-    expect(notes.get(CAKE)).toEqual({ fromRs: 700, toRs: 900 });
-    notes = mergePriceNotes(notes, new Map([[CAKE, { fromRs: 900, toRs: 700 }]]));
+  test("the line note compares the line's own unit price before and now", () => {
+    const note = priceChanges(menu([sized(600)]), menu([sized(700)])).get(CAKE);
+    const now = sized(700);
+    expect(linePriceNote(eightInch, note, now)).toEqual({ fromRs: 1600, toRs: 1700 });
+    const sixInch = { ...eightInch, options: [{ groupId: SIZE.id, choiceIds: [SIZE.choices[0]!.id] }] };
+    expect(linePriceNote(sixInch, note, now)).toBeNull();
+  });
+
+  test("notes keep the first copy, follow the latest, and vanish when the prices return", () => {
+    const first = menu([sized(600)]);
+    const second = menu([sized(700)]);
+    const third = menu([sized(800)]);
+    let notes = mergePriceNotes(new Map(), priceChanges(first, second), second);
+    notes = mergePriceNotes(notes, priceChanges(second, third), third);
+    expect(notes.get(CAKE)?.before.optionGroups[0]?.choices[1]?.priceDeltaRs).toBe(600);
+    notes = mergePriceNotes(notes, priceChanges(third, first), first);
     expect(notes.has(CAKE)).toBe(false);
   });
 });
@@ -62,6 +114,14 @@ describe("menu entries", () => {
     expect(next.v).not.toBe("v1");
     expect(next.data.products.map((p) => [p.id, p.basePriceRs, p.status])).toEqual([[CAKE, 850, "available"], [TART, 400, "sold_out"]]);
     expect(next.data.checkout.deliveryFeeRs).toBe(250);
+  });
+
+  test("a refused line with options sets the base and the chosen option's server price", () => {
+    const base: MenuEntry = { v: "v1", data: menu([sized(600)]) };
+    const next = menuWithServerPrices(base, [{ productId: CAKE, unitPriceRs: 1800, problem: null, options: [{ choiceId: EIGHT, priceDeltaRs: 700 }] }], undefined);
+
+    expect(next.data.products[0]?.basePriceRs).toBe(1100);
+    expect(next.data.products[0]?.optionGroups[0]?.choices[1]?.priceDeltaRs).toBe(700);
   });
 });
 

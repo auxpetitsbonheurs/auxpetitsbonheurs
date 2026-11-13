@@ -54,7 +54,9 @@ describe("preview of a saved product (AC1)", () => {
 
     const live = await customerLoader(routeArgs(database, { path: "/menu/chocolate-cake", params: { slug: "chocolate-cake" } }) as never);
 
-    expect((await preview(id)).product).toEqual(live.product);
+    // The live page also carries the option groups for its ordering area (S-066), which the preview does not show.
+    const { optionGroups: _ordering, ...article } = live.product;
+    expect((await preview(id)).product).toEqual(article);
   });
 });
 

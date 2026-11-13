@@ -77,10 +77,31 @@ function toRecord(row: Row): ProductRecord {
   };
 }
 
+/** A product with what ordering it needs (S-066): option groups and seasonal window. */
+export type OrderableProductRecord = ProductRecord & { optionGroups: OptionGroupRecord[]; season: { startsOn: string; endsOn: string } | null };
+
+function selectOrderable(db: Database) {
+  return db.select({ ...columns, optionGroups: optionGroupsJson, seasonalStartsOn: product.seasonalStartsOn, seasonalEndsOn: product.seasonalEndsOn }).from(product);
+}
+
+function toOrderable({ optionGroups, seasonalStartsOn, seasonalEndsOn, ...row }: Awaited<ReturnType<typeof selectOrderable>>[number]): OrderableProductRecord {
+  return {
+    ...toRecord(row),
+    optionGroups: parseJsonColumn(optionGroups),
+    season: seasonalStartsOn && seasonalEndsOn ? { startsOn: seasonalStartsOn, endsOn: seasonalEndsOn } : null,
+  };
+}
+
 /** The product with this current slug, whatever its status. */
 export async function findProductBySlug(db: Database, slug: string): Promise<ProductRecord | undefined> {
   const [row] = await selectProducts(db).where(eq(product.slug, slug));
   return row ? toRecord(row) : undefined;
+}
+
+/** One product by id with its option groups, for addToBasket (any status; the caller decides). */
+export async function findOrderableProduct(db: Database, id: string): Promise<OrderableProductRecord | undefined> {
+  const [row] = await selectOrderable(db).where(eq(product.id, id));
+  return row ? toOrderable(row) : undefined;
 }
 
 /**
@@ -118,17 +139,17 @@ export interface ProductAvailability {
   season: { startsOn: string; endsOn: string } | null;
 }
 
-/** The product with this current slug, whatever its status, with its notice and season (one query). */
-export async function findProductPageBySlug(db: Database, slug: string): Promise<{ record: ProductRecord; availability: ProductAvailability } | undefined> {
+/** The product with this current slug, whatever its status, with its notice, season and option groups (S-066), in one query. */
+export async function findProductPageBySlug(db: Database, slug: string): Promise<{ record: ProductRecord & { optionGroups: OptionGroupRecord[] }; availability: ProductAvailability } | undefined> {
   const [row] = await db
-    .select({ ...columns, noticeDays: product.noticeDays, seasonalStartsOn: product.seasonalStartsOn, seasonalEndsOn: product.seasonalEndsOn })
+    .select({ ...columns, noticeDays: product.noticeDays, seasonalStartsOn: product.seasonalStartsOn, seasonalEndsOn: product.seasonalEndsOn, optionGroups: optionGroupsJson })
     .from(product)
     .where(eq(product.slug, slug));
   if (!row) return undefined;
-  const { noticeDays, seasonalStartsOn, seasonalEndsOn, ...rest } = row;
+  const { noticeDays, seasonalStartsOn, seasonalEndsOn, optionGroups, ...rest } = row;
   // The table check keeps both dates set or both null.
   const season = seasonalStartsOn && seasonalEndsOn ? { startsOn: seasonalStartsOn, endsOn: seasonalEndsOn } : null;
-  return { record: toRecord(rest), availability: { noticeDays, season } };
+  return { record: { ...toRecord(rest), optionGroups: parseJsonColumn(optionGroups) }, availability: { noticeDays, season } };
 }
 
 /** Products by id (any status); ids that do not exist are absent from the map. */

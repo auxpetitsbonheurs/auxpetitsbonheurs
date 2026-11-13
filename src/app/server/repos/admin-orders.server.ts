@@ -6,6 +6,7 @@ import { type LocalizedText, type OrderItemOption, type TimeWindow, orderItem, o
 import type { OrderStatus } from "~/domain/status";
 import type { Locale } from "~/lib/locale";
 import type { Executor } from "~/server/db.server";
+import { orderOptionLabels } from "~/server/order-options.server";
 
 /** Tab "review" of the Orders screen (contracts.md): orders waiting for an admin decision. */
 export const REVIEW_STATUSES = ["pending_approval", "quote_needed"] as const satisfies readonly OrderStatus[];
@@ -91,9 +92,10 @@ export async function itemsOfOrders(db: Executor, orderIds: string[]): Promise<M
     items.push({
       name: row.nameFr ? { en: row.nameEn, fr: row.nameFr } : { en: row.nameEn },
       quantity: row.quantity,
-      unitPriceRs: row.unitPriceRs,
+      // Base plus options (S-092): the stored line total over the quantity.
+      unitPriceRs: row.lineTotalRs / row.quantity,
       lineTotalRs: row.lineTotalRs,
-      options: row.options.flatMap((option) => (option.choice ? [{ label: option.choice }] : [])),
+      options: orderOptionLabels(row.options),
       cakeMessage: row.cakeMessage,
     });
     byOrder.set(row.orderId, items);
@@ -150,9 +152,9 @@ export async function findAdminOrder(db: Executor, id: string): Promise<AdminOrd
     items: parsed.map((item) => ({
       name: item.nameFr ? { en: item.nameEn, fr: item.nameFr } : { en: item.nameEn },
       quantity: item.quantity,
-      unitPriceRs: item.unitPriceRs,
+      unitPriceRs: item.lineTotalRs / item.quantity,
       lineTotalRs: item.lineTotalRs,
-      options: item.options.flatMap((option) => (option.choice ? [{ label: option.choice }] : [])),
+      options: orderOptionLabels(item.options),
       cakeMessage: item.cakeMessage,
     })),
   };
