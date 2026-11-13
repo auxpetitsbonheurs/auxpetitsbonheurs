@@ -52,14 +52,14 @@ describe("basket page (S-012 AC1)", () => {
     expect(data.itemsTotalRs).toBe(1700);
   });
 
-  test("Settings give the delivery fee, windows, pickup address and Juice number", async () => {
+  test("Settings give the delivery fee, windows and pickup address, never the Juice number (S-277 AC4)", async () => {
     const data = await load();
 
     expect(data.deliveryFeeRs).toBe(200);
     expect(data.pickup.address).toBe("Beau Bassin");
     expect(data.windows.delivery.map((w) => w.id)).toEqual(["morning", "afternoon", "evening"]);
     expect(data.windows.pickup.map((w) => w.id)).toEqual(["morning", "afternoon", "evening"]);
-    expect(data.payment.juiceNumber).toBe("5000 0000");
+    expect(data).not.toHaveProperty("payment");
   });
 
   test("carries the public menu with its version, and names a hidden line's product for its own basket only", async () => {

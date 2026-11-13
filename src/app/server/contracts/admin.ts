@@ -17,6 +17,7 @@ import {
   SLUG_PATTERN,
 } from "~/domain/product";
 import { type OptionGroupInput, type OptionProblem, checkOptionGroups } from "~/domain/options";
+import { DECLINE_REASON_MAX } from "~/domain/payment";
 import { type SeasonProblem, type SeasonWindow, checkSeason } from "~/domain/season";
 import { ADMIN_ROLES, PASSWORD_MAX, PASSWORD_MIN, PROFILE_NAME_MAX } from "~/domain/admin-account";
 import { Email, Uuid, Version } from "./shared";
@@ -95,6 +96,30 @@ export const ApproveInput = z.object({
   intent: z.literal("approve"),
   version: Version,
 });
+
+/**
+ * `admin/order` actions (contracts.md v0.40): approve (approval path), and the Juice payment
+ * intents markPaid, undoPaid, decline (optional reason ≤ 300, shown to the customer) and
+ * markRefunded. Each carries the version the page loaded (FR-054).
+ */
+export const OrderActionInput = z.discriminatedUnion("intent", [
+  z.object({ intent: z.literal("approve"), version: Version }),
+  z.object({ intent: z.literal("markPaid"), version: Version }),
+  z.object({ intent: z.literal("undoPaid"), version: Version }),
+  z.object({ intent: z.literal("markRefunded"), version: Version }),
+  z.object({
+    intent: z.literal("decline"),
+    version: Version,
+    reason: z
+      .string()
+      .trim()
+      .max(DECLINE_REASON_MAX)
+      .optional()
+      .transform((value) => (value ? value : null)),
+  }),
+]);
+
+export type OrderAction = z.infer<typeof OrderActionInput>;
 
 export const OrderId = Uuid;
 

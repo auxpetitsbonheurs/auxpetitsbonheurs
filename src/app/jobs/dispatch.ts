@@ -5,6 +5,7 @@ import { createRequestDb } from "~/server/db.server";
 import { getEnv } from "~/server/env.server";
 import { integrationsCheck } from "./integrations";
 import { keepAlive } from "./keep-alive";
+import { paymentDeadlines } from "./payment-deadlines";
 import { purgeRateLimits } from "./purge-rate-limits";
 import { purgeStorage } from "./purge-storage";
 import type { JobContext, JobResult } from "./types";
@@ -21,6 +22,8 @@ export const JOBS: readonly Job[] = [
   { name: "integrations", run: integrationsCheck },
   { name: "purgeRateLimits", run: purgeRateLimits },
   { name: "purgeStorage", run: (context) => purgeStorage(context) },
+  // Juice payment (S-280): 12 h reminder, 24 h unpaid cancel.
+  { name: "paymentDeadlines", run: paymentDeadlines },
 ];
 
 /** Error name and message with any URL (it could carry credentials) replaced. */

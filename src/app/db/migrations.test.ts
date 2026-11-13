@@ -180,6 +180,30 @@ describe("migrations applied to an empty Postgres (AC3-AC5, AC7)", () => {
     expect(await query("select hero_image_variants, about_image_variants from settings")).toEqual([{ hero_image_variants: [], about_image_variants: [] }]);
   });
 
+  test("Juice payment (S-277..S-281): awaiting_payment comes first in order_status; the new columns are nullable; Settings has no Juice name yet", async () => {
+    const [{ labels }] = (await query<{ labels: string[] }>("select enum_range(null::order_status)::text[] as labels")) as [{ labels: string[] }];
+    expect(labels.slice(0, 2)).toEqual(["awaiting_payment", "pending_approval"]);
+    const columns = await query<{ column_name: string; is_nullable: string }>(
+      `select column_name, is_nullable from information_schema.columns where table_schema = 'public'
+       and ((table_name = 'orders' and column_name in ('payment_reminder_sent_at', 'cancel_reason', 'refund_due_rs', 'refunded_at', 'refunded_by'))
+         or (table_name = 'settings' and column_name in ('juice_name', 'payment_whatsapp'))) order by column_name`,
+    );
+    expect(columns).toHaveLength(7);
+    expect(columns.every((c) => c.is_nullable === "YES")).toBe(true);
+    expect(await query("select juice_name, payment_whatsapp from settings")).toEqual([{ juice_name: null, payment_whatsapp: null }]);
+  });
+
+  test("Juice payment: the migration is forward-only and never uses the new enum value outside the procedure body", () => {
+    const file = readdirSync(drizzleDir).find((f) => f.endsWith("_juice_payment.sql"))!;
+    const sql = readFileSync(`${drizzleDir}${file}`, "utf8").replace(/^--.*$/gm, "");
+    const body = sql.indexOf('CREATE OR REPLACE PROCEDURE "public"."place_order"');
+
+    expect(sql).not.toMatch(/\bDROP\b/i);
+    expect(body).toBeGreaterThan(0);
+    // Postgres refuses a new enum value in the transaction that added it, except inside a function body run later.
+    expect(sql.slice(0, body).match(/awaiting_payment/g)).toHaveLength(1);
+  });
+
   test("S-276 AC5: 0011 is additive only (ADD COLUMN, nothing dropped or rewritten)", () => {
     const sql = readFileSync(`${drizzleDir}0011_photo_variants.sql`, "utf8").replace(/^--.*$/gm, "");
     const statements = sql.split("--> statement-breakpoint").map((s) => s.trim()).filter(Boolean);

@@ -126,7 +126,9 @@ test.describe("S-017 orders to review and Approve", () => {
     const [row] = await db<{ version: number }[]>`select version from orders where id = ${order.id}`;
     expect(row!.version).toBe(2);
     await page.goto(`/admin/orders/${order.id}`);
-    await expect(page.getByText("Nothing to approve: this order is no longer waiting for review.")).toBeVisible();
+    // Approved: no Approve any more; Refuse stays offered until it is ready (juice-payment spec, S-281).
+    await expect(page.getByRole("button", { name: "Refuse order" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Approve" })).toHaveCount(0);
   });
 
   test("AC7: signed out or as a customer, the orders pages and approve lead to login with no order data", async ({ page, db, request, baseURL }) => {

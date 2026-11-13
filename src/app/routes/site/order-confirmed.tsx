@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { data, isRouteErrorResponse, redirect } from "react-router";
 import { CopyButton, CopyStatus, ShareLink, useCopyStatus, useHydrated } from "~/components/order/copy-actions";
 import { OrderNotFound } from "~/components/order/order-not-found";
+import { PaymentInstructions } from "~/components/order/payment-instructions";
 import { Alert } from "~/components/ui/alert";
 import { buttonVariants } from "~/components/ui/button";
 import { formatOrderNumber } from "~/domain/order-number";
@@ -14,6 +15,7 @@ import { localized } from "~/i18n/localized";
 import { nameList } from "~/lib/left-out";
 import { requestDbContext } from "~/server/db.server";
 import { readLeftOut } from "~/server/left-out.server";
+import { type PaymentView, paymentView } from "~/server/payment-view.server";
 import { findOrderConfirmation } from "~/server/repos/orders.server";
 import { isTrackingToken, orderLanguageRedirect, tokenPageHeaders } from "~/server/token-page.server";
 import type { Route } from "./+types/order-confirmed";
@@ -34,7 +36,12 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
   // cookie's path); anything that does not verify, has expired or is absent reads the database.
   const signer = context.get(confirmationContext);
   const fresh = signer ? await signer.read(request, params.token, context.get(clockContext).now()) : undefined;
-  if (fresh && fresh.locale === locale) return confirmation(url, params.token, fresh.locale, fresh.number, fresh.leftOut);
+  // A cookie set before Juice payment carries no payment snapshot: read the database instead.
+  if (fresh && fresh.locale === locale && fresh.payment) {
+    const { totalRs, placedAt, ...settings } = fresh.payment;
+    const payment = paymentView({ totalRs, reference: fresh.number, createdAt: new Date(placedAt), settings, locale });
+    return confirmation(url, params.token, fresh.locale, fresh.number, fresh.leftOut, payment);
+  }
   // One query: the order, the number prefix and the left-out names (ADR-0003 amendment 3).
   // Left out (UX audit H1, AC41): product ids from the `apb_left_out` cookie the basket
   // action set for this page only (never personal data), named in the cookie's order.
@@ -42,6 +49,7 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
   const found = await findOrderConfirmation(context.get(requestDbContext).db, params.token, leftOutIds);
   if (!found) throw data(null, { status: 404 });
   const { ref: order, orderNumberPrefix } = found;
+  const number = formatOrderNumber(orderNumberPrefix, order.number);
   const moveTo = orderLanguageRedirect(request, url, order.locale);
   if (moveTo) throw redirect(moveTo);
   const names = new Map(found.leftOut.map((p) => [p.id, p.name]));
@@ -49,17 +57,22 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
     const name = names.get(id);
     return name ? [localized(name, locale)] : [];
   });
-  return confirmation(url, order.trackingToken, order.locale, formatOrderNumber(orderNumberPrefix, order.number), leftOut);
+  // The instructions only while the order still waits for its payment (S-278 AC2, S-279 AC5).
+  const payment = found.status === "awaiting_payment"
+    ? paymentView({ totalRs: found.totalRs, reference: number, createdAt: found.createdAt, settings: found.payment, locale })
+    : null;
+  return confirmation(url, order.trackingToken, order.locale, number, leftOut, payment);
 }
 
 /** The page data, the same whether it came from the cookie or the database. */
-function confirmation(url: URL, token: string, orderLocale: Locale, number: string, leftOut: string[]) {
+function confirmation(url: URL, token: string, orderLocale: Locale, number: string, leftOut: string[], payment: PaymentView | null) {
   return {
     title: translate("order.confirmed.metaTitle", localeFromPathname(url.pathname)),
     number,
     trackingUrl: `${url.origin}${localePath(orderLocale, `/t/${token}`)}`,
     offerSaveDetails: false,
     leftOut,
+    payment,
   };
 }
 
@@ -96,7 +109,7 @@ export default function OrderConfirmed({ loaderData }: Route.ComponentProps) {
   const heading = useFocusOnArrival();
   const hydrated = useHydrated();
   const { status, copy } = useCopyStatus();
-  const { number, trackingUrl, leftOut } = loaderData;
+  const { number, trackingUrl, leftOut, payment } = loaderData;
   const copiedNumber = t("order.confirmed.copiedNumber");
   const copiedLink = t("order.confirmed.copiedLink");
   return (
@@ -104,15 +117,14 @@ export default function OrderConfirmed({ loaderData }: Route.ComponentProps) {
       <h1 ref={heading} tabIndex={-1} className="outline-none">
         {t("order.confirmed.heading")}
       </h1>
+      {/* Pay first (S-278 AC2): the order is confirmed once the client sees the Juice payment. */}
+      {payment && <PaymentInstructions view={payment} />}
       <NumberCard number={number} copied={status === copiedNumber} onCopy={hydrated ? () => copy(number, copiedNumber) : undefined} />
       {leftOut.length > 0 && (
         <Alert tone="warning" title={t("order.confirmed.leftOutTitle")} className="mt-6">
           <p>{t("order.confirmed.leftOutBody", { count: leftOut.length, names: nameList(leftOut, locale) })}</p>
         </Alert>
       )}
-      <Alert tone="info" title={t("order.confirmed.notConfirmedTitle")} className="mt-6">
-        <p>{t("order.confirmed.notConfirmedBody")}</p>
-      </Alert>
       <section aria-labelledby="tracking-label" className="mt-8">
         <h2 id="tracking-label" className="section-title-start text-h2">
           {t("order.confirmed.trackingTitle")}

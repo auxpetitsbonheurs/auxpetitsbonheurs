@@ -18,6 +18,7 @@ import {
   minutesOf,
   overlappingWindows,
 } from "~/domain/availability";
+import { JUICE_NAME_MAX } from "~/domain/payment";
 import { normalizePhone } from "~/domain/phone";
 import {
   CAKE_MESSAGE_MAX,
@@ -74,7 +75,9 @@ export interface SettingsInput {
   contactPhone: string | null;
   contactWhatsapp: string | null;
   contactEmail: string | null;
+  juiceName: string | null;
   juiceNumber: string | null;
+  paymentWhatsapp: string | null;
   instagramUrl: string | null;
   quoteValidityDays: number;
   cakeMessageMax: number;
@@ -142,7 +145,10 @@ function businessFields(form: FormData, problems: Problems) {
     contactPhone: optionalChecked(form, "contactPhone", problems, (v) => v.length <= 20 && normalizePhone(v) !== null),
     contactWhatsapp: optionalChecked(form, "contactWhatsapp", problems, (v) => v.length <= 20 && normalizePhone(v) !== null),
     contactEmail: optionalChecked(form, "contactEmail", problems, (v) => Email.safeParse(v).success)?.toLowerCase() ?? null,
-    juiceNumber: optionalChecked(form, "juiceNumber", problems, (v) => v.length <= JUICE_NUMBER_MAX),
+    // Juice payment (S-277): the account name, its number and the WhatsApp for proof; phones are checked like the contacts.
+    juiceName: optionalChecked(form, "juiceName", problems, (v) => v.length <= JUICE_NAME_MAX),
+    juiceNumber: optionalChecked(form, "juiceNumber", problems, (v) => v.length <= JUICE_NUMBER_MAX && normalizePhone(v) !== null),
+    paymentWhatsapp: optionalChecked(form, "paymentWhatsapp", problems, (v) => v.length <= 20 && normalizePhone(v) !== null),
     instagramUrl: optionalChecked(form, "instagramUrl", problems, webUrl),
     quoteValidityDays: requiredNumber(form, "quoteValidityDays", QUOTE_VALIDITY_MIN, QUOTE_VALIDITY_MAX, problems),
     cakeMessageMax: requiredNumber(form, "cakeMessageMax", CAKE_MESSAGE_MIN, CAKE_MESSAGE_MAX, problems),

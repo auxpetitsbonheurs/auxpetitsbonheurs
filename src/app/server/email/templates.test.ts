@@ -1,6 +1,6 @@
 // S-024 AC4, AC7: the recovery email in English and French.
 import { describe, expect, test } from "vitest";
-import { BAKERY_NAME, invitationEmail, recoveryEmail } from "./templates.server";
+import { BAKERY_NAME, invitationEmail, paymentBlock, recoveryEmail } from "./templates.server";
 
 // S-028 AC7: the invitation email in English and French.
 describe("invitation email (S-028 AC7)", () => {
@@ -94,5 +94,37 @@ describe("email logo (brand v0.3)", () => {
 
     expect(email.html).not.toContain("<img");
     expect(email.html).toContain(`${BAKERY_NAME}</p>`);
+  });
+});
+
+describe("Juice payment block of the order_received email (S-278 AC8)", () => {
+  const payment = {
+    totalRs: 1250,
+    reference: "APB-0042",
+    deadlineLabel: "Sat 14 Nov, 12:00",
+    details: { juiceName: "A. <Baker>", juiceNumber: "5000 0001" },
+    proofUrl: "https://wa.me/23050000002?text=x",
+  };
+
+  test("amount, account, reference, steps, deadline and the proof link; names are escaped", () => {
+    const block = paymentBlock("en", payment);
+
+    expect(block.text).toContain("Pay Rs 1,250 by Juice to A. <Baker> (5000 0001), reference APB-0042.");
+    expect(block.text).toContain("2. Write APB-0042 as the reference");
+    expect(block.text).toContain("Please pay by Sat 14 Nov, 12:00.");
+    expect(block.html).toContain("A. &lt;Baker&gt;");
+    expect(block.html).not.toContain("<Baker>");
+    expect(block.html).toContain('href="https://wa.me/23050000002?text=x"');
+  });
+
+  test("in French", () => {
+    expect(paymentBlock("fr", payment).text).toContain("Payez Rs 1,250 par Juice à A. <Baker> (5000 0001), référence APB-0042.");
+  });
+
+  test("without the details: the calm fallback, no account and no link", () => {
+    const block = paymentBlock("en", { ...payment, details: null, proofUrl: null });
+
+    expect(block.text).toContain("We'll send you the payment details on WhatsApp shortly.");
+    expect(block.html).not.toContain("wa.me");
   });
 });

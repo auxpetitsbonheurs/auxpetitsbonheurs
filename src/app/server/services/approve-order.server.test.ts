@@ -18,6 +18,8 @@ beforeEach(async () => {
   adminId = (await insertAdmin(database, new FakeAuth(), { name: "Sarah" })).id;
   const { token } = await placeTestOrder(database, { basketPath: "/fr/basket" });
   orderId = (await database.client.query<{ id: string }>("select id from orders where tracking_token = $1", [token])).rows[0]!.id;
+  // Approve is the path of orders placed before Juice payment (2026-11-13), still in pending_approval.
+  await database.client.query("update orders set status = 'pending_approval' where id = $1", [orderId]);
 }, 60_000);
 
 afterEach(async () => {

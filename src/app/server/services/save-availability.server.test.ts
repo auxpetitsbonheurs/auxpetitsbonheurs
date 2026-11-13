@@ -143,7 +143,7 @@ describe("S-056 AC6: closing a weekday with active orders", () => {
 
     const answer = await post(rulesForm({ closed: ["4", "7"] }));
 
-    expect(answer).toMatchObject({ ok: true, version: 2, affectedOrders: [{ number: "APB-0001", status: "pending_approval", fulfilOn: "2026-11-12", contactName: "Aisha", dateLabel: "Thu 12 Nov" }] });
+    expect(answer).toMatchObject({ ok: true, version: 2, affectedOrders: [{ number: "APB-0001", status: "awaiting_payment", fulfilOn: "2026-11-12", contactName: "Aisha", dateLabel: "Thu 12 Nov" }] });
     expect((await database.client.query("select status, version from orders")).rows).toEqual(before.rows);
     expect(token).toBeTruthy();
   });

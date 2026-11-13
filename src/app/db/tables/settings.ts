@@ -38,7 +38,10 @@ export const settings = pgTable(
     contactPhone: text("contact_phone"),
     contactWhatsapp: text("contact_whatsapp"),
     contactEmail: text("contact_email"),
+    /** Juice payment details (S-277): Owner-only, shown only on an order's token pages, never public. */
+    juiceName: text("juice_name"),
     juiceNumber: text("juice_number"),
+    paymentWhatsapp: text("payment_whatsapp"),
     instagramUrl: text("instagram_url"),
     hero: jsonb("hero").$type<HeroContent>(),
     featuredProductIds: uuid("featured_product_ids").array().notNull().default(sql`'{}'::uuid[]`),

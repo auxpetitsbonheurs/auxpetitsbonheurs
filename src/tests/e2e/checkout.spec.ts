@@ -389,7 +389,8 @@ test.describe("S-013 place an order as a guest", () => {
     const token = TOKEN_URL.exec(page.url())![1]!;
     const [order] = await db<{ status: string; total_rs: number; delivery_fee_rs: number; locale: string; contact_phone: string }[]>`
       select status, total_rs, delivery_fee_rs, locale, contact_phone from orders where tracking_token = ${token}`;
-    expect(order).toEqual({ status: "pending_approval", total_rs: 1050, delivery_fee_rs: 200, locale: "en", contact_phone: "+23057123456" });
+    // Since 2026-11-13 an order waits for its Juice payment first (S-278 AC1).
+    expect(order).toEqual({ status: "awaiting_payment", total_rs: 1050, delivery_fee_rs: 200, locale: "en", contact_phone: "+23057123456" });
     await expect(page.getByRole("link", { name: "Basket, 0 items" })).toBeVisible();
   });
 
@@ -529,7 +530,9 @@ test.describe("S-013 place an order as a guest", () => {
     await expect(summary.getByText("Delivery fee", { exact: true })).toBeVisible();
     await expect(summary.getByText("Total", { exact: true }).locator("visible=true")).toHaveCount(1);
     await expect(summary.getByText("Rs 1,050")).toBeVisible();
-    await expect(summary.getByText("Pay by Juice to 5000 0000, or in cash when you receive your order.")).toBeVisible();
+    // Full payment by Juice; the account is shown only after placing (S-278 AC6, S-277 AC4).
+    await expect(summary.getByText("Payment: the full amount by MCB Juice. You get the payment details as soon as you place your order.")).toBeVisible();
+    await expect(summary.getByText(/5000 0000/)).toHaveCount(0);
 
     await expect(page.getByText(E2E_POLICIES.en)).toBeHidden();
     await page.getByText("Read the order policies (cancellation and storage)").click();
@@ -712,7 +715,8 @@ test.describe("S-015 order confirmation", () => {
 
     await expect(page.getByRole("heading", { level: 1, name: "Thank you, we have your order" })).toBeFocused();
     await expect(page.getByText(number, { exact: true })).toBeVisible();
-    await expect(page.getByText("Not confirmed until we approve it")).toBeVisible();
+    // The Juice instructions, or their calm fallback while Settings has no Juice name (another spec may set it).
+    await expect(page.getByTestId("payment-instructions").or(page.getByTestId("payment-fallback"))).toBeVisible();
     const trackingUrl = `${baseURL}/t/${token}`;
     await expect(page.getByText(trackingUrl, { exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Follow my order" })).toHaveAttribute("href", trackingUrl);
@@ -762,11 +766,14 @@ test.describe("S-015 order confirmation", () => {
 
   test("AC5: a French order's confirmation is in French", async ({ page, db }) => {
     const order = await createOrder(db, "S-015 fr");
+    // A new order waits for its Juice payment (S-278): the page leads with the payment block.
+    await db`update orders set status = 'awaiting_payment' where id = ${order.id}`;
     await page.goto(`/fr/order/${order.trackingToken}/confirmed`);
 
     await expect(page.locator("html")).toHaveAttribute("lang", "fr");
     await expect(page.getByRole("heading", { level: 1, name: "Merci, nous avons bien reçu votre commande" })).toBeVisible();
-    await expect(page.getByText("Pas encore confirmée : nous devons d'abord l'accepter")).toBeVisible();
+    // The French payment instructions, or their French fallback while Settings has no Juice name.
+    await expect(page.getByRole("region", { name: "Payez maintenant pour confirmer votre commande" }).or(page.getByText("Nous vous enverrons les informations de paiement sur WhatsApp"))).toBeVisible();
   });
 
   test("AC6: keyboard order, visible focus, no clipping or sideways scroll, 44 px targets at 100% and 200%", async ({ page, db }) => {

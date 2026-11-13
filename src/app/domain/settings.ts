@@ -4,7 +4,8 @@
 export const DELIVERY_FEE_MAX_RS = 100_000;
 export const PICKUP_ADDRESS_MAX = 300;
 export const URL_MAX = 500;
-export const JUICE_NUMBER_MAX = 30;
+/** A phone (S-277), at most 20 characters like the other phones. */
+export const JUICE_NUMBER_MAX = 20;
 export const QUOTE_VALIDITY_MIN = 1;
 export const QUOTE_VALIDITY_MAX = 60;
 export const CAKE_MESSAGE_MIN = 10;

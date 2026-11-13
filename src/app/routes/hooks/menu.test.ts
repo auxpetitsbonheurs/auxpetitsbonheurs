@@ -42,7 +42,10 @@ describe("GET /api/menu", () => {
     expect(menu.data.products.map((p) => [p.id, p.status, p.basePriceRs])).toEqual([[cake, "available", 850], [soldOut, "sold_out", 400]]);
     expect(menu.data.products[0]!.photos[0]!.url).toBe("/images/sample/chocolate-cake.svg");
     expect(menu.data.products[0]!.optionGroups[0]!.choices[0]!.priceDeltaRs).toBe(300);
-    expect(menu.data.checkout).toMatchObject({ deliveryFeeRs: 200, pickup: { address: "Beau Bassin" }, payment: { juiceNumber: "5000 0000" } });
+    expect(menu.data.checkout).toMatchObject({ deliveryFeeRs: 200, pickup: { address: "Beau Bassin" } });
+    // S-277 AC4: the Juice details are shown only to a customer who has placed an order.
+    expect(menu.data.checkout).not.toHaveProperty("payment");
+    expect(JSON.stringify(body)).not.toContain("5000 0000");
     expect(menu.data.checkout).not.toHaveProperty("orderNumberPrefix");
     expect(JSON.stringify(body)).not.toContain("Secret cake");
     expect(JSON.stringify(body)).not.toContain(TEST_SUPABASE_URL.replace("https://", "x"));

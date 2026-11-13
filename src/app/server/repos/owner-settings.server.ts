@@ -27,7 +27,9 @@ export interface OwnerSettings {
   contactPhone: string | null;
   contactWhatsapp: string | null;
   contactEmail: string | null;
+  juiceName: string | null;
   juiceNumber: string | null;
+  paymentWhatsapp: string | null;
   instagramUrl: string | null;
   quoteValidityDays: number;
   cakeMessageMax: number;
@@ -54,7 +56,9 @@ export async function readOwnerSettings(db: Database): Promise<OwnerSettings> {
     contactPhone: r.contactPhone,
     contactWhatsapp: r.contactWhatsapp,
     contactEmail: r.contactEmail,
+    juiceName: r.juiceName,
     juiceNumber: r.juiceNumber,
+    paymentWhatsapp: r.paymentWhatsapp,
     instagramUrl: r.instagramUrl,
     quoteValidityDays: r.quoteValidityDays,
     cakeMessageMax: r.cakeMessageMax,

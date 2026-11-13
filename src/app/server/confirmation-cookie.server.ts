@@ -29,6 +29,20 @@ export interface ConfirmationSnapshot {
   locale: Locale;
   /** Names of the lines left out of the order, in `locale` (AC41). */
   leftOut: string[];
+  /**
+   * Juice payment (S-278 AC2): the total, when the order was placed (its deadline runs from
+   * it) and the payment Settings it was placed with. Absent from a cookie set before; the page
+   * then reads the database.
+   */
+  payment?: CookiePayment;
+}
+
+export interface CookiePayment {
+  totalRs: number;
+  placedAt: string;
+  juiceName: string | null;
+  juiceNumber: string | null;
+  paymentWhatsapp: string | null;
 }
 
 const Payload = z.object({
@@ -36,6 +50,10 @@ const Payload = z.object({
   l: z.enum(SUPPORTED_LOCALES),
   o: z.array(z.string().max(200)).max(MAX_NAMES),
   x: z.number().int(),
+  // Payment: total, placed-at (ms), [Juice name, Juice number, WhatsApp].
+  t: z.number().int().min(0).optional(),
+  c: z.number().int().optional(),
+  p: z.tuple([z.string().max(200).nullable(), z.string().max(40).nullable(), z.string().max(40).nullable()]).optional(),
 });
 
 export interface ConfirmationSigner {
@@ -90,7 +108,14 @@ export function confirmationSigner(secret: string): ConfirmationSigner {
   return {
     async cookie(token, snapshot, path, now) {
       const expires = Math.floor(now.getTime() / 1000) + CONFIRMATION_MAX_AGE_SECONDS;
-      const body = { n: snapshot.number, l: snapshot.locale, o: snapshot.leftOut.slice(0, MAX_NAMES), x: expires };
+      const pay = snapshot.payment;
+      const body = {
+        n: snapshot.number,
+        l: snapshot.locale,
+        o: snapshot.leftOut.slice(0, MAX_NAMES),
+        x: expires,
+        ...(pay ? { t: pay.totalRs, c: Date.parse(pay.placedAt), p: [pay.juiceName, pay.juiceNumber, pay.paymentWhatsapp] } : {}),
+      };
       const payload = toBase64Url(encoder.encode(JSON.stringify(body)));
       const mac = toBase64Url(await crypto.subtle.sign("HMAC", await getKey(), signedMessage(token, payload)));
       return `${CONFIRMATION_COOKIE}=${payload}.${mac}; Max-Age=${CONFIRMATION_MAX_AGE_SECONDS}; Path=${path}; HttpOnly; SameSite=Lax; Secure`;
@@ -107,7 +132,10 @@ export function confirmationSigner(secret: string): ConfirmationSigner {
       if (!(await crypto.subtle.verify("HMAC", await getKey(), mac, signedMessage(token, payload)))) return undefined;
       const body = decodePayload(payload);
       if (!body || body.x * 1000 <= now.getTime()) return undefined;
-      return { number: body.n, locale: body.l, leftOut: body.o };
+      const payment = body.t !== undefined && body.c !== undefined && body.p
+        ? { totalRs: body.t, placedAt: new Date(body.c).toISOString(), juiceName: body.p[0], juiceNumber: body.p[1], paymentWhatsapp: body.p[2] }
+        : undefined;
+      return { number: body.n, locale: body.l, leftOut: body.o, ...(payment ? { payment } : {}) };
     },
   };
 }
