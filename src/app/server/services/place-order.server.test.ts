@@ -611,7 +611,7 @@ describe("the date rules at submit (S-083, S-084 AC5, S-087 AC5, AC7)", () => {
       policiesAcceptedAt: NOW.toISOString(),
     });
     const call = (fulfilOn: string) =>
-      callPlaceOrder(database.db, { idempotencyKey: randomUUID(), today: "2026-11-10", insert: true, basket: [{ productId: cakeId, quantity: 1, cakeMessage: null, cakeMessageLength: 0, options: [] }], order: order(fulfilOn) });
+      callPlaceOrder(database.db, { idempotencyKey: randomUUID(), today: "2026-11-10", now: NOW.toISOString(), insert: true, basket: [{ productId: cakeId, quantity: 1, cakeMessage: null, cakeMessageLength: 0, options: [] }], order: order(fulfilOn) });
 
     test.each([
       ["too soon", "2026-11-12"],
