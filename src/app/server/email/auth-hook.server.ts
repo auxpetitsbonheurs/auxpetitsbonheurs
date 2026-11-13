@@ -68,8 +68,8 @@ export const HookPayload = z.object({
 
 export type HookPayload = z.infer<typeof HookPayload>;
 
-/** Email types this epic sends; E-11 adds magiclink, signup and email_change (S-024 AC8). */
-export const HANDLED_ACTIONS = ["recovery"] as const;
+/** Email types the hook sends: recovery (S-024); E-11 adds signup and magiclink (email change is out of v1). */
+export const HANDLED_ACTIONS = ["recovery", "signup", "magiclink"] as const;
 
 /** `user_metadata.locale` when it is one we have; undefined otherwise (AC4: then English or the admin's own). */
 export function metadataLocale(payload: HookPayload): Locale | undefined {

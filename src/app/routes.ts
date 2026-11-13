@@ -25,6 +25,18 @@ function customerPages(locale: "en" | "fr") {
     route("basket", "routes/site/basket.tsx", { id: `basket-${locale}` }),
     route("order/:token/confirmed", "routes/site/order-confirmed.tsx", { id: `order-confirmed-${locale}` }),
     route("t/:token", "routes/site/tracking.tsx", { id: `tracking-${locale}` }),
+    // Bakery reviews (E-14): the public page (S-267) and the signed-in customer's form (S-262).
+    route("reviews", "routes/site/reviews.tsx", { id: `reviews-${locale}` }),
+    route("reviews/write", "routes/site/review-write.tsx", { id: `review-write-${locale}` }),
+    // Customer accounts (E-11): optional, never needed to order. Private, own text bundle.
+    layout("routes/account/layout.tsx", { id: `account-${locale}` }, [
+      route("account", "routes/account/profile.tsx", { id: `account-profile-${locale}` }),
+      route("account/sign-in", "routes/account/sign-in.tsx", { id: `account-sign-in-${locale}` }),
+      route("account/sign-up", "routes/account/sign-up.tsx", { id: `account-sign-up-${locale}` }),
+      route("account/reset", "routes/account/reset.tsx", { id: `account-reset-${locale}` }),
+      route("account/sign-out", "routes/account/sign-out.tsx", { id: `account-sign-out-${locale}` }),
+      route("account/orders", "routes/account/orders.tsx", { id: `account-orders-${locale}` }),
+    ]),
     route("*", "routes/site/not-found.tsx", { id: `not-found-${locale}` }),
   ];
 }
@@ -67,6 +79,8 @@ const adminPages = [
     route("sales", "routes/admin/sales.tsx"),
     route("profile", "routes/admin/profile.tsx"),
     // Brand pages text and photos (E-13 S-246, S-247): Admins and Owners.
+    // Bakery reviews to approve, published and not published (E-14 S-263, S-265): Admins and Owners.
+    route("reviews", "routes/admin/reviews.tsx"),
     route("pages", "routes/admin/pages.tsx"),
     route("pages/:key", "routes/admin/page-editor.tsx"),
     // Owner-only (S-022); placeholders until E-02/E-03 build the screens.

@@ -9,11 +9,12 @@ import { SkipLink } from "~/components/shell/skip-link";
 import { todayMU } from "~/domain/time";
 import { readCookie } from "~/lib/cookies";
 import { basketStore } from "~/lib/basket-store";
-import { localeFromPathname } from "~/lib/locale";
+import { localeFromPathname, localePath } from "~/lib/locale";
 import { menuStore } from "~/lib/menu-cache";
 import { BRAND_SHARE_IMAGE, handlesOwnShareImage } from "~/lib/seo";
 import { LOCALE_COOKIE, decideLocale, localeCookie, twinPath } from "~/lib/locale-detect";
 import { readBasketCount } from "~/server/basket.server";
+import { hasSignedInHint } from "~/server/customer-auth.server";
 import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
@@ -22,6 +23,7 @@ import { whenLoadedAndIdle } from "~/lib/after-load";
 import { dismissedBanners, siteBanner } from "~/server/banner.server";
 import { getSitePromotions } from "~/server/repos/promotions.server";
 import { getSiteSettings } from "~/server/repos/settings.server";
+import { publicFirstPage } from "~/server/services/reviews.server";
 import { timed } from "~/server/server-timing.server";
 import type { Route } from "./+types/layout";
 
@@ -54,22 +56,29 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   // Cached per isolate: most page loads make no database round trip for the frame.
   const db = context.get(requestDbContext).db;
   const clock = context.get(clockContext);
-  const [{ footer: contacts }, promotions] = await Promise.all([
+  const [{ footer: contacts }, promotions, reviewCount] = await Promise.all([
     timed(context, "settings", () => getSiteSettings(db)),
     // A failed read must not take every page down: the frame shows no banner instead.
     timed(context, "promotions", () => getSitePromotions(db, clock)).catch((error: unknown) => {
       console.error(JSON.stringify({ level: "error", event: "banner_read_failed", message: error instanceof Error ? error.message : String(error) }));
       return [];
     }),
+    // E-14 S-267 AC5: the footer's Reviews link once one is approved (60 s isolate cache; a failure hides the link).
+    timed(context, "reviews", () => publicFirstPage(db, clock.now()))
+      .then((page) => page.summary.count)
+      .catch(() => 0),
   ]);
   const now = clock.now();
   return {
     basketCount: readBasketCount(request),
+    // E-11: a cookie flag only (no token check on browsing pages); /account verifies the session.
+    signedIn: hasSignedInHint(request),
     photoOrigin: photoOrigin(context.get(publicConfigContext).supabaseUrl),
     contacts,
     year: todayMU(now).slice(0, 4),
     // S-062: the live banner promotion at this request's instant, unless dismissed in this session.
     banner: siteBanner(promotions, now, dismissedBanners(request)),
+    showReviews: reviewCount > 0,
   };
 }
 
@@ -79,8 +88,9 @@ export async function loader({ request, context }: Route.LoaderArgs) {
  * rarely), so a client navigation or an Add makes no request for it. The other language is
  * another layout route and loads its own.
  */
-export function shouldRevalidate() {
-  return false;
+export function shouldRevalidate({ formAction }: { formAction?: string }) {
+  // E-11: signing in or out (or setting a first password from an emailed link) flips Sign in / My account.
+  return formAction !== undefined && /\/account\/(sign-in|sign-out|reset)(\?|$)/.test(formAction);
 }
 
 /**
@@ -134,13 +144,15 @@ export default function SiteLayout({ loaderData }: Route.ComponentProps) {
       <PromoBanner banner={loaderData.banner} />
       <SiteHeader
         basketCount={loaderData.basketCount}
+        accountHref={localePath(other === "en" ? "fr" : "en", loaderData.signedIn ? "/account" : "/account/sign-in")}
+        signedIn={loaderData.signedIn}
         languageSwitch={<LanguageSwitch href={twinPath(location.pathname, location.search, other)} />}
       />
       {/* tabIndex lets the skip link move focus here in every browser; not a control, so no ring. */}
       <main id="main" tabIndex={-1} className="mx-auto w-full max-w-content flex-1 px-4 py-8 outline-none md:px-6">
         <Outlet />
       </main>
-      <SiteFooter contacts={loaderData.contacts} year={loaderData.year} />
+      <SiteFooter contacts={loaderData.contacts} year={loaderData.year} showReviews={loaderData.showReviews} />
     </div>
   );
 }

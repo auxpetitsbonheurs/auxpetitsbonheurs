@@ -1,4 +1,4 @@
-import { Menu } from "lucide-react";
+import { Menu, UserRound } from "lucide-react";
 import { type KeyboardEvent, type MouseEvent, useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { useI18n } from "~/i18n/react";
@@ -47,7 +47,7 @@ function focusPageStart() {
  * server-rendered markup reusing the nav list, about 1 kB: no chunk to fetch on first press
  * (AC5's budget aim, with an instant open instead of a lazy load).
  */
-export function SiteMenu() {
+export function SiteMenu({ account }: { account?: { href: string; signedIn: boolean } } = {}) {
   const { t, locale } = useI18n();
   const hydrated = useHydrated();
   const dialog = useRef<HTMLDialogElement>(null);
@@ -138,6 +138,22 @@ export function SiteMenu() {
           <nav aria-labelledby={titleId} className="mt-6">
             <SiteNavLinks variant="panel" onChoose={choose} />
           </nav>
+          {account && (
+            // E-11: the account (or Sign in) row below the 7 site links, apart from them.
+            <p className="mt-6 border-t border-gold pt-4">
+              <Link
+                to={account.href}
+                onClick={() => {
+                  navigated.current = true;
+                  close();
+                }}
+                className="inline-flex min-h-12 w-full items-center gap-3 rounded-md px-3 py-2 text-xl text-current hover:text-link-hover"
+              >
+                <UserRound aria-hidden="true" className="size-6" strokeWidth={1.75} />
+                {t(account.signedIn ? "nav.account" : "nav.signIn")}
+              </Link>
+            </p>
+          )}
         </div>
       </dialog>
     </>

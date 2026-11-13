@@ -1,7 +1,7 @@
 # E-14: Bakery reviews
 
-Status: planned · Milestone: MVP (phase 5, after customer accounts) · Added 2026-11-12 (Owner request; scope change recorded in docs/product/prd.md v0.4)
-PRD: FR-082, FR-083, FR-084, FR-085, FR-086 (PRD section 5.10; all Should) (NFR-002, 003, 004, 007) · Specs: to write (docs/specs/features/bakery-reviews.md) before S-261
+Status: in progress · Milestone: MVP (phase 5, after customer accounts) · Added 2026-11-12 (Owner request; scope change recorded in docs/product/prd.md v0.4)
+PRD: FR-082, FR-083, FR-084, FR-085, FR-086 (PRD section 5.10; all Should) (NFR-002, 003, 004, 007) · Specs: docs/specs/features/bakery-reviews.md
 Release phase: 5 Notifications and accounts (after E-11)
 
 ## Goal
@@ -36,15 +36,15 @@ A signed-in customer posts a review in under 1 minute on a phone; the Owner appr
 ## Stories
 | ID | Title | Status | Estimate |
 |---|---|---|---|
-| S-261 | Review data, rules and public read | ready | 5 |
-| S-262 | Write, edit and delete my review | ready | 5 |
-| S-263 | Admin: Reviews to approve with Approve and Reject | ready | 5 |
-| S-264 | Reviews to approve count badge | ready | 2 |
-| S-265 | Hide and show a published review | ready | 3 |
-| S-266 | Reviews section on Home | ready | 3 |
-| S-267 | Public Reviews page and footer link | ready | 3 |
-| S-268 | Reviews privacy: delete, account deletion, no rating markup | ready | 2 |
-| S-269 | Reviews accessibility, language, performance and journey sweep | ready | 3 |
+| S-261 | Review data, rules and public read | review | 5 |
+| S-262 | Write, edit and delete my review | review | 5 |
+| S-263 | Admin: Reviews to approve with Approve and Reject | review | 5 |
+| S-264 | Reviews to approve count badge | review | 2 |
+| S-265 | Hide and show a published review | review | 3 |
+| S-266 | Reviews section on Home | review | 3 |
+| S-267 | Public Reviews page and footer link | review | 3 |
+| S-268 | Reviews privacy: delete, account deletion, no rating markup | in-progress | 2 |
+| S-269 | Reviews accessibility, language, performance and journey sweep | in-progress | 3 |
 
 Total: 31 pts. Files: `production/stories/E-14/`. Story numbers S-261 to S-275 reserved for this epic (S-270 to S-275 spare); next free number after the block: S-276.
 

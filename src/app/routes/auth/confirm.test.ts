@@ -57,13 +57,13 @@ describe("a valid recovery link (AC1)", () => {
     expect(again.headers.get("Set-Cookie")).toBeNull();
   });
 
-  test("a type this story does not handle goes to the sign-in page without verifying", async () => {
+  test("a recovery token sent as another type is refused (E-11: customer links), nothing is set", async () => {
     const admin = await insertAdmin(database, auth);
     const token = auth.recoveryToken(admin.email);
 
     const response = await open(`token_hash=${token}&type=magiclink&next=/admin/reset`);
 
-    expect(response.headers.get("Location")).toBe("/admin/login");
+    expect(response.headers.get("Location")).toBe("/account/sign-in?link=expired");
     expect(response.headers.get("Set-Cookie")).toBeNull();
   });
 });

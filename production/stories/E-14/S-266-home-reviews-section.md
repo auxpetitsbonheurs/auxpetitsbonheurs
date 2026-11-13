@@ -1,5 +1,5 @@
 # S-266: Reviews section on Home
-Status: ready
+Status: review
 Epic: E-14-customer-reviews
 Spec: docs/specs/features/catalogue-browsing.md (Home, FR-004; add reviews block) · Home story: E-04 S-063
 Estimate: 3 pts
@@ -31,3 +31,8 @@ As a visitor, I want to see what other customers say about the bakery on the hom
 ## Notes
 - The `ReviewCard` and `StarRating` display components are created here and reused by S-267.
 - Depends on: S-261, S-063 (Home), S-267 for the link target.
+
+## Build notes (2026-11-13)
+- Server-rendered from the 60 s isolate cache, read in parallel with the rest of Home; the section is omitted with none approved or on a failed read. Home keeps its deferred hydration; the section adds no client code beyond its markup.
+- AC8: route JS checked with `npm run check:js-budget`; the LCP measurement on throttled 4G is left to the perf-budgets run on staging (S-269 AC5).
+- Tests: src/app/routes/site/reviews.test.ts, src/app/domain/review.test.ts (excerpt), src/tests/e2e/reviews.spec.ts.

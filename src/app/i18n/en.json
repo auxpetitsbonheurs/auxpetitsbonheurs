@@ -198,7 +198,8 @@
       "PAGE_CHANGED": "Someone changed this page. Reload.",
       "CANCEL_NOT_ALLOWED": "This order can no longer be cancelled here. Message us on WhatsApp.",
       "BOT_CHECK_FAILED": "We could not verify you are human. Reload the page or message us on WhatsApp.",
-      "QUOTE_EXPIRED": "This quote has expired. Send a new request or message us on WhatsApp."
+      "QUOTE_EXPIRED": "This quote has expired. Send a new request or message us on WhatsApp.",
+      "REVIEW_CHANGED": "Someone already decided this review."
     }
   },
   "product": {
@@ -620,7 +621,8 @@
       "label": "Admin",
       "toReview": "{{count}} to review",
       "pages": "Pages",
-      "promotions": "Promotions"
+      "promotions": "Promotions",
+      "reviews": "Reviews"
     },
     "states": {
       "ownerOnlyTitle": "Owner only",
@@ -1601,6 +1603,57 @@
       "cancelled": "Cancelled",
       "closed": "Closed",
       "awaiting_payment": "Awaiting payment"
+    },
+    "reviews": {
+      "title": "Reviews",
+      "metaTitle": "Reviews",
+      "tabs": {
+        "toApprove": "To approve",
+        "published": "Published",
+        "notPublished": "Not published"
+      },
+      "tabCount": "{{label}} ({{count}})",
+      "status": {
+        "rejected": "Rejected",
+        "hidden": "Hidden"
+      },
+      "stars": "{{count}} of 5",
+      "empty": {
+        "toApprove": "Nothing to approve.",
+        "published": "No published reviews.",
+        "notPublished": "No reviews here."
+      },
+      "approve": "Approve",
+      "approveName": "Approve review by {{name}}",
+      "reject": "Reject",
+      "rejectName": "Reject review by {{name}}",
+      "hide": "Hide",
+      "hideName": "Hide review by {{name}}",
+      "show": "Show",
+      "showName": "Show review by {{name}}",
+      "delete": "Delete",
+      "deleteName": "Delete review by {{name}}",
+      "rejectTitle": "Reject this review?",
+      "rejectBody": "It will never be shown. The customer only sees “Not published” and can edit it.",
+      "hideTitle": "Hide this review?",
+      "hideBody": "It disappears from the site within a minute. You can show it again later.",
+      "deleteTitle": "Delete this review?",
+      "deleteBody": "Use this when the customer asks. It is removed for good.",
+      "cancel": "Cancel",
+      "approved": "Review approved.",
+      "rejected": "Review rejected.",
+      "hidden": "Review hidden.",
+      "shown": "Review shown again.",
+      "deleted": "Review deleted.",
+      "undo": "Undo",
+      "changed": "Someone already decided this review. The list is up to date.",
+      "showMore": "Show more",
+      "loadFailed": "The reviews could not load.",
+      "retry": "Try again",
+      "badge_one": "{{count}} review to approve",
+      "badge_other": "{{count}} reviews to approve",
+      "moreRow": "Reviews",
+      "toApprove": "Back in To approve."
     }
   },
   "email": {
@@ -1625,6 +1678,27 @@
     "payment": {
       "heading": "Pay now to confirm your order",
       "fallback": "We'll send you the payment details on WhatsApp shortly."
+    },
+    "signup": {
+      "subject": "Confirm your email for {{bakery}}",
+      "heading": "Confirm your email",
+      "reason": "Someone created a {{bakery}} account with this email; if it was you, confirm it with the button below and then choose a password.",
+      "button": "Confirm my email",
+      "ignore": "If it was not you, ignore this email: no account is made without this confirmation."
+    },
+    "magiclink": {
+      "subject": "Your {{bakery}} sign-in link",
+      "heading": "Sign in to {{bakery}}",
+      "reason": "Someone asked to sign in to your {{bakery}} account with this email; if it was you, use the button below.",
+      "button": "Sign me in",
+      "ignore": "If you did not ask, ignore this email: nobody can sign in without it."
+    },
+    "customerRecovery": {
+      "subject": "Reset your {{bakery}} password",
+      "heading": "Reset your password",
+      "reason": "Someone asked to reset the password of your {{bakery}} account; if it was you, use the button below.",
+      "button": "Choose a new password",
+      "ignore": "If you did not ask, ignore this email: your password stays the same."
     }
   },
   "nav": {
@@ -1641,7 +1715,8 @@
     "menuTitle": "Menu",
     "closeMenu": "Close menu",
     "account": "My account",
-    "menuLinksTitle": "All pages"
+    "menuLinksTitle": "All pages",
+    "signIn": "Sign in"
   },
   "collection": {
     "title": "Our collection",
@@ -1928,5 +2003,223 @@
       "requestTitle": "Your request",
       "servings": "{{count}} people"
     }
+  },
+  "account": {
+    "metaTitle": "My account",
+    "common": {
+      "email": "Email",
+      "password": "Password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "passwordShown": "Password shown",
+      "passwordHidden": "Password hidden",
+      "errorSummaryTitle": "Please check these fields",
+      "retryIn_one": "You can try again in {{count}} minute.",
+      "retryIn_other": "You can try again in {{count}} minutes.",
+      "emailMissing": "Enter your email address.",
+      "emailFormat": "Enter an email address like name@example.com.",
+      "optional": "(optional)",
+      "guestNote": "You never need an account to order: guest checkout always works."
+    },
+    "signIn": {
+      "title": "Sign in",
+      "intro": "Sign in to see your orders and order faster.",
+      "methods": "How to sign in",
+      "withPassword": "Password",
+      "withLink": "Email me a link",
+      "submit": "Sign in",
+      "signingIn": "Signing in…",
+      "forgot": "Forgot your password?",
+      "noAccount": "New here?",
+      "createAccount": "Create an account",
+      "passwordMissing": "Enter your password.",
+      "wrong": "Email or password is wrong.",
+      "tooMany": "Too many tries, wait {{count}} min.",
+      "linkIntro": "We email you a link that signs you in once. No password needed.",
+      "linkSubmit": "Email me a link",
+      "linkSending": "Sending…",
+      "linkSent": "If this email can sign in, a link is on its way.",
+      "linkSentHint": "Open it on this phone or computer within 1 hour.",
+      "resend": "Send another link",
+      "resendIn": "You can ask for another link in {{count}} s.",
+      "linkExpiredTitle": "This link has expired or was already used",
+      "linkExpired": "Links work once and for 1 hour. Request a new one below."
+    },
+    "signUp": {
+      "title": "Create an account",
+      "intro": "Keep your details and see your orders. You choose a password after confirming your email.",
+      "name": "Your name",
+      "phone": "Phone",
+      "phoneHint": "For example 5712 3456",
+      "language": "Language for emails",
+      "submit": "Create account",
+      "creating": "Creating…",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "nameMissing": "Enter your name.",
+      "phoneFormat": "Enter a phone number, e.g. 5712 3456",
+      "checkTitle": "Check your email to confirm",
+      "checkBody": "We sent a link to {{email}}. Open it to confirm your email and choose a password.",
+      "checkHint": "Nothing yet? Check your spam folder.",
+      "resend": "Send the email again",
+      "resendIn": "You can ask again in {{count}} s."
+    },
+    "reset": {
+      "requestTitle": "Reset your password",
+      "requestIntro": "Enter your email and we send you a link to choose a new password.",
+      "requestSubmit": "Send reset link",
+      "requesting": "Sending…",
+      "requestSent": "If this email has an account, a reset link is on its way.",
+      "newTitle": "Choose a password",
+      "setTitle": "Choose a new password",
+      "newIntro": "Your email is confirmed. Choose a password to sign in next time, or skip: a sign-in link always works.",
+      "newPassword": "New password",
+      "hint": "At least 10 characters",
+      "passwordShort": "Use at least 10 characters.",
+      "passwordWeak": "Choose a different password: this one is too easy to guess or the same as before.",
+      "submit": "Save password",
+      "saving": "Saving…",
+      "skip": "Skip for now",
+      "expiredTitle": "This link has expired, request a new one",
+      "expiredBody": "Reset links work once and for 1 hour.",
+      "requestAgain": "Request a new link",
+      "saved": "Password saved."
+    },
+    "nav": {
+      "label": "My account",
+      "profile": "My details",
+      "orders": "My orders",
+      "addresses": "Addresses",
+      "signOut": "Sign out",
+      "signingOut": "Signing out…"
+    },
+    "profile": {
+      "title": "My details",
+      "name": "Name",
+      "phone": "Phone",
+      "phoneHint": "For example 5712 3456",
+      "email": "Email",
+      "emailNote": "Your email is how you sign in; it cannot be changed here.",
+      "language": "Language for emails",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "failed": "We could not save. Please try again.",
+      "retry": "Try again",
+      "nameMissing": "Enter your name.",
+      "phoneFormat": "Enter a phone number, e.g. 5712 3456",
+      "pastOrdersNote": "Changes apply to future orders; past orders keep the details they were placed with."
+    },
+    "orders": {
+      "title": "My orders",
+      "current": "Current",
+      "past": "Past",
+      "empty": "You have no orders yet.",
+      "orderNow": "Order now",
+      "placed": "Placed",
+      "for": "For",
+      "total": "Total",
+      "trackName": "Track order {{number}}",
+      "track": "Track",
+      "reorder": "Reorder",
+      "reorderName": "Reorder order {{number}}",
+      "loadFailed": "We could not load your orders.",
+      "retry": "Try again",
+      "fulfilment": {
+        "delivery": "Delivery",
+        "pickup": "Pickup"
+      },
+      "status": {
+        "pending_approval": "Waiting for approval",
+        "approved": "Approved",
+        "in_preparation": "In preparation",
+        "out_for_delivery": "Out for delivery",
+        "ready_for_pickup": "Ready for pickup",
+        "completed": "Completed",
+        "declined": "Declined",
+        "cancelled": "Cancelled",
+        "closed": "Closed",
+        "quote_needed": "Waiting for a quote",
+        "quote_sent": "Quote sent",
+        "awaiting_payment": "Waiting for payment"
+      }
+    },
+    "languages": {
+      "en": "English",
+      "fr": "Français"
+    }
+  },
+  "reviews": {
+    "sectionTitle": "What our customers say",
+    "average": "{{average}} out of 5",
+    "fromCount_one": "from {{count}} review",
+    "fromCount_other": "from {{count}} reviews",
+    "stars": "{{count}} of 5",
+    "seeAll": "See all reviews",
+    "write": "Write a review",
+    "edit": "Edit my review",
+    "readMore": "Read more",
+    "readMoreName": "Read the full review by {{name}}",
+    "pageTitle": "Reviews",
+    "metaTitle": "Customer reviews",
+    "metaDescription": "What customers say about Aux petits bonheurs, home bakery in Mauritius: approved reviews with their star rating.",
+    "intro": "Every review comes from a customer with an account and is read by us before it appears.",
+    "empty": "No reviews yet. Be the first.",
+    "showMore": "Show more",
+    "loadingMore": "Loading…",
+    "loadFailed": "We could not load the reviews.",
+    "retry": "Try again",
+    "footerLink": "Reviews",
+    "by": "Review by {{name}}"
+  },
+  "reviewForm": {
+    "title": "Write a review",
+    "editTitle": "Your review",
+    "metaTitle": "Write a review",
+    "signInTitle": "Sign in to leave a review",
+    "signInBody": "Reviews come from customers with an account, so we know each one is real.",
+    "signIn": "Sign in",
+    "createAccount": "Create account",
+    "rating": "Your rating",
+    "ratingOption_one": "{{count}} star",
+    "ratingOption_other": "{{count}} stars",
+    "ratingChosen": "{{count}} of 5",
+    "ratingNone": "No stars chosen yet",
+    "comment": "Your comment",
+    "commentHint": "Plain text, up to 1000 characters.",
+    "count": "{{count}} of 1000 characters",
+    "send": "Send",
+    "save": "Save changes",
+    "sending": "Sending…",
+    "thanks": "Thank you. Your review will appear after we approve it.",
+    "againAfterApproval": "Saved. It will appear again after we approve it.",
+    "status": "Status",
+    "state": {
+      "waiting": "Waiting for approval",
+      "published": "Published",
+      "notPublished": "Not published"
+    },
+    "errors": {
+      "rating": "Choose from 1 to 5 stars.",
+      "commentMissing": "Write a comment.",
+      "commentTooLong": "Use 1000 characters or fewer.",
+      "firstName": "Enter your first name.",
+      "lastName": "Enter your last name."
+    },
+    "nameTitle": "First, your name",
+    "nameIntro": "Your review shows your first name and the initial of your last name.",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "delete": "Delete my review",
+    "deleteTitle": "Delete your review?",
+    "deleteBody": "It is removed for good, from the site and from our records.",
+    "deleteConfirm": "Delete",
+    "cancel": "Cancel",
+    "deleted": "Your review was deleted.",
+    "privacy": "Shown publicly: your first name, the initial of your last name, the date and your words. We approve every review first, and you can delete yours at any time.",
+    "privacyLink": "Privacy note",
+    "tooMany": "Too many changes, wait {{count}} min.",
+    "forbidden": "Reviews are for customer accounts. Sign in with your customer account.",
+    "errorSummaryTitle": "Please check these fields"
   }
 }

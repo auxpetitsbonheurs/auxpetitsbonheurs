@@ -81,7 +81,7 @@ describe("Supabase gateway (S-009 AC1, AC3)", () => {
     const claims = await next.claims();
     await next.claims();
 
-    expect(claims).toEqual({ userId: USER.id, signedInAt: SIGNED_IN });
+    expect(claims).toEqual({ userId: USER.id, signedInAt: SIGNED_IN, email: USER.email.toLowerCase() });
     expect(gotrue.calls.filter((c) => c.startsWith("GET /auth/v1/user"))).toEqual([]);
   });
 

@@ -33,6 +33,8 @@ export const ADMIN_MODULE_POLICY = {
   profile: "admin",
   // Brand pages (E-13 S-246, S-247): Admins may edit page content (Lead decision 1, 2026-11-12).
   pages: "admin",
+  // Bakery reviews (E-14 S-263): Admins and Owners moderate, like menu and gallery (epic decision 7).
+  reviews: "admin",
   "page-editor": "admin",
   team: "owner",
   settings: "owner",

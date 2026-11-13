@@ -77,15 +77,15 @@ export function SiteNav() {
 }
 
 /**
- * The account icon (S-242 AC4): rendered only when customer accounts exist (E-11 S-207 passes
- * the route), so it never links to a missing page. 44 px, named "My account".
+ * The account icon (S-242 AC4, E-11 S-207 AC9): 44 px, named "My account" when this browser has
+ * a customer session and "Sign in" when not (the frame's display hint, never authorisation).
  */
-export function AccountLink({ href }: { href: string }) {
+export function AccountLink({ href, signedIn = true }: { href: string; signedIn?: boolean }) {
   const { t } = useI18n();
   return (
     <Link
       to={href}
-      aria-label={t("nav.account")}
+      aria-label={t(signedIn ? "nav.account" : "nav.signIn")}
       className="inline-flex size-11 items-center justify-center rounded-md text-current transition-colors duration-(--motion-fast) hover:text-link-hover"
     >
       <UserRound aria-hidden="true" className="size-6" strokeWidth={1.75} />

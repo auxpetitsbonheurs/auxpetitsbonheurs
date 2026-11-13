@@ -20,6 +20,9 @@ interface StubUser {
   id: string;
   email: string;
   password: string;
+  /** Customer sign-ups (E-11) start unconfirmed: no password grant until a link is opened. */
+  unconfirmed?: boolean;
+  metadata?: Record<string, unknown>;
 }
 
 const users = new Map<string, StubUser>(Object.values(E2E_ACCOUNTS).map((a) => [a.email, { id: a.id, email: a.email, password: a.password }]));
@@ -27,6 +30,9 @@ const refreshTokens = new Map<string, { user: StubUser; signedInAt: Date; method
 /** Recovery emails "sent", newest last per email: what the email would carry. */
 const recoveries = new Map<string, { tokenHash: string; redirectTo: string }>();
 const recoveryTokens = new Map<string, string>();
+/** Signup and sign-in link emails "sent" (E-11), newest last per email, and their one-use tokens. */
+const linkEmails = new Map<string, { type: "signup" | "magiclink"; tokenHash: string; redirectTo: string }>();
+const linkTokens = new Map<string, { email: string; type: "signup" | "magiclink" }>();
 /** Banned user ids (S-032): no password grant, no refresh. */
 const banned = new Set<string>();
 const BANNED = { code: "user_banned", error_code: "user_banned", msg: "User is banned" };
@@ -60,7 +66,7 @@ async function token(request: IncomingMessage, url: URL, response: ServerRespons
   const body = await readJson(request);
   if (url.searchParams.get("grant_type") === "password") {
     const user = users.get(String(body.email ?? "").toLowerCase());
-    if (!user || user.password !== body.password) return send(response, 400, INVALID);
+    if (!user || user.password !== body.password || user.unconfirmed) return send(response, 400, INVALID);
     return banned.has(user.id) ? send(response, 400, BANNED) : send(response, 200, await issue(user, new Date()));
   }
   if (url.searchParams.get("grant_type") === "refresh_token") {
@@ -83,8 +89,51 @@ async function recover(request: IncomingMessage, url: URL, response: ServerRespo
   return send(response, 200, {});
 }
 
+function sendLink(email: string, type: "signup" | "magiclink", redirectTo: string) {
+  const tokenHash = randomBytes(28).toString("hex");
+  linkTokens.set(tokenHash, { email, type });
+  linkEmails.set(email, { type, tokenHash, redirectTo });
+}
+
+/** `POST /signup` with confirmations on: an unconfirmed user and a confirmation email; a confirmed address gets a look-alike answer. */
+async function signup(request: IncomingMessage, url: URL, response: ServerResponse) {
+  const body = await readJson(request);
+  const email = String(body.email ?? "").toLowerCase();
+  const existing = users.get(email);
+  if (existing && !existing.unconfirmed) return send(response, 200, { ...sessionBody("unused", "unused", { id: randomUUID(), email }).user, identities: [] });
+  const user = existing ?? { id: randomUUID(), email, password: String(body.password ?? ""), unconfirmed: true, metadata: (body.data as Record<string, unknown>) ?? {} };
+  if (!existing) {
+    await withAuthDb((sql) => sql`insert into auth.users (id, email) values (${user.id}, ${email})`);
+    users.set(email, user);
+  }
+  sendLink(email, "signup", url.searchParams.get("redirect_to") ?? "");
+  return send(response, 200, sessionBody("unused", "unused", user).user);
+}
+
+/** `POST /otp` with `create_user: false`: a sign-in link for a known address only. */
+async function otp(request: IncomingMessage, url: URL, response: ServerResponse) {
+  const body = await readJson(request);
+  const email = String(body.email ?? "").toLowerCase();
+  if (!users.has(email)) return send(response, 422, { code: "otp_disabled", error_code: "otp_disabled", msg: "Signups not allowed for otp" });
+  sendLink(email, "magiclink", url.searchParams.get("redirect_to") ?? "");
+  return send(response, 200, {});
+}
+
+async function verifyLink(body: Record<string, unknown>, response: ServerResponse) {
+  const link = linkTokens.get(String(body.token_hash));
+  const user = link ? users.get(link.email) : undefined;
+  if (!link || !user || (body.type !== link.type && body.type !== "email")) return send(response, 403, EXPIRED);
+  linkTokens.delete(String(body.token_hash));
+  if (user.unconfirmed) {
+    user.unconfirmed = false;
+    await withAuthDb((sql) => sql`update auth.users set email_confirmed_at = now() where id = ${user.id}`);
+  }
+  return send(response, 200, await issue(user, new Date(), "otp"));
+}
+
 async function verify(request: IncomingMessage, response: ServerResponse) {
   const body = await readJson(request);
+  if (body.type === "signup" || body.type === "magiclink" || body.type === "email") return verifyLink(body, response);
   const email = recoveryTokens.get(String(body.token_hash));
   const user = email ? users.get(email) : undefined;
   if (body.type !== "recovery" || !user) return send(response, 403, EXPIRED);
@@ -185,6 +234,12 @@ createServer((request, response) => {
   if (route === "POST /auth/v1/token") return void token(request, url, response);
   if (route === "POST /auth/v1/logout") return logout(request, url, response);
   if (route === "POST /auth/v1/recover") return void recover(request, url, response);
+  if (route === "POST /auth/v1/signup") return void signup(request, url, response);
+  if (route === "POST /auth/v1/otp") return void otp(request, url, response);
+  if (route === "GET /__stub/link") {
+    const sent = linkEmails.get((url.searchParams.get("email") ?? "").toLowerCase());
+    return sent ? send(response, 200, sent) : send(response, 404, { msg: "no link email" });
+  }
   if (route === "POST /auth/v1/verify") return void verify(request, response);
   if (route === "PUT /auth/v1/user") return void updateUser(request, response);
   if (route === "POST /__stub/users") return void addUser(request, response);

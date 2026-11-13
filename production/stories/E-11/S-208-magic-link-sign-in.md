@@ -1,5 +1,5 @@
 # S-208: Sign in with a one-time email link
-Status: ready
+Status: review
 Epic: E-11-customer-accounts
 Spec: docs/specs/features/customer-accounts.md#api-contract
 Estimate: 3 pts
@@ -33,3 +33,9 @@ As a customer who does not want a password, I want a one-time sign-in link by em
 ## Notes
 - Link validity 1 hour per spec Edge Cases. Email content from S-194.
 - Dependencies (R9): S-207 (sign-in page), S-194. Not yet done; expected.
+
+## Build notes (2026-11-13)
+- Turnstile is not built anywhere in the app yet (checkout and admin sign-in have none either; it is the site-wide public-forms work in S-228 AC2). The `BOT_CHECK_FAILED` parts of the ACs move there; until then these forms rely on the rate limits and the generic answers. Adjusted 2026-11-13 (E-11 build).
+- AC5: the server sends at most one account email per address per minute; the button then reads "Send another link".
+- AC7: Password and Link are two links styled as a switch (`aria-current`), so they work before JavaScript and with a keyboard.
+- Tests: src/app/routes/account/sign-in.test.ts, src/app/routes/auth/confirm.customer.test.ts, src/app/server/supabase-auth.customer.test.ts, src/tests/e2e/account.spec.ts.

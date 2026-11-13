@@ -24,6 +24,15 @@ export const RL_REQUEST: RateLimitClass = { name: "RL-request", max: 3, windowMs
 /** Upload URLs for request photos (S-162 AC3): 20 per 10 minutes per IP. */
 export const RL_UPLOAD: RateLimitClass = { name: "RL-upload", max: 20, windowMs: 10 * 60 * 1000 };
 
+/** Customer sign-up and Save my details: 3 per hour per IP (customer-accounts spec, RL-signup). */
+export const RL_SIGNUP: RateLimitClass = { name: "RL-signup", max: 3, windowMs: 60 * 60 * 1000 };
+
+/** One confirmation or sign-in email per address per minute (S-206 AC7, S-208 AC5: "resend after 60 s"). */
+export const RL_EMAIL_RESEND: RateLimitClass = { name: "RL-email-resend", max: 1, windowMs: 60 * 1000 };
+
+/** Posting or editing a review: 5 per hour per account (S-262 AC8). */
+export const RL_REVIEW: RateLimitClass = { name: "RL-review", max: 5, windowMs: 60 * 60 * 1000 };
+
 /** Buckets are kept one day, then purged (data-model retention "Rate-limit keys"). */
 export const RATE_LIMIT_RETENTION_MS = 24 * 60 * 60 * 1000;
 

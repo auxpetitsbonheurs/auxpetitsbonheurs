@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useState } from "react";
+import { countPendingReviews } from "~/server/repos/reviews.server";
 import { Outlet, isRouteErrorResponse, useLocation, useMatches, useNavigation } from "react-router";
 import { AdminHeader } from "~/components/admin/admin-header";
 import { AdminBottomBar } from "~/components/admin/bottom-bar";
@@ -33,11 +34,13 @@ export const links: Route.LinksFunction = () => [
  */
 export async function loader(args: Route.LoaderArgs) {
   const me = await requireAdmin(args);
-  const toReview = await timed(args.context, "badges", () => countReviewOrders(args.context.get(requestDbContext).db));
+  const db = args.context.get(requestDbContext).db;
+  // E-14 S-264: reviews waiting for approval, one indexed count, read alongside the orders count.
+  const [toReview, reviewsToApprove] = await timed(args.context, "badges", () => Promise.all([countReviewOrders(db), countPendingReviews(db)]));
   return {
     me: { id: me.id, name: me.name, role: me.role, locale: me.locale },
     nav: { ownerItems: me.role === "owner" },
-    badges: { toReview },
+    badges: { toReview, reviewsToApprove },
     vapidPublicKey: null,
   };
 }
@@ -126,7 +129,7 @@ export default function AdminLayout({ loaderData }: Route.ComponentProps) {
       <NavProgress />
       <AdminHeader me={loaderData.me} title={titleKey ? t(titleKey) : undefined} />
       {/* Before main in the DOM so the skip link jumps past it; fixed to the bottom on phones. */}
-      <AdminBottomBar toReview={loaderData.badges.toReview} />
+      <AdminBottomBar toReview={loaderData.badges.toReview} reviewsToApprove={loaderData.badges.reviewsToApprove} />
       {/* tabIndex lets the skip link move focus here; not a control, so no ring. Bottom padding keeps content above the bar. */}
       <main
         id="main"

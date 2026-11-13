@@ -198,7 +198,8 @@
       "PAGE_CHANGED": "Quelqu'un a modifié cette page. Rechargez.",
       "CANCEL_NOT_ALLOWED": "Cette commande ne peut plus être annulée ici. Écrivez-nous sur WhatsApp.",
       "BOT_CHECK_FAILED": "Nous n'avons pas pu vérifier que vous êtes une personne. Rechargez la page ou écrivez-nous sur WhatsApp.",
-      "QUOTE_EXPIRED": "Ce devis a expiré. Envoyez une nouvelle demande ou écrivez-nous sur WhatsApp."
+      "QUOTE_EXPIRED": "Ce devis a expiré. Envoyez une nouvelle demande ou écrivez-nous sur WhatsApp.",
+      "REVIEW_CHANGED": "Quelqu’un a déjà décidé pour cet avis."
     }
   },
   "product": {
@@ -620,7 +621,8 @@
       "label": "Admin",
       "toReview": "{{count}} à valider",
       "pages": "Pages",
-      "promotions": "Promotions"
+      "promotions": "Promotions",
+      "reviews": "Avis"
     },
     "states": {
       "ownerOnlyTitle": "Réservé aux propriétaires",
@@ -1601,6 +1603,57 @@
       "cancelled": "Annulée",
       "closed": "Clôturée",
       "awaiting_payment": "En attente de paiement"
+    },
+    "reviews": {
+      "title": "Avis",
+      "metaTitle": "Avis",
+      "tabs": {
+        "toApprove": "À valider",
+        "published": "Publiés",
+        "notPublished": "Non publiés"
+      },
+      "tabCount": "{{label}} ({{count}})",
+      "status": {
+        "rejected": "Refusé",
+        "hidden": "Masqué"
+      },
+      "stars": "{{count}} sur 5",
+      "empty": {
+        "toApprove": "Rien à valider.",
+        "published": "Aucun avis publié.",
+        "notPublished": "Aucun avis ici."
+      },
+      "approve": "Valider",
+      "approveName": "Valider l’avis de {{name}}",
+      "reject": "Refuser",
+      "rejectName": "Refuser l’avis de {{name}}",
+      "hide": "Masquer",
+      "hideName": "Masquer l’avis de {{name}}",
+      "show": "Afficher",
+      "showName": "Afficher l’avis de {{name}}",
+      "delete": "Supprimer",
+      "deleteName": "Supprimer l’avis de {{name}}",
+      "rejectTitle": "Refuser cet avis ?",
+      "rejectBody": "Il ne sera jamais affiché. Le client voit seulement « Non publié » et peut le modifier.",
+      "hideTitle": "Masquer cet avis ?",
+      "hideBody": "Il disparaît du site dans la minute. Vous pourrez l’afficher à nouveau.",
+      "deleteTitle": "Supprimer cet avis ?",
+      "deleteBody": "À utiliser quand le client le demande. Il est supprimé définitivement.",
+      "cancel": "Annuler",
+      "approved": "Avis validé.",
+      "rejected": "Avis refusé.",
+      "hidden": "Avis masqué.",
+      "shown": "Avis affiché à nouveau.",
+      "deleted": "Avis supprimé.",
+      "undo": "Annuler",
+      "changed": "Quelqu’un a déjà décidé pour cet avis. La liste est à jour.",
+      "showMore": "Voir plus",
+      "loadFailed": "Impossible de charger les avis.",
+      "retry": "Réessayer",
+      "badge_one": "{{count}} avis à valider",
+      "badge_other": "{{count}} avis à valider",
+      "moreRow": "Avis",
+      "toApprove": "De retour dans À valider."
     }
   },
   "email": {
@@ -1625,6 +1678,27 @@
     "payment": {
       "heading": "Payez maintenant pour confirmer votre commande",
       "fallback": "Nous vous enverrons bientôt les informations de paiement sur WhatsApp."
+    },
+    "signup": {
+      "subject": "Confirmez votre e-mail pour {{bakery}}",
+      "heading": "Confirmez votre e-mail",
+      "reason": "Un compte {{bakery}} a été créé avec cet e-mail ; si c’est vous, confirmez-le avec le bouton ci-dessous puis choisissez un mot de passe.",
+      "button": "Confirmer mon e-mail",
+      "ignore": "Si ce n’est pas vous, ignorez cet e-mail : aucun compte n’est créé sans cette confirmation."
+    },
+    "magiclink": {
+      "subject": "Votre lien de connexion {{bakery}}",
+      "heading": "Connexion à {{bakery}}",
+      "reason": "Quelqu’un a demandé à se connecter à votre compte {{bakery}} avec cet e-mail ; si c’est vous, utilisez le bouton ci-dessous.",
+      "button": "Me connecter",
+      "ignore": "Si ce n’est pas vous, ignorez cet e-mail : personne ne peut se connecter sans lui."
+    },
+    "customerRecovery": {
+      "subject": "Réinitialisez votre mot de passe {{bakery}}",
+      "heading": "Réinitialisez votre mot de passe",
+      "reason": "Quelqu’un a demandé à réinitialiser le mot de passe de votre compte {{bakery}} ; si c’est vous, utilisez le bouton ci-dessous.",
+      "button": "Choisir un nouveau mot de passe",
+      "ignore": "Si vous n’avez rien demandé, ignorez cet e-mail : votre mot de passe ne change pas."
     }
   },
   "nav": {
@@ -1641,7 +1715,8 @@
     "menuTitle": "Menu",
     "closeMenu": "Fermer le menu",
     "account": "Mon compte",
-    "menuLinksTitle": "Toutes les pages"
+    "menuLinksTitle": "Toutes les pages",
+    "signIn": "Se connecter"
   },
   "collection": {
     "title": "Notre collection",
@@ -1928,5 +2003,223 @@
       "requestTitle": "Votre demande",
       "servings": "{{count}} personnes"
     }
+  },
+  "account": {
+    "metaTitle": "Mon compte",
+    "common": {
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "showPassword": "Afficher le mot de passe",
+      "hidePassword": "Masquer le mot de passe",
+      "passwordShown": "Mot de passe affiché",
+      "passwordHidden": "Mot de passe masqué",
+      "errorSummaryTitle": "Vérifiez ces champs",
+      "retryIn_one": "Vous pourrez réessayer dans {{count}} minute.",
+      "retryIn_other": "Vous pourrez réessayer dans {{count}} minutes.",
+      "emailMissing": "Saisissez votre adresse e-mail.",
+      "emailFormat": "Saisissez une adresse e-mail comme nom@exemple.com.",
+      "optional": "(facultatif)",
+      "guestNote": "Aucun compte n’est nécessaire pour commander : la commande sans compte fonctionne toujours."
+    },
+    "signIn": {
+      "title": "Se connecter",
+      "intro": "Connectez-vous pour voir vos commandes et commander plus vite.",
+      "methods": "Mode de connexion",
+      "withPassword": "Mot de passe",
+      "withLink": "Recevoir un lien",
+      "submit": "Se connecter",
+      "signingIn": "Connexion…",
+      "forgot": "Mot de passe oublié ?",
+      "noAccount": "Nouveau ici ?",
+      "createAccount": "Créer un compte",
+      "passwordMissing": "Saisissez votre mot de passe.",
+      "wrong": "E-mail ou mot de passe incorrect.",
+      "tooMany": "Trop d’essais, patientez {{count}} min.",
+      "linkIntro": "Nous vous envoyons par e-mail un lien qui vous connecte une fois. Pas besoin de mot de passe.",
+      "linkSubmit": "Recevoir un lien",
+      "linkSending": "Envoi…",
+      "linkSent": "Si cet e-mail peut se connecter, un lien est en route.",
+      "linkSentHint": "Ouvrez-le sur ce téléphone ou cet ordinateur dans l’heure.",
+      "resend": "Envoyer un autre lien",
+      "resendIn": "Vous pourrez demander un autre lien dans {{count}} s.",
+      "linkExpiredTitle": "Ce lien a expiré ou a déjà servi",
+      "linkExpired": "Les liens servent une fois et pendant 1 heure. Demandez-en un nouveau ci-dessous."
+    },
+    "signUp": {
+      "title": "Créer un compte",
+      "intro": "Gardez vos coordonnées et retrouvez vos commandes. Vous choisirez un mot de passe après avoir confirmé votre e-mail.",
+      "name": "Votre nom",
+      "phone": "Téléphone",
+      "phoneHint": "Par exemple 5712 3456",
+      "language": "Langue des e-mails",
+      "submit": "Créer le compte",
+      "creating": "Création…",
+      "haveAccount": "Vous avez déjà un compte ?",
+      "signIn": "Se connecter",
+      "nameMissing": "Saisissez votre nom.",
+      "phoneFormat": "Saisissez un numéro de téléphone, par ex. 5712 3456",
+      "checkTitle": "Consultez vos e-mails pour confirmer",
+      "checkBody": "Nous avons envoyé un lien à {{email}}. Ouvrez-le pour confirmer votre e-mail et choisir un mot de passe.",
+      "checkHint": "Rien reçu ? Regardez dans vos indésirables.",
+      "resend": "Renvoyer l’e-mail",
+      "resendIn": "Vous pourrez redemander dans {{count}} s."
+    },
+    "reset": {
+      "requestTitle": "Réinitialiser le mot de passe",
+      "requestIntro": "Saisissez votre e-mail : nous vous envoyons un lien pour choisir un nouveau mot de passe.",
+      "requestSubmit": "Envoyer le lien",
+      "requesting": "Envoi…",
+      "requestSent": "Si cet e-mail a un compte, un lien de réinitialisation est en route.",
+      "newTitle": "Choisissez un mot de passe",
+      "setTitle": "Choisissez un nouveau mot de passe",
+      "newIntro": "Votre e-mail est confirmé. Choisissez un mot de passe pour la prochaine fois, ou passez : un lien de connexion fonctionne toujours.",
+      "newPassword": "Nouveau mot de passe",
+      "hint": "Au moins 10 caractères",
+      "passwordShort": "Utilisez au moins 10 caractères.",
+      "passwordWeak": "Choisissez un autre mot de passe : celui-ci est trop facile à deviner ou identique à l’ancien.",
+      "submit": "Enregistrer le mot de passe",
+      "saving": "Enregistrement…",
+      "skip": "Plus tard",
+      "expiredTitle": "Ce lien a expiré, demandez-en un nouveau",
+      "expiredBody": "Les liens de réinitialisation servent une fois et pendant 1 heure.",
+      "requestAgain": "Demander un nouveau lien",
+      "saved": "Mot de passe enregistré."
+    },
+    "nav": {
+      "label": "Mon compte",
+      "profile": "Mes coordonnées",
+      "orders": "Mes commandes",
+      "addresses": "Adresses",
+      "signOut": "Se déconnecter",
+      "signingOut": "Déconnexion…"
+    },
+    "profile": {
+      "title": "Mes coordonnées",
+      "name": "Nom",
+      "phone": "Téléphone",
+      "phoneHint": "Par exemple 5712 3456",
+      "email": "E-mail",
+      "emailNote": "Votre e-mail sert à vous connecter ; il ne peut pas être modifié ici.",
+      "language": "Langue des e-mails",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "saved": "Enregistré",
+      "failed": "Enregistrement impossible. Veuillez réessayer.",
+      "retry": "Réessayer",
+      "nameMissing": "Saisissez votre nom.",
+      "phoneFormat": "Saisissez un numéro de téléphone, par ex. 5712 3456",
+      "pastOrdersNote": "Les changements valent pour les prochaines commandes ; les commandes passées gardent leurs coordonnées."
+    },
+    "orders": {
+      "title": "Mes commandes",
+      "current": "En cours",
+      "past": "Passées",
+      "empty": "Vous n’avez pas encore de commande.",
+      "orderNow": "Commander",
+      "placed": "Passée le",
+      "for": "Pour le",
+      "total": "Total",
+      "trackName": "Suivre la commande {{number}}",
+      "track": "Suivre",
+      "reorder": "Commander à nouveau",
+      "reorderName": "Commander à nouveau la commande {{number}}",
+      "loadFailed": "Impossible de charger vos commandes.",
+      "retry": "Réessayer",
+      "fulfilment": {
+        "delivery": "Livraison",
+        "pickup": "Retrait"
+      },
+      "status": {
+        "pending_approval": "En attente de validation",
+        "approved": "Validée",
+        "in_preparation": "En préparation",
+        "out_for_delivery": "En livraison",
+        "ready_for_pickup": "Prête à retirer",
+        "completed": "Terminée",
+        "declined": "Refusée",
+        "cancelled": "Annulée",
+        "closed": "Clôturée",
+        "quote_needed": "Devis à faire",
+        "quote_sent": "Devis envoyé",
+        "awaiting_payment": "En attente de paiement"
+      }
+    },
+    "languages": {
+      "en": "English",
+      "fr": "Français"
+    }
+  },
+  "reviews": {
+    "sectionTitle": "Ce que disent nos clients",
+    "average": "{{average}} sur 5",
+    "fromCount_one": "sur {{count}} avis",
+    "fromCount_other": "sur {{count}} avis",
+    "stars": "{{count}} sur 5",
+    "seeAll": "Voir tous les avis",
+    "write": "Écrire un avis",
+    "edit": "Modifier mon avis",
+    "readMore": "Lire la suite",
+    "readMoreName": "Lire l’avis complet de {{name}}",
+    "pageTitle": "Avis",
+    "metaTitle": "Avis clients",
+    "metaDescription": "Ce que les clients disent d’Aux petits bonheurs, pâtisserie maison à Maurice : avis validés avec leur note.",
+    "intro": "Chaque avis vient d’un client avec un compte et nous le lisons avant qu’il paraisse.",
+    "empty": "Pas encore d’avis. Soyez le premier.",
+    "showMore": "Voir plus",
+    "loadingMore": "Chargement…",
+    "loadFailed": "Impossible de charger les avis.",
+    "retry": "Réessayer",
+    "footerLink": "Avis",
+    "by": "Avis de {{name}}"
+  },
+  "reviewForm": {
+    "title": "Écrire un avis",
+    "editTitle": "Votre avis",
+    "metaTitle": "Écrire un avis",
+    "signInTitle": "Connectez-vous pour laisser un avis",
+    "signInBody": "Les avis viennent de clients avec un compte : nous savons ainsi que chacun est authentique.",
+    "signIn": "Se connecter",
+    "createAccount": "Créer un compte",
+    "rating": "Votre note",
+    "ratingOption_one": "{{count}} étoile",
+    "ratingOption_other": "{{count}} étoiles",
+    "ratingChosen": "{{count}} sur 5",
+    "ratingNone": "Aucune étoile choisie",
+    "comment": "Votre commentaire",
+    "commentHint": "Texte simple, 1000 caractères au plus.",
+    "count": "{{count}} sur 1000 caractères",
+    "send": "Envoyer",
+    "save": "Enregistrer",
+    "sending": "Envoi…",
+    "thanks": "Merci. Votre avis paraîtra après notre validation.",
+    "againAfterApproval": "Enregistré. Il reparaîtra après notre validation.",
+    "status": "Statut",
+    "state": {
+      "waiting": "En attente de validation",
+      "published": "Publié",
+      "notPublished": "Non publié"
+    },
+    "errors": {
+      "rating": "Choisissez de 1 à 5 étoiles.",
+      "commentMissing": "Écrivez un commentaire.",
+      "commentTooLong": "Utilisez 1000 caractères au plus.",
+      "firstName": "Saisissez votre prénom.",
+      "lastName": "Saisissez votre nom."
+    },
+    "nameTitle": "D’abord, votre nom",
+    "nameIntro": "Votre avis affiche votre prénom et l’initiale de votre nom.",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "delete": "Supprimer mon avis",
+    "deleteTitle": "Supprimer votre avis ?",
+    "deleteBody": "Il est supprimé définitivement, du site et de nos données.",
+    "deleteConfirm": "Supprimer",
+    "cancel": "Annuler",
+    "deleted": "Votre avis a été supprimé.",
+    "privacy": "Affiché publiquement : votre prénom, l’initiale de votre nom, la date et vos mots. Nous validons chaque avis avant publication et vous pouvez supprimer le vôtre à tout moment.",
+    "privacyLink": "Note de confidentialité",
+    "tooMany": "Trop de modifications, patientez {{count}} min.",
+    "forbidden": "Les avis sont réservés aux comptes clients. Connectez-vous avec votre compte client.",
+    "errorSummaryTitle": "Vérifiez ces champs"
   }
 }

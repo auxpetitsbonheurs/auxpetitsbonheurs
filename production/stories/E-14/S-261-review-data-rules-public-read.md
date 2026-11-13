@@ -1,5 +1,5 @@
 # S-261: Review data, rules and public read
-Status: ready
+Status: review
 Epic: E-14-customer-reviews
 Spec: docs/specs/features/bakery-reviews.md (to write) · Data: docs/architecture/data-model.md (add `review`)
 Estimate: 5 pts
@@ -32,3 +32,9 @@ As the bakery, I want reviews stored with a clear status and strict rules, so th
 - Depends on: E-11 S-206/S-210 (customer account and name), S-001 skeleton schema pattern.
 - Contract-first (lead-backend + lead-frontend) before S-262.
 - Decision proposed: edit of an approved review returns it to `pending` and it disappears publicly until approved again.
+
+## Build notes (2026-11-13)
+- Spec written: docs/specs/features/bakery-reviews.md. Migration 0018 (`review`, `review_event`).
+- AC7 adjusted to the architecture: RLS is on with NO policies on every table (architecture "Security": the app's database role does all reads and writes and authorises in the server), so the anon key reads nothing; the server guard allows a customer only their own row and decisions only to Owner/Admin sessions; the public read selects only the AC3 columns. Tested in src/app/server/services/reviews.server.test.ts and src/app/routes/site/reviews.test.ts (no src/tests/db folder exists in this repo).
+- AC5: "first word + initial of the second word" as the examples spell it ("Marie Claire Dupont" -> "Marie C.").
+- Tests: src/app/domain/review.test.ts, src/app/server/services/reviews.server.test.ts.

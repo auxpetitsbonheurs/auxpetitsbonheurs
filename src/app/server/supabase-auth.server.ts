@@ -3,7 +3,7 @@
 // verified locally with the project's JWKS (cached per isolate), not with a call per request.
 import { createServerClient, parseCookieHeader, serializeCookieHeader } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
-import type { AuthClaims, AuthGateway } from "./auth-gateway.server";
+import type { AuthClaims, AuthGateway, LinkUser } from "./auth-gateway.server";
 
 /** The session cookie lives as long as the longest allowed session (FR-040). */
 export const SESSION_COOKIE_MAX_AGE = 30 * 24 * 60 * 60;
@@ -82,7 +82,8 @@ export function createSupabaseAuth(config: SupabaseAuthConfig, request: Request)
     const signedInAt = signInTime(data.claims.amr);
     if (typeof data.claims.sub !== "string" || !signedInAt) return null;
     const recoveredAt = recoveryTime(data.claims.amr);
-    return recoveredAt ? { userId: data.claims.sub, signedInAt, recoveredAt } : { userId: data.claims.sub, signedInAt };
+    const email = typeof data.claims.email === "string" && data.claims.email !== "" ? data.claims.email.toLowerCase() : undefined;
+    return { userId: data.claims.sub, signedInAt, ...(recoveredAt ? { recoveredAt } : {}), ...(email ? { email } : {}) };
   }
 
   return {
@@ -134,6 +135,28 @@ export function createSupabaseAuth(config: SupabaseAuthConfig, request: Request)
       const { error } = await supabase().auth.updateUser({ password });
       if (!error) return { ok: true };
       return error.code === "weak_password" || error.code === "same_password" ? { ok: false, reason: "weak" } : { ok: false, reason: "failed" };
+    },
+    async signUp({ email, password, metadata, redirectTo }) {
+      try {
+        const { error } = await statelessClient(config).auth.signUp({ email, password, options: { emailRedirectTo: redirectTo, data: metadata } });
+        return !error;
+      } catch {
+        return false;
+      }
+    },
+    async requestSignInLink(email, redirectTo) {
+      try {
+        const { error } = await statelessClient(config).auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: redirectTo } });
+        return !error;
+      } catch {
+        return false;
+      }
+    },
+    async verifyEmailLink(tokenHash, type): Promise<LinkUser | null> {
+      const { data, error } = await supabase().auth.verifyOtp({ type, token_hash: tokenHash });
+      if (error || !data.user?.email) return null;
+      claims = undefined;
+      return { userId: data.user.id, email: data.user.email.toLowerCase(), metadata: data.user.user_metadata ?? {} };
     },
     async checkPassword({ email, password }) {
       const checker = statelessClient(config);

@@ -1,5 +1,5 @@
 # S-209: Reset a forgotten password
-Status: ready
+Status: review
 Epic: E-11-customer-accounts
 Spec: docs/specs/features/customer-accounts.md#api-contract
 Estimate: 3 pts
@@ -33,3 +33,9 @@ As a customer who forgot my password, I want a reset link by email, so that I ca
 ## Notes
 - The `mode=new` first-password path is S-206. Admin reset (`admin/reset`) is E-02.
 - Dependencies (R9): S-207, S-194. Not yet done; expected.
+
+## Build notes (2026-11-13)
+- Turnstile is not built anywhere in the app yet (checkout and admin sign-in have none either; it is the site-wide public-forms work in S-228 AC2). The `BOT_CHECK_FAILED` parts of the ACs move there; until then these forms rely on the rate limits and the generic answers. Adjusted 2026-11-13 (E-11 build).
+- AC4: an expired reset link lands on /account/reset?expired=1, which shows the notice above the request form.
+- AC6: setPassword needs a session made by an emailed link (reset, sign-up confirmation or sign-in link) in the last hour that belongs to a customer account; anything else is LINK_EXPIRED. Other devices are signed out after the change.
+- Tests: src/app/routes/account/reset.test.ts, src/app/routes/auth/confirm.customer.test.ts, src/tests/e2e/account.spec.ts.

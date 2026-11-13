@@ -22,6 +22,8 @@ const STATUS = {
   SLUG_TAKEN: 409,
   /** Accept or decline after 23:59 MU on the quote's expiry day (S-158 AC3). */
   QUOTE_EXPIRED: 409,
+  /** Two admins decided the same review: the second sees this (E-14 S-263 AC4). */
+  REVIEW_CHANGED: 409,
   /** Settings or availability saved from a stale page (S-056..S-059). */
   SETTINGS_CHANGED: 409,
   /** A brand page saved from a stale editor (E-13 S-246 AC5). */

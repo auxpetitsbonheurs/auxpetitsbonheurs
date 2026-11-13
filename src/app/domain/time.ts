@@ -140,6 +140,11 @@ export function formatWeekdayDayMonth(date: string, locale: Locale): string {
   return formatter(locale, { weekday: "long", day: "numeric", month: "long" }).format(parseDate(date));
 }
 
+/** "12 Nov 2026" (EN) or "12 nov. 2026" (FR): a review's date (E-14 S-266 AC1). */
+export function formatDayMonthYear(date: string, locale: Locale): string {
+  return formatter(locale, { day: "numeric", month: "short", year: "numeric" }).format(parseDate(date));
+}
+
 /** "November 2026" (EN) or "novembre 2026" (FR), for any date in the month. */
 export function formatMonthYear(date: string, locale: Locale): string {
   return formatter(locale, { month: "long", year: "numeric" }).format(parseDate(date));

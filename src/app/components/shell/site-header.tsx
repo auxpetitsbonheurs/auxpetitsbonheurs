@@ -9,8 +9,10 @@ import { BasketLink } from "./basket-link";
 interface SiteHeaderProps {
   basketCount: number;
   languageSwitch?: ReactNode;
-  /** The customer account page once it exists (E-11 S-207); until then no account icon (S-242 AC4). */
+  /** The customer account page (E-11 S-207); without it no account icon (S-242 AC4). */
   accountHref?: string;
+  /** This browser has a customer session (display hint): "My account" instead of "Sign in". */
+  signedIn?: boolean;
 }
 
 /**
@@ -27,7 +29,7 @@ interface SiteHeaderProps {
  * The language switch is rendered in both places but only one is ever displayed (the other is
  * `display: none`, so it is not read or tabbed twice).
  */
-export function SiteHeader({ basketCount, languageSwitch, accountHref }: SiteHeaderProps) {
+export function SiteHeader({ basketCount, languageSwitch, accountHref, signedIn = true }: SiteHeaderProps) {
   const { t, locale } = useI18n();
   return (
     <header className="band border-b border-gold">
@@ -42,12 +44,12 @@ export function SiteHeader({ basketCount, languageSwitch, accountHref }: SiteHea
           <div className="hidden lg:block">{languageSwitch}</div>
           {accountHref && (
             <div className="hidden lg:block">
-              <AccountLink href={accountHref} />
+              <AccountLink href={accountHref} signedIn={signedIn} />
             </div>
           )}
           <BasketLink href={localePath(locale, "/basket")} count={basketCount} />
           <nav aria-label={t("shell.primaryNav")} className="lg:hidden">
-            <SiteMenu />
+            <SiteMenu account={accountHref ? { href: accountHref, signedIn } : undefined} />
           </nav>
         </div>
       </div>

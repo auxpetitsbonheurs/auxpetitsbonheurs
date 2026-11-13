@@ -106,6 +106,20 @@
       "when": 1794583216678,
       "tag": "0016_request_quotes",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794585055663,
+      "tag": "0017_usage_counter",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794585056680,
+      "tag": "0018_reviews",
+      "breakpoints": true
     }
   ]
 }

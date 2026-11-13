@@ -17,6 +17,11 @@ export const AUTH_ACTIONS = {
   changePassword: "admin.changePassword",
   /** Accepting an invitation (S-029): counted per IP, so trying many links is limited too. */
   acceptInvite: "admin.acceptInvite",
+  /** Customer accounts (E-11): counted apart from the admin ones, same RL-auth class. */
+  customerSignIn: "customer.signIn",
+  customerLink: "customer.signInLink",
+  customerReset: "customer.reset",
+  customerSetPassword: "customer.setPassword",
 } as const;
 export type AuthAction = (typeof AUTH_ACTIONS)[keyof typeof AUTH_ACTIONS];
 

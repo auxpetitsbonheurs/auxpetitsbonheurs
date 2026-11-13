@@ -97,7 +97,8 @@ test.describe("laptop header navigation (S-242)", () => {
     await page.goto("/");
 
     await page.keyboard.press("Tab"); // skip link
-    const expected = ["Aux petits bonheurs", ...EN, "Français", /^Basket/];
+    // E-11: the account icon ("Sign in" when signed out) sits between the language switch and the basket (S-242 AC4).
+    const expected = ["Aux petits bonheurs", ...EN, "Français", "Sign in", /^Basket/];
     for (const name of expected) {
       await page.keyboard.press("Tab");
       await expect(page.getByRole("link", { name, exact: typeof name === "string" }).and(page.locator(":focus"))).toHaveCount(1);
@@ -172,8 +173,12 @@ test.describe("phone menu (S-243)", () => {
     expect(box.height).toBe(viewport.height);
     const close = dialog.getByRole("button", { name: "Close menu" });
     await expect(close).toBeFocused();
-    const rows = dialog.getByRole("link");
+    // The 7 site links are the panel's navigation; E-11 adds a Sign in / My account row below it.
+    const rows = dialog.getByRole("navigation").getByRole("link");
     await expect(rows).toHaveText(EN);
+    const account = dialog.getByRole("link", { name: "Sign in" });
+    await expect(account).toBeVisible();
+    expect((await account.boundingBox())!.height).toBeGreaterThanOrEqual(48);
     await expect(rows.nth(2)).toHaveAttribute("aria-current", "page");
     await expect(rows.nth(2)).toHaveCSS("text-decoration-line", "underline");
     const heights = await rows.evaluateAll((els) => els.map((el) => el.getBoundingClientRect()));
@@ -188,7 +193,7 @@ test.describe("phone menu (S-243)", () => {
     }
     await close.focus();
     await page.keyboard.press("Shift+Tab");
-    await expect(rows.last()).toBeFocused();
+    await expect(account).toBeFocused();
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).overflow)).toBe("hidden");
     await expectNoA11yViolations(page);
 
@@ -245,7 +250,8 @@ test.describe("phone menu (S-243)", () => {
     await hydrated(page);
 
     await menuButton(page).click();
-    await expect(panel(page).getByRole("link")).toHaveText(FR);
+    await expect(panel(page).getByRole("navigation").getByRole("link")).toHaveText(FR);
+    await expect(panel(page).getByRole("link", { name: "Se connecter" })).toBeVisible();
     await expectNothingClipped(page);
     await expectNoHorizontalScroll(page);
   });

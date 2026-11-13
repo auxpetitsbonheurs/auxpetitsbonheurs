@@ -3,7 +3,7 @@
 // session with a fixed clock). Implements the same AuthGateway seam as the real adapter.
 // A recovery session (S-026) is a cookie ending in `~recovery`.
 import { randomUUID } from "node:crypto";
-import type { AuthClaims, AuthGateway, PasswordUpdate } from "~/server/auth-gateway.server";
+import type { AuthClaims, AuthGateway, EmailLinkType, LinkUser, PasswordUpdate } from "~/server/auth-gateway.server";
 import { readCookie } from "~/lib/cookies";
 
 export const FAKE_SESSION_COOKIE = "apb_fake_session";
@@ -25,6 +25,41 @@ export class FakeAuth {
   readonly passwordUpdates: { userId: string; password: string }[] = [];
   /** Makes `requestRecovery` and `updatePassword` fail like an unreachable Auth server. */
   failing = false;
+  /** Users who have not opened their confirmation link yet (cannot sign in with a password). */
+  private readonly unconfirmed = new Set<string>();
+  private readonly metadata = new Map<string, Record<string, unknown>>();
+  private readonly linkTokens = new Map<string, { userId: string; type: EmailLinkType }>();
+  /** Sign-ups Auth was asked for (S-206): `resent` when the user already existed unconfirmed. */
+  readonly signUps: { email: string; password: string; metadata: Record<string, string>; redirectTo: string; resent: boolean }[] = [];
+  /** One-time sign-in links Auth was asked to email (S-208); unknown emails are not listed. */
+  readonly signInLinks: { email: string; redirectTo: string }[] = [];
+
+  /** An unconfirmed user, as `signUp` leaves it. */
+  addUnconfirmedUser(email: string, metadata: Record<string, unknown> = {}, id: string = randomUUID()): string {
+    this.addUser(email, randomUUID(), id);
+    this.unconfirmed.add(id);
+    this.metadata.set(id, metadata);
+    return id;
+  }
+
+  isConfirmed(email: string): boolean {
+    const user = this.users.get(email.toLowerCase());
+    return user !== undefined && !this.unconfirmed.has(user.id);
+  }
+
+  /** A one-use emailed link `token_hash` of `type` for `email` (signup, magiclink or recovery). */
+  linkToken(email: string, type: EmailLinkType): string {
+    const user = this.users.get(email.toLowerCase());
+    if (!user) throw new Error(`no fake user ${email}`);
+    const hash = randomUUID().replaceAll("-", "");
+    this.linkTokens.set(hash, { userId: user.id, type });
+    return hash;
+  }
+
+  private emailOf(userId: string): string | undefined {
+    for (const [email, user] of this.users) if (user.id === userId) return email;
+    return undefined;
+  }
 
   addUser(email: string, password: string, id: string = randomUUID()): string {
     this.users.set(email.toLowerCase(), { id, password });
@@ -69,12 +104,15 @@ export class FakeAuth {
       const [userId, ms, kind] = (readCookie(request, FAKE_SESSION_COOKIE) ?? "").split("~");
       if (!userId || !ms) return null;
       const signedInAt = new Date(Number(ms));
-      return kind === "recovery" ? { userId, signedInAt, recoveredAt: signedInAt } : { userId, signedInAt };
+      const email = this.emailOf(userId);
+      const base = kind === "recovery" ? { userId, signedInAt, recoveredAt: signedInAt } : { userId, signedInAt };
+      return email ? { ...base, email } : base;
     };
     const current = () => (claims === undefined ? (claims = fromCookie()) : claims);
     const startSession = (userId: string, recovery: boolean) => {
       const at = signedInNow();
-      claims = recovery ? { userId, signedInAt: at, recoveredAt: at } : { userId, signedInAt: at };
+      const email = this.emailOf(userId);
+      claims = { userId, signedInAt: at, ...(recovery ? { recoveredAt: at } : {}), ...(email ? { email } : {}) };
       const cookie = recovery ? this.recoveryCookie(userId, at) : this.sessionCookie(userId, at);
       pending.push(`${cookie}; ${COOKIE_ATTRIBUTES}; Max-Age=2592000`);
     };
@@ -82,7 +120,7 @@ export class FakeAuth {
       signInWithPassword: async ({ email, password }) => {
         this.attempts.push(email);
         const user = this.users.get(email.toLowerCase());
-        if (!user || user.password !== password) return null;
+        if (!user || user.password !== password || this.unconfirmed.has(user.id)) return null;
         startSession(user.id, false);
         return { userId: user.id };
       },
@@ -132,6 +170,34 @@ export class FakeAuth {
         return { ok: true };
       },
       checkPassword: async ({ email, password }) => this.users.get(email.toLowerCase())?.password === password,
+      signUp: async ({ email, password, metadata, redirectTo }) => {
+        if (this.failing) return false;
+        const key = email.toLowerCase();
+        const existing = this.users.get(key);
+        // Like GoTrue with confirmations on: a confirmed address gets a look-alike answer and no email.
+        if (existing && !this.unconfirmed.has(existing.id)) return true;
+        if (!existing) {
+          const id = randomUUID();
+          this.users.set(key, { id, password });
+          this.unconfirmed.add(id);
+          this.metadata.set(id, metadata);
+        }
+        this.signUps.push({ email: key, password, metadata, redirectTo, resent: existing !== undefined });
+        return true;
+      },
+      requestSignInLink: async (email, redirectTo) => {
+        if (this.failing || !this.users.has(email.toLowerCase())) return false;
+        this.signInLinks.push({ email: email.toLowerCase(), redirectTo });
+        return true;
+      },
+      verifyEmailLink: async (tokenHash, type): Promise<LinkUser | null> => {
+        const link = this.linkTokens.get(tokenHash);
+        if (!link || link.type !== type) return null;
+        this.linkTokens.delete(tokenHash);
+        this.unconfirmed.delete(link.userId);
+        startSession(link.userId, true);
+        return { userId: link.userId, email: this.emailOf(link.userId) ?? "", metadata: this.metadata.get(link.userId) ?? {} };
+      },
     };
   }
 }

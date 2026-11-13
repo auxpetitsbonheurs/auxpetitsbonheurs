@@ -1,6 +1,6 @@
 # E-11: Customer accounts
 
-Status: planned · Milestone: MVP
+Status: in progress · Milestone: MVP
 PRD: FR-034, FR-035, FR-036, FR-037, FR-038 · Specs: docs/specs/features/customer-accounts.md
 Release phase: 5 Notifications and accounts (part 2)
 
@@ -17,18 +17,18 @@ J10: guest "Save my details" then confirm email, sign in, My orders shows prior 
 ## Stories
 | ID | Title | Status | Estimate |
 |---|---|---|---|
-| S-206 | Sign up with email confirmation, then choose a password | ready | 5 |
-| S-207 | Sign in with my password and sign out safely | ready | 5 |
-| S-208 | Sign in with a one-time email link | ready | 3 |
-| S-209 | Reset a forgotten password | ready | 3 |
-| S-210 | Keep my profile and email language up to date | ready | 3 |
+| S-206 | Sign up with email confirmation, then choose a password | review | 5 |
+| S-207 | Sign in with my password and sign out safely | review | 5 |
+| S-208 | Sign in with a one-time email link | review | 3 |
+| S-209 | Reset a forgotten password | review | 3 |
+| S-210 | Keep my profile and email language up to date | review | 3 |
 | S-211 | Save, edit and delete my delivery addresses | ready | 3 |
 | S-212 | Checkout prefills my details and offers my saved addresses | ready | 3 |
-| S-213 | See my current and past orders with their status | ready | 3 |
+| S-213 | See my current and past orders with their status | in-progress | 3 |
 | S-214 | Reorder a past order at today's prices (cut #3) | ready | 5 |
 | S-215 | Offer "Save my details" after a guest order (cut #4) | ready | 3 |
-| S-216 | Earlier guest orders appear only after I confirm my email (cut #4) | ready | 5 |
-| S-217 | Count account usage without tracking anyone | ready | 2 |
+| S-216 | Earlier guest orders appear only after I confirm my email (cut #4) | in-progress | 5 |
+| S-217 | Count account usage without tracking anyone | in-progress | 2 |
 | S-218 | Account screens pass an accessibility and language sweep | ready | 3 |
 | S-219 | Journey J10 works end to end | ready | 3 |
 

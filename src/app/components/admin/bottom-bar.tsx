@@ -15,7 +15,7 @@ const ITEMS: BarItem[] = [
   { key: "orders", href: "/admin/orders?tab=review", icon: ClipboardList },
   { key: "calendar", href: "/admin/calendar", icon: CalendarDays },
   { key: "menu", href: "/admin/menu", icon: CakeSlice },
-  { key: "more", href: "/admin/more", icon: Ellipsis, section: /^\/admin\/(gallery|customers|sales|profile|availability|settings|team)(\/|$)/ },
+  { key: "more", href: "/admin/more", icon: Ellipsis, section: /^\/admin\/(gallery|customers|sales|profile|availability|settings|team|reviews)(\/|$)/ },
 ];
 
 /** "page" on the item's own page, "true" inside its section (a More sub-page), else none. */
@@ -55,7 +55,7 @@ function ReviewDot({ count }: { count: number }) {
  * zoom) so it never covers content. Hidden while the on-screen keyboard or a full-screen
  * sheet is open (app.css, `data-bottom-bar`).
  */
-export function AdminBottomBar({ toReview = 0 }: { toReview?: number }) {
+export function AdminBottomBar({ toReview = 0, reviewsToApprove = 0 }: { toReview?: number; reviewsToApprove?: number }) {
   const { t } = useI18n();
   const { pathname } = useLocation();
   return (
@@ -84,12 +84,15 @@ export function AdminBottomBar({ toReview = 0 }: { toReview?: number }) {
                 <span className="relative">
                   <Icon aria-hidden="true" className="size-6 shrink-0" />
                   {item.key === "orders" && toReview > 0 && <ReviewDot count={toReview} />}
+                  {item.key === "more" && reviewsToApprove > 0 && <ReviewDot count={reviewsToApprove} />}
                 </span>
                 <span data-bar-label="" className="hyphens-auto [overflow-wrap:anywhere]">
                   {t(`admin.nav.${item.key}`)}
                 </span>
                 {/* After the label, so the link reads "Orders, 3 to review". */}
                 {item.key === "orders" && toReview > 0 && <span className="sr-only">{`, ${t("admin.nav.toReview", { count: toReview })}`}</span>}
+                {/* E-14 S-264: "More, 3 reviews to approve" (the real number, also above 9). */}
+                {item.key === "more" && reviewsToApprove > 0 && <span className="sr-only">{`, ${t("admin.reviews.badge", { count: reviewsToApprove })}`}</span>}
               </Link>
             </li>
           );

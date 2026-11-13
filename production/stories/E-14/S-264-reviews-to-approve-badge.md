@@ -1,5 +1,5 @@
 # S-264: Reviews to approve count badge
-Status: ready
+Status: review
 Epic: E-14-customer-reviews
 Spec: docs/specs/features/admin-access-team.md (badges) · Pattern: E-02 S-034 (`badges: { toReview }` in the `admin/layout` loader, contracts.md v0.14)
 Estimate: 2 pts
@@ -27,3 +27,7 @@ As the Owner or an Admin, I want to see how many reviews are waiting for me, so 
 ## Notes
 - Cost: one more indexed count per admin page load; watch against the worker CPU check (T3). Combine with the existing `toReview` count in one query if cheap.
 - Depends on: S-261, S-263, S-034.
+
+## Build notes (2026-11-13)
+- `badges.reviewsToApprove` is read in the same `Promise.all` as `toReview`; More shows the dot ("9+" above 9, the real number in the accessible text) and the More list shows "Reviews (n)" from the frame's data (no extra request).
+- Tests: src/app/routes/site/reviews.test.ts (layout loader), src/tests/e2e/reviews.spec.ts.

@@ -132,3 +132,22 @@ export function recoveryEmail(locale: Locale, link: string): RenderedEmail {
   const text = [BAKERY_NAME, "", parts.heading, "", parts.reason, "", link, "", parts.expiry, parts.ignore].join("\n");
   return { subject: t("email.recovery.subject", locale, { bakery: BAKERY_NAME }), html: layout(locale, parts), text };
 }
+
+/** The customer account emails (E-11): confirm a sign-up, a one-time sign-in link, a password reset. */
+export type CustomerAuthEmail = "signup" | "magiclink" | "customerRecovery";
+
+/** S-206 confirmation, S-208 sign-in link, S-209 reset: why it was sent, the link, 1 hour, ignore it. */
+export function customerAuthEmail(kind: CustomerAuthEmail, locale: Locale, link: string): RenderedEmail {
+  const key = `email.${kind}`;
+  const vars = { bakery: BAKERY_NAME };
+  const parts = {
+    heading: t(`${key}.heading`, locale, vars),
+    reason: t(`${key}.reason`, locale, vars),
+    button: t(`${key}.button`, locale),
+    link,
+    expiry: t("email.recovery.expiry", locale, { count: RECOVERY_LINK_MINUTES / 60 }),
+    ignore: t(`${key}.ignore`, locale),
+  };
+  const text = [BAKERY_NAME, "", parts.heading, "", parts.reason, "", link, "", parts.expiry, parts.ignore].join("\n");
+  return { subject: t(`${key}.subject`, locale, vars), html: layout(locale, parts), text };
+}
