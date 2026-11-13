@@ -149,7 +149,12 @@ describe("validation and access (S-178 AC7, S-179 AC4..AC6)", () => {
     const customer = await insertCustomerAccount(database, session.auth);
     const customerCookie = session.auth.sessionCookie(customer.id, new Date("2026-11-09T08:00:00Z"));
     for (const cookie of [undefined, customerCookie]) {
-      const response = await loader(routeArgs(database, { path: "/admin/sales.csv?range=month", auth: session.auth, cookie, now: NOW }) as never);
+      let response!: Response;
+      try {
+        await loader(routeArgs(database, { path: "/admin/sales.csv?range=month", auth: session.auth, cookie, now: NOW }) as never);
+      } catch (refusal) {
+        response = refusal as Response;
+      }
       expect(response.status).toBe(302);
       expect(response.headers.get("Location")).toBe("/admin/login?next=%2Fadmin%2Fsales.csv%3Frange%3Dmonth");
       expect(response.headers.get("Content-Type") ?? "").not.toContain("text/csv");

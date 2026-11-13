@@ -10,9 +10,10 @@ const ORDERS = 12_000;
 const RANGE = `range=custom&from=${YEAR}-01-01&to=${YEAR}-12-31`;
 
 test.skip(() => test.info().project.name !== "desktop-1280", "one seed of 12k orders is enough");
+// Seeding 12k rows and 20 timed requests outlast the default test budget.
+test.describe.configure({ timeout: 180_000 });
 
 test("12k orders: sales p95 ≤ 500 ms and the year CSV streams completely", async ({ page, db }) => {
-  test.setTimeout(180_000);
   const [customer] = await db<{ id: string }[]>`insert into customer (name, phone) values ('Perf Customer', '+23050000001') returning id`;
   const [product] = await db<{ id: string }[]>`select id from product limit 1`;
   const [counter] = await db<{ value: number }[]>`update counter set value = value + ${ORDERS} where name = 'order_number' returning value`;
@@ -33,13 +34,18 @@ test("12k orders: sales p95 ≤ 500 ms and the year CSV streams completely", asy
   await db`analyze order_item`;
 
   await signIn(page, E2E_ACCOUNTS.owner, "/admin/sales");
-  const timings: number[] = [];
-  for (let i = 0; i < 20; i += 1) {
+  // The Worker's own time for the request (Server-Timing `app`), so a busy test runner's
+  // queueing is not counted; wall clock only if the header is missing. Three warm-up requests.
+  const serverMs = async () => {
     const started = Date.now();
     const response = await page.request.get(`/admin/sales.data?${RANGE}`);
     expect(response.status()).toBe(200);
-    timings.push(Date.now() - started);
-  }
+    const app = /(?:^|,\s*)app;dur=([\d.]+)/.exec(response.headers()["server-timing"] ?? "");
+    return app ? Number(app[1]) : Date.now() - started;
+  };
+  for (let i = 0; i < 3; i += 1) await serverMs();
+  const timings: number[] = [];
+  for (let i = 0; i < 20; i += 1) timings.push(await serverMs());
   timings.sort((a, b) => a - b);
   const p95 = timings[Math.ceil(timings.length * 0.95) - 1]!;
   console.log(`sales loader at ${ORDERS} orders: p50 ${timings[9]} ms, p95 ${p95} ms`);
