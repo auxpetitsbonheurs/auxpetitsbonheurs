@@ -31,7 +31,8 @@ test.describe("S-036 My profile", () => {
     await signIn(page, admin, "/admin/profile");
     await openProfile(page);
     await expect(page.getByText("Push devices: 0")).toBeVisible();
-    await expect(page.getByText("Turning on push on this device is added with notifications")).toBeVisible();
+    // E-10 S-197: the e2e Worker has no VAPID keys, so push is calmly off for everyone.
+    await expect(page.getByText("Push alerts are not switched on for the app yet. Email alerts still reach you.")).toBeVisible();
 
     const details = page.getByRole("region", { name: "Name and language" });
     await details.getByLabel("Name", { exact: true }).fill("Profile Tester 2");

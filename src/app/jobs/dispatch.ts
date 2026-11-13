@@ -3,6 +3,9 @@
 // never throws. Later epics add their jobs (with their own "due" rules) to JOBS.
 import { createRequestDb } from "~/server/db.server";
 import { getEnv } from "~/server/env.server";
+import { pushConfigFromEnv } from "~/server/push/push.server";
+import { eveningReminder } from "./evening-reminder";
+import { pendingAlerts } from "./pending-alerts";
 import { expireQuotes } from "./expire-quotes";
 import { integrationsCheck } from "./integrations";
 import { keepAlive } from "./keep-alive";
@@ -31,6 +34,9 @@ export const JOBS: readonly Job[] = [
   // Notifications (E-10): after the jobs that queue emails, so one tick can send what it queued.
   { name: "retryEmails", run: retryEmails },
   { name: "purgeEmails", run: purgeEmails },
+  // E-10 admin pushes (S-200, S-198): each is idempotent on its own marker or run key.
+  { name: "pendingAlerts", run: pendingAlerts },
+  { name: "eveningReminder", run: eveningReminder },
 ];
 
 /** Error name and message with any URL (it could carry credentials) replaced. */
@@ -62,7 +68,14 @@ export async function dispatch(now: Date, env: object, ctx: Pick<ExecutionContex
   }
   const requestDb = createRequestDb(settings.DATABASE_URL);
   try {
-    const context: JobContext = { now, db: requestDb.db, supabase: { url: settings.SUPABASE_URL, anonKey: settings.SUPABASE_ANON_KEY }, env: settings };
+    const context: JobContext = {
+      now,
+      db: requestDb.db,
+      supabase: { url: settings.SUPABASE_URL, anonKey: settings.SUPABASE_ANON_KEY },
+      env: settings,
+      // VAPID tokens are dated from the tick (S-196); null while the keys are not set.
+      pusher: pushConfigFromEnv(settings, () => now).pusher,
+    };
     const results: JobResult[] = [];
     for (const job of jobs) {
       const result = await runJob(job, context);

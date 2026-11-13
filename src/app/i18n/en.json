@@ -1082,7 +1082,6 @@
       "alertEmail": "Email alerts",
       "alertEmailHint": "An email to {{email}}.",
       "pushDevices": "Push devices: {{count}}",
-      "pushLater": "Turning on push on this device is added with notifications",
       "saveAlerts": "Save alerts",
       "errorSummaryTitle": "Please check the form",
       "errors": {
@@ -1093,7 +1092,28 @@
         "tooLong": "Use 72 characters or fewer.",
         "weak": "Choose another password: this one is too easy to guess or the same as before."
       },
-      "loading": "Loading your profile…"
+      "loading": "Loading your profile…",
+      "pushDeviceTitle": "Push on this device",
+      "pushState": {
+        "checking": "Checking this device…",
+        "serverOff": "Push alerts are not switched on for the app yet. Email alerts still reach you.",
+        "install": "Add to Home Screen first: tap Share, then Add to Home Screen, and open the app from your home screen.",
+        "unsupported": "This browser cannot receive push alerts. Email alerts still reach you.",
+        "blocked": "Notifications are blocked for this app. Allow notifications in settings, then come back here.",
+        "off": "Push is off on this device.",
+        "on": "Push is on for this device."
+      },
+      "enablePush": "Enable push on this device",
+      "enablingPush": "Turning push on…",
+      "disablePush": "Turn off on this device",
+      "disablingPush": "Turning push off…",
+      "pushFailed": "Push could not be turned on. Please try again.",
+      "testPush": "Send test push",
+      "testSending": "Sending…",
+      "testSent_one": "Test sent to {{count}} device. It should arrive within seconds.",
+      "testSent_other": "Test sent to {{count}} devices. They should arrive within seconds.",
+      "testNone": "No device is set up for push yet. Enable push on this device first.",
+      "testFailed": "The test push could not be sent. Please try again."
     },
     "team": {
       "title": "Team",
@@ -1829,6 +1849,52 @@
       "loadFailed": "Today could not be loaded.",
       "retry": "Retry",
       "loading": "Loading today's orders…"
+    },
+    "push": {
+      "new_order": {
+        "title": "New order {{number}}",
+        "body": "From {{name}}. Tap to approve or decline.",
+        "bodyNoName": "Tap to approve or decline."
+      },
+      "new_request": {
+        "title": "New custom request {{number}}",
+        "body": "From {{name}}. A quote is needed.",
+        "bodyNoName": "A quote is needed."
+      },
+      "quote_accepted": {
+        "title": "Quote accepted {{number}}",
+        "body": "{{name}} accepted the quote.",
+        "bodyNoName": "The customer accepted the quote."
+      },
+      "quote_declined": {
+        "title": "Quote declined {{number}}",
+        "body": "{{name}} declined the quote.",
+        "bodyNoName": "The customer declined the quote."
+      },
+      "customer_cancelled": {
+        "title": "Order cancelled {{number}}",
+        "body": "{{name}} cancelled the order.",
+        "bodyNoName": "The customer cancelled the order."
+      },
+      "quote_expired": {
+        "title": "Quote expired {{number}}",
+        "body": "No answer from {{name}}. You may want to follow up.",
+        "bodyNoName": "No answer from the customer. You may want to follow up."
+      },
+      "pending_24h": {
+        "title": "Waiting over 24 h {{number}}",
+        "body": "{{name}} is still waiting for an answer.",
+        "bodyNoName": "The customer is still waiting for an answer."
+      },
+      "evening_reminder": {
+        "title_one": "Tomorrow: {{count}} order",
+        "title_other": "Tomorrow: {{count}} orders",
+        "body": "Tap for tomorrow's prep list."
+      },
+      "test": {
+        "title": "Test push",
+        "body": "Push alerts work on this device."
+      }
     }
   },
   "email": {

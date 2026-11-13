@@ -1082,7 +1082,6 @@
       "alertEmail": "Alertes par e-mail",
       "alertEmailHint": "Un e-mail à {{email}}.",
       "pushDevices": "Appareils push : {{count}}",
-      "pushLater": "L'activation du push sur cet appareil arrive avec les notifications",
       "saveAlerts": "Enregistrer les alertes",
       "errorSummaryTitle": "Veuillez vérifier le formulaire",
       "errors": {
@@ -1093,7 +1092,28 @@
         "tooLong": "72 caractères au maximum.",
         "weak": "Choisissez un autre mot de passe : celui-ci est trop facile à deviner ou identique au précédent."
       },
-      "loading": "Chargement de votre profil…"
+      "loading": "Chargement de votre profil…",
+      "pushDeviceTitle": "Push sur cet appareil",
+      "pushState": {
+        "checking": "Vérification de cet appareil…",
+        "serverOff": "Les alertes push ne sont pas encore activées pour l'application. Les alertes par e-mail vous parviennent toujours.",
+        "install": "Ajoutez d'abord l'app à l'écran d'accueil : touchez Partager, puis Sur l'écran d'accueil, et ouvrez l'app depuis votre écran d'accueil.",
+        "unsupported": "Ce navigateur ne peut pas recevoir d'alertes push. Les alertes par e-mail vous parviennent toujours.",
+        "blocked": "Les notifications sont bloquées pour cette app. Autorisez les notifications dans les réglages, puis revenez ici.",
+        "off": "Le push est désactivé sur cet appareil.",
+        "on": "Le push est activé sur cet appareil."
+      },
+      "enablePush": "Activer le push sur cet appareil",
+      "enablingPush": "Activation du push…",
+      "disablePush": "Désactiver sur cet appareil",
+      "disablingPush": "Désactivation du push…",
+      "pushFailed": "Le push n'a pas pu être activé. Veuillez réessayer.",
+      "testPush": "Envoyer une notification de test",
+      "testSending": "Envoi…",
+      "testSent_one": "Test envoyé à {{count}} appareil. Il devrait arriver dans quelques secondes.",
+      "testSent_other": "Test envoyé à {{count}} appareils. Ils devraient arriver dans quelques secondes.",
+      "testNone": "Aucun appareil n'est encore configuré pour le push. Activez d'abord le push sur cet appareil.",
+      "testFailed": "La notification de test n'a pas pu être envoyée. Veuillez réessayer."
     },
     "team": {
       "title": "Équipe",
@@ -1829,6 +1849,52 @@
       "loadFailed": "La page Aujourd'hui n'a pas pu être chargée.",
       "retry": "Réessayer",
       "loading": "Chargement des commandes du jour…"
+    },
+    "push": {
+      "new_order": {
+        "title": "Nouvelle commande {{number}}",
+        "body": "De {{name}}. Touchez pour accepter ou refuser.",
+        "bodyNoName": "Touchez pour accepter ou refuser."
+      },
+      "new_request": {
+        "title": "Nouvelle demande sur mesure {{number}}",
+        "body": "De {{name}}. Un devis est à faire.",
+        "bodyNoName": "Un devis est à faire."
+      },
+      "quote_accepted": {
+        "title": "Devis accepté {{number}}",
+        "body": "{{name}} a accepté le devis.",
+        "bodyNoName": "Le client a accepté le devis."
+      },
+      "quote_declined": {
+        "title": "Devis refusé {{number}}",
+        "body": "{{name}} a refusé le devis.",
+        "bodyNoName": "Le client a refusé le devis."
+      },
+      "customer_cancelled": {
+        "title": "Commande annulée {{number}}",
+        "body": "{{name}} a annulé la commande.",
+        "bodyNoName": "Le client a annulé la commande."
+      },
+      "quote_expired": {
+        "title": "Devis expiré {{number}}",
+        "body": "Pas de réponse de {{name}}. Vous pouvez relancer.",
+        "bodyNoName": "Pas de réponse du client. Vous pouvez relancer."
+      },
+      "pending_24h": {
+        "title": "En attente depuis plus de 24 h {{number}}",
+        "body": "{{name}} attend toujours une réponse.",
+        "bodyNoName": "Le client attend toujours une réponse."
+      },
+      "evening_reminder": {
+        "title_one": "Demain : {{count}} commande",
+        "title_other": "Demain : {{count}} commandes",
+        "body": "Touchez pour la liste de préparation de demain."
+      },
+      "test": {
+        "title": "Test de notification",
+        "body": "Les alertes push fonctionnent sur cet appareil."
+      }
     }
   },
   "email": {

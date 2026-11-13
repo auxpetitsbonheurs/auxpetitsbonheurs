@@ -23,6 +23,7 @@ import { findGalleryAttachment } from "~/server/repos/custom-requests.server";
 import { getSiteSettings } from "~/server/repos/settings.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { noStore } from "~/server/response-headers.server";
+import { deferOrderAlert } from "~/server/notify/admin-alerts.server";
 import { type SubmitRequestResult, submitCustomRequest } from "~/server/services/custom-request.server";
 import { getSitePage } from "~/server/services/site-page.server";
 import { timed } from "~/server/server-timing.server";
@@ -141,6 +142,8 @@ export async function action({ request, url, context }: Route.ActionArgs) {
     }),
   );
   if (!result.ok) return refusal(result, echo(form), locale);
+  // Admin push after the response (S-195 AC2); the email rows were queued with the request.
+  if (!result.replayed) deferOrderAlert(context, "new_request", { orderId: result.orderId });
   // The request's own language: a replay from the other language returns the original redirect.
   return redirect(localePath(result.locale, `/order/${result.trackingToken}/confirmed`));
 }
