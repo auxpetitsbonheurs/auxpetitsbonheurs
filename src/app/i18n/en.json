@@ -2503,5 +2503,70 @@
     "tooMany": "Too many changes, wait {{count}} min.",
     "forbidden": "Reviews are for customer accounts. Sign in with your customer account.",
     "errorSummaryTitle": "Please check these fields"
+  },
+  "privacyLink": {
+    "text": "How we use your details:",
+    "link": "privacy note",
+    "footer": "Privacy"
+  },
+  "privacy": {
+    "title": "Privacy note",
+    "metaDescription": "What Aux petits bonheurs collects when you order, why, who sees it, how long it is kept and how to ask for it to be deleted.",
+    "intro": "We are a small home bakery. We only ask for what we need to bake, deliver and talk to you about your order, and we never sell or share it for advertising.",
+    "updated": "Last updated {{date}}",
+    "toConfirm": "to be confirmed",
+    "who": {
+      "heading": "Who is responsible",
+      "body": "Aux petits bonheurs decides how your details are used (the data controller).",
+      "name": "Business name: {{value}}",
+      "address": "Address: {{value}}",
+      "brn": "Business Registration Number: {{value}}"
+    },
+    "collect": {
+      "heading": "What we collect and why",
+      "order": "When you order: your name, phone, email, delivery address and landmark (for delivery), your note and what you ordered. We use them to prepare and deliver the order and to contact you about it.",
+      "request": "When you ask for a custom cake: the same details, the occasion, your ideas and up to 5 photos. We use them to prepare a quote and the cake.",
+      "account": "If you create an account: your name, email, phone and saved addresses, so you do not have to type them again and can see your orders. Your password is handled by our sign-in provider; we never see it.",
+      "review": "If you write a review: your rating, comment and first name with the first letter of your last name, shown on the site once the bakery approves it.",
+      "technical": "To stop abuse: a scrambled (hashed) form of your internet address and email, kept one day. Our server logs contain no names, emails, phone numbers or order links."
+    },
+    "see": {
+      "heading": "Who sees your details",
+      "body": "Only the bakery team, signed in to the bakery's admin app. Other customers never see them. These services store or carry them for us, and only for this purpose:",
+      "supabase": "Supabase: database, sign-in and photo storage (hosted in {{region}}).",
+      "cloudflare": "Cloudflare: the website and the anti-robot check on forms.",
+      "resend": "Resend: sending our emails.",
+      "google": "Google Drive: the bakery's weekly backups.",
+      "abroad": "Some of these services are outside Mauritius."
+    },
+    "cookies": {
+      "heading": "Cookies",
+      "body": "We use only the cookies the site needs to work: your basket, your sign-in, your language, a hidden promotion banner and a short-lived note on the order confirmation page. The browser also keeps a copy of the menu so pages open faster. There are no advertising or tracking cookies, so there is nothing to accept."
+    },
+    "links": {
+      "heading": "Your order link",
+      "body": "Our emails contain a private link to your order page. Anyone with that link can see the order and use its buttons (for example cancel it), so please do not forward the email."
+    },
+    "keep": {
+      "heading": "How long we keep it",
+      "proposed": "These periods are the bakery's proposal and are still to be confirmed.",
+      "orders": "Orders and their contact details: {{years}} years after the order date (for the accounts), then the personal details are removed.",
+      "account": "Your account: until you ask us to delete it.",
+      "photos": "Custom cake photos: {{days}} days after the request is closed. Photos you uploaded but did not send: {{hours}} hours.",
+      "emails": "Email contents: {{days}} days.",
+      "reviews": "Reviews: until you delete yours or ask us to.",
+      "backups": "Backups: the last {{weeks}} weekly copies."
+    },
+    "rights": {
+      "heading": "Your choices",
+      "body": "You can ask to see the details we hold about you, to correct them or to delete them. Send us a message: the bakery answers within {{days}} days. When we delete your details, the amounts of past orders stay in our sales figures, with no name attached.",
+      "whatsapp": "WhatsApp {{value}}",
+      "email": "Email {{value}}"
+    },
+    "law": {
+      "heading": "The law",
+      "body": "We follow the Mauritius Data Protection Act 2017 ({{status}}). If you are not happy with our answer you can contact the Data Protection Office of Mauritius.",
+      "confirmed": "confirmed by the bakery"
+    }
   }
 }

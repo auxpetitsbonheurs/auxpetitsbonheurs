@@ -124,6 +124,11 @@ function FooterNav({ showReviews }: { showReviews: boolean }) {
             </Link>
           </li>
         ))}
+        <li>
+          <Link to={localePath(locale, "/privacy")} className={linkClass}>
+            {t("privacyLink.footer")}
+          </Link>
+        </li>
         {showReviews && (
           <li>
             <Link to={localePath(locale, "/reviews")} className={cn(linkClass, "min-w-11 justify-center")}>

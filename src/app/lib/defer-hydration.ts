@@ -16,7 +16,7 @@ import { LOAD_CAP_MS } from "./after-load";
 export const DEFER_MARKER = "data-apb-deferred";
 
 /** Route ids (app/routes.ts) of the pages that read and browse: safe to hydrate late. */
-const DEFERRED_PAGE = /^(home|menu|menu-links|our-story|workshops|gallery|product|reviews|not-found)-(en|fr)$/;
+const DEFERRED_PAGE = /^(home|menu|menu-links|our-story|workshops|gallery|product|reviews|privacy|not-found)-(en|fr)$/;
 const FRAME_IDS = new Set(["root", "site-en", "site-fr"]);
 
 /** True when every matched route is the root, the customer frame or one of the browsing pages. */
