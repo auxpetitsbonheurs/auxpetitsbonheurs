@@ -236,7 +236,11 @@
     "removed": "Removed from your basket: {{name}}.",
     "undo": "Undo",
     "undoRemove": "Undo removing {{name}}",
-    "restored": "Back in your basket: {{name}}."
+    "restored": "Back in your basket: {{name}}.",
+    "optionText": "{{group}}: {{text}}",
+    "optionQuantity": "{{name}} × {{count}}",
+    "cakeMessage": "Message on cake: {{text}}",
+    "optionsChanged": "The choices for this item have changed. It will not be part of your order. Remove it, then choose again from the menu."
   },
   "order": {
     "confirmed": {
@@ -1423,5 +1427,50 @@
     "goneTitle": "This product is no longer available",
     "goneBody": "It may be sold out for the season or taken off the menu. Have a look at what we bake now.",
     "backToMenu": "Browse our collection"
+  },
+  "productOptions": {
+    "required": "Required",
+    "optional": "Optional",
+    "chooseOne": "Choose a {{group}}",
+    "chooseSome": "Choose at least one: {{group}}",
+    "chooseHowMany": "Choose how many: {{group}}",
+    "fillIn": "Please fill in: {{group}}",
+    "priceUp": "+{{price}}",
+    "priceDown": "−{{price}}",
+    "eachUnit": "{{price}} each",
+    "price": "Price",
+    "priceAnnounce": "Price {{price}}",
+    "totalFor": "{{price}} for {{count}}",
+    "quantity": "Quantity",
+    "quantityOf": "Quantity of {{name}}",
+    "increase": "Increase quantity of {{name}}",
+    "decrease": "Decrease quantity of {{name}}",
+    "decreaseGroup": "Fewer: {{name}}",
+    "increaseGroup": "More: {{name}}",
+    "atMinimum": "{{min}} is the smallest quantity.",
+    "atMaximum": "{{max}} is the largest quantity.",
+    "minimumNote": "Minimum order: {{min}}",
+    "message": "Message on the cake",
+    "messageHint": "Optional. Up to {{max}} characters, written on the cake as you type it.",
+    "textHint": "Up to {{max}} characters.",
+    "counter": "{{count}} / {{max}}",
+    "charactersLeft_one": "{{count}} character left",
+    "charactersLeft_other": "{{count}} characters left",
+    "limitReached": "Limit reached: {{max}} characters",
+    "pasteTooLong": "That text is longer than {{max}} characters, so it was not added. Shorten it, then paste or type it again.",
+    "errors": {
+      "quantity": "Choose a quantity from 1 to 50.",
+      "belowMin": "The smallest quantity for this item is {{min}}.",
+      "tooLong": "Too long: up to {{max}} characters.",
+      "changed": "This choice is no longer offered. Please choose again.",
+      "form": "Please check your choices."
+    },
+    "none": "None",
+    "fromPrice": "From {{price}}",
+    "soldOutTitle": "Sold out this week",
+    "soldOutHint": "We cannot take orders for it right now. Message us on WhatsApp to ask when it is back.",
+    "soldOutHintNoWhatsapp": "We cannot take orders for it right now. Please check again soon.",
+    "soldOutWhatsapp": "Ask on WhatsApp",
+    "soldOutMessage": "Hello! Is the {{name}} available again?"
   }
 }
