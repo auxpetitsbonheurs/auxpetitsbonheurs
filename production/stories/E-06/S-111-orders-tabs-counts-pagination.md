@@ -1,5 +1,5 @@
 # S-111: Orders list with tabs, counts and Load more
-Status: ready
+Status: done
 Epic: E-06-order-management
 Spec: docs/specs/features/admin-orders.md#flow
 Estimate: 3 pts
@@ -31,3 +31,9 @@ As an admin on my phone, I want orders grouped in tabs by what needs doing, so t
 ## Notes
 - Loader p95 <= 400 ms at ~12k orders/year: index (status, fulfil_on) and cursor pagination; postgres-specialist confirms the index.
 - Depends on E-01 (admin shell, orders table), E-02 (roles). R9 expected.
+
+## Implementation notes (2026-11-13)
+- Adjusted (2026-11-13, Juice payment): tabs are To review, Payment (the payment agent's worklists; awaiting_payment lives there), Upcoming, Completed, Closed; Payment also shows a dot when it has orders.
+- AC8 adjusted: tabs are links in a `nav` with `aria-current="page"` (each tab is its own address, works before JavaScript, back button), not an ARIA tablist with arrow keys.
+- AC4: an invalid cursor or unknown tab is VALIDATION_FAILED (400, Alert with a way back); no tab redirects to To review. Load more appends in place with JavaScript and is a plain link without it.
+- Tests: `app/server/repos/admin-order-list.server.test.ts`, `app/routes/admin/orders.test.ts`, `orders-view.test.tsx`, `app/domain/order-tabs.test.ts`, `tests/e2e/admin-orders-list.spec.ts`.

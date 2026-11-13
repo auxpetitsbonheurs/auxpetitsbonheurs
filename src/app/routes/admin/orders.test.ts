@@ -33,11 +33,66 @@ async function caught(run: () => unknown): Promise<Response> {
 }
 
 /** An order still on the approval path (placed before Juice payment, 2026-11-13). */
+/** The status of a thrown `data()` (VALIDATION_FAILED) or Response. */
+async function caughtStatus(run: () => unknown): Promise<number> {
+  try {
+    await run();
+  } catch (error) {
+    return (error as { init?: { status: number }; status?: number }).init?.status ?? (error as Response).status;
+  }
+  throw new Error("expected a thrown response");
+}
+
 async function placePending(options: Parameters<typeof placeTestOrder>[1] = {}) {
   const placed = await placeTestOrder(database, options);
   await database.client.query("update orders set status = 'pending_approval' where tracking_token = $1", [placed.token]);
   return placed;
 }
+
+describe("list tabs, counts, search and filters through the loader (S-111, S-112)", () => {
+  async function placedIn(status: string, overrides: Record<string, string> = {}) {
+    const placed = await placeTestOrder(database, { overrides });
+    await database.client.query("update orders set status = $2 where tracking_token = $1", [placed.token, status]);
+  }
+
+  test("Upcoming lists its orders with every tab's count (S-111 AC1, AC2)", async () => {
+    const session = await signedInAdmin(database);
+    await placedIn("approved", { "contact.name": "Up Coming" });
+    await placedIn("pending_approval");
+    await placedIn("completed");
+
+    const page = await loader(routeArgs(database, { path: "/admin/orders?tab=upcoming", auth: session.auth, cookie: session.cookie }) as never);
+
+    expect(page.tab).toBe("upcoming");
+    expect(page.data.map((o) => o.contactName)).toEqual(["Up Coming"]);
+    expect(page.counts).toEqual({ review: 1, payment: 0, upcoming: 1, completed: 1, closed: 0 });
+  });
+
+  test("filters apply; a date range with to before from is a field problem and the list is unchanged (S-112 AC3, AC4)", async () => {
+    const session = await signedInAdmin(database);
+    await placedIn("approved", { "contact.name": "Pick Up" });
+    const load = (query: string) => loader(routeArgs(database, { path: `/admin/orders?tab=upcoming&${query}`, auth: session.auth, cookie: session.cookie }) as never);
+
+    expect((await load("fulfilment=delivery")).data).toEqual([]);
+    expect((await load("fulfilment=pickup&paid=false&date=2026-11-12")).data).toHaveLength(1);
+    const swapped = await load("from=2026-11-20&to=2026-11-01");
+    expect(swapped.problems).toEqual({ to: "toBeforeFrom" });
+    expect(swapped.filters).toMatchObject({ from: null, to: null });
+    expect(swapped.data).toHaveLength(1);
+  });
+
+  test("an empty query is the tab default; over 80 characters is a field problem, kept as typed (S-112 AC6)", async () => {
+    const session = await signedInAdmin(database);
+    await placedIn("approved");
+    const load = (q: string) => loader(routeArgs(database, { path: `/admin/orders?tab=upcoming&q=${encodeURIComponent(q)}`, auth: session.auth, cookie: session.cookie }) as never);
+
+    expect((await load("   ")).data).toHaveLength(1);
+    const long = await load("x".repeat(81));
+    expect(long.problems).toEqual({ q: "tooLong" });
+    expect(long.typed).toBe("x".repeat(81));
+    expect(long.data).toHaveLength(1);
+  });
+});
 
 describe("orders to review (S-017 AC1)", () => {
   test("lists pending orders oldest first (the longest wait first) with number, name, date, window, total and source", async () => {
@@ -82,12 +137,13 @@ describe("orders to review (S-017 AC1)", () => {
     expect(second.nextCursor).toBeNull();
   }, 120_000);
 
-  test("limit is capped at 100 and a broken cursor starts from the top", async () => {
+  test("limit is capped at 100; a broken cursor is VALIDATION_FAILED (S-111 AC4)", async () => {
     const session = await signedInAdmin(database);
     await placePending();
     const args = (path: string) => routeArgs(database, { path, auth: session.auth, cookie: session.cookie }) as never;
 
-    expect((await loader(args("/admin/orders?tab=review&cursor=%3Cscript%3E"))).data).toHaveLength(1);
+    expect(await caughtStatus(() => loader(args("/admin/orders?tab=review&cursor=%3Cscript%3E")))).toBe(400);
+    expect(await caughtStatus(() => loader(args("/admin/orders?tab=review&cursor=bjo0Mg")))).toBe(400);
     expect((await loader(args("/admin/orders?tab=review&limit=1000"))).limit).toBe(100);
     expect((await loader(args("/admin/orders?tab=review&limit=-3"))).limit).toBe(30);
   });
@@ -100,13 +156,13 @@ describe("orders to review (S-017 AC1)", () => {
     expect(page).toMatchObject({ data: [], nextCursor: null });
   });
 
-  test("an unknown or missing tab goes to the review tab", async () => {
+  test("no tab goes to the review tab; an unknown tab is VALIDATION_FAILED (S-111 AC4)", async () => {
     const session = await signedInAdmin(database);
+    const args = (path: string) => routeArgs(database, { path, auth: session.auth, cookie: session.cookie }) as never;
 
-    for (const path of ["/admin/orders", "/admin/orders?tab=upcoming"]) {
-      const response = await caught(() => loader(routeArgs(database, { path, auth: session.auth, cookie: session.cookie }) as never));
-      expect(response.headers.get("Location")).toBe("/admin/orders?tab=review");
-    }
+    const response = await caught(() => loader(args("/admin/orders")));
+    expect(response.headers.get("Location")).toBe("/admin/orders?tab=review");
+    expect(await caughtStatus(() => loader(args("/admin/orders?tab=everything")))).toBe(400);
   });
 });
 

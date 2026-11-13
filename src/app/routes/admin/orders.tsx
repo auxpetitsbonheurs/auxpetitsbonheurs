@@ -1,26 +1,29 @@
-import { redirect } from "react-router";
-import { StatusBadge } from "~/components/order/status-badge";
+import { data, isRouteErrorResponse, redirect, useLocation } from "react-router";
+import { OrderList } from "~/components/admin/orders/order-list";
+import { PaymentLists, PaymentMissing } from "~/components/admin/orders/payment-lists";
+import { SearchAndFilters } from "~/components/admin/orders/search-filters";
+import { OrdersTabs } from "~/components/admin/orders/tabs-nav";
+import { listLinkClass } from "~/components/admin/orders/types";
 import { Alert } from "~/components/ui/alert";
 import { formatOrderNumber } from "~/domain/order-number";
+import { type ListTab, isOrderTab } from "~/domain/order-tabs";
 import { paymentDetailsMissing, timeLeft } from "~/domain/payment";
 import { formatDayLabel } from "~/domain/time";
 import { t as translate } from "~/i18n/catalog.server";
 import { localized } from "~/i18n/localized";
 import { useI18n } from "~/i18n/react";
-import { type Locale, formatRupees } from "~/lib/locale";
-import { cn } from "~/lib/utils";
+import type { Locale } from "~/lib/locale";
 import { requireAdmin } from "~/server/auth.server";
 import { clockContext } from "~/server/clock.server";
-import { decodeCursor, encodeCursor, pageLimit } from "~/server/contracts/admin";
-import { requestDbContext } from "~/server/db.server";
-import { type AdminOrderItem, type AdminOrderRow, type PaymentOrderRow, itemsOfOrders, listPaymentOrders, listReviewOrders } from "~/server/repos/admin-orders.server";
+import { pageLimit } from "~/server/contracts/admin";
+import { NO_FILTERS, decodeListCursor, encodeListCursor, parseListFilters } from "~/server/contracts/orders-list";
+import { type Executor, requestDbContext } from "~/server/db.server";
+import { countTabs, cursorAfter, listTabOrders } from "~/server/repos/admin-order-list.server";
+import { type AdminOrderItem, type AdminOrderRow, type PaymentOrderRow, itemsOfOrders, listPaymentOrders } from "~/server/repos/admin-orders.server";
 import { getCheckoutSettings, readPaymentSettings } from "~/server/repos/settings.server";
 import type { Route } from "./+types/orders";
 
 const REVIEW_PATH = "/admin/orders?tab=review";
-const PAYMENT_PATH = "/admin/orders?tab=payment";
-const TABS = ["review", "payment"] as const;
-type Tab = (typeof TABS)[number];
 
 /** "1 × Chocolate cake", first two items, then "+n more" (admin-orders "Today" row rule). */
 function itemsPreview(items: AdminOrderItem[] = [], locale: Locale): string[] {
@@ -55,217 +58,103 @@ function rowView<T extends AdminOrderRow>({ numberPrefix, ...row }: T, view: Vie
   };
 }
 
-async function viewContext(db: Parameters<typeof itemsOfOrders>[0], rows: AdminOrderRow[], locale: Locale): Promise<ViewContext> {
+async function viewContext(db: Executor, rows: AdminOrderRow[], locale: Locale): Promise<ViewContext> {
   const items = await itemsOfOrders(db, rows.map((row) => row.id));
   // Settings only for a row without a stored prefix.
   const prefix = rows.some((row) => row.numberPrefix === null) ? (await getCheckoutSettings(db as never)).orderNumberPrefix : "";
   return { locale, prefix, items };
 }
 
+/** The Payment tab's worklists (S-279), as built by the payment work. */
+async function paymentTab(db: Executor, now: Date, locale: Locale) {
+  const lists = await listPaymentOrders(db, now);
+  const view = await viewContext(db, [...lists.awaiting, ...lists.refunds, ...lists.cancelled], locale);
+  const shown = ({ createdAt: _createdAt, ...row }: PaymentOrderRow) => rowView(row, view);
+  return {
+    awaiting: lists.awaiting.map((row) => ({ ...shown(row), ...timeLeftLabel(row.createdAt, now, locale) })),
+    refunds: lists.refunds.map(shown),
+    cancelled: lists.cancelled.map(shown),
+  };
+}
+
+const invalid = (locale: Locale) => data({ ok: false as const, error: { code: "VALIDATION_FAILED", message: translate("admin.orders.badAddress", locale) } }, { status: 400 });
+
 /**
- * `admin/orders` loader: tab `review` (pending_approval, quote_needed, oldest first, 30 per page
- * with a cursor) or tab `payment` (S-279: awaiting payment with the time left, refunds to send,
- * unpaid cancellations of the last 7 days). Both warn while the Juice details are missing
- * (S-277 AC5). Search, filters and the other tabs are E-06.
+ * `admin/orders` loader (contracts.md, S-111, S-112): `tab` = review | payment | upcoming |
+ * completed | closed, plus `counts` for every tab. List tabs take `q`, `fulfilment`, `paid`,
+ * `from`/`to` (or `date`), `cursor`, `limit` (≤ 100) and answer `{ data, nextCursor, filters,
+ * problems }`; a bad filter is reported on its field and left out. No tab redirects to To review;
+ * an unknown tab or a bad cursor is VALIDATION_FAILED (400).
  */
 export async function loader(args: Route.LoaderArgs) {
   const me = await requireAdmin(args);
   const search = args.url.searchParams;
   const tab = search.get("tab");
-  if (!TABS.includes(tab as Tab)) throw redirect(REVIEW_PATH);
+  if (!tab) throw redirect(REVIEW_PATH);
+  if (!isOrderTab(tab)) throw invalid(me.locale);
+  const cursor = decodeListCursor(search.get("cursor"));
+  if (cursor === "invalid") throw invalid(me.locale);
   const db = args.context.get(requestDbContext).db;
-  const now = args.context.get(clockContext).now();
-  const common = {
-    title: translate("admin.orders.metaTitle", me.locale),
-    paymentMissing: paymentDetailsMissing(await readPaymentSettings(db)),
-    canEditSettings: me.role === "owner",
-  };
+  const { filters, problems } = tab === "payment" ? { filters: NO_FILTERS, problems: {} } : parseListFilters(search);
   const limit = pageLimit(search.get("limit"));
+  const [counts, paymentSettings] = await Promise.all([countTabs(db), readPaymentSettings(db)]);
+  const common = {
+    title: translate("admin.orders.listTitle", me.locale),
+    counts,
+    paymentMissing: paymentDetailsMissing(paymentSettings),
+    canEditSettings: me.role === "owner",
+    filters,
+    problems,
+    typed: (search.get("q") ?? "").slice(0, 200),
+  };
   if (tab === "payment") {
-    const lists = await listPaymentOrders(db, now);
-    const all = [...lists.awaiting, ...lists.refunds, ...lists.cancelled];
-    const view = await viewContext(db, all, me.locale);
-    const shown = ({ createdAt: _createdAt, ...row }: PaymentOrderRow) => rowView(row, view);
-    const payment = {
-      awaiting: lists.awaiting.map((row) => ({ ...shown(row), ...timeLeftLabel(row.createdAt, now, me.locale) })),
-      refunds: lists.refunds.map(shown),
-      cancelled: lists.cancelled.map(shown),
-    };
-    return { ...common, tab: "payment" as const, data: [], nextCursor: null, limit, payment };
+    return { ...common, tab, data: [], nextCursor: null, limit, payment: await paymentTab(db, args.context.get(clockContext).now(), me.locale) };
   }
-  const { rows, more } = await listReviewOrders(db, { after: decodeCursor(search.get("cursor")), limit });
+  const { rows, more } = await listTabOrders(db, { tab, filters, after: cursor, limit });
   const view = await viewContext(db, rows, me.locale);
   const last = rows.at(-1);
-  return { ...common, tab: "review" as const, data: rows.map((row) => rowView(row, view)), nextCursor: more && last ? encodeCursor(last.number) : null, limit, payment: null };
+  return { ...common, tab, data: rows.map((row) => rowView(row, view)), nextCursor: more && last ? encodeListCursor(cursorAfter(tab, last)) : null, limit, payment: null };
 }
 
 export function meta({ loaderData }: Route.MetaArgs) {
   return [{ title: `${loaderData?.title ?? ""} | Aux petits bonheurs` }, { name: "robots", content: "noindex, nofollow" }];
 }
 
-type LoaderData = Route.ComponentProps["loaderData"];
-type OrderRowView = LoaderData["data"][number];
-type PaymentRowView = NonNullable<LoaderData["payment"]>["refunds"][number] & { timeLeft?: string; overdue?: boolean };
-
-function Fact({ term, children }: { term: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-wrap gap-x-2">
-      <dt className="font-semibold">{term}:</dt>
-      <dd className="min-w-0 wrap-anywhere">{children}</dd>
-    </div>
-  );
-}
-
-const linkClass = "inline-flex min-h-11 items-center font-semibold link";
-
-function OrderCard({ order, badge, level = 2 }: { order: OrderRowView | PaymentRowView; badge?: React.ReactNode; level?: 2 | 3 }) {
-  const { t, locale } = useI18n();
-  const Heading = level === 3 ? "h3" : "h2";
-  const windowText = t("checkout.windowLabel", { label: localized(order.window.label, locale), start: order.window.start, end: order.window.end });
-  return (
-    <li className="rounded-card border border-border bg-card p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Heading className="text-xl">
-          <a href={`/admin/orders/${order.id}`} className={linkClass}>
-            {t("admin.orders.orderLink", { number: order.number })}
-          </a>
-        </Heading>
-        {badge ?? <StatusBadge status={order.status} />}
-      </div>
-      <dl className="mt-2 grid gap-1">
-        <Fact term={t("admin.orders.customer")}>{order.contactName}</Fact>
-        <Fact term={t("admin.orders.date")}>{order.dateLabel}</Fact>
-        <Fact term={t("admin.orders.time")}>{windowText}</Fact>
-        <Fact term={t("admin.orders.items")}>{order.itemsPreview.join(", ")}</Fact>
-        <Fact term={t("admin.orders.total")}>
-          <span className="whitespace-nowrap tabular-nums">{formatRupees(order.totalRs)}</span>
-        </Fact>
-        <Fact term={t("admin.orders.source")}>{t(`admin.orders.sourceName.${order.source}`)}</Fact>
-      </dl>
-    </li>
-  );
-}
-
-/** Time-left badge (S-279 AC1): words always, the warning tone once overdue. */
-function TimeLeftBadge({ text, overdue }: { text: string; overdue: boolean }) {
-  return (
-    <span className={cn("inline-flex min-h-6 items-center rounded-full border-2 bg-background px-3 py-0.5 text-sm font-semibold tabular-nums", overdue ? "border-destructive" : "border-warning")}>
-      {text}
-    </span>
-  );
-}
-
-function PaymentMissing({ canEditSettings }: { canEditSettings: boolean }) {
+export default function AdminOrders({ loaderData }: Route.ComponentProps) {
   const { t } = useI18n();
-  return (
-    <Alert tone="warning" title={t("admin.payment.missingTitle")} className="mt-6" data-testid="payment-missing">
-      <p>{t("admin.payment.missingBody")}</p>
-      {canEditSettings ? (
-        <a href="/admin/settings#payment-title" className={linkClass}>
-          {t("admin.payment.missingLink")}
-        </a>
-      ) : (
-        <p className="mt-1">{t("admin.payment.missingAdmin")}</p>
-      )}
-    </Alert>
-  );
-}
-
-function Tabs({ tab }: { tab: Tab }) {
-  const { t } = useI18n();
-  const item = (key: Tab, href: string, label: string) => (
-    <li>
-      <a
-        href={href}
-        aria-current={tab === key ? "page" : undefined}
-        className={cn("inline-flex min-h-11 items-center rounded-md border-2 px-4 font-semibold", tab === key ? "border-primary bg-primary text-primary-foreground" : "border-input bg-card")}
-      >
-        {label}
-      </a>
-    </li>
-  );
-  return (
-    <nav aria-label={t("admin.orders.tabsLabel")} className="mt-4">
-      <ul className="flex flex-wrap gap-2">
-        {item("review", REVIEW_PATH, t("admin.orders.tabReview"))}
-        {item("payment", PAYMENT_PATH, t("admin.orders.tabPayment"))}
-      </ul>
-    </nav>
-  );
-}
-
-function PaymentLists({ payment }: { payment: NonNullable<LoaderData["payment"]> }) {
-  const { t } = useI18n();
+  const { tab, counts, payment, paymentMissing, canEditSettings, filters, problems, typed, data: rows, nextCursor } = loaderData;
+  const listTab = tab as ListTab;
   return (
     <>
-      <section aria-labelledby="awaiting-heading" className="mt-6">
-        <h2 id="awaiting-heading" className="text-h2">
-          {t("admin.orders.payment.awaitingTitle")}
-        </h2>
-        {payment.awaiting.length === 0 ? (
-          <p className="mt-3 text-lg">{t("admin.orders.payment.awaitingEmpty")}</p>
-        ) : (
-          <ul className="mt-3 grid gap-4" aria-labelledby="awaiting-heading">
-            {payment.awaiting.map((order) => (
-              <OrderCard key={order.id} level={3} order={order} badge={<TimeLeftBadge text={order.timeLeft} overdue={order.overdue} />} />
-            ))}
-          </ul>
-        )}
-      </section>
-      {payment.refunds.length > 0 && (
-        <section aria-labelledby="refunds-heading" className="mt-8">
-          <h2 id="refunds-heading" className="text-h2">
-            {t("admin.orders.payment.refundsTitle")}
-          </h2>
-          <ul className="mt-3 grid gap-4" aria-labelledby="refunds-heading">
-            {payment.refunds.map((order) => (
-              <OrderCard key={order.id} level={3} order={order} badge={<TimeLeftBadge text={t("admin.orders.payment.refundLine", { amount: formatRupees(order.refundDueRs ?? 0) })} overdue />} />
-            ))}
-          </ul>
-        </section>
-      )}
-      {payment.cancelled.length > 0 && (
-        <section aria-labelledby="cancelled-heading" className="mt-8">
-          <h2 id="cancelled-heading" className="text-h2">
-            {t("admin.orders.payment.cancelledTitle")}
-          </h2>
-          <ul className="mt-3 grid gap-4" aria-labelledby="cancelled-heading">
-            {payment.cancelled.map((order) => (
-              <OrderCard key={order.id} level={3} order={order} badge={<TimeLeftBadge text={t("admin.payment.cancelledUnpaid")} overdue />} />
-            ))}
-          </ul>
-        </section>
+      <h1>{t("admin.orders.listTitle")}</h1>
+      <OrdersTabs tab={tab} counts={counts} />
+      {paymentMissing && <PaymentMissing canEditSettings={canEditSettings} />}
+      {payment ? (
+        <PaymentLists payment={payment} />
+      ) : (
+        <>
+          <SearchAndFilters tab={listTab} filters={filters} problems={problems} typed={typed} />
+          <OrderList key={`${tab}:${JSON.stringify(filters)}:${rows[0]?.id ?? ""}`} tab={listTab} filters={filters} first={{ data: rows, nextCursor }} />
+        </>
       )}
     </>
   );
 }
 
-export default function AdminOrders({ loaderData }: Route.ComponentProps) {
+/** List failed (S-111 AC7): an Alert with Retry; a bad address (400) offers the default tab. */
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   const { t } = useI18n();
-  const { data, nextCursor, tab, payment, paymentMissing, canEditSettings } = loaderData;
+  const location = useLocation();
+  const bad = isRouteErrorResponse(error) && error.status === 400;
   return (
     <>
-      <h1>{tab === "payment" ? t("admin.order.backPayment") : t("admin.orders.title")}</h1>
-      <Tabs tab={tab} />
-      {paymentMissing && <PaymentMissing canEditSettings={canEditSettings} />}
-      {payment ? (
-        <PaymentLists payment={payment} />
-      ) : data.length === 0 ? (
-        <p className="mt-6 text-lg">{t("admin.orders.empty")}</p>
-      ) : (
-        <ul className="mt-6 grid gap-4" aria-label={t("admin.orders.title")}>
-          {data.map((order) => (
-            <OrderCard key={order.id} order={order} />
-          ))}
-        </ul>
-      )}
-      {nextCursor && (
-        <p className="mt-6">
-          <a href={`${REVIEW_PATH}&cursor=${encodeURIComponent(nextCursor)}`} className={linkClass}>
-            {t("admin.orders.more")}
-          </a>
-        </p>
-      )}
+      <h1>{t("admin.orders.listTitle")}</h1>
+      <Alert tone="danger" role="alert" className="mt-6">
+        <p className="font-semibold">{bad ? t("admin.orders.badAddress") : t("admin.orders.loadFailed")}</p>
+        <a href={bad ? REVIEW_PATH : `${location.pathname}${location.search}`} className={listLinkClass}>
+          {bad ? t("admin.orders.backToList") : t("admin.orders.retry")}
+        </a>
+      </Alert>
     </>
   );
 }

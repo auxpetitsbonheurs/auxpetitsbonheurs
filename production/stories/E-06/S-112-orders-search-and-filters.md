@@ -1,5 +1,5 @@
 # S-112: Search and filter orders
-Status: ready
+Status: done
 Epic: E-06-order-management
 Spec: docs/specs/features/admin-orders.md#flow
 Estimate: 3 pts
@@ -31,3 +31,9 @@ As an admin, I want to find an order by name, phone or number and filter by date
 ## Notes
 - Decision: search stays within the active tab (spec default); "search all orders" is an open ux-lead question, not built.
 - Depends on S-111.
+
+## Implementation notes (2026-11-13)
+- AC4: a bad date range is not applied; the field message shows above the list and in the sheet, and the list stays as it was (no 400 for a filter).
+- AC6: a query over 80 characters is reported on the search field and kept as typed; the list is the tab default.
+- Filters sheet: delivery/pickup, paid/unpaid, from/until dates (`date` = one day); chips link to the list without that filter.
+- Tests: `app/domain/order-search.test.ts`, `admin-order-list.server.test.ts` (wildcards literal), `orders-view.test.tsx`, `tests/e2e/admin-orders-list.spec.ts`.
