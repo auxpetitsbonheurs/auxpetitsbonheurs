@@ -28,12 +28,12 @@ Out of scope: basket and checkout, custom cake form (the gallery button only lin
 ### Screens & states
 | Screen | Route (EN; `/fr` twin) | Loading | Empty | Error | Success / notes |
 |---|---|---|---|---|---|
-| Home | `/` | SSR; skeleton only for below-fold images | Sections with no data are omitted (no promo cards, no seasonal) | Page error state + WhatsApp | Hero, promo cards, seasonal, featured, How it works, gallery preview (6), buttons "Order now" (`/menu`) and "Custom cake" (`/custom-cake`) |
+| Home | `/` | SSR; skeleton only for below-fold images | Sections with no data are omitted (no promo cards, no seasonal, no category with no visible product) | Page error state + WhatsApp | As the burgundy reference (S-063, as built 2026-11-13): hero (Settings tagline as h1, photo, "Discover our collection" → `/menu`), three promises row, promo cards, "Our collection" category cards (product types with visible products → `/menu#type-…`), seasonal, featured, How it works, burgundy custom-cake band ("Ask for a quote" → `/custom-cake`), gallery preview (6) |
 | Menu | `/menu?type=&allergen=` | SSR | "No cakes match these filters." + Clear filters | Section error + Retry | Product cards in `sort_order`; 2/3/4 columns at 375/md/lg |
 | Product | `/menu/:slug` | SSR; carousel loads on interaction | n/a | 404 state "This product is no longer available" + link to menu (hidden or out of season); sold out: "Sold out this week" + WhatsApp, options hidden | Sticky Add-to-basket bar with live price |
 | Gallery | `/gallery?occasion=` | Blur-up placeholders | "No photos for this occasion yet." | Section error | 3-column grid, lightbox |
 | About / Contact / FAQ | `/about`, `/contact`, `/faq` | SSR | Missing optional block is omitted (never a blank area) | Page error | Content from Settings |
-| Layout (every page) | root | n/a | Footer item with an empty Settings value is omitted | n/a | Top bar, promo banner, footer |
+| Layout (every page) | root | n/a | Footer item with an empty Settings value is omitted | n/a | Top bar, promo banner, footer (S-061: contacts incl. Instagram, pickup + map link, the site pages; http/https links only) |
 
 Components (design-system names): Top bar, Language switch, Basket button + count, Site menu, Promo banner, Footer, Hero, Promotion card, How it works, Product card, Chip (filter), Price, Badge (sale/promo/soldout/allergen), Photo carousel, Allergen list, Option picker, Message-on-cake field, Stepper, Product page layout, Gallery grid, WhatsApp button, Empty state, Error state.
 

@@ -36,7 +36,7 @@ test.describe("only the active locale ships (S-006 AC5)", () => {
     });
     const html = await (await request.get("/")).text();
     await page.goto("/");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(english.get("home.title")!);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(english.get("home.heroTitle")!);
 
     expect(frenchOnly.length).toBeGreaterThan(5);
     expect(scripts.size).toBeGreaterThan(0);
@@ -50,7 +50,7 @@ test.describe("only the active locale ships (S-006 AC5)", () => {
 test("S-006 AC5 control: a French page does carry the French text", async ({ request }) => {
   const html = await (await request.get("/fr/")).text();
 
-  expect(html).toContain((fr.home as Tree).title as string);
+  expect(html).toContain((fr.home as Tree).heroTitle as string);
 });
 
 const ONE_YEAR_S = 365 * 24 * 60 * 60;
@@ -63,7 +63,7 @@ test.describe("first visit with a French browser (S-008 AC1)", () => {
 
     await expect(page).toHaveURL(/\/fr\/$/);
     await expect(page.locator("html")).toHaveAttribute("lang", "fr");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText((fr.home as Tree).title as string);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText((fr.home as Tree).heroTitle as string);
   });
 
   test("AC3: the cookie apb_locale=en wins over the browser language", async ({ page, context, baseURL }) => {
