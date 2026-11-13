@@ -165,7 +165,7 @@ export function browserIo(): CompressIo {
   return {
     decode: async (file) => bitmapImage(await createImageBitmap(file, { imageOrientation: "from-image" })),
     decodeHeic: async (file) => {
-      const { heicTo } = await import("heic-to");
+      const { heicTo } = await import("heic-to/csp");
       return bitmapImage(await heicTo({ blob: file, type: "bitmap", options: { imageOrientation: "from-image" } }));
     },
     encode: (image, width, height, type, quality) =>

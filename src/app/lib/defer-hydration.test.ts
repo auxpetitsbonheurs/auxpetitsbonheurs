@@ -57,6 +57,11 @@ describe("deferScripts", () => {
     expect(out.endsWith(`<script>${HYDRATION_LOADER}</script></body></html>`)).toBe(true);
   });
 
+  test("with a CSP nonce, the loader script carries it (S-228 AC7: no inline script runs without it)", () => {
+    const out = deferScripts(PAGE, "n0nce+/=");
+    expect(out.endsWith(`<script nonce="n0nce+/=">${HYDRATION_LOADER}</script></body></html>`)).toBe(true);
+  });
+
   test("a page without a module script (a redirect body, an error page) is left alone", () => {
     const html = "<html><body><p>Oops</p></body></html>";
     expect(deferScripts(html)).toBe(html);
@@ -71,8 +76,12 @@ describe("the stream", () => {
         controller.close();
       },
     });
-    return new Response(input.pipeThrough(createDeferScriptsTransform())).text();
+    return new Response(input.pipeThrough(createDeferScriptsTransform(nonce))).text();
   }
+  let nonce: string | undefined;
+  afterEach(() => {
+    nonce = undefined;
+  });
   const slices = (bytes: Uint8Array, size: number) => Array.from({ length: Math.ceil(bytes.length / size) }, (_, i) => bytes.slice(i * size, (i + 1) * size));
 
   test("gives the same result as the whole page, wherever the chunks are cut (inside a tag too)", async () => {
@@ -81,6 +90,12 @@ describe("the stream", () => {
     for (const size of [1, 3, 7, 16, 50, 200, bytes.length]) {
       expect(await run(slices(bytes, size))).toBe(whole);
     }
+  });
+
+  test("passes the CSP nonce to the loader script, wherever the chunks are cut", async () => {
+    nonce = "abc";
+    const bytes = new TextEncoder().encode(PAGE);
+    for (const size of [1, 7, bytes.length]) expect(await run(slices(bytes, size))).toBe(deferScripts(PAGE, "abc"));
   });
 
   test("keeps a multi-byte character cut between two chunks", async () => {
@@ -94,16 +109,17 @@ describe("the stream", () => {
 });
 
 describe("the loader (runs in the browser)", () => {
-  function stubBrowser(readyState: DocumentReadyState) {
+  function stubBrowser(readyState: DocumentReadyState, currentScript: { nonce: string } | null = null) {
     const placeholder = { textContent: 'import("/assets/entry.client.js");' };
     const preload = { rel: "x-modulepreload" };
-    const appended: Array<{ type?: string; textContent?: string }> = [];
+    const appended: Array<{ type?: string; textContent?: string; nonce?: string }> = [];
     const events = new Map<string, () => void>();
     const idleCallbacks: Array<() => void> = [];
     const addEventListener = (name: string, fn: () => void) => events.set(name, fn);
     const requestIdleCallback = (fn: () => void) => idleCallbacks.push(fn);
     vi.stubGlobal("document", {
       readyState,
+      currentScript,
       querySelector: (selector: string) => (selector.includes(DEFER_MARKER) ? placeholder : null),
       querySelectorAll: () => [preload],
       createElement: () => ({}) as { type?: string; textContent?: string },
@@ -139,6 +155,14 @@ describe("the loader (runs in the browser)", () => {
     expect(browser.appended).toHaveLength(0);
     vi.advanceTimersByTime(2);
     expect(browser.appended).toHaveLength(1);
+  });
+
+  test("the started module script gets the loader's own CSP nonce (read at once: currentScript is gone later)", () => {
+    vi.useFakeTimers();
+    const browser = stubBrowser("complete", { nonce: "xyz" });
+    startLoader();
+    browser.idleCallbacks[0]?.();
+    expect(browser.appended[0]).toMatchObject({ type: "module", nonce: "xyz" });
   });
 
   test("an already loaded page only waits for idle", () => {

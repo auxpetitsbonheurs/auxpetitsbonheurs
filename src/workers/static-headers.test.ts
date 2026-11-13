@@ -23,6 +23,10 @@ describe("static asset caching (public/_headers)", () => {
     expect(headersFor("/assets/*")).toEqual(["Cache-Control: public, max-age=31536000, immutable"]);
   });
 
+  test("every static file is served with nosniff (S-228 AC7)", () => {
+    expect(headersFor("/*")).toEqual(["X-Content-Type-Options: nosniff"]);
+  });
+
   test("brand files and favicons are cached for a day, never immutable", () => {
     for (const path of ["/brand/*", "/favicon.*"]) {
       const [cache] = headersFor(path);

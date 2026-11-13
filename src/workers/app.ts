@@ -18,7 +18,9 @@ import { requestPhotosContext, storageContext, supabaseStorage, uploadContext } 
 import { turnstileContext, turnstileFromEnv } from "~/server/turnstile.server";
 import { createSupabaseAuth } from "~/server/supabase-auth.server";
 import { supabaseUserAdmin, userAdminContext } from "~/server/user-admin.server";
+import { cspNonceContext } from "~/server/csp-nonce.server";
 import { withEnvironmentHeaders, withServerTiming } from "./headers";
+import { newCspNonce, withSecurityHeaders } from "./security-headers";
 import { requestLogLine } from "./log-redact";
 
 /** Rows sent right after a request; the hourly cron takes up to 50. */
@@ -29,7 +31,7 @@ const requestHandler = createRequestHandler(
   import.meta.env.MODE,
 );
 
-async function respond(request: Request, settings: ServerEnv, ctx: ExecutionContext, timing: ServerTiming): Promise<Response> {
+async function respond(request: Request, settings: ServerEnv, ctx: ExecutionContext, timing: ServerTiming, nonce: string | undefined): Promise<Response> {
   // CSRF: cross-site admin mutations stop here with 403, before any database or auth work.
   const refused = refuseCrossSiteAdminRequest(request);
   if (refused) return refused;
@@ -40,6 +42,7 @@ async function respond(request: Request, settings: ServerEnv, ctx: ExecutionCont
     context.set(requestDbContext, requestDb);
     context.set(afterResponseContext, afterResponse);
     context.set(serverTimingContext, timing);
+    context.set(cspNonceContext, nonce);
     context.set(publicConfigContext, { supabaseUrl: settings.SUPABASE_URL, supabaseAnonKey: settings.SUPABASE_ANON_KEY });
     context.set(clockContext, createClock({ testClock: settings.TEST_CLOCK === "on" }, request));
     // Signed confirmation cookie (checkout AC48): its key is derived from a server-only secret, never the secret itself.
@@ -82,10 +85,14 @@ export default {
     const settings = getEnv(env);
     // Server-Timing: db-connect, each db-query, named reads and the whole app (no SQL, no PII).
     const timing = new ServerTiming();
-    const response = await withDbTiming(timing, () => timing.measure("app", () => respond(request, settings, ctx, timing)));
+    // CSP nonce per response (S-228 AC7). The Vite dev server injects its own inline scripts and
+    // websocket, so `npm run dev` gets the other security headers but no CSP; builds (e2e, deploys) do.
+    const nonce = import.meta.env.DEV ? undefined : newCspNonce();
+    const response = await withDbTiming(timing, () => timing.measure("app", () => respond(request, settings, ctx, timing, nonce)));
     // One structured line per request, tokens redacted (S-019 AC5, NFR-004).
     console.log(JSON.stringify(requestLogLine(request, response.status, Date.now() - started)));
-    return withEnvironmentHeaders(withServerTiming(response, timing.header()), settings.APP_ENV);
+    const secured = withSecurityHeaders(response, { nonce: nonce ?? null, supabaseUrl: settings.SUPABASE_URL, url: request.url, csp: nonce !== undefined });
+    return withEnvironmentHeaders(withServerTiming(secured, timing.header()), settings.APP_ENV);
   },
   // Hourly cron (see wrangler.jsonc). app/jobs/dispatch runs the due jobs by Mauritius
   // local time (keepAlive every tick; later epics add their jobs there). Never throws.

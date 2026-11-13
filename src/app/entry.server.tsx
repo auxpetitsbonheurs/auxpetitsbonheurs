@@ -5,6 +5,7 @@ import { renderToReadableStream } from "react-dom/server";
 import type { EntryContext, HandleErrorFunction, RouterContextProvider } from "react-router";
 import { ServerRouter } from "react-router";
 import { createDeferScriptsTransform, shouldDeferHydration } from "~/lib/defer-hydration";
+import { cspNonceContext } from "~/server/csp-nonce.server";
 import { serverErrorLogLine } from "~/server/error-log.server";
 
 export const handleError: HandleErrorFunction = (error, { request }) => {
@@ -28,7 +29,7 @@ export default async function handleRequest(
   responseStatusCode: number,
   responseHeaders: Headers,
   routerContext: EntryContext,
-  _loadContext: RouterContextProvider,
+  loadContext: RouterContextProvider,
 ) {
   // https://httpwg.org/specs/rfc9110.html#HEAD
   if (request.method.toUpperCase() === "HEAD") {
@@ -38,13 +39,17 @@ export default async function handleRequest(
     });
   }
 
+  // CSP nonce of this response (S-228 AC7): React's inline scripts, <Scripts> (through ServerRouter)
+  // and the deferred-hydration loader carry it; workers/app.ts writes the matching header.
+  const nonce = loadContext.get(cspNonceContext);
   let shellRendered = false;
   const userAgent = request.headers.get("user-agent");
 
   const body = await renderToReadableStream(
-    <ServerRouter context={routerContext} url={request.url} />,
+    <ServerRouter context={routerContext} url={request.url} nonce={nonce} />,
     {
       ...DOCUMENT_STREAM_OPTIONS,
+      nonce,
       signal: AbortSignal.timeout(streamTimeout + 1000),
       onError(error: unknown) {
         responseStatusCode = 500;
@@ -69,7 +74,7 @@ export default async function handleRequest(
   // Browsing pages start their JavaScript after load + idle, so it never shares bandwidth with the
   // LCP photo (S-276 AC7); links and forms work as plain navigations until then.
   const routeIds = routerContext.staticHandlerContext.matches.map((match) => match.route.id);
-  const page = shouldDeferHydration(routeIds) ? body.pipeThrough(createDeferScriptsTransform()) : body;
+  const page = shouldDeferHydration(routeIds) ? body.pipeThrough(createDeferScriptsTransform(nonce)) : body;
   return new Response(page, {
     headers: responseHeaders,
     status: responseStatusCode,
