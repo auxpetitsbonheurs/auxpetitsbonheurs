@@ -29,11 +29,11 @@ export function shouldDeferHydration(routeIds: readonly string[]): boolean {
  * when load never comes) it re-enables the modulepreloads and starts the module script.
  */
 export const HYDRATION_LOADER =
-  `(function(){var d=false;` +
+  `(function(){var d=false,n=document.currentScript&&document.currentScript.nonce;` +
   `function go(){if(d)return;d=true;` +
   `var l=document.querySelectorAll('link[rel="x-modulepreload"]');for(var i=0;i<l.length;i++)l[i].rel="modulepreload";` +
   `var p=document.querySelector("script[${DEFER_MARKER}]");if(!p)return;` +
-  `var s=document.createElement("script");s.type="module";s.textContent=p.textContent;document.body.appendChild(s)}` +
+  `var s=document.createElement("script");s.type="module";if(n)s.nonce=n;s.textContent=p.textContent;document.body.appendChild(s)}` +
   `function idle(){if(window.requestIdleCallback)requestIdleCallback(go,{timeout:2000});else setTimeout(go,200)}` +
   `setTimeout(go,${LOAD_CAP_MS});` +
   `if(document.readyState==="complete")idle();else addEventListener("load",idle,{once:true})})()`;
@@ -45,6 +45,13 @@ const BODY_END = "</body>";
 /** Remembers, across chunks, that a module script went by (the loader is only added then). */
 interface RewriteState {
   sawModuleScript: boolean;
+  /** `<script>` or `<script nonce="…">`: the page's CSP nonce (S-228 AC7), which the loader passes on. */
+  loaderOpen: string;
+}
+
+/** Only a base64 nonce (workers/security-headers.ts) is written into the page. */
+function loaderOpenTag(nonce: string | undefined): string {
+  return nonce && /^[A-Za-z0-9+/=]+$/.test(nonce) ? `<script nonce="${nonce}">` : "<script>";
 }
 
 /** Rewrites the complete tags in `html`; a tag cut in two is kept back by the stream (`holdBack`). */
@@ -55,12 +62,12 @@ function rewrite(html: string, state: RewriteState): string {
       state.sawModuleScript = true;
       return `<script type="text/plain" ${DEFER_MARKER}="">`;
     })
-    .replace(BODY_END, (end) => (state.sawModuleScript ? `<script>${HYDRATION_LOADER}</script>${end}` : end));
+    .replace(BODY_END, (end) => (state.sawModuleScript ? `${state.loaderOpen}${HYDRATION_LOADER}</script>${end}` : end));
 }
 
 /** The whole document at once (the reference the stream must match). */
-export function deferScripts(html: string): string {
-  return rewrite(html, { sawModuleScript: false });
+export function deferScripts(html: string, nonce?: string): string {
+  return rewrite(html, { sawModuleScript: false, loaderOpen: loaderOpenTag(nonce) });
 }
 
 /** Index where an unfinished tag starts (a `<` with no `>` after it), or `text.length`. */
@@ -74,10 +81,10 @@ function holdBack(text: string): number {
  * to the last finished tag and keeps the rest for the next chunk, so a tag cut between two chunks
  * is still recognised.
  */
-export function createDeferScriptsTransform(): TransformStream<Uint8Array, Uint8Array> {
+export function createDeferScriptsTransform(nonce?: string): TransformStream<Uint8Array, Uint8Array> {
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
-  const state: RewriteState = { sawModuleScript: false };
+  const state: RewriteState = { sawModuleScript: false, loaderOpen: loaderOpenTag(nonce) };
   let pending = "";
   const emit = (controller: TransformStreamDefaultController<Uint8Array>, text: string) => {
     if (text !== "") controller.enqueue(encoder.encode(rewrite(text, state)));
