@@ -15,11 +15,12 @@ Legend: **Secret** = hidden once saved. **Plain** = visible, not sensitive.
 | What | Where | Note |
 |---|---|---|
 | Cloudflare account | dash.cloudflare.com, bakery email, MFA on | Workers & Pages → Overview: choose the workers.dev **subdomain** (written `<subdomain>` below) |
-| Supabase projects | supabase.com, bakery email, MFA on | Create two projects, `apb-staging` and `apb-production`, region closest to Mauritius (Mumbai, `ap-south-1`). Save each **database password** in the password manager |
+| Supabase projects | supabase.com, bakery email, MFA on | Create two projects, `apb-staging` and `apb-production`, regions as the Owner created them (2026-11-13): staging Northeast Asia (Seoul, `ap-northeast-2`), production Central EU (Frankfurt, `eu-central-1`). Save each **database password** in the password manager |
 | Resend, Sentry, GitHub | bakery email, MFA on | Fill the README "Services and accounts" table as you go |
 
-**Smart Placement** is decided after the CPU measurement (`docs/runbooks/worker-cpu.md`);
-leave it off. **Hyperdrive** is optional, see section 6 (ADR-0003).
+**Placement** is targeted at each Supabase region (`placement.region` in `src/wrangler.jsonc`,
+ADR-0003 amendment 7): staging `aws:ap-northeast-2`, production `aws:eu-central-1`. If a project
+is ever moved to another region, change that value in the same commit. **Hyperdrive** is optional, see section 6 (ADR-0003).
 
 ## 1. GitHub: repository → Settings → Secrets and variables → Actions
 
@@ -154,7 +155,7 @@ Until all eight required secrets exist, the Sunday run fails and says which are 
 |---|---|---|
 | `SUPABASE_DB_URL` | Secret | Production project → **Connect** → Method **Session pooler** → URI with the database password (same value as `PRODUCTION_DATABASE_URL`; kept separate so backups can later use a read-only role) |
 | `SUPABASE_S3_ENDPOINT` | Secret | Production project → Project Settings → Storage → **S3 Connection**: enable "S3 protocol connection", copy **Endpoint** (`https://<ref>.storage.supabase.co/storage/v1/s3`) |
-| `SUPABASE_S3_REGION` | Secret | Same panel → **Region** (e.g. `ap-south-1`) |
+| `SUPABASE_S3_REGION` | Secret | Same panel → **Region** (production: `eu-central-1`) |
 | `SUPABASE_S3_ACCESS_KEY_ID` | Secret | Same panel → S3 Access Keys → **New access key** (description "weekly backup") → Access key ID |
 | `SUPABASE_S3_SECRET_ACCESS_KEY` | Secret | Same new key → Secret access key (shown once) |
 | `AGE_RECIPIENT` | Secret | On your computer: install `age`, run `age-keygen -o apb-backup.key`. It prints `Public key: age1…`: that line's `age1…` value goes here. Put the whole `apb-backup.key` file in the bakery password manager, then delete it from the computer. It is the only way to read the backups |

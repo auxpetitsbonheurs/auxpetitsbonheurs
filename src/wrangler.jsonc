@@ -33,12 +33,10 @@
 			"name": "auxpetitsbonheurs-staging",
 			"workers_dev": true,
 			"preview_urls": false,
-			// Run the Worker near Supabase instead of near the visitor, since a page makes several
+			// Run the Worker next to Supabase instead of near the visitor: a page makes several
 			// database round trips and the visitor only one. Static assets are still served from the
-			// nearest edge. Smart Placement (ADR-0003 amendment 6): targeted placement in Mumbai and
-			// Sydney still took 140-165 ms per query, so the database region is unconfirmed; once the
-			// Owner confirms it, use { "mode": "targeted", "region": "aws:<region>" }.
-			"placement": { "mode": "smart" },
+			// nearest edge. The staging project is in Seoul (AWS ap-northeast-2, ADR-0003 amendment 7).
+			"placement": { "mode": "targeted", "region": "aws:ap-northeast-2" },
 			"vars": {
 				"APP_ENV": "staging",
 				"APP_TIME_ZONE": "Indian/Mauritius"
@@ -68,6 +66,8 @@
 			"name": "auxpetitsbonheurs",
 			"workers_dev": true,
 			"preview_urls": false,
+			// The production project is in Frankfurt (AWS eu-central-1, ADR-0003 amendment 7).
+			"placement": { "mode": "targeted", "region": "aws:eu-central-1" },
 			"vars": {
 				"APP_ENV": "production",
 				"APP_TIME_ZONE": "Indian/Mauritius"
