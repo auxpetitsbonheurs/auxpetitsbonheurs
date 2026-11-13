@@ -194,7 +194,8 @@
       "INVITE_INVALID": "This invitation has expired or was already used. Ask the owner for a new one.",
       "LAST_OWNER": "There must always be one active Owner. Make someone else Owner first.",
       "SETTINGS_CHANGED": "Someone changed this. Reload.",
-      "PAGE_CHANGED": "Someone changed this page. Reload."
+      "PAGE_CHANGED": "Someone changed this page. Reload.",
+      "CANCEL_NOT_ALLOWED": "This order can no longer be cancelled here. Message us on WhatsApp."
     }
   },
   "product": {
@@ -298,7 +299,30 @@
       "cancelledUnpaidTitle": "Cancelled: we did not receive the payment within 24 hours",
       "cancelledUnpaidBody": "The date is free again. If you still want this order, place it again or message us on WhatsApp.",
       "cancelledTitle": "This order was cancelled",
-      "whatsapp": "Message us on WhatsApp"
+      "whatsapp": "Message us on WhatsApp",
+      "closedTitle": "This order is closed",
+      "closedBody": "Nothing more will happen with this order. Message us on WhatsApp if you have a question.",
+      "whatsappText": "Hello, about my order {{number}}",
+      "changeTitle": "Change or cancel",
+      "whatsappButton": "Message us on WhatsApp about {{number}}",
+      "changeOrCancel": "To change or cancel, message us on WhatsApp. Free cancellation until 48 hours before your order date.",
+      "noEdit": "To change something in your order, message us on WhatsApp while it is pending.",
+      "rateLimitedTitle": "Please wait a moment",
+      "rateLimitedBody": "This page was opened many times in a short while. Please try again in {{minutes}} minutes.",
+      "cancel": {
+        "button": "Cancel order",
+        "buttonLabel": "Cancel order {{number}}",
+        "title": "Cancel order {{number}}?",
+        "body": "We will not prepare it, and we will email you to confirm. This cannot be undone.",
+        "confirm": "Cancel order {{number}}",
+        "keep": "Keep order",
+        "close": "Close",
+        "sending": "Cancelling…",
+        "done": "Nothing will be prepared. We have sent you an email to confirm.",
+        "notAllowed": "This order can no longer be cancelled here. Message us on WhatsApp and we will help.",
+        "changed": "This order was updated, please check and try again.",
+        "failed": "We could not cancel the order. Please try again in a moment."
+      }
     },
     "status": {
       "pending_approval": "Pending approval",
@@ -310,7 +334,10 @@
       "other": "Order update",
       "awaiting_payment": "Awaiting payment",
       "declined": "Refused",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "quote_needed": "Waiting for our quote",
+      "quote_sent": "Quote ready for you",
+      "closed": "Closed"
     },
     "payment": {
       "title": "Pay now to confirm your order",

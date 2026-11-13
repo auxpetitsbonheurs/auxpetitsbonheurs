@@ -11,22 +11,10 @@ const TONE: Record<StatusTone, { border: string; icon: string; Icon: typeof Cloc
   stopped: { border: "border-destructive", icon: "text-destructive", Icon: CircleX },
 };
 
-/** Statuses with customer wording in this slice; the others show a generic label until E-06. */
-const WORDED = new Set<OrderStatus>([
-  "awaiting_payment",
-  "pending_approval",
-  "approved",
-  "in_preparation",
-  "out_for_delivery",
-  "ready_for_pickup",
-  "completed",
-  "declined",
-  "cancelled",
-]);
-
+/** Every status has customer wording in both languages (S-095 AC5): never a raw enum. */
 export function useStatusLabel() {
   const { t } = useI18n();
-  return (status: OrderStatus) => t(WORDED.has(status) ? `order.status.${status}` : "order.status.other");
+  return (status: OrderStatus) => t(`order.status.${status}`);
 }
 
 /**

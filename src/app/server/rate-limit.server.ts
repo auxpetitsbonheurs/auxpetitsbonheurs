@@ -36,6 +36,21 @@ export function rateLimitKey(subject: RateLimitSubject): string {
   return `${subject.action}:${createHash("sha256").update(material).digest("hex")}`;
 }
 
+/** Tracking page and its actions (FR-026, S-094 AC4): 60 requests per 10 minutes per IP. */
+export const RL_TRACK: RateLimitClass = { name: "RL-track", max: 60, windowMs: 10 * 60 * 1000 };
+
+/** The bucket this attempt counts in, for a caller that counts inside its own statement (one round trip). */
+export function rateLimitBucketFor(limit: RateLimitClass, subject: RateLimitSubject, now: Date): { key: string; windowStart: Date } {
+  return { key: rateLimitKey(subject), windowStart: new Date(Math.floor(now.getTime() / limit.windowMs) * limit.windowMs) };
+}
+
+/** The answer for a count already taken in `bucket` (see `rateLimitBucketFor`). */
+export function rateLimitVerdict(limit: RateLimitClass, windowStart: Date, count: number, now: Date): RateLimitResult {
+  if (count <= limit.max) return { ok: true };
+  const retryAfterMs = windowStart.getTime() + limit.windowMs - now.getTime();
+  return { ok: false, retryAfterSeconds: Math.max(1, Math.ceil(retryAfterMs / 1000)) };
+}
+
 /** Counts this attempt and says whether it may go ahead (the `max`-th still may). */
 export async function consumeRateLimit(db: Executor, limit: RateLimitClass, subject: RateLimitSubject, now: Date): Promise<RateLimitResult> {
   const windowStart = new Date(Math.floor(now.getTime() / limit.windowMs) * limit.windowMs);

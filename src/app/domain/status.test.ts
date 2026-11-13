@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { ACTIVE_STATUSES, CONFIRMED_STATUSES, ORDER_STATUSES, allowedActions, customerProgress, statusTone, transitionTarget } from "./status";
+import { ACTIVE_STATUSES, CONFIRMED_STATUSES, ORDER_STATUSES, allowedActions, canCustomerCancel, customerProgress, statusTone, transitionTarget } from "./status";
 
 describe("status groups (contracts.md Conventions)", () => {
   test("active is every status except declined, cancelled and closed", () => {
@@ -117,5 +117,28 @@ describe("Juice payment transitions (S-279, S-281)", () => {
 
   test("awaiting payment is an action status for the badge", () => {
     expect(statusTone("awaiting_payment")).toBe("action");
+  });
+});
+
+describe("quote path (S-095 AC1)", () => {
+  test("a custom request starts at Quote needed, then Quote sent, then the fulfilment path", () => {
+    expect(customerProgress("quote_sent", "pickup", "custom_request")).toEqual({
+      steps: ["quote_needed", "quote_sent", "approved", "in_preparation", "ready_for_pickup", "completed"],
+      current: 1,
+    });
+    expect(customerProgress("out_for_delivery", "delivery", "custom_request")?.current).toBe(4);
+  });
+
+  test("a website order never shows the quote steps", () => {
+    expect(customerProgress("quote_needed", "delivery", "website")).toBeNull();
+  });
+});
+
+describe("customer cancel (S-096 AC1-AC3, FR-027)", () => {
+  test.each(ORDER_STATUSES.map((s) => [s] as const))("%s: only awaiting payment, pending approval and quote needed may be cancelled, and only while unpaid", (status) => {
+    const expected = status === "awaiting_payment" || status === "pending_approval" || status === "quote_needed";
+    expect(canCustomerCancel({ status, paid: false })).toBe(expected);
+    // A paid order needs the bakery's refund step (Juice payment work), never the Cancel button.
+    expect(canCustomerCancel({ status, paid: true })).toBe(false);
   });
 });
