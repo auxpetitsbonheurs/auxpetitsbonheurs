@@ -23,7 +23,7 @@ As a customer, I want a product page with photos, description and allergen infor
 ## Tests
 - AC1 → src/app/routes/site/product-content.test.tsx, src/tests/e2e/browse-product.spec.ts
 - AC2 → src/app/routes/site/product-content.test.tsx, src/tests/e2e/browse-product.spec.ts
-- AC3 → src/app/routes/site/product-content.test.tsx (loader, fixed clock), src/app/domain/notice.test.ts
+- AC3 → src/app/routes/site/product-content.test.tsx (loader, fixed clock); rules tested in src/app/domain/availability.test.ts (E-05)
 - AC4 → (job 1, options/price/add area; see Build notes)
 - AC5 → src/app/routes/site/product-content.test.tsx (fixed clock, D vs D+1 Mauritius), src/tests/e2e/browse-product.spec.ts
 - AC6 → src/app/routes/site/product-content.test.tsx
@@ -42,6 +42,6 @@ As a customer, I want a product page with photos, description and allergen infor
 - AC4 open: "Sold out this week" with a WhatsApp button lives in the ordering area (job 1). The loader still answers `status: "sold_out"` and the current sold-out note shows.
 - Photos: one at a time in a box sized from the first photo, "Photo n of N" (polite live region), "Previous photo"/"Next photo" 44 px buttons, ArrowLeft/ArrowRight while focus is in the carousel, swipe as an extra; instant swap (nothing animates). The first photo is `fetchpriority=high`. A missing or failed photo (also a failure before hydration) becomes a named placeholder in the same box.
 - AC10 caveat: the carousel is a ~1 kB component in the route chunk rather than a lazy chunk; the route is 163.8 kB gz initial JS (limit 170; job 1 adds the options picker to the same route).
-- Earliest date: the product's own notice, else the Settings default, moved past closed weekdays and blocked dates (from the cached Settings query); checkout keeps deciding the order's real date.
+- Earliest date: `earliestDate` from `domain/availability` (E-05 S-083), the date picker's own rules for this product alone: its notice (else the Settings default), its season, closed weekdays, blocked dates and the 90-day horizon; none shows when no day is open. Checkout still decides the order's real date (the basket may push it later).
 - Allergen tags are the diet tags stored on products (eggless, nut-free, gluten-free, dairy-free); the kitchen note always shows.
 - 404: hidden or seasonal out of window answers "This product is no longer available" with a link to the collection (no product data in the body); an unknown slug keeps the site 404 with Home; both offer WhatsApp when Settings has a number.

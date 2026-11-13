@@ -18,7 +18,7 @@ import { publicConfigContext } from "~/server/public-config.server";
 import { findProductPageBySlug, findProductsByIds, findRenamedSlug } from "~/server/repos/catalogue.server";
 import { getSiteSettings } from "~/server/repos/settings.server";
 import { clockContext } from "~/server/clock.server";
-import { earliestProductDate } from "~/domain/notice";
+import { earliestDate } from "~/domain/availability";
 import { isInSeason } from "~/domain/season";
 import { todayMU } from "~/domain/time";
 import { PRODUCT_GONE, ProductGone, ProductDetails } from "~/components/site/product-details";
@@ -46,7 +46,7 @@ async function redirectRenamed(context: Route.LoaderArgs["context"], url: URL, s
 /**
  * `site/product` loader (contracts.md). Hidden, or seasonal outside its window on today's
  * Mauritius date: 404 "no longer available" with no product data (S-065 AC5). `earliestDate` is
- * this product's notice (else the Settings default) past closed and blocked days (AC3).
+ * what the checkout date picker would offer first for this product alone (AC3), or null.
  */
 export async function loader({ params, context, url }: Route.LoaderArgs) {
   const db = context.get(requestDbContext).db;
@@ -60,7 +60,9 @@ export async function loader({ params, context, url }: Route.LoaderArgs) {
   if (productProblem(record) === "hidden" || !isInSeason(availability.season, today)) throw data(PRODUCT_GONE, { status: 404 });
   return {
     product: customerProduct(record, context.get(publicConfigContext).supabaseUrl),
-    earliestDate: earliestProductDate({ today, noticeDays: availability.noticeDays ?? settings.noticeDays, ...settings.openDays }),
+    // The date picker's own rules (domain/availability), for this product alone: the page and the
+    // picker never disagree (its notice, its season, closed and blocked days, the 90-day horizon).
+    earliestDate: earliestDate({ today, ...settings.availability }, availability.noticeDays ?? settings.availability.defaultNoticeDays, availability.season ? [availability.season] : []),
     seasonEndsOn: availability.season?.endsOn ?? null,
   };
 }

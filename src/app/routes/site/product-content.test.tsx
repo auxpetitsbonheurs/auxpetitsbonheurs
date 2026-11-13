@@ -127,6 +127,14 @@ describe("loader", () => {
     expect((await load("five")).earliestDate).toBe("2026-11-18");
   });
 
+  test("AC3: the same rules as the date picker: a season ending before the notice leaves no date; inside it, its own notice", async () => {
+    await insertProduct(database.db, { slug: "short", seasonalStartsOn: "2026-11-01", seasonalEndsOn: "2026-11-11" });
+    await insertProduct(database.db, { slug: "long", noticeDays: 1, seasonalStartsOn: "2026-11-01", seasonalEndsOn: "2026-12-31" });
+
+    expect((await load("short")).earliestDate).toBeNull(); // 3 days' notice lands after the 11th
+    expect((await load("long")).earliestDate).toBe("2026-11-11"); // its own 1 day of notice, inside the season
+  });
+
   test("AC5: seasonal ending on D is 200 on D and 404 'no longer available' on D+1 (Mauritius), with no product data", async () => {
     await insertProduct(database.db, { slug: "log", nameEn: "Secret log", seasonalStartsOn: "2026-11-01", seasonalEndsOn: "2026-11-10" });
 

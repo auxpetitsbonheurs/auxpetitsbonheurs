@@ -60,7 +60,7 @@ test.describe("S-254 phone menu sweep", () => {
         await menuButton(page, "Menu").click();
         await page.getByRole("dialog").getByRole("link", { name: label, exact: true }).click();
         // The French home is /fr/ (trailing slash), the English one /.
-        await expect(page).toHaveURL(new RegExp(`${localized(lang, PAGES[i]!).replace(/\//g, "\\/")}\/?$`));
+        await expect(page).toHaveURL(new RegExp(`${localized(lang, PAGES[i]!).replace(/\//g, "\\/")}/?$`));
         await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
         await expect(page.getByRole("dialog")).toBeHidden();
       }
