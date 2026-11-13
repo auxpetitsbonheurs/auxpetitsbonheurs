@@ -22,6 +22,8 @@ const STATUS = {
   SETTINGS_CHANGED: 409,
   /** A brand page saved from a stale editor (E-13 S-246 AC5). */
   PAGE_CHANGED: 409,
+  /** Customer cancel outside pending_approval / quote_needed, or on a paid order (S-096). */
+  CANCEL_NOT_ALLOWED: 409,
   /** Invite or accept: the email already has an admin or customer account (S-028, S-029). */
   EMAIL_IN_USE: 409,
   /** changeRole / deactivate would leave no active Owner (S-031, S-032). */

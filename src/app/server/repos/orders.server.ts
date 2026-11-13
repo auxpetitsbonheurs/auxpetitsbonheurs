@@ -6,7 +6,7 @@
 import { sql } from "drizzle-orm";
 import type { LocalizedText, OrderItemOption, TimeWindow } from "~/db/schema";
 import type { PaymentSettings } from "~/domain/payment";
-import type { OrderStatus } from "~/domain/status";
+import type { OrderSource, OrderStatus } from "~/domain/status";
 import type { Locale } from "~/lib/locale";
 import type { Executor } from "~/server/db.server";
 import { orderOptionLabels } from "~/server/order-options.server";
@@ -71,6 +71,7 @@ export interface TrackedOrder {
   id: string;
   number: number;
   locale: Locale;
+  source: OrderSource;
   status: OrderStatus;
   fulfilment: "delivery" | "pickup";
   fulfilOn: string;
@@ -106,29 +107,50 @@ interface TrackedRow extends Omit<TrackedOrder, "items" | "window" | "fulfilOn" 
 
 const isoDate = (value: string | Date) => (typeof value === "string" ? value.slice(0, 10) : value.toISOString().slice(0, 10));
 
+/** A rate-limit bucket counted in the same statement as the lookup (RL-track, S-094 AC4). */
+export interface CountedBucket {
+  key: string;
+  windowStart: Date;
+}
+
+export interface TrackedLookup {
+  order: TrackedOrder | undefined;
+  /** This request's count in its rate-limit bucket (this request included). */
+  attempts: number;
+}
+
 /**
- * The order behind a tracking token with its items and the Settings it is shown with. A miss
- * costs exactly one indexed select whether the token is wrong or unknown (same timing class,
- * threat-model C1).
+ * The order behind a tracking token with its items and the Settings it is shown with, and this
+ * request counted in its rate-limit bucket, in ONE statement. A miss costs exactly the same
+ * statement whether the token is wrong or unknown (same timing class, threat-model C1). Never
+ * selects the admin note or contact details (S-094 AC6).
  */
-export async function findTrackedOrder(db: Executor, token: string): Promise<TrackedOrder | undefined> {
+export async function findTrackedOrder(db: Executor, token: string, bucket: CountedBucket): Promise<TrackedLookup> {
   const { rows } = (await db.execute(sql`
-    select o.id, o.number, o.locale, o.status, o.fulfilment, to_char(o.fulfil_on, 'YYYY-MM-DD') as "fulfilOn", o.time_window as "window",
-      o.address, o.landmark, o.items_total_rs as "itemsTotalRs", o.delivery_fee_rs as "deliveryFeeRs", o.total_rs as "totalRs",
-      o.paid, o.version, o.created_at as "createdAt", o.cancel_reason as "cancelReason", o.decline_reason as "declineReason",
-      o.refund_due_rs as "refundDueRs", o.refunded_at as "refundedAt", coalesce(o.number_prefix, s.order_number_prefix) as "orderNumberPrefix",
-      s.juice_name as "juiceName", s.juice_number as "juiceNumber", s.payment_whatsapp as "paymentWhatsapp", s.contact_whatsapp as "contactWhatsapp",
-      coalesce((
-        select json_agg(json_build_object('nameEn', i.name_en, 'nameFr', i.name_fr, 'quantity', i.quantity, 'lineTotalRs', i.line_total_rs,
-          'options', i.options, 'cakeMessage', i.cake_message) order by i.sort_order)
-        from order_item i where i.order_id = o.id
-      ), '[]'::json) as items
-    from orders o cross join settings s
-    where o.tracking_token = ${token} and s.id = 1
-    limit 1
-  `)) as unknown as { rows: TrackedRow[] };
-  const row = rows[0];
-  if (!row) return undefined;
+    with counted as (
+      insert into rate_limit_bucket (key, window_start, count) values (${bucket.key}, ${bucket.windowStart.toISOString()}::timestamptz, 1)
+      on conflict (key, window_start) do update set count = rate_limit_bucket.count + 1
+      returning count
+    ), found as (
+      select o.id, o.number, o.locale, o.source, o.status, o.fulfilment, to_char(o.fulfil_on, 'YYYY-MM-DD') as "fulfilOn", o.time_window as "window",
+        o.address, o.landmark, o.items_total_rs as "itemsTotalRs", o.delivery_fee_rs as "deliveryFeeRs", o.total_rs as "totalRs",
+        o.paid, o.version, o.created_at as "createdAt", o.cancel_reason as "cancelReason", o.decline_reason as "declineReason",
+        o.refund_due_rs as "refundDueRs", o.refunded_at as "refundedAt", coalesce(o.number_prefix, s.order_number_prefix) as "orderNumberPrefix",
+        s.juice_name as "juiceName", s.juice_number as "juiceNumber", s.payment_whatsapp as "paymentWhatsapp", s.contact_whatsapp as "contactWhatsapp",
+        coalesce((
+          select json_agg(json_build_object('nameEn', i.name_en, 'nameFr', i.name_fr, 'quantity', i.quantity, 'lineTotalRs', i.line_total_rs,
+            'options', i.options, 'cakeMessage', i.cake_message) order by i.sort_order)
+          from order_item i where i.order_id = o.id
+        ), '[]'::json) as items
+      from orders o cross join settings s
+      where o.tracking_token = ${token} and s.id = 1
+      limit 1
+    )
+    select c.count as "attempts", f.* from counted c left join found f on true
+  `)) as unknown as { rows: (Omit<TrackedRow, "id"> & { id: string | null; attempts: number })[] };
+  const { attempts, ...found } = rows[0]!;
+  if (found.id === null) return { order: undefined, attempts };
+  const row = { ...found, id: found.id };
   const items = json(row.items).map((item) => ({
     name: item.nameFr ? { en: item.nameEn, fr: item.nameFr } : { en: item.nameEn },
     quantity: item.quantity,
@@ -137,7 +159,7 @@ export async function findTrackedOrder(db: Executor, token: string): Promise<Tra
     cakeMessage: item.cakeMessage,
   }));
   const { juiceName, juiceNumber, paymentWhatsapp, ...rest } = row;
-  return {
+  const order = {
     ...rest,
     fulfilOn: isoDate(row.fulfilOn),
     window: json(row.window),
@@ -146,4 +168,5 @@ export async function findTrackedOrder(db: Executor, token: string): Promise<Tra
     payment: { juiceName, juiceNumber, paymentWhatsapp },
     items,
   };
+  return { order, attempts };
 }

@@ -50,14 +50,37 @@ function websitePath(fulfilment: Fulfilment, first: "awaiting_payment" | "pendin
   return [first, "approved", "in_preparation", handover, "completed"];
 }
 
+export type OrderSource = "website" | "custom_request" | "manual";
+
+/** A custom request starts with its quote: Quote needed, Quote sent, then the fulfilment path (S-095 AC1). */
+function quotePath(fulfilment: Fulfilment): OrderStatus[] {
+  return ["quote_needed", "quote_sent", ...websitePath(fulfilment, "pending_approval").slice(1)];
+}
+
 /**
- * The progress list for a website order, or null when the status is not on its path
- * (declined, cancelled, closed get an Alert; the quote path arrives with E-07).
+ * The progress list for an order, or null when the status is not on its path (declined,
+ * cancelled, closed get an Alert instead, S-095 AC2).
  */
-export function customerProgress(status: OrderStatus, fulfilment: Fulfilment): Progress | null {
-  const steps = websitePath(fulfilment, status === "pending_approval" ? "pending_approval" : "awaiting_payment");
+export function customerProgress(status: OrderStatus, fulfilment: Fulfilment, source: OrderSource = "website"): Progress | null {
+  const steps = source === "custom_request" ? quotePath(fulfilment) : websitePath(fulfilment, status === "pending_approval" ? "pending_approval" : "awaiting_payment");
   const current = steps.indexOf(status);
   return current === -1 ? null : { steps, current };
+}
+
+/**
+ * Statuses a customer may cancel from the tracking page (FR-027; checkout spec "Tracking
+ * actions"). Since Juice payment a new website order waits in Awaiting payment, the unpaid
+ * pending state, so it is cancellable too (S-096 note).
+ */
+export const CUSTOMER_CANCELLABLE: ReadonlySet<OrderStatus> = new Set<OrderStatus>(["awaiting_payment", "pending_approval", "quote_needed"]);
+
+/**
+ * `canCancel` of the tracking page (S-096). A paid order is never cancelled by the button:
+ * the money goes back through the bakery's refund step (Juice payment, S-281), so the page
+ * shows the WhatsApp guidance instead.
+ */
+export function canCustomerCancel(order: { status: OrderStatus; paid: boolean }): boolean {
+  return CUSTOMER_CANCELLABLE.has(order.status) && !order.paid;
 }
 
 export type StatusTone = "action" | "waiting" | "progress" | "done" | "stopped";

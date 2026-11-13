@@ -194,7 +194,8 @@
       "INVITE_INVALID": "Cette invitation a expiré ou a déjà été utilisée. Demandez-en une nouvelle à la propriétaire.",
       "LAST_OWNER": "Il doit toujours y avoir une Propriétaire active. Nommez d'abord quelqu'un d'autre Propriétaire.",
       "SETTINGS_CHANGED": "Quelqu'un a modifié ceci. Rechargez.",
-      "PAGE_CHANGED": "Quelqu'un a modifié cette page. Rechargez."
+      "PAGE_CHANGED": "Quelqu'un a modifié cette page. Rechargez.",
+      "CANCEL_NOT_ALLOWED": "Cette commande ne peut plus être annulée ici. Écrivez-nous sur WhatsApp."
     }
   },
   "product": {
@@ -298,7 +299,30 @@
       "cancelledUnpaidTitle": "Annulée : nous n'avons pas reçu le paiement sous 24 heures",
       "cancelledUnpaidBody": "La date est de nouveau libre. Si vous voulez toujours cette commande, passez-la à nouveau ou écrivez-nous sur WhatsApp.",
       "cancelledTitle": "Cette commande a été annulée",
-      "whatsapp": "Écrivez-nous sur WhatsApp"
+      "whatsapp": "Écrivez-nous sur WhatsApp",
+      "closedTitle": "Cette commande est clôturée",
+      "closedBody": "Il ne se passera plus rien pour cette commande. Écrivez-nous sur WhatsApp si vous avez une question.",
+      "whatsappText": "Bonjour, au sujet de ma commande {{number}}",
+      "changeTitle": "Modifier ou annuler",
+      "whatsappButton": "Nous écrire sur WhatsApp au sujet de {{number}}",
+      "changeOrCancel": "Pour modifier ou annuler, écrivez-nous sur WhatsApp. Annulation gratuite jusqu'à 48 heures avant la date de votre commande.",
+      "noEdit": "Pour modifier votre commande, écrivez-nous sur WhatsApp tant qu'elle est en attente.",
+      "rateLimitedTitle": "Merci de patienter un instant",
+      "rateLimitedBody": "Cette page a été ouverte de nombreuses fois en peu de temps. Réessayez dans {{minutes}} minutes.",
+      "cancel": {
+        "button": "Annuler la commande",
+        "buttonLabel": "Annuler la commande {{number}}",
+        "title": "Annuler la commande {{number}} ?",
+        "body": "Nous ne la préparerons pas et nous vous enverrons un e-mail de confirmation. Cette action est définitive.",
+        "confirm": "Annuler la commande {{number}}",
+        "keep": "Garder la commande",
+        "close": "Fermer",
+        "sending": "Annulation…",
+        "done": "Rien ne sera préparé. Nous vous avons envoyé un e-mail de confirmation.",
+        "notAllowed": "Cette commande ne peut plus être annulée ici. Écrivez-nous sur WhatsApp, nous vous aiderons.",
+        "changed": "Cette commande a été mise à jour, vérifiez-la puis réessayez.",
+        "failed": "Nous n'avons pas pu annuler la commande. Réessayez dans un instant."
+      }
     },
     "status": {
       "pending_approval": "En attente d'acceptation",
@@ -310,7 +334,10 @@
       "other": "Mise à jour de la commande",
       "awaiting_payment": "En attente de paiement",
       "declined": "Refusée",
-      "cancelled": "Annulée"
+      "cancelled": "Annulée",
+      "quote_needed": "Devis en préparation",
+      "quote_sent": "Votre devis est prêt",
+      "closed": "Clôturée"
     },
     "payment": {
       "title": "Payez maintenant pour confirmer votre commande",

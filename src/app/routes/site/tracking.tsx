@@ -1,42 +1,66 @@
-import { data, isRouteErrorResponse, redirect } from "react-router";
+import { MessageCircle } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { type ShouldRevalidateFunctionArgs, data, isRouteErrorResponse, redirect } from "react-router";
+import { CancelOrder, type CancelRefusal, CancelRefusalAlert } from "~/components/order/cancel-order";
 import { OrderNotFound } from "~/components/order/order-not-found";
 import { PaymentInstructions } from "~/components/order/payment-instructions";
 import { StatusBadge } from "~/components/order/status-badge";
 import { StatusProgress } from "~/components/order/status-progress";
 import { Alert } from "~/components/ui/alert";
+import { buttonVariants } from "~/components/ui/button";
 import { formatOrderNumber } from "~/domain/order-number";
-import { customerProgress } from "~/domain/status";
+import { canCustomerCancel, customerProgress } from "~/domain/status";
 import { normalizePhone } from "~/domain/phone";
 import { formatDayLabel, todayMU } from "~/domain/time";
 import { t as translate } from "~/i18n/catalog.server";
 import { localized } from "~/i18n/localized";
 import { useI18n } from "~/i18n/react";
-import { formatRupees, localeFromPathname } from "~/lib/locale";
+import { type Locale, formatRupees, localeFromPathname } from "~/lib/locale";
 import { whatsappHref } from "~/lib/contact";
+import { actionError } from "~/server/action-result.server";
+import { clientIp, rateLimitedResult } from "~/server/auth-rate-limit.server";
+import { clockContext } from "~/server/clock.server";
+import { Version } from "~/server/contracts/shared";
 import { requestDbContext } from "~/server/db.server";
 import { paymentView } from "~/server/payment-view.server";
+import { RL_TRACK, type RateLimitSubject, consumeRateLimit, rateLimitBucketFor, rateLimitVerdict } from "~/server/rate-limit.server";
 import { findTrackedOrder } from "~/server/repos/orders.server";
+import { cancelOrderByCustomer } from "~/server/services/cancel-order.server";
 import { isTrackingToken, orderLanguageRedirect, tokenPageHeaders } from "~/server/token-page.server";
 import type { Route } from "./+types/tracking";
 
 /** no-store, noindex, no-referrer on every response of this route (NFR-004, threat-model G-07). */
 export const middleware: Route.MiddlewareFunction[] = [tokenPageHeaders];
 
+/** RL-track (S-094 AC4): page loads and the cancel action count per IP, whatever the token. */
+const trackSubject = (request: Request): RateLimitSubject => ({ action: "site.track", parts: [clientIp(request)] });
+
+/** 429 with Retry-After; the boundary shows a calm "please wait" page. */
+function rateLimited(retryAfterSeconds: number): never {
+  throw data({ retryAfterMinutes: Math.max(1, Math.ceil(retryAfterSeconds / 60)) }, { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } });
+}
+
 /**
- * `site/tracking` loader (contracts.md; minimal slice: order summary, items, `payment`,
- * `progress`). No contact details are returned: the link may be forwarded. The format is
- * checked before the database; wrong and unknown tokens share one 404 path (FR-026).
+ * `site/tracking` loader (contracts.md): order summary, items, `payment`, `refund`,
+ * `progress`, `canCancel` and `whatsappUrl`. No contact details or admin note are returned:
+ * the link may be forwarded. The format is checked before the database; wrong and unknown
+ * tokens share one 404 path after the same single statement, which also counts the request
+ * (RL-track, FR-026).
  */
 export async function loader({ request, url, params, context }: Route.LoaderArgs) {
   if (!isTrackingToken(params.token)) throw data(null, { status: 404 });
   const db = context.get(requestDbContext).db;
-  const order = await findTrackedOrder(db, params.token);
+  const now = context.get(clockContext).now();
+  const bucket = rateLimitBucketFor(RL_TRACK, trackSubject(request), now);
+  const { order, attempts } = await findTrackedOrder(db, params.token, bucket);
+  const verdict = rateLimitVerdict(RL_TRACK, bucket.windowStart, attempts, now);
+  if (!verdict.ok) rateLimited(verdict.retryAfterSeconds);
   if (!order) throw data(null, { status: 404 });
   const moveTo = orderLanguageRedirect(request, url, order.locale);
   if (moveTo) throw redirect(moveTo);
   const locale = localeFromPathname(url.pathname);
   // One query: the order, its items and the Settings it is shown with (ADR-0003 amendment 3).
-  const { id: _id, locale: _orderLocale, number, orderNumberPrefix, payment: settings, createdAt, refundDueRs, refundedAt, contactWhatsapp, ...shown } = order;
+  const { id: _id, locale: _orderLocale, number, orderNumberPrefix, payment: settings, createdAt, refundDueRs, refundedAt, contactWhatsapp, source, ...shown } = order;
   const reference = formatOrderNumber(orderNumberPrefix, number);
   return {
     title: translate("order.tracking.metaTitle", locale),
@@ -45,15 +69,45 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
     payment: order.status === "awaiting_payment" ? paymentView({ totalRs: order.totalRs, reference, createdAt, settings, locale }) : null,
     // A refused paid order (S-281 AC4): the refund still to come, or the day it was sent.
     refund: refundDueRs === null ? null : { amountRs: refundDueRs, refundedOn: refundedAt ? formatDayLabel(todayMU(refundedAt), locale) : null },
-    progress: customerProgress(order.status, order.fulfilment),
-    whatsappUrl: whatsappUrl(contactWhatsapp),
+    progress: customerProgress(order.status, order.fulfilment, source),
+    canCancel: canCustomerCancel(order),
+    whatsappUrl: whatsappUrl(contactWhatsapp, reference, locale),
+    /** Set by the redirect after the customer's own cancel, so the page can say it worked. */
+    justCancelled: url.searchParams.get("cancelled") === "1" && order.status === "cancelled",
   };
 }
 
-/** The bakery's public WhatsApp as a wa.me link (a local number gets +230). */
-function whatsappUrl(number: string | null): string | null {
+/** The bakery's public WhatsApp as a wa.me link (a local number gets +230), prefilled with the order number (S-094 AC1). */
+function whatsappUrl(number: string | null, reference: string, locale: Locale): string | null {
   const e164 = number ? normalizePhone(number) : null;
-  return e164 ? whatsappHref(e164) : null;
+  return e164 ? whatsappHref(e164, translate("order.tracking.whatsappText", locale, { number: reference })) : null;
+}
+
+/**
+ * `cancel { version }` (S-096): RL-track, then the token (same 404 as the page), then the
+ * status rule before the version (CANCEL_NOT_ALLOWED, ORDER_CHANGED). Success redirects back
+ * to the page (post/redirect/get, so it works without JavaScript).
+ */
+export async function action({ request, url, params, context }: Route.ActionArgs) {
+  if (!isTrackingToken(params.token)) throw data(null, { status: 404 });
+  const locale = localeFromPathname(url.pathname);
+  const db = context.get(requestDbContext).db;
+  const now = context.get(clockContext).now();
+  const limit = await consumeRateLimit(db, RL_TRACK, trackSubject(request), now);
+  if (!limit.ok) return rateLimitedResult(limit.retryAfterSeconds, locale, {});
+  const form = Object.fromEntries(await request.formData());
+  const version = Version.safeParse(form.version);
+  // Customers cannot edit orders (S-096 AC9): cancel is the only intent.
+  if (form.intent !== "cancel" || !version.success) return actionError("VALIDATION_FAILED", locale);
+  const result = await cancelOrderByCustomer(db, { token: params.token, version: version.data, now });
+  if (result.ok) return redirect(`${url.pathname}?cancelled=1`);
+  if (result.code === "NOT_FOUND") throw data(null, { status: 404 });
+  return actionError(result.code, locale);
+}
+
+/** A refused cancel (409) still reloads the order, so the page shows what changed (S-096 AC4, AC5). */
+export function shouldRevalidate({ actionStatus, defaultShouldRevalidate }: ShouldRevalidateFunctionArgs) {
+  return actionStatus === 409 ? true : defaultShouldRevalidate;
 }
 
 export function meta({ loaderData }: Route.MetaArgs) {
@@ -131,7 +185,7 @@ function WhatsappLink({ href }: { href: string | null }) {
 }
 
 /** Where the order stands beyond the progress list: paid, refused (with the refund), cancelled. */
-function OrderState({ data: { order, refund, whatsappUrl } }: { data: Route.ComponentProps["loaderData"] }) {
+function OrderState({ data: { order, refund, whatsappUrl, justCancelled } }: { data: Route.ComponentProps["loaderData"] }) {
   const { t } = useI18n();
   if (order.status === "approved" && order.paid) {
     return (
@@ -156,11 +210,11 @@ function OrderState({ data: { order, refund, whatsappUrl } }: { data: Route.Comp
       </Alert>
     );
   }
-  if (order.status === "cancelled") {
-    const unpaid = order.cancelReason === "unpaid";
+  if (order.status === "cancelled") return <CancelledAlert unpaid={order.cancelReason === "unpaid"} justCancelled={justCancelled} whatsappUrl={whatsappUrl} />;
+  if (order.status === "closed") {
     return (
-      <Alert tone="warning" title={unpaid ? t("order.tracking.cancelledUnpaidTitle") : t("order.tracking.cancelledTitle")} className="mt-6">
-        {unpaid && <p>{t("order.tracking.cancelledUnpaidBody")}</p>}
+      <Alert tone="info" title={t("order.tracking.closedTitle")} className="mt-6">
+        <p>{t("order.tracking.closedBody")}</p>
         <WhatsappLink href={whatsappUrl} />
       </Alert>
     );
@@ -168,9 +222,71 @@ function OrderState({ data: { order, refund, whatsappUrl } }: { data: Route.Comp
   return null;
 }
 
-export default function Tracking({ loaderData }: Route.ComponentProps) {
+/**
+ * Cancelled (S-095 AC2): by the 24 h payment rule, or by the customer. Right after the
+ * customer's own cancel it says so and takes focus, so the dialog's outcome is announced (S-096 AC1).
+ */
+function CancelledAlert({ unpaid, justCancelled, whatsappUrl }: { unpaid: boolean; justCancelled: boolean; whatsappUrl: string | null }) {
+  const { t } = useI18n();
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (justCancelled) ref.current?.focus();
+  }, [justCancelled]);
+  return (
+    <Alert
+      ref={ref}
+      tabIndex={-1}
+      role={justCancelled ? "status" : undefined}
+      tone="warning"
+      title={unpaid ? t("order.tracking.cancelledUnpaidTitle") : t("order.tracking.cancelledTitle")}
+      className="mt-6 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {unpaid && <p>{t("order.tracking.cancelledUnpaidBody")}</p>}
+      {justCancelled && <p>{t("order.tracking.cancel.done")}</p>}
+      <WhatsappLink href={whatsappUrl} />
+    </Alert>
+  );
+}
+
+/** The WhatsApp button, named with the order number (S-094 AC8). */
+function WhatsappButton({ url, number }: { url: string; number: string }) {
+  const { t } = useI18n();
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: "outline", size: "lg", className: "mt-3 max-w-full whitespace-normal" })}>
+      <MessageCircle aria-hidden="true" />
+      {t("order.tracking.whatsappButton", { number })}
+    </a>
+  );
+}
+
+const STOPPED = new Set(["declined", "cancelled", "closed"]);
+
+/**
+ * Changes and cancelling (S-096 AC1, AC3, AC9): Cancel while allowed; otherwise the WhatsApp
+ * guidance with the 48-hour rule. Never an edit control. Final states already offer WhatsApp
+ * in their Alert.
+ */
+function ChangeSection({ data, refusal }: { data: Route.ComponentProps["loaderData"]; refusal: CancelRefusal | undefined }) {
+  const { t } = useI18n();
+  const { order, canCancel, whatsappUrl } = data;
+  if (STOPPED.has(order.status)) return <CancelRefusalAlert refusal={refusal} />;
+  return (
+    <section aria-labelledby="change-heading" className="mt-8">
+      <h2 id="change-heading" className="section-title-start text-h2">
+        {t("order.tracking.changeTitle")}
+      </h2>
+      <CancelRefusalAlert refusal={refusal} />
+      <p className="mt-2 max-w-measure">{t(canCancel ? "order.tracking.noEdit" : "order.tracking.changeOrCancel")}</p>
+      {whatsappUrl && <WhatsappButton url={whatsappUrl} number={order.number} />}
+      {canCancel && <CancelOrder number={order.number} version={order.version} refusal={refusal} />}
+    </section>
+  );
+}
+
+export default function Tracking({ loaderData, actionData }: Route.ComponentProps) {
   const { t } = useI18n();
   const { order, payment, progress } = loaderData;
+  const refusal = actionData && !actionData.ok ? (actionData.error as CancelRefusal) : undefined;
   return (
     <>
       <h1>{t("order.tracking.heading", { number: order.number })}</h1>
@@ -188,7 +304,12 @@ export default function Tracking({ loaderData }: Route.ComponentProps) {
           <p>{t("order.confirmed.notConfirmedBody")}</p>
         </Alert>
       )}
-      {progress ? <StatusProgress steps={progress.steps} current={progress.current} /> : <p className="mt-6 max-w-measure">{t("order.tracking.otherStatusHint")}</p>}
+      {/* Declined, cancelled and closed have their Alert above instead of the progress list (S-095 AC2). */}
+      {progress ? (
+        <StatusProgress steps={progress.steps} current={progress.current} />
+      ) : (
+        !STOPPED.has(order.status) && <p className="mt-6 max-w-measure">{t("order.tracking.otherStatusHint")}</p>
+      )}
       <section aria-labelledby="details-heading" className="mt-8">
         <h2 id="details-heading" className="section-title-start text-h2">
           {t("order.tracking.detailsTitle")}
@@ -196,6 +317,7 @@ export default function Tracking({ loaderData }: Route.ComponentProps) {
         <OrderFacts order={order} />
         <ItemsAndTotal order={order} />
       </section>
+      <ChangeSection data={loaderData} refusal={refusal} />
     </>
   );
 }
@@ -203,6 +325,15 @@ export default function Tracking({ loaderData }: Route.ComponentProps) {
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   const { t } = useI18n();
   if (isRouteErrorResponse(error) && error.status === 404) return <OrderNotFound />;
+  if (isRouteErrorResponse(error) && error.status === 429) {
+    const minutes = (error.data as { retryAfterMinutes?: number } | null)?.retryAfterMinutes ?? 10;
+    return (
+      <>
+        <h1>{t("order.tracking.rateLimitedTitle")}</h1>
+        <p className="mt-4 max-w-measure">{t("order.tracking.rateLimitedBody", { minutes })}</p>
+      </>
+    );
+  }
   return (
     <>
       <h1>{t("errors.genericTitle")}</h1>

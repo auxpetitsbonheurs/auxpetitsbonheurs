@@ -103,7 +103,8 @@ describe("after payment, refusal or the unpaid cancel (S-279 AC5, S-280 AC5, S-2
     const data = await load(`/t/${token}`, token);
     expect(data.order).toMatchObject({ status: "cancelled", cancelReason: "unpaid" });
     expect(data.payment).toBeNull();
-    expect(data.whatsappUrl).toBe("https://wa.me/23050000003");
+    // Prefilled with the order number (S-094 AC1).
+    expect(data.whatsappUrl).toBe(`https://wa.me/23050000003?text=${encodeURIComponent("Hello, about my order APB-0001")}`);
   });
 });
 
