@@ -16,7 +16,7 @@ As a customer on a phone over 4G, I want each photo to download at the size my s
 - [x] AC4 (UX): Given a photo without copies (stored before this story, a copy upload that failed, an old cached menu), when shown, then the original is used with no `srcset` and nothing looks broken; a copy that fails to encode or upload never fails or delays the photo beyond its own small upload and is never announced as an error.
 - [x] AC5 (data): Given migration 0011, when applied, then `product_photo`, `gallery_photo`, `site_page_photo` have `variant_widths smallint[] NOT NULL DEFAULT '{}'` and `settings` has `hero_image_variants`, `about_image_variants` (same); additive and forward-only.
 - [x] AC6 (S-045 AC6): Given a photo is removed (product deleted, photo removed on save, page photo or Settings image replaced, or retried by the `storage_purge` job), when Storage is asked, then the original and every possible copy are removed (a copy never made is a no-op).
-- [ ] AC7 (NFR-001): Given staging on a Pixel 7 profile (412×915 @2.625, Lighthouse simulated slow 4G, 4× CPU, median of 3), when `/`, `/menu`, `/gallery` and a product page are measured before and after, then image bytes drop and LCP is at or under 2.5 s on each (see Notes for the measured numbers).
+- [x] AC7 (NFR-001): Given staging on a Pixel 7 profile (412×915 @2.625, Lighthouse simulated slow 4G, 4× CPU, median of 3), when `/`, `/menu`, `/gallery` and a product page are measured before and after, then image bytes drop and LCP is at or under 2.5 s on each (see Notes for the measured numbers; closed 2026-11-13 by Seoul placement and deferred hydration, 366dcd3).
 - [x] AC8 (ops): Given photos stored before this story, when the manual `photo-variants` workflow runs, then it is bound to the `staging` GitHub Environment, uses only STAGING_* secrets, refuses any APP_ENV but staging, makes the missing copies with sharp in CI (never in the Worker), records the widths that pass the save checks, reuses copies an earlier run stored, and a second run changes nothing.
 
 ## Tests
@@ -26,7 +26,7 @@ As a customer on a phone over 4G, I want each photo to download at the size my s
 - AC4 → src/app/lib/images.test.ts ("AC4"); src/app/routes/site/menu.test.tsx ("S-276 AC4"); src/app/lib/photo-variants.test.ts (refusals never throw); src/app/lib/image-compress.test.ts ("S-276 AC4")
 - AC5 → src/app/db/migrations.test.ts ("S-276 AC5" ×2)
 - AC6 → src/app/domain/upload.test.ts ("removals (AC7)"); src/app/jobs/purge-storage.test.ts; src/app/server/services/delete-product.server.test.ts; save-product / save-site-page / save-settings removal tests
-- AC7 → manual Lighthouse runs on staging (Notes); src/app/lib/photo-sizes.test.ts (which copy a Pixel 7 / 3x phone picks)
+- AC7 → manual Lighthouse runs on staging (Notes); src/app/lib/photo-sizes.test.ts (which copy a Pixel 7 / 3x phone picks); src/app/lib/defer-hydration.test.ts; src/tests/e2e/defer-hydration.spec.ts
 - AC8 → src/app/server/services/photo-variants-backfill.server.test.ts; src/app/lib/photo-variants-workflow.test.ts
 
 ## Design
@@ -56,3 +56,17 @@ As a customer on a phone over 4G, I want each photo to download at the size my s
   With the Worker placed in Sydney (704238d, trial): 3.44 / 2.93 / 3.25 s. AC7 stays open; two causes remain, neither in the photos:
   1. **Bytes before the LCP paint.** Lighthouse's simulation (1.6 Mbit/s) counts every request that starts before the photo paints except lazy images: ~160-190 kB of route JavaScript (modulepreloads, React + router ~110 kB of it), 55-78 kB of fonts (4 woff2), 13 kB CSS, 15 kB HTML and the photo(s): ~340-360 kB, about 2 s of transfer. Even a run with a 277 ms server response gave LCP 3.18 s on `/menu`. Reaching 2.5 s needs ~120 kB less before the photo: e.g. start hydration after the load event on customer pages (an Owner decision: pages work without JavaScript, but taps before load would be plain navigations/form posts), or fewer font files.
   2. **Server response from the test machine (US).** Every query takes 140-190 ms whether the Worker runs in Chicago, Mumbai or Sydney (ADR-0003 amendment 6), so the region in the runbook (Mumbai) is unconfirmed; Home runs 2-5 sequential queries (0.35-1.0 s). Owner step: Supabase → Project Settings → General → Region, then targeted placement there.
+- 2026-11-13 AC7 closed. Two changes after the table above, same Lighthouse method (staging, Pixel 7, simulated slow 4G, 4x CPU, median of 3):
+  1. Staging Worker placed in Seoul (861a958, ADR-0003 amendment 7; `cf-placement: remote-ICN`): per query ~190 ms to 6-12 ms; server time `/` ~1.0 s to 70-196 ms, `/menu` ~0.56 s to 14-19 ms, product ~0.60 s to 18-20 ms. LCP on 861a958 alone: `/` 3.47 s, `/menu` 3.10 s, `/menu/red-velvet` 3.32 s.
+  2. Browsing pages start their JavaScript after the load event and an idle moment (Owner decision 2026-11-13; 366dcd3, `lib/defer-hydration.ts`): home, menu, menu-links, our-story, workshops, gallery, product and not-found. The server rewrites the document stream: modulepreloads wait (`rel="x-modulepreload"`), the module script is inert text, and a ~600 byte inline loader restores both after load + idle (8 s cap). Basket, contact, custom cake, order confirmed, tracking and every admin page keep their JavaScript at once.
+
+  | Page | LCP before S-276 | after fixes (a121a83) | after Seoul (861a958) | after deferred JS (366dcd3), 3 runs | median | requests |
+  |---|---|---|---|---|---|---|
+  | `/` | 4.21 s | 3.60 s | 3.47 s | 2.47 / 2.38 / 2.48 s | **2.47 s** | 63 |
+  | `/menu` | 6.30 s | 3.23 s | 3.10 s | 2.11 / 2.38 / 2.79 s | **2.38 s** | 62 |
+  | `/menu/red-velvet` | 4.27 s | 3.31 s | 3.32 s | 2.44 / 2.49 / 2.23 s | **2.44 s** | 70 |
+  | `/gallery` | 1.83 s | | | 0.95 / 0.96 / 0.96 s | **0.96 s** | |
+
+  CLS 0.000 on all, performance score 96-100. Margins are thin (0.03-0.12 s under 2.5 s; `/menu` had one 2.79 s run), so keep an eye on it when the bundle grows. Remaining lever if it slips: fewer font files before the photo (4 woff2, 55-78 kB).
+- UX of the deferral: until hydration every link, the language switch, the Add to basket form and the phone menu button (a link to `/menu-links`) are plain navigations and form posts; after it they are instant. The page is the same height before and after hydration at 375 px (home 2570 px, product 2066 px: no layout shift). A size or message chosen before hydration is read back from the form (`components/product/form-selection.ts`), so Add never says "Choose a size" for a size the customer can see (found by the e2e test, fixed in the same commit). Screenshots (scratchpad): `defer-home-before-hydration.png`, `defer-home-after-hydration.png`, `defer-product-before-hydration.png`, `defer-product-after-hydration.png`.
+- Tests: `src/app/lib/defer-hydration.test.ts` (which pages defer, stream rewrite at any chunk cut, the loader's timing), `src/app/components/product/form-selection.test.ts`, `src/tests/e2e/defer-hydration.spec.ts` (HTML shape, a tap before hydration, no script before load, no-JS browse + Add + language switch + phone menu). Full e2e 1081 passed, 72 skipped; `check:js-budget` passes (largest route 149 kB of 170 kB).
