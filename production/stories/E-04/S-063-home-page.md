@@ -39,3 +39,4 @@ As a first-time customer on my phone, I want a Home page with the hero, current 
 - Hero photo: Settings hero (S-058/S-059), else the first featured product's photo, else the first cake photo; with none, the cream logo badge on the burgundy band (no broken image). Settings stores no size for the hero, so a 4:3 box is reserved.
 - Copy is seeded EN/FR in i18n (`home.*`); copywriter polish in E-12.
 - Contract: `site/home` adds `categories` (see contracts.md changelog v0.35).
+- AC6 open: hero `fetchpriority=high` (also preloaded from the head) with explicit size, every other image lazy and low priority, CLS 0.010, route JS 161.6 kB gz. LCP measured 2.78 s on simulated slow 4G with 1600 px photos (single run on a loaded host): above 2.5 s until photos are served in smaller variants (see S-254 notes).

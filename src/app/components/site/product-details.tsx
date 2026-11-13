@@ -1,7 +1,7 @@
 // Product page content under the description (S-065): diet tags with the fixed kitchen note
 // (AC2), the earliest date for this product alone (AC3) and the seasonal note; and the 404
 // bodies: "no longer available" (hidden or out of season, AC5) and unknown (AC6).
-import { CalendarDays, Leaf, MessageCircle } from "lucide-react";
+import { Clock, Leaf, MessageCircle } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { useLayoutWhatsapp } from "~/components/site/page-error";
@@ -31,7 +31,7 @@ export function ProductDetails({ allergens, earliestDate, seasonEndsOn }: Produc
         <ul className="flex flex-col gap-1">
           {earliestDate && (
             <li className="flex items-start gap-2">
-              <CalendarDays aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-primary-strong" strokeWidth={1.75} />
+              <Clock aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-primary-strong" strokeWidth={1.75} />
               <span>{t("productContent.earliestDate", { date: formatDayLabel(earliestDate, locale) })}</span>
             </li>
           )}

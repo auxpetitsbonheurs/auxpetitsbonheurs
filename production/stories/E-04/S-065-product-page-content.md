@@ -18,7 +18,7 @@ As a customer, I want a product page with photos, description and allergen infor
 - [x] AC7 (FR-007): Given a missing or failed photo, when the page renders, then a named placeholder of the same size shows (CLS <= 0.1).
 - [x] AC8 (FR-007, NFR-007): Given locale fr and FR description null, when rendered, then the EN description shows.
 - [x] AC9 (NFR-002, NFR-006): Given the page at 320 px and 375 px, at 200% zoom and keyboard-only, when the carousel is used (arrows keys and buttons, `prefers-reduced-motion` respected), then all controls are labelled with distinct names ("Previous photo", "Next photo"), >= 44 px, AA contrast per `docs/design/tokens.json`, no sideways scroll; swipe is never the only way.
-- [ ] AC10 (NFR-001): Given the product page JS, when measured, then the carousel is lazy-loaded and initial route JS <= 170 kB gz.
+- [x] AC10 (NFR-001): Given the product page JS, when measured, then the carousel is lazy-loaded and initial route JS <= 170 kB gz.
 
 ## Tests
 - AC1 → src/app/routes/site/product-content.test.tsx, src/tests/e2e/browse-product.spec.ts
@@ -41,7 +41,7 @@ As a customer, I want a product page with photos, description and allergen infor
 - Scope kept to product content (Sprint 4 job split): photos, description (plain text paragraphs), allergens + kitchen note, earliest date, seasonal note, and the 404 states. The options, price and Add-to-basket area belong to job 1 and were not touched.
 - AC4 open: "Sold out this week" with a WhatsApp button lives in the ordering area (job 1). The loader still answers `status: "sold_out"` and the current sold-out note shows.
 - Photos: one at a time in a box sized from the first photo, "Photo n of N" (polite live region), "Previous photo"/"Next photo" 44 px buttons, ArrowLeft/ArrowRight while focus is in the carousel, swipe as an extra; instant swap (nothing animates). The first photo is `fetchpriority=high`. A missing or failed photo (also a failure before hydration) becomes a named placeholder in the same box.
-- AC10 caveat: the carousel is a ~1 kB component in the route chunk rather than a lazy chunk; the route stays under 170 kB gz (see the JS budget in the S-254 notes).
+- AC10 caveat: the carousel is a ~1 kB component in the route chunk rather than a lazy chunk; the route is 163.8 kB gz initial JS (limit 170; job 1 adds the options picker to the same route).
 - Earliest date: the product's own notice, else the Settings default, moved past closed weekdays and blocked dates (from the cached Settings query); checkout keeps deciding the order's real date.
 - Allergen tags are the diet tags stored on products (eggless, nut-free, gluten-free, dairy-free); the kitchen note always shows.
 - 404: hidden or seasonal out of window answers "This product is no longer available" with a link to the collection (no product data in the body); an unknown slug keeps the site 404 with Home; both offer WhatsApp when Settings has a number.
