@@ -29,7 +29,7 @@ import { RL_TRACK, type RateLimitSubject, consumeRateLimit, rateLimitBucketFor, 
 import { findTrackedOrder } from "~/server/repos/orders.server";
 import { findQuote } from "~/server/repos/custom-requests.server";
 import { acceptQuote, declineQuote } from "~/server/services/quotes.server";
-import { deferOrderAlert } from "~/server/notify/admin-alerts.server";
+import { alertAdmins } from "~/server/notify/admin-alerts.server";
 import { cancelOrderByCustomer } from "~/server/services/cancel-order.server";
 import { isTrackingToken, orderLanguageRedirect, tokenPageHeaders } from "~/server/token-page.server";
 import type { Route } from "./+types/tracking";
@@ -135,14 +135,14 @@ export async function action({ request, url, params, context }: Route.ActionArgs
   const version = Version.safeParse(form.version);
   if ((form.intent === "acceptQuote" || form.intent === "declineQuote") && version.success) {
     const event = form.intent === "acceptQuote" ? "quote_accepted" : "quote_declined";
-    return answerQuote(form.intent, params.token, version.data, { db, now, url, locale, answered: () => deferOrderAlert(context, event, { trackingToken: params.token }) });
+    return answerQuote(form.intent, params.token, version.data, { db, now, url, locale, answered: () => alertAdmins(context, event, { trackingToken: params.token }) });
   }
   // Customers cannot edit orders (S-096 AC9): cancel and the quote answers are the only intents.
   if (form.intent !== "cancel" || !version.success) return actionError("VALIDATION_FAILED", locale);
   const result = await cancelOrderByCustomer(db, { token: params.token, version: version.data, now });
   if (result.ok) {
     // Admin push after the response (S-195 AC2); the email rows were queued with the cancel.
-    deferOrderAlert(context, "customer_cancelled", { trackingToken: params.token });
+    await alertAdmins(context, "customer_cancelled", { trackingToken: params.token });
     return redirect(`${url.pathname}?cancelled=1`);
   }
   if (result.code === "NOT_FOUND") throw data(null, { status: 404 });

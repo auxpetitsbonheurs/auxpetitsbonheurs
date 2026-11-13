@@ -622,7 +622,16 @@
       "backToOrders": "Retour aux commandes",
       "noteSave": "Enregistrer la note",
       "flagPaid": "Marquer payée",
-      "flagUnpaid": "Marquer non payée"
+      "flagUnpaid": "Marquer non payée",
+      "whatsappTemplates": {
+        "approved": "Commande confirmée",
+        "ready": "Commande prête",
+        "on_the_way": "En route",
+        "payment_reminder": "Rappel de paiement",
+        "blank": "Message libre"
+      },
+      "whatsappMenuHint": "Choisissez un message. Vous pourrez le modifier dans WhatsApp avant l'envoi.",
+      "whatsappMenuLabel": "Messages WhatsApp pour {{name}}"
     },
     "log": {
       "title": "Historique",
@@ -650,12 +659,18 @@
         "marked_paid": "Marquée payée par {{actor}}, {{time}}",
         "marked_unpaid": "Marquée non payée par {{actor}}, {{time}}",
         "edited": "Modifiée par {{actor}}, {{time}}",
-        "email_failed": "Un e-mail n'a pas encore pu être envoyé ; nouvel essai prévu, {{time}}",
+        "email_failed": "Un e-mail au client n'a pas pu être remis, {{time}}",
         "pending_alert_sent": "Rappel envoyé à l'équipe, {{time}}"
       },
       "reason": "Motif : {{reason}}",
       "paidRefund": "La commande était payée : remboursement hors site.",
-      "total": "Total : {{from}} → {{to}}"
+      "total": "Total : {{from}} → {{to}}",
+      "emailFailedReason": {
+        "permanent": "L'adresse l'a refusé.",
+        "retries": "Le service d'e-mail a échoué 6 fois.",
+        "other": "L'e-mail n'a pas pu être préparé."
+      },
+      "emailFailedHint": "Envoyez plutôt le lien de suivi par WhatsApp."
     },
     "nav": {
       "today": "Aujourd'hui",
@@ -1393,13 +1408,25 @@
         },
         "paymentWhatsapp": {
           "invalid": "Saisissez un numéro WhatsApp, par exemple 5712 3456."
+        },
+        "whatsappTemplate": {
+          "unknownPlaceholder": "{{template}} ({{language}}) : utilisez uniquement les repères listés plus haut.",
+          "tooLong": "{{template}} ({{language}}) : 1000 caractères au maximum.",
+          "missingEn": "{{template}} : écrivez le texte anglais (le français est facultatif)."
         }
       },
       "paymentIntro": "Les clients paient la totalité par MCB Juice en commandant. Ces informations ne sont montrées qu'à un client qui a passé commande, jamais sur les pages publiques.",
       "juiceName": "Nom du compte Juice",
       "juiceNameHint": "Le nom que les clients voient dans Juice en payant, pour savoir que c'est vous. 60 caractères au plus.",
       "paymentWhatsapp": "WhatsApp pour la preuve de paiement",
-      "paymentWhatsappHint": "Les clients y envoient leur capture Juice. Par exemple 5xxx xxxx."
+      "paymentWhatsappHint": "Les clients y envoient leur capture Juice. Par exemple 5xxx xxxx.",
+      "whatsappTitle": "Messages WhatsApp",
+      "whatsappIntro": "Les messages proposés par le bouton WhatsApp d'une commande, dans la langue de la commande. Vous pouvez toujours les modifier dans WhatsApp avant l'envoi.",
+      "whatsappPlaceholders": "Repères utilisables :",
+      "whatsappFrEmpty": "Vide : le texte anglais sera utilisé.",
+      "previewEn": "Aperçu en anglais",
+      "previewFr": "Aperçu en français",
+      "previewUsesEn": "Le texte anglais sera utilisé"
     },
     "availability": {
       "title": "Disponibilités",
@@ -2103,6 +2130,30 @@
       "subject": "Devis accepté : payez pour confirmer {{number}}",
       "heading": "Merci, vous avez accepté notre devis",
       "intro": "Votre gâteau {{number}} est confirmé dès réception de votre paiement Juice. Voici comment payer."
+    },
+    "adminAlert": {
+      "open": "Ouvrir la commande",
+      "footer": "Vous recevez cet e-mail car les alertes par e-mail sont activées dans Mon profil.",
+      "new_order": {
+        "line": "Une nouvelle commande en ligne de {{name}} attend que vous l'acceptiez ou la refusiez.",
+        "lineNoName": "Une nouvelle commande en ligne attend que vous l'acceptiez ou la refusiez."
+      },
+      "new_request": {
+        "line": "{{name}} a envoyé une demande de gâteau sur mesure. Un devis est à faire.",
+        "lineNoName": "Une demande de gâteau sur mesure attend un devis."
+      },
+      "quote_accepted": {
+        "line": "{{name}} a accepté votre devis.",
+        "lineNoName": "Le client a accepté votre devis."
+      },
+      "quote_declined": {
+        "line": "{{name}} a refusé votre devis.",
+        "lineNoName": "Le client a refusé votre devis."
+      },
+      "customer_cancelled": {
+        "line": "{{name}} a annulé cette commande.",
+        "lineNoName": "Le client a annulé cette commande."
+      }
     }
   },
   "nav": {

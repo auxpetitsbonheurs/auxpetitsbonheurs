@@ -1,5 +1,5 @@
 # S-201: WhatsApp message and link built from templates in the order's language
-Status: ready
+Status: done
 Epic: E-10-notifications
 Spec: docs/specs/features/notifications.md#whatsapp-templates
 Estimate: 3 pts
@@ -33,3 +33,6 @@ As an admin, I want a WhatsApp chat to open with the customer's number and a rea
 ## Notes
 - Needs `domain/phone.ts` (S-204 or E-05). Customer-side "WhatsApp us" on tracking is owned by E-05 (spec row "Tracking WhatsApp"), not duplicated here.
 - Dependencies (R9): S-204, E-06 (order detail loader). Not yet done; expected.
+
+## Implementation notes
+- Implemented 2026-11-13. `app/domain/whatsapp.ts` is the one wa.me builder: the Juice proof link (`domain/payment.proofHref`), the customer contact buttons (`lib/contact.whatsappHref`, which tracking and checkout use for the order-number prefill) and the admin menu all go through `waMeUrl`; their behaviour and tests are unchanged. Server resolution in `app/server/whatsapp.server.ts`. AC9 counter: log line `whatsapp_link_opened { template, locale }`.

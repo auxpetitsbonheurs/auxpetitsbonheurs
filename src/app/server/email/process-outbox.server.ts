@@ -11,6 +11,7 @@ import type { Database } from "~/server/db.server";
 import { DAILY_LIMIT, SOFT_CAP, capDecision, nextMuMidnight, sentToday as countSentToday } from "./daily-cap";
 import { loadOrderEmailData } from "./order-data.server";
 import { EMAIL_TIMEOUT_MS, EmailSendError, type Mailer, sendWithTimeout } from "./sender.server";
+import { ADMIN_ALERT_KEYS, isAdminAlertKey, renderAdminAlertEmail } from "./templates/admin-alert-emails";
 import { ORDER_EMAIL_KEYS, type OrderEmailKey, isOrderEmailKey, renderOrderEmail } from "./templates/order-emails";
 import type { Locale } from "~/lib/locale";
 
@@ -53,8 +54,19 @@ interface Claimed {
 
 const line = (level: "info" | "error", event: string, extra: Record<string, unknown>) => console.log(JSON.stringify({ level, event, ...extra }));
 
-/** Rows this module can render today; others (admin alerts, invitations) are left to their own sender. */
-export const RENDERABLE_TEMPLATES: readonly string[] = ORDER_EMAIL_KEYS;
+/** Rows this module can render: customer order emails and admin alerts (S-195); invitations have their own sender. */
+export const RENDERABLE_TEMPLATES: readonly string[] = [...ORDER_EMAIL_KEYS, ...ADMIN_ALERT_KEYS];
+
+type LoadedRow = NonNullable<ReturnType<Awaited<ReturnType<typeof loadOrderEmailData>>["get"]>>;
+
+/** The subject, HTML and text for a claimed row whose order is loaded. */
+function renderRow(row: Claimed, loaded: LoadedRow, siteUrl: string) {
+  if (isAdminAlertKey(row.template)) {
+    return renderAdminAlertEmail(row.template, { siteUrl, locale: row.locale, orderId: row.order_id ?? String(row.payload.orderId), orderNumber: loaded.order.number, contactName: loaded.order.contactName });
+  }
+  const payload = row.payload as { reason?: string; why?: string; previousDate?: string; previousTotalRs?: number };
+  return renderOrderEmail(row.template as OrderEmailKey, { ...loaded, siteUrl, locale: row.locale, payload });
+}
 
 async function claimDue(db: Database, now: Date, limit: number): Promise<Claimed[]> {
   const result = (await db.execute(sql`
@@ -73,7 +85,8 @@ const release = (db: Database, id: string, at: Date) => db.update(emailOutbox).s
 
 async function markDead(db: Database, row: Claimed, reason: string, now: Date) {
   await db.update(emailOutbox).set({ status: "dead", attempts: row.attempts + 1, lastError: reason }).where(eq(emailOutbox.id, row.id));
-  if (row.order_id) {
+  // The order log's `email_failed` means "the customer did not get it" (S-203): not for admin alerts.
+  if (row.order_id && !isAdminAlertKey(row.template)) {
     await db.insert(orderEvent).values({ orderId: row.order_id, actorType: "system", type: "email_failed", details: { template: row.template, reason }, createdAt: now });
   }
   // The alert line: Sentry (when its DSN is set) and Workers Logs pick up error-level lines.
@@ -110,14 +123,13 @@ async function deliver(db: Database, row: Claimed, ctx: { options: OutboxOptions
   }
   const orderId = row.order_id ?? (typeof row.payload.orderId === "string" ? row.payload.orderId : null);
   const loaded = orderId ? orders.get(orderId) : undefined;
-  if (!loaded || !isOrderEmailKey(row.template)) {
+  if (!loaded || !(isOrderEmailKey(row.template) || isAdminAlertKey(row.template))) {
     await markDead(db, row, "order_missing", options.now);
     return "dead";
   }
-  const payload = row.payload as { reason?: string; why?: string; previousDate?: string; previousTotalRs?: number };
   let email;
   try {
-    email = renderOrderEmail(row.template as OrderEmailKey, { ...loaded, siteUrl, locale: row.locale, payload });
+    email = renderRow(row, loaded, siteUrl);
   } catch {
     await markDead(db, row, "render", options.now);
     return "dead";

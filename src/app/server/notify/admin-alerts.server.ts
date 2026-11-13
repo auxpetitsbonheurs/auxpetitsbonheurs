@@ -6,8 +6,9 @@
 //
 // Who queues the email rows: the custom-request procedure (0016), the quote answers and the
 // customer cancel already write theirs in the same statement as the status change; the new
-// website order's rows are written here (place_order stays untouched, it is shared by several
-// jobs), keyed so a replay never queues twice. E-10's sender (S-186) sends them all.
+// website order's rows are written here, before the response (place_order stays untouched:
+// several jobs share it), keyed so a replay never queues twice. The outbox sender (S-186,
+// process-outbox.server.ts) renders and sends them all with templates/admin-alert-emails.ts.
 import { sql } from "drizzle-orm";
 import { type RouterContextProvider } from "react-router";
 import { formatOrderNumber } from "~/domain/order-number";
@@ -67,15 +68,19 @@ export async function queueNewOrderEmails(db: Executor, orderId: string): Promis
 type AlertContext = Pick<RouterContextProvider, "get">;
 
 /**
- * For route actions: after the response, queue the new-order email rows (when `event` is
- * `new_order`) and push the alert. Never throws into the action; failures are logged by the
- * after-response queue with the task name only.
+ * For route actions, once the business change committed: queue the new-order email rows now
+ * (when `event` is `new_order`), so the outbox flush that follows the response sends them
+ * (S-186), and push the alert after the response. Never throws into the action: the order
+ * stands whatever happens here; failures are logged with names only.
  */
-export function deferOrderAlert(context: AlertContext, event: OrderAlert, ref: OrderRef): void {
+export async function alertAdmins(context: AlertContext, event: OrderAlert, ref: OrderRef): Promise<void> {
   const db = context.get(requestDbContext).db;
   const { pusher } = context.get(pushContext);
   const now = context.get(clockContext).now();
-  const afterResponse = context.get(afterResponseContext);
-  if (event === "new_order" && "orderId" in ref) afterResponse.defer("admin_alert_email", () => queueNewOrderEmails(db, ref.orderId));
-  if (pusher) afterResponse.defer("admin_alert_push", () => pushOrderAlert(db, pusher, event, ref, now));
+  if (event === "new_order" && "orderId" in ref) {
+    await queueNewOrderEmails(db, ref.orderId).catch((error: unknown) =>
+      console.error(JSON.stringify({ level: "error", event: "admin_alert_email_not_queued", error: error instanceof Error ? error.name : "unknown" })),
+    );
+  }
+  if (pusher) context.get(afterResponseContext).defer("admin_alert_push", () => pushOrderAlert(db, pusher, event, ref, now));
 }

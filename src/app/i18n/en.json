@@ -622,7 +622,16 @@
       "backToOrders": "Back to orders",
       "noteSave": "Save note",
       "flagPaid": "Mark paid",
-      "flagUnpaid": "Mark unpaid"
+      "flagUnpaid": "Mark unpaid",
+      "whatsappTemplates": {
+        "approved": "Order confirmed",
+        "ready": "Order ready",
+        "on_the_way": "On the way",
+        "payment_reminder": "Payment reminder",
+        "blank": "Blank message"
+      },
+      "whatsappMenuHint": "Choose a message. You can change it in WhatsApp before sending.",
+      "whatsappMenuLabel": "WhatsApp messages for {{name}}"
     },
     "log": {
       "title": "Activity",
@@ -650,12 +659,18 @@
         "marked_paid": "Marked paid by {{actor}}, {{time}}",
         "marked_unpaid": "Marked unpaid by {{actor}}, {{time}}",
         "edited": "Edited by {{actor}}, {{time}}",
-        "email_failed": "An email could not be sent yet; it will be retried, {{time}}",
+        "email_failed": "An email to the customer could not be delivered, {{time}}",
         "pending_alert_sent": "Reminder sent to the team, {{time}}"
       },
       "reason": "Reason: {{reason}}",
       "paidRefund": "The order was paid: refund outside the site.",
-      "total": "Total: {{from}} → {{to}}"
+      "total": "Total: {{from}} → {{to}}",
+      "emailFailedReason": {
+        "permanent": "The address refused it.",
+        "retries": "The email service failed 6 times.",
+        "other": "The email could not be prepared."
+      },
+      "emailFailedHint": "Send the tracking link by WhatsApp instead."
     },
     "nav": {
       "today": "Today",
@@ -1393,13 +1408,25 @@
         },
         "paymentWhatsapp": {
           "invalid": "Enter a WhatsApp number, for example 5712 3456."
+        },
+        "whatsappTemplate": {
+          "unknownPlaceholder": "{{template}} ({{language}}): use only the placeholders listed above.",
+          "tooLong": "{{template}} ({{language}}): use 1000 characters or fewer.",
+          "missingEn": "{{template}}: write the English text (French is optional)."
         }
       },
       "paymentIntro": "Customers pay the full amount by MCB Juice when they order. These details are shown only to a customer who has placed an order, never on public pages.",
       "juiceName": "Juice account name",
       "juiceNameHint": "The name customers see in Juice when they pay, so they know it is you. 60 characters at most.",
       "paymentWhatsapp": "WhatsApp for payment proof",
-      "paymentWhatsappHint": "Customers send their Juice screenshot here. For example 5xxx xxxx."
+      "paymentWhatsappHint": "Customers send their Juice screenshot here. For example 5xxx xxxx.",
+      "whatsappTitle": "WhatsApp messages",
+      "whatsappIntro": "The messages offered by the WhatsApp button on an order, in the order's language. You can still change each one in WhatsApp before sending.",
+      "whatsappPlaceholders": "Placeholders you can use:",
+      "whatsappFrEmpty": "Empty: the English text will be used.",
+      "previewEn": "Preview in English",
+      "previewFr": "Preview in French",
+      "previewUsesEn": "EN text will be used"
     },
     "availability": {
       "title": "Availability",
@@ -2103,6 +2130,30 @@
       "subject": "Quote accepted: pay to confirm {{number}}",
       "heading": "Thank you, you accepted our quote",
       "intro": "Your cake {{number}} is confirmed once we receive your Juice payment. Here is how to pay."
+    },
+    "adminAlert": {
+      "open": "Open the order",
+      "footer": "You get this email because email alerts are on in My profile.",
+      "new_order": {
+        "line": "A new website order from {{name}} is waiting for you to approve or decline it.",
+        "lineNoName": "A new website order is waiting for you to approve or decline it."
+      },
+      "new_request": {
+        "line": "{{name}} sent a custom cake request. It needs a quote.",
+        "lineNoName": "A custom cake request needs a quote."
+      },
+      "quote_accepted": {
+        "line": "{{name}} accepted your quote.",
+        "lineNoName": "The customer accepted your quote."
+      },
+      "quote_declined": {
+        "line": "{{name}} declined your quote.",
+        "lineNoName": "The customer declined your quote."
+      },
+      "customer_cancelled": {
+        "line": "{{name}} cancelled this order.",
+        "lineNoName": "The customer cancelled this order."
+      }
     }
   },
   "nav": {

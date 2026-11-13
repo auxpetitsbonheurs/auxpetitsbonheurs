@@ -98,6 +98,8 @@ function columns(input: SettingsInput, context: SaveSettingsContext) {
     faq: faq ?? [],
     policies: localizedOrNull(rest.policies),
     privacyNote: localizedOrNull(rest.privacyNote),
+    // S-202: only when the form posted them; otherwise the stored templates stay.
+    ...(rest.whatsappTemplates ? { whatsappTemplates: rest.whatsappTemplates } : {}),
     updatedAt: context.now,
     updatedBy: context.adminId,
   };

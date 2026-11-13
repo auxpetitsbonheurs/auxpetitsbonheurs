@@ -1,5 +1,5 @@
 # S-195: Admins are alerted by push and email on new orders, requests and customer replies
-Status: ready
+Status: done
 Epic: E-10-notifications
 Spec: docs/specs/features/notifications.md#alert-matrix-who-gets-what
 Estimate: 5 pts
@@ -38,3 +38,6 @@ As an admin, I want a push and an email when a new order, request, quote answer 
 - Matrix in spec "Alert matrix". Push sender internals are S-196; the three push-only alerts are S-198, S-199, S-200.
 - The unresolved iOS push risk (architecture T1) is why email goes with push for these four alerts.
 - Dependencies (R9): S-186, S-196, E-02 (admin alert switches, deactivation), E-05, E-08. Not yet done; expected.
+
+## Implementation notes
+- Implemented 2026-11-13 (alerts job). Push for all five events; `admin_alert_new_order` rows are queued by the checkout action (place_order untouched); the other four rows were already queued by their services and are now rendered by the shared outbox (`templates/admin-alert-emails.ts`). AC2: quote accepted/declined push is wired through `alertAdmins(context, "quote_accepted" | "quote_declined", ...)` once E-08 exposes the customer's quote answer route (the services exist, no route yet); `pushOrderAlert` is tested for both. AC9: no manual-order path exists yet; `pushOrderAlert` and `queueNewOrderEmails` ignore non-website orders, so E-06 manual orders cannot alert. AC10 test lives in `src/app/server/email/admin-alert-emails.test.ts` (the cap rule is the emails job's `daily-cap.ts`).

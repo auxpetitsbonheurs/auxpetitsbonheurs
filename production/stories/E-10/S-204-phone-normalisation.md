@@ -1,5 +1,5 @@
 # S-204: Phone numbers are stored as Mauritius-friendly E.164
-Status: ready
+Status: done
 Epic: E-10-notifications
 Spec: docs/specs/features/notifications.md#phone-normalisation-domainphonets-used-by-checkout-custom-form-manual-order-profile
 Estimate: 2 pts
@@ -29,3 +29,6 @@ As a customer or admin typing a phone number the way people write it in Mauritiu
 ## Notes
 - FR-021 belongs to E-05 (checkout), which may already create `domain/phone.ts`. Coordinate with the E-05 storyteller: if it exists this story reduces to the table-driven tests only (spec: "Unit tests table-drive these"). Decision: kept here so the spec's AC32-AC35 have an owner; remove if duplicated.
 - Dependencies (R9): E-01 (zod/i18n). Not yet done; expected.
+
+## Implementation notes
+- `domain/phone.ts` already existed (E-05); this story added the table-driven tests for AC1-AC7 and `whatsappDigits`. AC4 note: the field message is the existing checkout wording "Enter a phone number, for example 5712 3456." (EN/FR). 7-digit landlines stay accepted (+230 + 7 digits), as the E-05 tests require.

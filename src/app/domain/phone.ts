@@ -3,6 +3,11 @@
 
 const SEPARATORS = /[\s\-.()]/g;
 
+/** wa.me wants the E.164 number as digits only, without "+" (S-204 AC6). */
+export function whatsappDigits(e164: string): string {
+  return e164.replace(/\D/g, "");
+}
+
 /** The E.164 form of `raw` (e.g. "+23057123456"), or null when it is not a phone number. */
 export function normalizePhone(raw: string): string | null {
   let value = raw.replace(SEPARATORS, "");
