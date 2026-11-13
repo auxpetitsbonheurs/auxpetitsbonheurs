@@ -1,6 +1,6 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "cn"
+import { cn } from "~/lib/utils"
 import { Slot } from "radix-ui"
 
 // shadcn Button adapted to tokens.json (S-007, brand v0.3 burgundy / cream / antique gold): every size is at

@@ -48,7 +48,14 @@ One deployable app: a React Router (framework mode) Worker serves the bilingual 
 | Admin PWA (`/admin/*`) | SSR first load, then client navigations (React Router data APIs) | `private, no-store` | Phone app feel; installable; still server-authorised on every loader/action |
 | Resource routes (`/hooks/*`, `/healthz`, `/admin/sw.js`, `/admin/manifest.webmanifest`, CSV export) | Server only | per route | Non-HTML endpoints |
 
-**Client JS.** React Router hydrates every route; the shared runtime (React + router) is ~90 kB gz, leaving ~80 kB under the 170 kB budget (project.yaml). Rules: no client-only data fetching on customer pages; heavy widgets (photo carousel, HEIC decoder, image compressor, drag-reorder) are `lazy()`-loaded on interaction; Sentry's browser SDK ships only in the admin bundle. `performance-engineer` checks the per-route budget in CI with the build manifest.
+**Client JS.** React Router hydrates every route; the shared runtime (React + router) is ~90 kB gz and the whole root chunk set ~115 kB, leaving ~55 kB under the 170 kB budget (project.yaml). Rules: no client-only data fetching on customer pages; heavy widgets (photo carousel, HEIC decoder, image compressor, drag-reorder) are `lazy()`-loaded on interaction; Sentry's browser SDK ships only in the admin bundle. `performance-engineer` checks the per-route budget in CI with the build manifest.
+
+**JS budget (2026-11-13 audit, NFR-001).** Measured with a Rollup `generateBundle` hook that gzips each module of each client chunk (no plugin kept in the repo). Every page loads the root chunk set: react-dom (~55 kB gz), react-router (~35 kB gz), react, scheduler and the app shell, 115.5 kB today. Findings and actions:
+- **Removed from every page:** i18next (~13 kB gz, in the root chunk) → `app/i18n/translator.ts`, a local translator for the subset the catalogue uses (nested keys, `{{value}}`, `Intl.PluralRules` plurals); and the `cn` package's merge engine + tables (~10.6 kB gz, every page with a Button) → `app/lib/utils.ts`, a local join + tailwind-merge conflict resolution for the utility families in `app/`. Both originals stay as dev dependencies: `translator.test.ts` and `utils.test.ts` check parity on every catalogue key and every pair of source classes, so a new message feature or utility family fails CI instead of drifting.
+- **Already right:** only the active locale's customer namespaces ship (admin/email strings never reach customer routes, `catalog.server.ts`); zod and contracts stay in `server/` (no validation library in client chunks); no date library (`Intl` + `domain/time.ts`); lucide icons are imported one by one (~1.5 kB shared runtime + ~0.2 kB per icon); one copy of React/React Router; no polyfills.
+- **Split:** the date picker (checkout) and the leave dialog's modal were already lazy; the product editor's Options section (`option-groups-editor.tsx` + drag-sort) is now lazy, with a skeleton that still posts the stored groups (`option-groups-form.ts`).
+- **Result** (gzipped initial JS): basket 170.0 → 149.0 kB, admin product 169.7 → 146.5 kB, product 164.5 → 143.6 kB, home 161.0 → 140.1 kB; every route dropped ≥ 13 kB.
+- **Next candidates** if a route nears the budget again: checkout sections below the basket lines (summary, policies, details) behind inline `Suspense` (server HTML keeps no-JS forms working); photo manager and seasonal fields in the product editor.
 
 **Edge cache later.** If TTFB or Worker CPU becomes a problem, add a 60 s Cache API layer for anonymous menu/home HTML with purge on menu/promotion/availability writes. Not needed at launch.
 
@@ -76,7 +83,7 @@ src/
       push.server.ts, storage.server.ts, turnstile.server.ts, rate-limit.server.ts
     jobs/                   cron jobs (one file each) + dispatch.ts
     db/                     schema.ts barrel + tables/*
-    i18n/                   en.json, fr.json, i18next setup
+    i18n/                   en.json, fr.json, translator
     components/ui           shadcn primitives; features/<feature>/ for feature UI
     lib/                    locale/format helpers (existing)
   public/admin/             sw.js, icons (PWA)
@@ -159,7 +166,7 @@ Every outbound `fetch` uses `AbortSignal.timeout` (Resend 8 s, push 5 s, Turnsti
 Promotions need no job: "live" is computed at read time (FR-016). Cloudflare free cron cannot be paused per job, so the dispatcher logs each job's outcome to Workers Logs and Sentry Cron Monitors (free tier) watches `keepAlive`.
 
 ## i18n & locale
-- `i18next` + `react-i18next`, bundles `app/i18n/{en,fr}.json`; FR keys fall back to EN (NFR-007). Only the active locale's bundle ships to the browser.
+- Local translator (`app/i18n/translator.ts`, i18next-compatible subset; i18next is a test-only reference), bundles `app/i18n/{en,fr}.json`; FR keys fall back to EN (NFR-007). Only the active locale's bundle ships to the browser.
 - Customer URLs: EN unprefixed, FR under `/fr/...` (same route modules registered twice in `routes.ts`, under no prefix and under an exact `fr` prefix, with locale-suffixed ids; S-008: an optional `:lang?` segment would read `/basket` as a language). The switch links to the twin URL and sets the `apb_locale` cookie (1 year). First visit without cookie: `Accept-Language` starting with `fr` → redirect to `/fr/...` (FR-001). `hreflang` alternates for SEO (NFR-010). The order's `locale` = the page locale at submit; all its emails use it.
 - Admin UI uses `admin.locale`; no URL prefix.
 - DB text: `*_en`/`*_fr` columns and `{en, fr}` jsonb; a single `localized(row, field, locale)` helper does fallback.
