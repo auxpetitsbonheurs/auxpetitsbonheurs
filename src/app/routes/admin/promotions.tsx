@@ -186,7 +186,9 @@ export default function AdminPromotions({ loaderData }: Route.ComponentProps) {
     <>
       <h1>{loaderData.title}</h1>
       <p className="mt-2">{t("admin.promotions.intro")}</p>
-      <Button asChild className="mt-4">
+      {/* Below 12rem of CSS width (a 320 px phone at 200% zoom, S-227 AC3) the button tightens so
+          "New promotion" still fits; normal widths are unchanged. */}
+      <Button asChild className="mt-4 max-[12rem]:gap-1 max-[12rem]:px-3 max-[12rem]:text-sm">
         <Link to="/admin/promotions/new">
           <Plus aria-hidden="true" />
           {t("admin.promotions.new")}
