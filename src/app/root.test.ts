@@ -1,5 +1,26 @@
+import { RouterContextProvider } from "react-router";
 import { describe, expect, test } from "vitest";
-import { shouldRevalidate } from "./root";
+import { loader, shouldRevalidate } from "./root";
+
+describe("root messages (S-006 AC5, S-254)", () => {
+  const load = (path: string) =>
+    loader({ url: new URL(path, "http://x"), context: new RouterContextProvider(), request: new Request(`http://x${path}`), params: {} } as never) as {
+      messages: Record<string, unknown>;
+    };
+
+  test("customer pages ship no admin or email text (two thirds of the catalogue)", () => {
+    const { messages } = load("/fr/menu");
+    expect(messages.admin).toBeUndefined();
+    expect(messages.email).toBeUndefined();
+    expect(messages.checkout).toBeDefined();
+    expect(messages.home).toBeDefined();
+  });
+
+  test("admin pages (login and the customer preview included) get the full bundle", () => {
+    expect(load("/admin/login").messages.admin).toBeDefined();
+    expect(load("/admin/menu/1/preview").messages.admin).toBeDefined();
+  });
+});
 
 const args = (from: string, to: string, formMethod?: string) =>
   ({ currentUrl: new URL(from, "http://x"), nextUrl: new URL(to, "http://x"), formMethod, defaultShouldRevalidate: true }) as never;

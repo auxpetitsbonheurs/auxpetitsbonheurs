@@ -111,6 +111,26 @@ export async function findProductPreview(
   return { record: toRecord(rest), season: { seasonalStartsOn, seasonalEndsOn } };
 }
 
+/** A product page's availability facts (S-065): its own notice and its seasonal window. */
+export interface ProductAvailability {
+  /** NULL = the Settings default notice. */
+  noticeDays: number | null;
+  season: { startsOn: string; endsOn: string } | null;
+}
+
+/** The product with this current slug, whatever its status, with its notice and season (one query). */
+export async function findProductPageBySlug(db: Database, slug: string): Promise<{ record: ProductRecord; availability: ProductAvailability } | undefined> {
+  const [row] = await db
+    .select({ ...columns, noticeDays: product.noticeDays, seasonalStartsOn: product.seasonalStartsOn, seasonalEndsOn: product.seasonalEndsOn })
+    .from(product)
+    .where(eq(product.slug, slug));
+  if (!row) return undefined;
+  const { noticeDays, seasonalStartsOn, seasonalEndsOn, ...rest } = row;
+  // The table check keeps both dates set or both null.
+  const season = seasonalStartsOn && seasonalEndsOn ? { startsOn: seasonalStartsOn, endsOn: seasonalEndsOn } : null;
+  return { record: toRecord(rest), availability: { noticeDays, season } };
+}
+
 /** Products by id (any status); ids that do not exist are absent from the map. */
 export async function findProductsByIds(db: Database, ids: readonly string[]): Promise<Map<string, ProductRecord>> {
   const unique = [...new Set(ids)];
@@ -134,6 +154,8 @@ export type MenuProductRecord = ProductRecord & {
   status: "available" | "sold_out";
   optionGroups: OptionGroupRecord[];
   season: { startsOn: string; endsOn: string } | null;
+  /** Own notice in days, null = the Settings default (S-046; the date picker, S-083). */
+  noticeDays: number | null;
 };
 
 const productIdColumn = sql.raw(`"${getTableName(product)}"."id"`);
@@ -159,15 +181,16 @@ export const parseJsonColumn = <T>(value: T | string): T => (typeof value === "s
  */
 export async function listMenuProducts(db: Database): Promise<MenuProductRecord[]> {
   const rows = await db
-    .select({ ...columns, optionGroups: optionGroupsJson, seasonalStartsOn: product.seasonalStartsOn, seasonalEndsOn: product.seasonalEndsOn })
+    .select({ ...columns, optionGroups: optionGroupsJson, seasonalStartsOn: product.seasonalStartsOn, seasonalEndsOn: product.seasonalEndsOn, noticeDays: product.noticeDays })
     .from(product)
     .where(ne(product.status, "hidden"))
     .orderBy(asc(product.sortOrder), asc(product.nameEn));
-  return rows.map(({ seasonalStartsOn, seasonalEndsOn, ...row }) => ({
+  return rows.map(({ seasonalStartsOn, seasonalEndsOn, noticeDays, ...row }) => ({
     ...toRecord(row),
     status: row.status === "sold_out" ? ("sold_out" as const) : ("available" as const),
     optionGroups: parseJsonColumn(row.optionGroups),
     // The table check keeps both dates set or both null.
     season: seasonalStartsOn && seasonalEndsOn ? { startsOn: seasonalStartsOn, endsOn: seasonalEndsOn } : null,
+    noticeDays,
   }));
 }

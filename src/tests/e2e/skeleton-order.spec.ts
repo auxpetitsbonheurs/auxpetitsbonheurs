@@ -3,6 +3,7 @@
 // a guest orders for delivery on a 375 px phone, a double click still makes one order
 // (APB-0001), the Owner signs in on a phone and approves it, the activity log shows
 // both steps and the customer's tracking page shows Approved.
+import { chooseDate } from "./support/checkout-date";
 import { signIn } from "./support/admin";
 import { setClock } from "./support/clock";
 import { E2E_ACCOUNTS, SAMPLE_PRODUCT } from "./support/database";
@@ -22,7 +23,7 @@ test("S-018 AC6, S-016 AC6: guest order to APB-0001, double click still one orde
   await expect(page).toHaveURL(/\/basket$/);
   await page.getByRole("radio", { name: /^Delivery/ }).check();
   await page.getByLabel("Delivery address").fill("12 Royal Road, Rose Hill");
-  await page.getByLabel("Date", { exact: true }).fill("2026-11-21");
+  await chooseDate(page, "2026-11-24");
   await page.getByRole("radio", { name: /^Morning/ }).locator("visible=true").check();
   await page.getByLabel("Name", { exact: true }).fill("Skeleton Guest");
   await page.getByLabel("Phone", { exact: true }).fill("5712 3456");

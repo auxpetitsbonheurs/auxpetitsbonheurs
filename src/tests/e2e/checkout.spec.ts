@@ -8,6 +8,7 @@ import {
   expectTapTargets,
   withZoom,
 } from "./support/a11y";
+import { chooseDate } from "./support/checkout-date";
 import { setClock } from "./support/clock";
 import { E2E_POLICIES, SAMPLE_PRODUCT, createOrder } from "./support/database";
 import { type Page, expect, test } from "./support/fixtures";
@@ -324,7 +325,7 @@ test.describe("S-012 without JavaScript", () => {
 });
 
 /** Fills a valid order on the basket page. */
-async function fillOrder(page: Page, fulfilment: "delivery" | "pickup", locale: "en" | "fr" = "en") {
+async function fillOrder(page: Page, fulfilment: "delivery" | "pickup", locale: "en" | "fr" = "en", options: { js?: boolean } = {}) {
   const en = locale === "en";
   await page.getByRole("radio", { name: en ? /^Delivery/ : /^Livraison/ }).first().waitFor();
   if (fulfilment === "delivery") {
@@ -333,7 +334,8 @@ async function fillOrder(page: Page, fulfilment: "delivery" | "pickup", locale: 
   } else {
     await page.getByRole("radio", { name: en ? /^Pickup/ : /^Retrait/ }).check();
   }
-  await page.getByLabel("Date", { exact: true }).fill("2026-11-21");
+  // Tue 24 Nov: orderable from the e2e clock (Fri 20 Nov, notice 3, Sunday closed; S-083).
+  await chooseDate(page, "2026-11-24", { js: options.js, locale });
   await page.getByRole("radio", { name: en ? /^Morning/ : /^Matin/ }).locator("visible=true").check();
   await page.getByLabel(en ? "Name" : "Nom", { exact: true }).fill("E2E Guest");
   await page.getByLabel(en ? "Phone" : "Téléphone", { exact: true }).fill("5712 3456");
@@ -443,10 +445,11 @@ test.describe("S-013 place an order as a guest", () => {
     await expect(page).toHaveURL(/\/basket$/);
   });
 
-  test("AC3: the date field starts at today in Mauritius and the times are the Settings windows", async ({ page }) => {
+  test("AC3: the dates start from the earliest orderable day in Mauritius (S-083) and the times are the Settings windows", async ({ page }) => {
     await basketWithCake(page);
 
-    await expect(page.getByLabel("Date", { exact: true })).toHaveAttribute("min", "2026-11-20");
+    // Fri 20 Nov + 3 days' notice = Mon 23 Nov (S-083); the calendar says so (S-087).
+    await expect(page.getByText("Earliest date: Mon 23 Nov")).toBeVisible();
     await page.getByRole("radio", { name: /^Delivery/ }).check();
     const times = page.getByRole("group", { name: "Delivery time" }).getByRole("radio");
     await expect(times).toHaveCount(3);
@@ -478,7 +481,7 @@ test.describe("S-013 place an order as a guest", () => {
       ["Phone", "tel", "tel", "tel"],
       ["Email", "email", "email", "email"],
       ["Note for the bakery (optional)", "off", null, null],
-      ["Date", "off", "date", null],
+      // The date is a calendar grid with JavaScript (S-087); its no-JS field: checkout-dates.spec.ts.
     ];
     for (const [label, autocomplete, type, inputmode] of fields) {
       const field = page.getByLabel(label, { exact: true });
@@ -533,7 +536,7 @@ test.describe("S-013 without JavaScript", () => {
   test("a pickup order can be placed with plain form posts", async ({ page, context, baseURL, db }) => {
     await setClock(context, baseURL!, "2026-11-20T06:00:00Z");
     await basketWithCake(page);
-    await fillOrder(page, "pickup");
+    await fillOrder(page, "pickup", "en", { js: false });
     await page.getByRole("button", { name: "Place order" }).click();
 
     await expect(page).toHaveURL(TOKEN_URL);
@@ -545,7 +548,7 @@ test.describe("S-013 without JavaScript", () => {
   test("a delivery order is placed on the first submit, with no PRICE_CHANGED round trip", async ({ page, context, baseURL, db }) => {
     await setClock(context, baseURL!, "2026-11-20T06:00:00Z");
     await basketWithCake(page);
-    await fillOrder(page, "delivery");
+    await fillOrder(page, "delivery", "en", { js: false });
     await page.getByRole("button", { name: "Place order" }).click();
 
     await expect(page).toHaveURL(TOKEN_URL);
@@ -563,7 +566,7 @@ function pickupOrderForm(idempotencyKey: string, email: string) {
     "displayedTotalRs.delivery": "1050",
     "displayedTotalRs.pickup": "850",
     fulfilment: "pickup",
-    date: "2026-11-21",
+    date: "2026-11-24",
     "windowId.pickup": "morning",
     "contact.name": "E2E Guest",
     "contact.phone": "5712 3456",
@@ -657,7 +660,7 @@ test.describe("S-014 without JavaScript", () => {
   test("AC7: a double-clicked plain form post makes one order, and re-sending that post returns the same one", async ({ page, context, baseURL, db, playwright }) => {
     await setClock(context, baseURL!, "2026-11-20T06:00:00Z");
     await basketWithCake(page);
-    await fillOrder(page, "pickup");
+    await fillOrder(page, "pickup", "en", { js: false });
     const email = await page.getByLabel("Email", { exact: true }).inputValue();
     let sent: string | null = null;
     await page.route(/\/basket$/, async (route) => {

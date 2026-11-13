@@ -123,7 +123,7 @@ test.describe("without JavaScript", () => {
     await page.goto("/");
 
     await expect(page.getByRole("banner")).toBeVisible();
-    await expect(page.getByRole("navigation")).toBeVisible();
+    await expect(page.getByRole("banner").getByRole("navigation")).toBeVisible();
     await expect(page.getByRole("link", { name: "Basket, 2 items" })).toHaveAttribute("href", "/basket");
     await expect(page.getByRole("main")).toBeVisible();
     await expect(page.getByRole("contentinfo")).toBeVisible();

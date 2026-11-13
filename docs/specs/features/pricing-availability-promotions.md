@@ -83,7 +83,7 @@ graphemeLength(s: string): number;            // NFC + Intl.Segmenter
 ## UX (how the rules surface; screens belong to other specs)
 | Surface | Behaviour |
 |---|---|
-| Date picker | Unavailable days struck and focusable; tap shows under the calendar: too_soon "Too soon: we need {N} days' notice", closed "Closed on {weekday}s" (weekday name from Settings), blocked / too_far "Not available". Never "Fully booked". Header "Earliest date: {date}". |
+| Date picker | Unavailable days struck and focusable; tap shows under the calendar: too_soon "Too soon: we need {N} days' notice", closed "Closed on {weekday}s" (weekday name from Settings), blocked / too_far "Not available"; out_of_season "Not available: {item} is only available {start} to {end}"; a day before today "This day has passed" (S-087, built 2026-11-13). Never "Fully booked". Header "Earliest date: {date}". |
 | Price | Sale: struck original + sale + "-20%" badge (percent promos) or "Sale" badge; visually hidden "was". Option deltas "+Rs 150". |
 | Admin date picker | Any day selectable; warning Alert listing `adminDateWarnings`. |
 

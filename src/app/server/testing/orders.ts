@@ -22,10 +22,16 @@ export const DELIVERY_ORDER = {
   displayedTotalRs: "1900",
 } as const;
 
+/**
+ * Placed on Thu 2026-11-05 (Mauritius): with the default notice of 3 days every date from
+ * Mon 9 Nov is orderable (S-083), so tests keep their Nov 12-16 dates.
+ */
+export const TEST_ORDER_PLACED_AT = "2026-11-05T08:00:00Z";
+
 /** A pickup order of one sample cake for aisha@example.com unless `overrides` say otherwise. */
 export async function placeTestOrder(
   database: TestDatabase,
-  options: { basketPath?: string; quantity?: number; overrides?: Record<string, string>; extraLines?: string[] } = {},
+  options: { basketPath?: string; quantity?: number; overrides?: Record<string, string>; extraLines?: string[]; now?: string } = {},
 ): Promise<PlacedTestOrder> {
   const productId = await insertProduct(database.db, { slug: `cake-${randomUUID().slice(0, 8)}` });
   const extra = (options.extraLines ?? []).map((id, i) => ({ lineId: `x${i}`, productId: id, options: [], quantity: 1 }));
@@ -43,7 +49,8 @@ export async function placeTestOrder(
     acceptPolicies: "on",
     ...options.overrides,
   };
-  const response: unknown = await basketAction(routeArgs(database, { path: options.basketPath ?? "/basket", cookie, form }) as never);
+  const now = options.now ?? TEST_ORDER_PLACED_AT;
+  const response: unknown = await basketAction(routeArgs(database, { path: options.basketPath ?? "/basket", cookie, form, now }) as never);
   const path = response instanceof Response ? response.headers.get("Location") : null;
   const token = path ? /\/order\/([^/]+)\/confirmed$/.exec(path)?.[1] : undefined;
   if (!path || !token) throw new Error(`placing the test order was refused: ${JSON.stringify((response as { data?: unknown }).data)}`);

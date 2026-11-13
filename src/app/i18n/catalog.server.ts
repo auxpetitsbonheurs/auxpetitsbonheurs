@@ -26,6 +26,24 @@ export function messagesFor(locale: Locale, english: Messages = en, french: Mess
   return locale === "fr" ? merge(english, french) : english;
 }
 
+/** Namespaces customer pages never read: the admin app's text and the emails (server only). */
+const NOT_FOR_CUSTOMERS = new Set(["admin", "email"]);
+const customerBundles = new Map<Locale, Messages>();
+
+/**
+ * The messages a customer page ships (S-254, NFR-001): `messagesFor` without the admin and
+ * email namespaces, about two thirds of the catalogue, which every page would otherwise carry
+ * in its HTML. Admin pages (and their customer preview, under /admin) get the full bundle.
+ */
+export function customerMessagesFor(locale: Locale): Messages {
+  let bundle = customerBundles.get(locale);
+  if (!bundle) {
+    bundle = Object.fromEntries(Object.entries(messagesFor(locale)).filter(([key]) => !NOT_FOR_CUSTOMERS.has(key)));
+    customerBundles.set(locale, bundle);
+  }
+  return bundle;
+}
+
 const translators = new Map<Locale, Translate>();
 
 /** Server-side translation (emails, meta, tests). Components use `useT()` instead. */

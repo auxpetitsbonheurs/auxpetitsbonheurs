@@ -13,7 +13,12 @@
       "phone": "Téléphone",
       "email": "E-mail",
       "copyright": "© {{year}} Aux petits bonheurs",
-      "pickup": "Retrait à {{address}}"
+      "pickup": "Retrait à {{address}}",
+      "instagram": "Instagram",
+      "pickupHeading": "Retrait",
+      "map": "Voir sur la carte",
+      "explore": "Découvrir",
+      "home": "Aux petits bonheurs, page d'accueil"
     },
     "loading": "Chargement…"
   },
@@ -22,8 +27,39 @@
   },
   "home": {
     "title": "Gâteaux faits maison à Maurice",
-    "intro": "Gâteaux, cupcakes et desserts préparés sur commande pour vos fêtes.",
-    "metaDescription": "Gâteaux, cupcakes et desserts faits maison, préparés sur commande à Maurice."
+    "intro": "Gâteaux, douceurs et créations sur mesure, faits avec passion et exigence.",
+    "metaDescription": "Gâteaux, cupcakes et desserts faits maison, préparés sur commande à Maurice.",
+    "heroTitle": "Pâtisserie artisanale pour vos plus beaux moments",
+    "discover": "Découvrir notre collection",
+    "heroAlt": "Un gâteau d'Aux petits bonheurs",
+    "promises": {
+      "heading": "Nos engagements",
+      "quality": "Ingrédients de qualité",
+      "custom": "Créations sur mesure",
+      "delivery": "Collection & livraison"
+    },
+    "collection": "Notre collection",
+    "collectionAll": "Voir toute la collection",
+    "offers": "Offres du moment",
+    "seasonal": "Spécialités de saison",
+    "featured": "Nos coups de cœur",
+    "how": {
+      "heading": "Comment ça marche",
+      "step1Title": "Choisissez",
+      "step1": "Sélectionnez vos gourmandises et leurs options dans notre collection.",
+      "step2Title": "Envoyez votre commande",
+      "step2": "Choisissez la date, puis le retrait ou la livraison. Nous la vérifions et vous la confirmons.",
+      "step3Title": "Régalez-vous",
+      "step3": "Retirez votre commande ou faites-vous livrer, puis partagez le moment."
+    },
+    "customBand": {
+      "title": "Un gâteau sur mesure ?",
+      "text": "Partagez votre idée et créons ensemble le gâteau de vos rêves.",
+      "cta": "Demander un devis"
+    },
+    "gallery": "Depuis notre cuisine",
+    "galleryAll": "Voir la galerie",
+    "errorTitle": "Bienvenue chez Aux petits bonheurs"
   },
   "checkout": {
     "title": "Finaliser la commande",
@@ -82,7 +118,6 @@
       "address": "Indiquez l'adresse de livraison (au moins 5 caractères).",
       "landmark": "Le point de repère doit faire moins de 200 caractères.",
       "date": "Choisissez une date.",
-      "dateTooSoon": "Choisissez aujourd'hui ou une date ultérieure.",
       "windowId": "Choisissez une heure.",
       "acceptPolicies": "Cochez la case pour accepter les conditions de commande.",
       "form": "Veuillez recharger la page et réessayer.",
@@ -91,14 +126,47 @@
       "contactEmail": "Indiquez une adresse e-mail, par exemple nom@exemple.com.",
       "contactNote": "La note doit faire moins de 1 000 caractères.",
       "resubmit": "Merci de vérifier vos informations et de passer à nouveau votre commande.",
-      "nothingOrderable": "Rien dans votre panier ne peut être commandé pour le moment. Retirez les articles indisponibles ou choisissez autre chose."
+      "nothingOrderable": "Rien dans votre panier ne peut être commandé pour le moment. Retirez les articles indisponibles ou choisissez autre chose.",
+      "dateUnavailable": {
+        "too_soon": "Cette date est maintenant trop proche. Choisissez une autre date.",
+        "closed": "Nous sommes fermés ce jour-là. Choisissez une autre date.",
+        "blocked": "Cette date n'est plus disponible. Choisissez une autre date.",
+        "too_far": "Cette date est trop lointaine. Choisissez une date dans les 90 prochains jours.",
+        "out_of_season": "Un article de votre panier n'est pas proposé à cette date. Choisissez une autre date."
+      }
     },
     "totalUpdated": "Le total est passé de {{old}} à {{new}}",
     "leftOutLine": "{{name}} : non inclus, plus disponible",
     "notSentTitle": "Votre commande n'a pas encore été envoyée",
     "leftOutRefusal_one": "Cet article n'est plus disponible et ne fait pas partie de votre commande : {{names}}.",
     "leftOutRefusal_other": "Ces articles ne sont plus disponibles et ne font pas partie de votre commande : {{names}}.",
-    "totalChanged": "Le total est passé de {{old}} à {{new}}. Vérifiez-le, puis appuyez sur Commander pour confirmer."
+    "totalChanged": "Le total est passé de {{old}} à {{new}}. Vérifiez-le, puis appuyez sur Commander pour confirmer.",
+    "dates": {
+      "earliest": "Date la plus proche : {{date}}",
+      "previousMonth": "Mois précédent",
+      "nextMonth": "Mois suivant",
+      "instructions": "Les flèches passent d'un jour à l'autre, Page précédente et Page suivante changent de mois, Entrée choisit.",
+      "selected": "Date choisie : {{date}}",
+      "dayReason": "{{date}} : {{reason}}",
+      "chooseHint": "Touchez un jour pour le choisir. Les jours barrés expliquent pourquoi quand vous les touchez.",
+      "unavailableLabel": "{{date}}, indisponible : {{reason}}",
+      "selectedLabel": "{{date}}, choisi",
+      "selectedUnavailable": "La date choisie, {{date}}, n'est plus disponible : {{reason}}. Choisissez un autre jour.",
+      "reasons": {
+        "too_soon_one": "Trop tôt : nous avons besoin de {{count}} jour de préavis",
+        "too_soon_other": "Trop tôt : nous avons besoin de {{count}} jours de préavis",
+        "past": "Ce jour est passé",
+        "closed": "Fermé le {{weekday}}",
+        "blocked": "Indisponible",
+        "too_far": "Indisponible",
+        "out_of_season": "Indisponible : {{item}} n'est proposé que du {{start}} au {{end}}"
+      },
+      "noDates": "Aucune date disponible, contactez-nous sur WhatsApp",
+      "noDatesSeason": "{{item}} n'est proposé que du {{start}} au {{end}}. Retirez-le du panier pour voir d'autres dates.",
+      "whatsapp": "Écrivez-nous sur WhatsApp",
+      "whatsappText": "Bonjour, je voudrais commander mais aucune date n'est disponible sur le site.",
+      "contact": "Nous contacter"
+    }
   },
   "errors": {
     "notFoundTitle": "Page introuvable",
@@ -1335,5 +1403,25 @@
       "listLabel": "Photos",
       "photoAlt": "Un gâteau d'Aux petits bonheurs"
     }
+  },
+  "productContent": {
+    "carousel": "carrousel de photos",
+    "photoCount": "Photo {{current}} sur {{total}}",
+    "previousPhoto": "Photo précédente",
+    "nextPhoto": "Photo suivante",
+    "photoMissing": "Photo de {{name}} indisponible",
+    "earliestDate": "Date au plus tôt : {{date}}",
+    "seasonal": "De saison : disponible jusqu'au {{date}}",
+    "allergensTitle": "Allergènes",
+    "tags": {
+      "eggless": "Sans œufs",
+      "nut_free": "Sans fruits à coque",
+      "gluten_free": "Sans gluten",
+      "dairy_free": "Sans produits laitiers"
+    },
+    "kitchenNote": "Notre cuisine utilise des œufs, du lait, du gluten, des fruits à coque et d'autres allergènes : chaque gâteau peut en contenir des traces. Demandez-nous sur WhatsApp en cas d'allergie.",
+    "goneTitle": "Ce produit n'est plus disponible",
+    "goneBody": "Il n'est peut-être plus de saison ou a été retiré de la carte. Découvrez ce que nous préparons en ce moment.",
+    "backToMenu": "Voir notre collection"
   }
 }

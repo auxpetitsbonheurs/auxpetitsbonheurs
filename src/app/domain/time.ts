@@ -24,8 +24,42 @@ function validDate(year: number, month: number, day: number): boolean {
   return month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth(year, month);
 }
 
-/** "2026-11-12T18:00" (Mauritius wall time) -> the UTC instant. Throws on impossible values. */
-export function muDateTimeToInstant(value: string): Date {
+/** Alias of `todayMU` for an instant that is not "now" (spec name). */
+export const instantToMuDate = todayMU;
+
+/** A real calendar date "YYYY-MM-DD" (strict: rejects 2026-02-30 and 2026-2-3). */
+export function isValidMuDate(value: string): boolean {
+  const match = DATE.exec(value);
+  if (!match) return false;
+  const [year, month, day] = match.slice(1).map(Number) as [number, number, number];
+  return validDate(year, month, day);
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The calendar date `days` after `date` (negative goes back). Throws INVALID_DATE on an impossible date. */
+export function addDays(date: string, days: number): string {
+  return new Date(parseDate(date).getTime() + days * DAY_MS).toISOString().slice(0, 10);
+}
+
+/** Calendar days from `a` to `b` (positive when `b` is later). */
+export function diffDays(a: string, b: string): number {
+  return Math.round((parseDate(b).getTime() - parseDate(a).getTime()) / DAY_MS);
+}
+
+export type IsoWeekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+/** ISO weekday of a calendar date: Monday 1 to Sunday 7. */
+export function isoWeekday(date: string): IsoWeekday {
+  return (((parseDate(date).getUTCDay() + 6) % 7) + 1) as IsoWeekday;
+}
+
+/**
+ * Mauritius wall time -> the UTC instant: "2026-11-12T18:00", or ("2026-11-12", "18:00").
+ * Throws on impossible values.
+ */
+export function muDateTimeToInstant(dateOrValue: string, time?: string): Date {
+  const value = time === undefined ? dateOrValue : `${dateOrValue}T${time}`;
   const match = DATE_TIME.exec(value);
   const [year, month, day, hour, minute] = (match?.slice(1) ?? []).map(Number);
   if (
@@ -76,6 +110,50 @@ const DAY_LABEL: Record<Locale, Intl.DateTimeFormat> = {
 /** A calendar date as "Thu 12 Nov" (EN) or "jeu. 12 nov." (FR). */
 export function formatDayLabel(date: string, locale: Locale): string {
   return DAY_LABEL[locale].format(parseDate(date));
+}
+
+const formatters = new Map<string, Intl.DateTimeFormat>();
+
+/** One formatter per locale and style, built on first use (client bundles pay only for what they show). */
+function formatter(locale: Locale, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = `${locale}:${JSON.stringify(options)}`;
+  let found = formatters.get(key);
+  if (!found) {
+    found = new Intl.DateTimeFormat(INTL_LOCALE[locale], { ...options, timeZone: "UTC" });
+    formatters.set(key, found);
+  }
+  return found;
+}
+
+/** "1 Dec" (EN) or "1 déc." (FR). */
+export function formatDayMonth(date: string, locale: Locale): string {
+  return formatter(locale, { day: "numeric", month: "short" }).format(parseDate(date));
+}
+
+/** "Tuesday 24 November" (EN) or "mardi 24 novembre" (FR): the date picker's spoken day. */
+export function formatWeekdayDayMonth(date: string, locale: Locale): string {
+  return formatter(locale, { weekday: "long", day: "numeric", month: "long" }).format(parseDate(date));
+}
+
+/** "November 2026" (EN) or "novembre 2026" (FR), for any date in the month. */
+export function formatMonthYear(date: string, locale: Locale): string {
+  return formatter(locale, { month: "long", year: "numeric" }).format(parseDate(date));
+}
+
+/** Monday 2026-11-09 plus (weekday - 1) days: a date with that ISO weekday. */
+const dateOfWeekday = (weekday: number) => addDays("2026-11-09", weekday - 1);
+
+/** "Monday" / "lundi" (long) or "Mon" / "lun." (short) for ISO weekday 1..7. */
+export function formatWeekday(weekday: number, locale: Locale, style: "long" | "short" = "long"): string {
+  return formatter(locale, { weekday: style }).format(parseDate(dateOfWeekday(weekday)));
+}
+
+/** A window time "HH:mm": "09:00" in English, "9 h" or "12 h 30" in French (S-088 AC5). */
+export function formatWindowTime(time: string, locale: Locale): string {
+  if (locale === "en") return time;
+  const [hours = "", minutes = ""] = time.split(":");
+  const h = String(Number(hours));
+  return minutes === "00" ? `${h}\u00a0h` : `${h}\u00a0h\u00a0${minutes}`;
 }
 
 /** A calendar date as "Sunday 14 February 2027" (EN) or "dimanche 14 février 2027" (FR). */

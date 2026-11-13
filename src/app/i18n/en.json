@@ -13,7 +13,12 @@
       "phone": "Phone",
       "email": "Email",
       "copyright": "© {{year}} Aux petits bonheurs",
-      "pickup": "Pickup in {{address}}"
+      "pickup": "Pickup in {{address}}",
+      "instagram": "Instagram",
+      "pickupHeading": "Pickup",
+      "map": "See it on the map",
+      "explore": "Explore",
+      "home": "Aux petits bonheurs, home page"
     },
     "loading": "Loading…"
   },
@@ -22,8 +27,39 @@
   },
   "home": {
     "title": "Homemade cakes in Mauritius",
-    "intro": "Cakes, cupcakes and desserts baked to order for your celebrations.",
-    "metaDescription": "Homemade cakes, cupcakes and desserts baked to order in Mauritius."
+    "intro": "Cakes, sweet treats and made-to-order creations, baked with passion and care.",
+    "metaDescription": "Homemade cakes, cupcakes and desserts baked to order in Mauritius.",
+    "heroTitle": "Artisan cakes for your finest moments",
+    "discover": "Discover our collection",
+    "heroAlt": "A cake from Aux petits bonheurs",
+    "promises": {
+      "heading": "Our promises",
+      "quality": "Quality ingredients",
+      "custom": "Made-to-order creations",
+      "delivery": "Pickup & delivery"
+    },
+    "collection": "Our collection",
+    "collectionAll": "See the whole collection",
+    "offers": "Current offers",
+    "seasonal": "Seasonal specials",
+    "featured": "Our favourites",
+    "how": {
+      "heading": "How it works",
+      "step1Title": "Choose",
+      "step1": "Pick your treats and their options in our collection.",
+      "step2Title": "Send your order",
+      "step2": "Choose the date, then pickup or delivery. We check it and confirm it with you.",
+      "step3Title": "Enjoy",
+      "step3": "Collect your order or have it delivered, then share the moment."
+    },
+    "customBand": {
+      "title": "A made-to-order cake?",
+      "text": "Share your idea and let's create the cake of your dreams together.",
+      "cta": "Ask for a quote"
+    },
+    "gallery": "From our kitchen",
+    "galleryAll": "See the gallery",
+    "errorTitle": "Welcome to Aux petits bonheurs"
   },
   "checkout": {
     "title": "Checkout",
@@ -82,7 +118,6 @@
       "address": "Enter the delivery address (at least 5 characters).",
       "landmark": "Keep the landmark under 200 characters.",
       "date": "Choose a date.",
-      "dateTooSoon": "Choose today or a later date.",
       "windowId": "Choose a time.",
       "acceptPolicies": "Tick the box to accept the order policies.",
       "form": "Please reload the page and try again.",
@@ -91,14 +126,47 @@
       "contactEmail": "Enter an email address, for example name@example.com.",
       "contactNote": "Keep the note under 1,000 characters.",
       "resubmit": "Please check your details and place your order again.",
-      "nothingOrderable": "Nothing in your basket can be ordered right now. Remove the unavailable items or choose something else."
+      "nothingOrderable": "Nothing in your basket can be ordered right now. Remove the unavailable items or choose something else.",
+      "dateUnavailable": {
+        "too_soon": "This date is now too soon. Please choose another date.",
+        "closed": "We are closed on that day. Please choose another date.",
+        "blocked": "This date is no longer available. Please choose another date.",
+        "too_far": "This date is too far ahead. Please choose a date in the next 90 days.",
+        "out_of_season": "An item in your basket is not available on this date. Please choose another date."
+      }
     },
     "totalUpdated": "Total updated from {{old}} to {{new}}",
     "leftOutLine": "{{name}}: not included, no longer available",
     "notSentTitle": "Your order has not been sent yet",
     "leftOutRefusal_one": "This item is no longer available and was left out: {{names}}.",
     "leftOutRefusal_other": "These items are no longer available and were left out: {{names}}.",
-    "totalChanged": "The total changed from {{old}} to {{new}}. Check it, then press Place order to confirm."
+    "totalChanged": "The total changed from {{old}} to {{new}}. Check it, then press Place order to confirm.",
+    "dates": {
+      "earliest": "Earliest date: {{date}}",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "instructions": "Arrow keys move between days, Page Up and Page Down change month, Enter chooses.",
+      "selected": "Selected: {{date}}",
+      "dayReason": "{{date}}: {{reason}}",
+      "chooseHint": "Tap a day to choose it. Crossed-out days explain why when you tap them.",
+      "unavailableLabel": "{{date}}, not available: {{reason}}",
+      "selectedLabel": "{{date}}, selected",
+      "selectedUnavailable": "Your chosen date {{date}} is no longer available: {{reason}}. Please choose another day.",
+      "reasons": {
+        "too_soon_one": "Too soon: we need {{count}} day's notice",
+        "too_soon_other": "Too soon: we need {{count}} days' notice",
+        "past": "This day has passed",
+        "closed": "Closed on {{weekday}}s",
+        "blocked": "Not available",
+        "too_far": "Not available",
+        "out_of_season": "Not available: {{item}} is only available {{start}} to {{end}}"
+      },
+      "noDates": "No dates available, contact us on WhatsApp",
+      "noDatesSeason": "{{item}} is only available {{start}} to {{end}}. Remove it from your basket to see other dates.",
+      "whatsapp": "Message us on WhatsApp",
+      "whatsappText": "Hello, I would like to order but no dates are available on the website.",
+      "contact": "Contact us"
+    }
   },
   "errors": {
     "notFoundTitle": "Page not found",
@@ -1335,5 +1403,25 @@
       "listLabel": "Photos",
       "photoAlt": "A cake by Aux petits bonheurs"
     }
+  },
+  "productContent": {
+    "carousel": "photo carousel",
+    "photoCount": "Photo {{current}} of {{total}}",
+    "previousPhoto": "Previous photo",
+    "nextPhoto": "Next photo",
+    "photoMissing": "Photo of {{name}} not available",
+    "earliestDate": "Earliest date: {{date}}",
+    "seasonal": "Seasonal: available until {{date}}",
+    "allergensTitle": "Allergens",
+    "tags": {
+      "eggless": "Eggless",
+      "nut_free": "Nut-free",
+      "gluten_free": "Gluten-free",
+      "dairy_free": "Dairy-free"
+    },
+    "kitchenNote": "Our kitchen handles eggs, milk, gluten, nuts and other allergens, so every cake may contain traces. Ask us on WhatsApp if you have an allergy.",
+    "goneTitle": "This product is no longer available",
+    "goneBody": "It may be sold out for the season or taken off the menu. Have a look at what we bake now.",
+    "backToMenu": "Browse our collection"
   }
 }

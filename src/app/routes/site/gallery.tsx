@@ -10,7 +10,7 @@ import { localeFromPathname, localePath } from "~/lib/locale";
 import { requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { timed } from "~/server/server-timing.server";
-import { getGalleryPhotos, getSitePage } from "~/server/services/site-page.server";
+import { getGalleryPage } from "~/server/services/site-page.server";
 import type { Route } from "./+types/gallery";
 
 /** Photos on the first view (S-250 AC3); "Show more" loads the rest. */
@@ -28,9 +28,8 @@ export async function loader({ context, url }: Route.LoaderArgs) {
   const locale = localeFromPathname(url.pathname);
   const db = context.get(requestDbContext).db;
   const { supabaseUrl } = context.get(publicConfigContext);
-  const [read, gallery] = await timed(context, "page", () =>
-    Promise.all([getSitePage(db, "gallery", locale, supabaseUrl), getGalleryPhotos(db, locale, supabaseUrl, serverT("sitePages.gallery.photoAlt", locale))]),
-  );
+  // One statement for the page text and the photos on a cold isolate (S-254).
+  const { read, gallery } = await timed(context, "page", () => getGalleryPage(db, locale, supabaseUrl, serverT("sitePages.gallery.photoAlt", locale)));
   const seo = { title: serverT("sitePages.gallery.title", locale), description: serverT("sitePages.gallery.metaDescription", locale) };
   if (!read.ok || !gallery.ok) return data({ ...seo, page: null, photos: [], total: 0, indexable: false }, { status: 503 });
   const all = url.searchParams.get("more") === "1";
@@ -87,6 +86,7 @@ function GalleryGrid({ photos, total }: { photos: Photo[]; total: number }) {
                 width={photo.width}
                 height={photo.height}
                 loading={index < EAGER_PHOTOS ? "eager" : "lazy"}
+                fetchPriority={index === 0 ? "high" : undefined}
                 decoding="async"
                 className="aspect-square h-auto w-full rounded-card bg-decorative object-cover"
               />

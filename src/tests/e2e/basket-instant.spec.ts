@@ -2,6 +2,7 @@
 // call; the menu cached in the phone renders the basket without a round trip; stale items
 // are handled calmly (price-updated note, unavailable line dimmed and left out), and the
 // no-JavaScript form posts still work.
+import { chooseDate } from "./support/checkout-date";
 import { expectKeyboardOperable, expectNoA11yViolations, expectNoHorizontalScroll, expectNothingClipped, expectTapTargets, withZoom } from "./support/a11y";
 import { setClock } from "./support/clock";
 import { SAMPLE_PRODUCT } from "./support/database";
@@ -529,7 +530,7 @@ test.describe("ADR-0004 without JavaScript", () => {
 
 async function fillPickup(page: Page) {
   await page.getByRole("radio", { name: /^Pickup/ }).check();
-  await page.getByLabel("Date", { exact: true }).fill("2026-11-21");
+  await chooseDate(page, "2026-11-24");
   await page.getByRole("radio", { name: /^Morning/ }).locator("visible=true").check();
   await page.getByLabel("Name", { exact: true }).fill("E2E Guest");
   await page.getByLabel("Phone", { exact: true }).fill("5712 3456");

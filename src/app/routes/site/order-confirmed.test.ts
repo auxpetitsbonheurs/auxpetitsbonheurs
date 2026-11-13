@@ -18,7 +18,9 @@ afterEach(async () => {
   await database.close();
 });
 
-const placeOrder = (basketPath = "/basket") => placeTestOrder(database, { basketPath });
+/** Placed at the route tests' clock (Tue 10 Nov 08:00Z), for Fri 13 (notice 3, S-083): the cookie is fresh when loaded. */
+const PLACED = { now: "2026-11-10T08:00:00Z", overrides: { date: "2026-11-13" } };
+const placeOrder = (basketPath = "/basket") => placeTestOrder(database, { basketPath, ...PLACED });
 
 const load = (path: string, token: string, headers: Record<string, string> = {}, options: { now?: string; noDatabase?: boolean } = {}) => {
   const args = routeArgs(database, { path, params: { token }, now: options.now });
@@ -158,7 +160,7 @@ describe("right after Place order, no database (spec AC48, contracts.md v0.31)",
 
   test("in French, with left-out items named, as the database path would name them", async () => {
     const tart = await insertProduct(database.db, { slug: "tart", nameEn: "Lemon tart", nameFr: "Tarte au citron", status: "sold_out" });
-    const { path, token, confirmationCookie } = await placeTestOrder(database, { basketPath: "/fr/basket", extraLines: [tart] });
+    const { path, token, confirmationCookie } = await placeTestOrder(database, { basketPath: "/fr/basket", extraLines: [tart], ...PLACED });
     const cookie = `${confirmationCookie}; apb_left_out=${tart}`;
 
     const fromCookie = (await load(path, token, { cookie }, { noDatabase: true })) as { leftOut: string[]; title: string };

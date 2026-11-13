@@ -13,7 +13,7 @@ import { useEffect } from "react";
 
 import type { Route } from "./+types/root";
 import "./app.css";
-import { messagesFor } from "~/i18n/catalog.server";
+import { customerMessagesFor, messagesFor } from "~/i18n/catalog.server";
 import { I18nProvider, useI18n } from "~/i18n/react";
 import { localeFromPathname } from "~/lib/locale";
 import { twinPath } from "~/lib/locale-detect";
@@ -25,8 +25,10 @@ export function loader({ url, context }: Route.LoaderArgs) {
   const adminLocale = context.get(adminLocaleContext);
   const locale = adminLocale ?? localeFromPathname(url.pathname);
   // hreflang alternates (S-008 AC5) are built from the current URL in Layout; none for admin pages.
-  // Only the active locale's messages reach the browser (S-006 AC5).
-  return { locale, origin: adminLocale ? null : url.origin, messages: messagesFor(locale) };
+  // Only the active locale's messages reach the browser (S-006 AC5); customer pages leave out
+  // the admin and email text (S-254).
+  const messages = adminLocale || isAdminPath(url.pathname) ? messagesFor(locale) : customerMessagesFor(locale);
+  return { locale, origin: adminLocale ? null : url.origin, messages };
 }
 
 const isAdminPath = (pathname: string) => pathname === "/admin" || pathname.startsWith("/admin/");

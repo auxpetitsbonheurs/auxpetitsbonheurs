@@ -1,8 +1,15 @@
+import { Suspense, lazy } from "react";
 import { RadioCard } from "~/components/ui/radio-card";
 import { TextField } from "~/components/ui/text-field";
+import type { BasketDates } from "~/domain/availability";
+import { addDays, formatDayLabel, formatWindowTime } from "~/domain/time";
 import { localized } from "~/i18n/localized";
 import { useI18n } from "~/i18n/react";
+import { useHydrated } from "~/lib/use-hydrated";
 import type { FieldErrors } from "./fulfilment-section";
+
+// The calendar is its own chunk, fetched once the page is interactive (S-087 AC9).
+const DatePicker = lazy(() => import("./date-picker"));
 
 export interface WindowOption {
   id: string;
@@ -21,13 +28,36 @@ function Heading({ id, text }: { id: string; text: string }) {
   );
 }
 
-/** Step 3: native date field, today (Mauritius) or later; full availability rules arrive in E-05. */
-export function DateSection({ today, todayLabel, initial, error }: { today: string; todayLabel: string; initial?: string; error?: string }) {
+export interface DateSectionProps {
+  /** The basket's 90 days (domain/availability `basketDates`), item names in the page language. */
+  dates: BasketDates<string>;
+  today: string;
+  initial?: string;
+  error?: string;
+  whatsapp: string | null;
+}
+
+/**
+ * Without JavaScript (and until the calendar chunk arrives): a native date field limited to
+ * the earliest date and the 90-day horizon; the server judges the rest (S-087 AC9).
+ */
+function NativeDate({ dates, today, initial, error }: Omit<DateSectionProps, "whatsapp">) {
+  const { t, locale } = useI18n();
+  const hint = dates.earliest ? t("checkout.dateHint", { date: formatDayLabel(dates.earliest, locale) }) : t("checkout.dates.noDates");
+  return (
+    <TextField id="date" name="date" type="date" min={dates.earliest ?? today} max={addDays(today, dates.days.length - 1)} autoComplete="off" className="mt-4 max-w-xs" label={t("checkout.date")} hint={hint} error={error} defaultValue={initial} />
+  );
+}
+
+/** Step 3 (FR-013, FR-014): the calendar that says why a day cannot be chosen. */
+export function DateSection(props: DateSectionProps) {
   const { t } = useI18n();
+  const hydrated = useHydrated();
+  const native = <NativeDate dates={props.dates} today={props.today} initial={props.initial} error={props.error} />;
   return (
     <section aria-labelledby="date-heading" className="mt-10">
       <Heading id="date-heading" text={t("checkout.sections.date")} />
-      <TextField id="date" name="date" type="date" min={today} autoComplete="off" className="mt-4 max-w-xs" label={t("checkout.date")} hint={t("checkout.dateHint", { date: todayLabel })} error={error} defaultValue={initial} />
+      {hydrated ? <Suspense fallback={native}><DatePicker {...props} /></Suspense> : native}
     </section>
   );
 }
@@ -40,7 +70,7 @@ function WindowList({ kind, windows, initial }: { kind: "delivery" | "pickup"; w
       <legend className="font-semibold">{legend}</legend>
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
         {windows.map((w) => (
-          <RadioCard key={w.id} id={`window-${kind}-${w.id}`} name={`windowId.${kind}`} value={w.id} defaultChecked={initial === w.id} title={t("checkout.windowLabel", { label: localized(w.label, locale), start: w.start, end: w.end })} />
+          <RadioCard key={w.id} id={`window-${kind}-${w.id}`} name={`windowId.${kind}`} value={w.id} defaultChecked={initial === w.id} title={t("checkout.windowLabel", { label: localized(w.label, locale), start: formatWindowTime(w.start, locale), end: formatWindowTime(w.end, locale) })} />
         ))}
       </div>
     </fieldset>

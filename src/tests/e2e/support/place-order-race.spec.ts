@@ -34,6 +34,8 @@ test.describe("place_order procedure: lost race on the idempotency key", () => {
       const email = `race-${randomUUID()}@example.com`;
       const input = (name: string) => ({
         idempotencyKey: key,
+        // The request's Mauritius date (migration 0009 judges notice and horizon from it): Tue 15 Jan 2030 is orderable.
+        today: "2030-01-10",
         insert: true,
         basket: [{ productId: product!.id, quantity: 1, cakeMessage: null }],
         order: {
