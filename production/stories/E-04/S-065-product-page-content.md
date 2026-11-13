@@ -12,7 +12,7 @@ As a customer, I want a product page with photos, description and allergen infor
 - [x] AC1 (FR-007): Given a product with 4 photos, when `/menu/:slug` loads, then the carousel shows "Photo 1 of 4" with previous/next buttons (a non-swipe alternative), photos have explicit width/height, and alt text equals the product name in the page locale.
 - [x] AC2 (FR-007): Given allergen tags, when the page renders, then the tags and the fixed note that the kitchen handles all allergens both show.
 - [x] AC3 (FR-007, FR-013): Given a product with its own notice of 5 days, when the page renders, then "Earliest date: {date}" shows today + 5 in Mauritius time, excluding closed days (this product only, not the basket).
-- [ ] AC4 (FR-007): Given a sold-out product, when the page loads, then "Sold out this week" and a WhatsApp button show, options and the add bar are hidden, and the status field is `sold_out`.
+- [x] AC4 (FR-007): Given a sold-out product, when the page loads, then "Sold out this week" and a WhatsApp button show, options and the add bar are hidden, and the status field is `sold_out`.
 - [x] AC5 (FR-007, FR-006): Given a hidden product or a seasonal product outside its window, when `/menu/:slug` is requested, then 404 shows "This product is no longer available" with a link to the menu; seasonal on D = 200, on D+1 = 404 (fixed clock, Mauritius date).
 - [x] AC6 (FR-007): Given an unknown slug, when requested, then 404 with link to Home and WhatsApp.
 - [x] AC7 (FR-007): Given a missing or failed photo, when the page renders, then a named placeholder of the same size shows (CLS <= 0.1).
@@ -24,7 +24,7 @@ As a customer, I want a product page with photos, description and allergen infor
 - AC1 → src/app/routes/site/product-content.test.tsx, src/tests/e2e/browse-product.spec.ts
 - AC2 → src/app/routes/site/product-content.test.tsx, src/tests/e2e/browse-product.spec.ts
 - AC3 → src/app/routes/site/product-content.test.tsx (loader, fixed clock); rules tested in src/app/domain/availability.test.ts (E-05)
-- AC4 → (job 1, options/price/add area; see Build notes)
+- AC4 → src/app/routes/site/product.test.tsx (sold out: words, no options or Add bar), src/app/routes/site/product-options.test.ts and product.test.ts (status field); `components/product/sold-out.tsx` (job 1)
 - AC5 → src/app/routes/site/product-content.test.tsx (fixed clock, D vs D+1 Mauritius), src/tests/e2e/browse-product.spec.ts
 - AC6 → src/app/routes/site/product-content.test.tsx
 - AC7 → src/app/routes/site/product-content.test.tsx
@@ -39,7 +39,7 @@ As a customer, I want a product page with photos, description and allergen infor
 
 ## Build notes (Sprint 4, 2026-11-13)
 - Scope kept to product content (Sprint 4 job split): photos, description (plain text paragraphs), allergens + kitchen note, earliest date, seasonal note, and the 404 states. The options, price and Add-to-basket area belong to job 1 and were not touched.
-- AC4 open: "Sold out this week" with a WhatsApp button lives in the ordering area (job 1). The loader still answers `status: "sold_out"` and the current sold-out note shows.
+- AC4 done (job 1, 2026-11-13): "Sold out this week", a WhatsApp button with a message naming the product (when Settings has a number), no options or Add bar. Earlier note: "Sold out this week" with a WhatsApp button lives in the ordering area (job 1). The loader still answers `status: "sold_out"` and the current sold-out note shows.
 - Photos: one at a time in a box sized from the first photo, "Photo n of N" (polite live region), "Previous photo"/"Next photo" 44 px buttons, ArrowLeft/ArrowRight while focus is in the carousel, swipe as an extra; instant swap (nothing animates). The first photo is `fetchpriority=high`. A missing or failed photo (also a failure before hydration) becomes a named placeholder in the same box.
 - AC10 caveat: the carousel is a ~1 kB component in the route chunk rather than a lazy chunk; the route is 163.8 kB gz initial JS (limit 170; job 1 adds the options picker to the same route).
 - Earliest date: `earliestDate` from `domain/availability` (E-05 S-083), the date picker's own rules for this product alone: its notice (else the Settings default), its season, closed weekdays, blocked dates and the 90-day horizon; none shows when no day is open. Checkout still decides the order's real date (the basket may push it later).
