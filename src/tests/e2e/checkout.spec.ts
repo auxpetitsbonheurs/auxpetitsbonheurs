@@ -13,7 +13,7 @@ import { createProduct } from "./support/catalogue";
 import { chooseDate } from "./support/checkout-date";
 import { setClock } from "./support/clock";
 import { E2E_POLICIES, SAMPLE_PRODUCT, createOrder } from "./support/database";
-import { type Page, expect, test } from "./support/fixtures";
+import { type Page, expect, test, testIp } from "./support/fixtures";
 
 const PRODUCT_PATH = `/menu/${SAMPLE_PRODUCT.slug}`;
 
@@ -635,7 +635,7 @@ test.describe("S-014 double tap creates one order", () => {
 
   test("AC1, AC3: two simultaneous posts with the same key against Postgres make one order and the same redirect", async ({ page, db, playwright, baseURL }) => {
     await basketWithCake(page);
-    const api = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { cookie: await cookieHeader(page), origin: baseURL! } });
+    const api = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { cookie: await cookieHeader(page), origin: baseURL!, "cf-connecting-ip": testIp() } });
     const email = uniqueEmail("same-key");
     const form = pickupOrderForm(crypto.randomUUID(), email);
 
@@ -657,7 +657,11 @@ test.describe("S-014 double tap creates one order", () => {
     const api = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { cookie: await cookieHeader(page), origin: baseURL! } });
     const email = uniqueEmail("burst");
 
-    const responses = await Promise.all(Array.from({ length: 20 }, () => api.post("/basket", { form: pickupOrderForm(crypto.randomUUID(), email), maxRedirects: 0 })));
+    // Twenty visitors at once, each its own IP (RL-order's 5 per IP is not what is tested here).
+    const tag = Math.floor(Math.random() * 250);
+    const responses = await Promise.all(
+      Array.from({ length: 20 }, (_, i) => api.post("/basket", { form: pickupOrderForm(crypto.randomUUID(), email), headers: { "cf-connecting-ip": `198.18.${tag}.${i + 1}` }, maxRedirects: 0 })),
+    );
     await api.dispose();
 
     expect(responses.map((r) => r.status())).toEqual(Array(20).fill(302));
@@ -690,7 +694,7 @@ test.describe("S-014 without JavaScript", () => {
     const confirmation = new URL(page.url()).pathname;
 
     // The same post reaching the server again (double submit, refresh, Back + resend), twice at once.
-    const api = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { cookie, origin: baseURL!, "content-type": "application/x-www-form-urlencoded" } });
+    const api = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { cookie, origin: baseURL!, "cf-connecting-ip": testIp(), "content-type": "application/x-www-form-urlencoded" } });
     const replays = await Promise.all([1, 2].map(() => api.post("/basket", { data: sent!, maxRedirects: 0 })));
     await api.dispose();
     expect(replays.map((r) => [r.status(), r.headers().location])).toEqual([

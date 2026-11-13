@@ -125,6 +125,7 @@
       "contactEmail": "Enter an email address, for example name@example.com.",
       "contactNote": "Keep the note under 1,000 characters.",
       "resubmit": "Please check your details and place your order again.",
+      "rateLimited": "Several orders were sent from here in a few minutes. Your basket and details are kept: try again in {{minutes}} min or message us on WhatsApp.",
       "nothingOrderable": "Nothing in your basket can be ordered right now. Remove the unavailable items or choose something else.",
       "dateUnavailable": {
         "too_soon": "This date is now too soon. Please choose another date.",

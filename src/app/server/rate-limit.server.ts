@@ -18,6 +18,9 @@ export interface RateLimitClass {
 /** Sign-in, sign-in link and password reset: 5 per 15 minutes per email + IP. */
 export const RL_AUTH: RateLimitClass = { name: "RL-auth", max: 5, windowMs: 15 * 60 * 1000 };
 
+/** Placing an order (checkout spec step 3, S-228 AC2): 5 per 10 minutes per IP. */
+export const RL_ORDER: RateLimitClass = { name: "RL-order", max: 5, windowMs: 10 * 60 * 1000 };
+
 /** Custom cake requests (S-162 AC2): 3 per 10 minutes per IP. */
 export const RL_REQUEST: RateLimitClass = { name: "RL-request", max: 3, windowMs: 10 * 60 * 1000 };
 

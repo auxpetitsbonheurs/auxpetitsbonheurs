@@ -6,7 +6,7 @@ import type postgres from "postgres";
 import { connectE2eDatabase } from "./database";
 
 /** A documentation-range IPv4 address (198.18.0.0/15, benchmarking) unique enough per test. */
-function testIp(): string {
+export function testIp(): string {
   const n = randomInt(0, 2 ** 17);
   return `198.${18 + (n >> 16)}.${(n >> 8) & 255}.${n & 255}`;
 }

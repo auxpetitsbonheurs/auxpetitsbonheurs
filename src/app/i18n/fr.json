@@ -125,6 +125,7 @@
       "contactEmail": "Indiquez une adresse e-mail, par exemple nom@exemple.com.",
       "contactNote": "La note doit faire moins de 1 000 caractères.",
       "resubmit": "Merci de vérifier vos informations et de passer à nouveau votre commande.",
+      "rateLimited": "Plusieurs commandes ont été envoyées d'ici en quelques minutes. Votre panier et vos informations sont gardés : réessayez dans {{minutes}} min ou écrivez-nous sur WhatsApp.",
       "nothingOrderable": "Rien dans votre panier ne peut être commandé pour le moment. Retirez les articles indisponibles ou choisissez autre chose.",
       "dateUnavailable": {
         "too_soon": "Cette date est maintenant trop proche. Choisissez une autre date.",
