@@ -51,8 +51,9 @@ describe("confirmation (S-015 AC1)", () => {
     const { path, token } = await placeOrder();
 
     const data = (await load(path, token)) as { number: string; trackingUrl: string; offerSaveDetails: boolean };
-    expect(data).toMatchObject({ number: "APB-0001", trackingUrl: `http://localhost/t/${token}`, offerSaveDetails: false });
-    // Minimal slice: no contact data in the page until the Save-my-details card (E-11).
+    // E-11 S-215: a guest (no customer session) is offered Save my details for a website order.
+    expect(data).toMatchObject({ number: "APB-0001", trackingUrl: `http://localhost/t/${token}`, offerSaveDetails: true });
+    // Still no contact data in the page: the card links to save-details with the token only.
     expect(JSON.stringify(data)).not.toContain("aisha");
   });
 });

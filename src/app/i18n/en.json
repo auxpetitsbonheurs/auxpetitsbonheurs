@@ -267,7 +267,10 @@
       "copyFailed": "Copying did not work. Select the text and copy it yourself.",
       "leftOutTitle": "Not included in your order",
       "leftOutBody_one": "{{names}} was no longer available when you ordered.",
-      "leftOutBody_other": "{{names}} were no longer available when you ordered."
+      "leftOutBody_other": "{{names}} were no longer available when you ordered.",
+      "saveDetailsTitle": "Save your details for next time",
+      "saveDetailsBody": "One tap makes an account with this order's email, so your next order is quicker. You choose a password after confirming your email.",
+      "saveDetailsAction": "Save my details"
     },
     "notFound": {
       "metaTitle": "Order not found",
@@ -2306,6 +2309,14 @@
     "languages": {
       "en": "English",
       "fr": "Français"
+    },
+    "saveDetails": {
+      "title": "Save my details",
+      "intro": "We make an account for the email on your order and send you a link to confirm it. No password now: you choose one after confirming.",
+      "submit": "Save my details",
+      "note": "Your earlier orders with this email appear in My orders once the email is confirmed.",
+      "checkBody": "We sent a link to {{email}}. Open it to confirm your email; your orders will then appear in My orders.",
+      "inUse": "This email already has an account. Sign in to see your orders."
     }
   },
   "reviews": {

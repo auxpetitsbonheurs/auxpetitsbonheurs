@@ -1,5 +1,5 @@
 # S-215: Offer "Save my details" after a guest order
-Status: ready
+Status: review
 Epic: E-11-customer-accounts
 Spec: docs/specs/features/customer-accounts.md#api-contract
 Estimate: 3 pts
@@ -37,3 +37,10 @@ As a guest who just ordered, I want to save my details for next time with one ta
 ## Notes
 - PRD cut order #4. Spec AC24-AC27. Security: no history is shown at this step (README decision 1); linking is S-216.
 - Dependencies (R9): S-206, S-194, E-05 (confirmation page, tracking token). Not yet done; expected.
+
+## Build notes (2026-11-13)
+- Turnstile is not on this form yet (site-wide public-forms work, S-228 AC2); RL-signup (3 per hour per IP) applies.
+- AC1 adjusted: the card shows for every website order when the browser has no customer session; the confirmation page keeps its no-database path (checkout AC48), so it does not check whether the email already has an account. The save-details page answers that case with EMAIL_IN_USE and a Sign in button (AC4).
+- AC5: manual orders never reach the confirmation page; save-details refuses orders that are not website orders or have no email (NOT_FOUND).
+- Counters: `save_details_completed` here, `account_created` with method `save_details` at confirmation; `save_details_shown` is not counted (it would add a database write to the no-database confirmation path).
+- Tests: src/app/routes/account/save-details.test.ts, src/app/routes/site/order-confirmed.test.ts, src/tests/e2e/account.spec.ts.

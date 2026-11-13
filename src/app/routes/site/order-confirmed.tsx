@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { data, isRouteErrorResponse, redirect } from "react-router";
+import { Link, data, isRouteErrorResponse, redirect } from "react-router";
 import { CopyButton, CopyStatus, ShareLink, useCopyStatus, useHydrated } from "~/components/order/copy-actions";
 import { OrderNotFound } from "~/components/order/order-not-found";
 import { PaymentInstructions } from "~/components/order/payment-instructions";
@@ -10,6 +10,7 @@ import { t as translate } from "~/i18n/catalog.server";
 import { useI18n } from "~/i18n/react";
 import { type Locale, localeFromPathname, localePath } from "~/lib/locale";
 import { clockContext } from "~/server/clock.server";
+import { hasSignedInHint } from "~/server/customer-auth.server";
 import { confirmationContext } from "~/server/confirmation-cookie.server";
 import { localized } from "~/i18n/localized";
 import { nameList } from "~/lib/left-out";
@@ -41,7 +42,7 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
   if (fresh && fresh.locale === locale && fresh.payment) {
     const { totalRs, placedAt, ...settings } = fresh.payment;
     const payment = paymentView({ totalRs, reference: fresh.number, createdAt: new Date(placedAt), settings, locale });
-    return confirmation(url, params.token, fresh.locale, fresh.number, fresh.leftOut, payment, false);
+    return confirmation(url, params.token, fresh.locale, fresh.number, fresh.leftOut, payment, false, offerSaveDetails(request, false));
   }
   // One query: the order, the number prefix and the left-out names (ADR-0003 amendment 3).
   // Left out (UX audit H1, AC41): product ids from the `apb_left_out` cookie the basket
@@ -62,18 +63,29 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
   const payment = found.status === "awaiting_payment"
     ? paymentView({ totalRs: found.totalRs, reference: number, createdAt: found.createdAt, settings: found.payment, locale })
     : null;
-  return confirmation(url, order.trackingToken, order.locale, number, leftOut, payment, found.isRequest);
+  return confirmation(url, order.trackingToken, order.locale, number, leftOut, payment, found.isRequest, offerSaveDetails(request, found.isRequest));
+}
+
+/**
+ * "Save your details for next time" (E-11 S-215 AC1, AC8: this page only): for a website order
+ * when this browser has no customer session. Whether the email already has an account is not
+ * read here (the page keeps its no-database path, AC48); the save-details page answers that
+ * by offering sign-in instead (AC4).
+ */
+function offerSaveDetails(request: Request, isRequest: boolean): boolean {
+  return !isRequest && !hasSignedInHint(request);
 }
 
 /** The page data, the same whether it came from the cookie or the database. */
-function confirmation(url: URL, token: string, orderLocale: Locale, number: string, leftOut: string[], payment: PaymentView | null, isRequest: boolean) {
+function confirmation(url: URL, token: string, orderLocale: Locale, number: string, leftOut: string[], payment: PaymentView | null, isRequest: boolean, saveDetails: boolean) {
   return {
     title: translate(isRequest ? "customRequest.confirmed.metaTitle" : "order.confirmed.metaTitle", localeFromPathname(url.pathname)),
     /** A custom cake request (E-08 S-151 AC2): "Request received, we will send you a quote". */
     isRequest,
     number,
     trackingUrl: `${url.origin}${localePath(orderLocale, `/t/${token}`)}`,
-    offerSaveDetails: false,
+    offerSaveDetails: saveDetails,
+    saveDetailsUrl: localePath(localeFromPathname(url.pathname), `/account/save-details?t=${token}`),
     leftOut,
     payment,
   };
@@ -112,7 +124,7 @@ export default function OrderConfirmed({ loaderData }: Route.ComponentProps) {
   const heading = useFocusOnArrival();
   const hydrated = useHydrated();
   const { status, copy } = useCopyStatus();
-  const { number, trackingUrl, leftOut, payment, isRequest } = loaderData;
+  const { number, trackingUrl, leftOut, payment, isRequest, offerSaveDetails: offerSave, saveDetailsUrl } = loaderData;
   const copiedNumber = t("order.confirmed.copiedNumber");
   const copiedLink = t("order.confirmed.copiedLink");
   return (
@@ -147,6 +159,17 @@ export default function OrderConfirmed({ loaderData }: Route.ComponentProps) {
           <ShareLink label={t("order.confirmed.share")} text={t("order.confirmed.shareText", { number, url: trackingUrl })} />
         </div>
       </section>
+      {offerSave && (
+        <section aria-labelledby="save-details" className="mt-8 rounded-card border border-border bg-card p-4 sm:p-6">
+          <h2 id="save-details" className="text-xl">
+            {t("order.confirmed.saveDetailsTitle")}
+          </h2>
+          <p className="mt-2 max-w-measure">{t("order.confirmed.saveDetailsBody")}</p>
+          <Link to={saveDetailsUrl} className={buttonVariants({ variant: "outline", className: "mt-4 max-w-full" })}>
+            {t("order.confirmed.saveDetailsAction")}
+          </Link>
+        </section>
+      )}
       <CopyStatus status={status} />
     </>
   );

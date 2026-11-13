@@ -75,6 +75,26 @@ export async function signUpCustomer(args: GuardArgs, input: SignUpInput, next?:
   if (!ok) logAuthFailure("sign_up");
 }
 
+/**
+ * Save my details (S-215 AC2, AC4; threat-model G-01): an UNCONFIRMED account for the order's
+ * email with a random discarded password, and the confirmation email. Nothing is linked and no
+ * history is shown here: linking happens only when the email is confirmed (auth/confirm).
+ * `in_use` when the address already has an account or is an admin's (the page offers sign-in).
+ */
+export async function saveDetailsAccount(args: GuardArgs, order: { email: string; name: string; phone: string; locale: Locale }): Promise<"sent" | "in_use"> {
+  const db = args.context.get(requestDbContext).db;
+  if ((await isAdminEmail(db, order.email)) || (await hasLinkedAccount(db, order.email))) return "in_use";
+  if (!(await mayEmail(args, order.email))) return "sent";
+  const ok = await args.context.get(authContext).signUp({
+    email: order.email,
+    password: discardedPassword(),
+    metadata: { name: order.name, phone: order.phone, locale: order.locale, source: "save_details" },
+    redirectTo: confirmRedirect(args.request, localePath(order.locale, "/account/orders")),
+  });
+  if (!ok) logAuthFailure("save_details");
+  return "sent";
+}
+
 /** Password reset request (S-209 AC1): any non-admin address; the link lands on /account/reset. */
 export async function requestCustomerReset(args: GuardArgs, email: string, locale: Locale): Promise<void> {
   const db = args.context.get(requestDbContext).db;

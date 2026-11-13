@@ -1,5 +1,5 @@
 # S-216: Earlier guest orders appear only after I confirm my email
-Status: in-progress
+Status: review
 Epic: E-11-customer-accounts
 Spec: docs/specs/features/customer-accounts.md#data-model-changes
 Estimate: 5 pts
@@ -41,3 +41,4 @@ As a customer who saved my details, I want my earlier orders with the same email
 ## Build notes (2026-11-13)
 - Built in auth/confirm for sign-up confirmation, sign-in links and customer reset links (every one proves the address): AC2, AC3, AC5..AC7, AC9, AC10 tested in src/app/routes/auth/confirm.customer.test.ts. The Save my details path waits for S-215.
 - AC8: `account_created` records method `signup` (sign-up confirmation) or `link` (first link of an account made another way); `save_details` arrives with S-215.
+- Save my details path now built (S-215): AC1 and AC4 covered in src/tests/e2e/account.spec.ts; `account_created` records method `save_details` (AC8).

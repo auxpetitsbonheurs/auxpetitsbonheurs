@@ -57,7 +57,10 @@ async function customerLink(args: Args, tokenHash: string, type: EmailLinkType, 
     await gateway.signOut();
     return go(args, expiredPage(locale));
   }
-  if (!linked.alreadyLinked) await recordUsage(args, "account_created", { method: type === "signup" ? "signup" : "link", linkedOrders: linked.linkedOrders });
+  if (!linked.alreadyLinked) {
+    const method = user.metadata.source === "save_details" ? "save_details" : type === "signup" ? "signup" : "link";
+    await recordUsage(args, "account_created", { method, linkedOrders: linked.linkedOrders });
+  }
   if (type === "recovery") return go(args, localePath(locale, "/account/reset"), [SIGNED_IN_HINT_SET]);
   await recordUsage(args, "sign_in", { method: "magic_link" });
   if (type === "signup") {
