@@ -6,15 +6,26 @@ import { and, eq } from "drizzle-orm";
 import { emailOutbox } from "~/db/schema";
 import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
-import { HANDLED_ACTIONS, HookPayload, confirmLink, metadataLocale, nextFromRedirect, verifyWebhook } from "~/server/email/auth-hook.server";
+import { HANDLED_ACTIONS, type HandledAction, HookPayload, confirmLink, metadataLocale, nextFromRedirect, verifyWebhook } from "~/server/email/auth-hook.server";
 import { emailContext } from "~/server/email/context.server";
 import { EmailSendError, sendWithTimeout } from "~/server/email/sender.server";
-import { type RenderedEmail, customerAuthEmail, recoveryEmail } from "~/server/email/templates.server";
+import { type AuthEmailKind, authEmail, customerAuthEmail } from "~/server/email/templates/auth-emails";
+import type { RenderedEmail } from "~/server/email/templates/layout";
+import { DAILY_LIMIT, sentToday } from "~/server/email/daily-cap";
 import { findAdminById } from "~/server/repos/admins.server";
 import { findAccountByAuthUser } from "~/server/repos/customer-accounts.server";
 import type { Route } from "./+types/send-email";
 
 const MAX_BODY_BYTES = 64 * 1024;
+
+/** Supabase's `email_action_type` -> the email we send (notifications spec catalogue). */
+const AUTH_KIND: Record<HandledAction, AuthEmailKind> = {
+  recovery: "password_reset",
+  signup: "signup_confirm",
+  magiclink: "sign_in_link",
+  email_change: "email_change",
+  invite: "invite",
+};
 
 type Outcome = "sent" | "duplicate" | "bad_signature" | "not_configured" | "invalid" | "unsupported" | "bad_redirect" | "send_failed";
 
@@ -31,12 +42,12 @@ function failure(status: 401 | 500, message: string) {
 const ok = () => Response.json({}, { headers: { "Cache-Control": "no-store" } });
 
 /** Claims `webhook-id` (AC6); false when an earlier delivery already claimed it. */
-async function claim(args: Route.ActionArgs, webhookId: string, to: string, locale: "en" | "fr", type: string): Promise<boolean> {
+async function claim(args: Route.ActionArgs, webhookId: string, to: string, locale: "en" | "fr", action: HandledAction): Promise<boolean> {
   const rows = await args.context
     .get(requestDbContext)
     .db.insert(emailOutbox)
     // `dead` keeps the row away from the outbox retry job (it holds no link to send again).
-    .values({ template: `auth.${type}`, toEmail: to, locale, payload: {}, dedupeKey: `auth-hook:${webhookId}`, status: "dead", lastError: "sending" })
+    .values({ template: `auth.${action}`, toEmail: to, locale, payload: {}, dedupeKey: `auth-hook:${webhookId}`, status: "dead", lastError: "sending" })
     .onConflictDoNothing({ target: emailOutbox.dedupeKey })
     .returning({ id: emailOutbox.id });
   return rows.length > 0;
@@ -58,7 +69,7 @@ interface Delivery {
 }
 
 /** Signature (401), payload, type and redirect checks (500); the delivery when all pass. */
-async function readDelivery(request: Request, secret: string, now: Date): Promise<Delivery | Response> {
+async function readDelivery(request: Request, secret: string, now: Date, configuredSite: string | null): Promise<Delivery | Response> {
   const webhookId = request.headers.get("webhook-id");
   const body = await request.text();
   const headers = { id: webhookId, timestamp: request.headers.get("webhook-timestamp"), signature: request.headers.get("webhook-signature") };
@@ -76,9 +87,11 @@ async function readDelivery(request: Request, secret: string, now: Date): Promis
     log("unsupported", webhookId, type.slice(0, 20));
     return failure(500, "unsupported");
   }
-  // SITE_URL: the origin this Worker is served on (the hook URL points at it, deploy-keys.md section 2).
-  const siteUrl = new URL(request.url).origin;
-  const next = nextFromRedirect(parsed.data.email_data.redirect_to, siteUrl);
+  // The link's origin: SITE_URL when set, else the origin this Worker is served on (the hook URL
+  // points at it, deploy-keys.md section 2). `redirect_to` must be on one of them (S-194 AC9).
+  const requestOrigin = new URL(request.url).origin;
+  const siteUrl = configuredSite ?? requestOrigin;
+  const next = nextFromRedirect(parsed.data.email_data.redirect_to, siteUrl) ?? nextFromRedirect(parsed.data.email_data.redirect_to, requestOrigin);
   if (!next) {
     log("bad_redirect", webhookId);
     return failure(500, "Redirect is not allowed.");
@@ -94,10 +107,11 @@ function parseJson(body: string): unknown {
   }
 }
 
-/** Admins keep the S-024 recovery email; customers get the account wording (E-11). */
-function renderAuthEmail(type: string, isAdmin: boolean, locale: "en" | "fr", link: string): RenderedEmail {
-  if (type === "recovery") return isAdmin ? recoveryEmail(locale, link) : customerAuthEmail("customerRecovery", locale, link);
-  return customerAuthEmail(type === "signup" ? "signup" : "magiclink", locale, link);
+/** Admins keep the S-024 recovery email; customers get the account wording (E-11); the rest use the shared account layout. */
+function renderAuthEmail(type: HandledAction, isAdmin: boolean, locale: "en" | "fr", link: string, siteUrl: string): RenderedEmail {
+  if (type === "recovery") return isAdmin ? authEmail(AUTH_KIND.recovery, locale, link, siteUrl) : customerAuthEmail("customerRecovery", locale, link, siteUrl);
+  if (type === "signup" || type === "magiclink") return customerAuthEmail(type, locale, link, siteUrl);
+  return authEmail(AUTH_KIND[type], locale, link, siteUrl);
 }
 
 export async function action(args: Route.ActionArgs) {
@@ -107,7 +121,7 @@ export async function action(args: Route.ActionArgs) {
     log("not_configured", request.headers.get("webhook-id"), "SUPABASE_AUTH_HOOK_SECRET");
     return failure(500, "Email hook is not configured.");
   }
-  const delivery = await readDelivery(request, config.hookSecret, context.get(clockContext).now());
+  const delivery = await readDelivery(request, config.hookSecret, context.get(clockContext).now(), config.siteUrl ?? null);
   if (delivery instanceof Response) return delivery;
   const { webhookId, payload, siteUrl, next } = delivery;
   if (!config.mailer) {
@@ -119,12 +133,17 @@ export async function action(args: Route.ActionArgs) {
   const customer = admin ? null : await findAccountByAuthUser(db, payload.user.id);
   // Language: what the sign-up chose, else the admin's or the customer's own (S-210 AC2), else English.
   const locale = metadataLocale(payload) ?? admin?.locale ?? customer?.locale ?? "en";
-  const type = payload.email_data.email_action_type;
+  const type = payload.email_data.email_action_type as HandledAction;
+  // Account emails go out until 100 a day (S-187 AC2); past that Supabase shows the failure.
+  if ((await sentToday(db, context.get(clockContext).now())) >= DAILY_LIMIT) {
+    log("send_failed", webhookId, "daily_limit");
+    return failure(500, "Email could not be sent.");
+  }
   if (!(await claim(args, webhookId, payload.user.email, locale, type))) {
     log("duplicate", webhookId);
     return ok();
   }
-  const email = renderAuthEmail(type, Boolean(admin) || next.startsWith("/admin"), locale, confirmLink(siteUrl, payload.email_data.token_hash, type, next));
+  const email = renderAuthEmail(type, Boolean(admin) || next.startsWith("/admin"), locale, confirmLink(siteUrl, payload.email_data.token_hash, type, next), siteUrl);
   try {
     const sent = await sendWithTimeout(config.mailer, { to: payload.user.email, ...email, idempotencyKey: `auth-hook-${webhookId}` }, config.timeoutMs);
     await settle(args, webhookId, sent);

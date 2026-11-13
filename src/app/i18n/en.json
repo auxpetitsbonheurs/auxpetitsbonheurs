@@ -1145,7 +1145,7 @@
       "policiesHint": "Keep the cancellation and storage entries: customers accept these at checkout.",
       "privacy": "Privacy note",
       "emailTitle": "Email sending",
-      "emailUsage": "{{sentToday}} of {{dailyLimit}} emails sent today.",
+      "emailUsage": "Email usage: {{sentToday}} of {{dailyLimit}} today",
       "emailUsageLater": "Daily email usage: not available yet.",
       "inEnglish": "{{label}} (English)",
       "inFrench": "{{label}} (French)",
@@ -1699,6 +1699,164 @@
       "reason": "Someone asked to reset the password of your {{bakery}} account; if it was you, use the button below.",
       "button": "Choose a new password",
       "ignore": "If you did not ask, ignore this email: your password stays the same."
+    },
+    "layout": {
+      "footer": "You are receiving this email because of your order or request at {{bakery}}. Please do not reply: message us on WhatsApp instead."
+    },
+    "common": {
+      "hello": "Hello {{name}},",
+      "order": "Order",
+      "date": "Date",
+      "time": "Time",
+      "fulfilment": "How you get it",
+      "pickup": "Pickup",
+      "delivery": "Delivery",
+      "pickupAddress": "Pickup address",
+      "deliveryAddress": "Delivery address",
+      "itemsHeading": "Your order",
+      "total": "Total",
+      "deliveryFee": "Delivery fee included: {{amount}}",
+      "track": "Follow your order",
+      "trackText": "Your order page",
+      "policy": "Free cancellation by WhatsApp until 48 hours before your order date. After that, no refund.",
+      "orderAgain": "Order again",
+      "menu": "See the menu",
+      "customCake": "Ask for a custom cake",
+      "instagram": "Follow us on Instagram",
+      "reason": "Reason",
+      "map": "See it on the map",
+      "qty": "{{quantity}} × {{name}}",
+      "message": "Message on the cake: {{text}}"
+    },
+    "orderReceived": {
+      "subject": "We received your order {{number}}",
+      "heading": "Thank you, we received your order",
+      "intro": "Your order {{number}} is not confirmed yet. We check it and confirm it with you soon."
+    },
+    "requestReceived": {
+      "subject": "We received your request {{number}}",
+      "heading": "Thank you, we received your request",
+      "intro": "We look at your idea and will send you a quote. Request {{number}}.",
+      "occasion": "Occasion",
+      "servings": "Servings",
+      "theme": "Theme",
+      "photos_one": "{{count}} photo sent",
+      "photos_other": "{{count}} photos sent",
+      "photos": "Photos",
+      "photosLabel": "Photos"
+    },
+    "quote": {
+      "subject": "Your quote {{number}}: {{amount}}",
+      "heading": "Your quote is ready",
+      "intro": "Here is our quote for request {{number}}.",
+      "amount": "Quote",
+      "note": "Note from the bakery",
+      "valid": "Valid through",
+      "decide": "Open your order page to accept or decline this quote.",
+      "accept": "Accept the quote",
+      "decline": "Decline the quote"
+    },
+    "orderConfirmed": {
+      "subject": "Your order {{number}} is confirmed",
+      "heading": "Your order is confirmed",
+      "intro": "Good news: order {{number}} is confirmed. Here is the summary.",
+      "paid": "Payment received, thank you.",
+      "cash": "You pay when you receive your order.",
+      "payJuice": "Paid by Juice: {{amount}} to {{name}} ({{number}}).",
+      "keepCake": "Keep cream cakes in the fridge."
+    },
+    "orderUpdated": {
+      "subject": "Your order {{number}} was updated",
+      "heading": "Your order was updated",
+      "intro": "We changed order {{number}}. Please check the details below.",
+      "newDate": "New date",
+      "newTotal": "New total",
+      "was": "before: {{value}}"
+    },
+    "orderDeclined": {
+      "subject": "About your order {{number}}",
+      "heading": "We cannot make this order",
+      "intro": "We are sorry: we cannot prepare order {{number}}.",
+      "refund": "If you already paid, we will refund {{amount}}."
+    },
+    "requestDeclined": {
+      "subject": "About your request {{number}}",
+      "heading": "We cannot make this cake",
+      "intro": "We are sorry: we cannot make the cake of request {{number}}."
+    },
+    "cancellation": {
+      "subject": "Order {{number}} is cancelled",
+      "heading": "Your order is cancelled",
+      "intro": "Order {{number}} is cancelled. Nothing more is needed from you.",
+      "refund": "We owe you {{amount}}: we will contact you on WhatsApp for the refund."
+    },
+    "quoteClosed": {
+      "subject": "Your quote {{number}} is closed",
+      "heading": "Your quote is closed",
+      "declined": "You declined the quote for request {{number}}, so we closed it.",
+      "expired": "The quote for request {{number}} was not accepted in time, so we closed it.",
+      "again": "You can send a new request at any time."
+    },
+    "ready": {
+      "subject": "Your order {{number}} is ready",
+      "heading": "Your order is ready for pickup",
+      "intro": "Order {{number}} is ready. We wait for you at the bakery."
+    },
+    "onTheWay": {
+      "subject": "Your order {{number}} is on its way",
+      "heading": "Your order is on its way",
+      "intro": "Order {{number}} has left the bakery and is coming to you."
+    },
+    "thanks": {
+      "subject": "Thank you for your order {{number}}",
+      "heading": "Thank you!",
+      "intro": "We hope you enjoyed order {{number}}. It was a pleasure to bake it for you.",
+      "again": "Want more? Order again whenever you like."
+    },
+    "paymentReminder": {
+      "subject": "Reminder: pay order {{number}}",
+      "heading": "Your order is waiting for payment",
+      "intro": "We have not received the payment for order {{number}} yet."
+    },
+    "cancelledUnpaid": {
+      "subject": "Order {{number}} was cancelled: no payment",
+      "heading": "Your order was cancelled",
+      "intro": "We did not receive the payment for order {{number}} within 24 hours, so it was cancelled.",
+      "again": "You can place a new order at any time."
+    },
+    "refunded": {
+      "subject": "Your refund for order {{number}}",
+      "heading": "Your refund is done",
+      "intro": "We refunded {{amount}} for order {{number}}. Thank you for your patience."
+    },
+    "auth": {
+      "expiryHour": "This link works for 1 hour and only once.",
+      "ignore": "If you did not ask for this, ignore this email: nothing changes without you.",
+      "signup": {
+        "subject": "Confirm your email for {{bakery}}",
+        "heading": "Confirm your email",
+        "reason": "Use the button below to confirm your email address for your {{bakery}} account.",
+        "button": "Confirm my email"
+      },
+      "signIn": {
+        "subject": "Your sign-in link for {{bakery}}",
+        "heading": "Sign in",
+        "reason": "Use the button below to sign in to your {{bakery}} account. No password needed.",
+        "button": "Sign in"
+      },
+      "emailChange": {
+        "subject": "Confirm your new email for {{bakery}}",
+        "heading": "Confirm your new email",
+        "reason": "Use the button below to confirm this new email address for your {{bakery}} account.",
+        "button": "Confirm my new email"
+      },
+      "invite": {
+        "subject": "You are invited to {{bakery}}",
+        "heading": "You are invited",
+        "reason": "You were invited to {{bakery}}. Use the button below to accept and choose your password.",
+        "button": "Accept the invitation"
+      },
+      "footer": "Sent by {{bakery}}. Please do not reply to this email."
     }
   },
   "nav": {

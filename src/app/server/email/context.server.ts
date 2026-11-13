@@ -11,6 +11,8 @@ export interface EmailConfig {
   hookSecret: string | null;
   /** Provider deadline; tests shorten it. */
   timeoutMs: number;
+  /** SITE_URL origin; null while not set (the hook then falls back to the request's own origin). */
+  siteUrl?: string | null;
 }
 
 export const emailContext = createContext<EmailConfig>({ mailer: null, hookSecret: null, timeoutMs: EMAIL_TIMEOUT_MS });

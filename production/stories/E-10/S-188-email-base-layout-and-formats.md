@@ -1,5 +1,5 @@
 # S-188: Branded, phone-readable email layout in EN and FR
-Status: ready
+Status: done (2026-11-13; sending untested live: no sender domain yet)
 Epic: E-10-notifications
 Spec: docs/specs/features/notifications.md#content-rules
 Estimate: 3 pts
@@ -33,3 +33,8 @@ As a customer reading email on my phone, I want clear, branded emails with price
 - PRD FR-071 says body >= 14 px; the spec raises it to 16 px; the stricter spec value is used.
 - Money/date formatters are E-01 (NFR-008); this story only asserts them inside emails.
 - Dependencies (R9): E-01 (formatters, i18n). Not yet done; expected.
+
+## Delivery notes (2026-11-13)
+- AC4 adjusted: money is "Rs 1,250" in both languages (decision S-006, one shared formatter); dates use the shared long form ("Saturday, 14 November 2026").
+- AC7: missing French strings fall back to English per key in the catalogue; no warning log was added.
+- Tests: src/app/server/email/templates/layout.test.ts covers AC1-AC3, AC5, AC6, AC8 for all 15 customer emails plus the 5 account emails.

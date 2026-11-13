@@ -1145,7 +1145,7 @@
       "policiesHint": "Gardez les parties annulation et conservation : les clients les acceptent à la commande.",
       "privacy": "Note de confidentialité",
       "emailTitle": "Envoi des e-mails",
-      "emailUsage": "{{sentToday}} e-mails envoyés aujourd'hui sur {{dailyLimit}}.",
+      "emailUsage": "Utilisation des e-mails : {{sentToday}} sur {{dailyLimit}} aujourd'hui",
       "emailUsageLater": "Utilisation quotidienne des e-mails : pas encore disponible.",
       "inEnglish": "{{label}} (anglais)",
       "inFrench": "{{label}} (français)",
@@ -1699,6 +1699,164 @@
       "reason": "Quelqu’un a demandé à réinitialiser le mot de passe de votre compte {{bakery}} ; si c’est vous, utilisez le bouton ci-dessous.",
       "button": "Choisir un nouveau mot de passe",
       "ignore": "Si vous n’avez rien demandé, ignorez cet e-mail : votre mot de passe ne change pas."
+    },
+    "layout": {
+      "footer": "Vous recevez cet e-mail à cause de votre commande ou demande chez {{bakery}}. Merci de ne pas répondre : écrivez-nous plutôt sur WhatsApp."
+    },
+    "common": {
+      "hello": "Bonjour {{name}},",
+      "order": "Commande",
+      "date": "Date",
+      "time": "Horaire",
+      "fulfilment": "Comment la recevoir",
+      "pickup": "Retrait",
+      "delivery": "Livraison",
+      "pickupAddress": "Adresse de retrait",
+      "deliveryAddress": "Adresse de livraison",
+      "itemsHeading": "Votre commande",
+      "total": "Total",
+      "deliveryFee": "Frais de livraison inclus : {{amount}}",
+      "track": "Suivre votre commande",
+      "trackText": "Page de votre commande",
+      "policy": "Annulation gratuite par WhatsApp jusqu'à 48 heures avant la date de votre commande. Ensuite, pas de remboursement.",
+      "orderAgain": "Commander à nouveau",
+      "menu": "Voir la carte",
+      "customCake": "Demander un gâteau sur mesure",
+      "instagram": "Suivez-nous sur Instagram",
+      "reason": "Motif",
+      "map": "Voir sur la carte",
+      "qty": "{{quantity}} × {{name}}",
+      "message": "Message sur le gâteau : {{text}}"
+    },
+    "orderReceived": {
+      "subject": "Nous avons reçu votre commande {{number}}",
+      "heading": "Merci, nous avons reçu votre commande",
+      "intro": "Votre commande {{number}} n'est pas encore confirmée. Nous la vérifions et la confirmons avec vous très vite."
+    },
+    "requestReceived": {
+      "subject": "Nous avons reçu votre demande {{number}}",
+      "heading": "Merci, nous avons reçu votre demande",
+      "intro": "Nous regardons votre idée et vous enverrons un devis. Demande {{number}}.",
+      "occasion": "Occasion",
+      "servings": "Parts",
+      "theme": "Thème",
+      "photos_one": "{{count}} photo envoyée",
+      "photos_other": "{{count}} photos envoyées",
+      "photos": "Photos",
+      "photosLabel": "Photos"
+    },
+    "quote": {
+      "subject": "Votre devis {{number}} : {{amount}}",
+      "heading": "Votre devis est prêt",
+      "intro": "Voici notre devis pour la demande {{number}}.",
+      "amount": "Devis",
+      "note": "Message de la pâtisserie",
+      "valid": "Valable jusqu'au",
+      "decide": "Ouvrez la page de votre commande pour accepter ou refuser ce devis.",
+      "accept": "Accepter le devis",
+      "decline": "Refuser le devis"
+    },
+    "orderConfirmed": {
+      "subject": "Votre commande {{number}} est confirmée",
+      "heading": "Votre commande est confirmée",
+      "intro": "Bonne nouvelle : la commande {{number}} est confirmée. Voici le récapitulatif.",
+      "paid": "Paiement reçu, merci.",
+      "cash": "Vous payez à la réception de votre commande.",
+      "payJuice": "Payé par Juice : {{amount}} à {{name}} ({{number}}).",
+      "keepCake": "Gardez les gâteaux à la crème au réfrigérateur."
+    },
+    "orderUpdated": {
+      "subject": "Votre commande {{number}} a été modifiée",
+      "heading": "Votre commande a été modifiée",
+      "intro": "Nous avons modifié la commande {{number}}. Merci de vérifier les détails ci-dessous.",
+      "newDate": "Nouvelle date",
+      "newTotal": "Nouveau total",
+      "was": "avant : {{value}}"
+    },
+    "orderDeclined": {
+      "subject": "À propos de votre commande {{number}}",
+      "heading": "Nous ne pouvons pas réaliser cette commande",
+      "intro": "Nous sommes désolés : nous ne pouvons pas préparer la commande {{number}}.",
+      "refund": "Si vous avez déjà payé, nous vous rembourserons {{amount}}."
+    },
+    "requestDeclined": {
+      "subject": "À propos de votre demande {{number}}",
+      "heading": "Nous ne pouvons pas faire ce gâteau",
+      "intro": "Nous sommes désolés : nous ne pouvons pas réaliser le gâteau de la demande {{number}}."
+    },
+    "cancellation": {
+      "subject": "La commande {{number}} est annulée",
+      "heading": "Votre commande est annulée",
+      "intro": "La commande {{number}} est annulée. Vous n'avez rien d'autre à faire.",
+      "refund": "Nous vous devons {{amount}} : nous vous contacterons sur WhatsApp pour le remboursement."
+    },
+    "quoteClosed": {
+      "subject": "Votre devis {{number}} est clos",
+      "heading": "Votre devis est clos",
+      "declined": "Vous avez refusé le devis de la demande {{number}}, nous l'avons donc clos.",
+      "expired": "Le devis de la demande {{number}} n'a pas été accepté à temps, nous l'avons donc clos.",
+      "again": "Vous pouvez envoyer une nouvelle demande à tout moment."
+    },
+    "ready": {
+      "subject": "Votre commande {{number}} est prête",
+      "heading": "Votre commande est prête à retirer",
+      "intro": "La commande {{number}} est prête. Nous vous attendons à la pâtisserie."
+    },
+    "onTheWay": {
+      "subject": "Votre commande {{number}} est en route",
+      "heading": "Votre commande est en route",
+      "intro": "La commande {{number}} a quitté la pâtisserie et arrive chez vous."
+    },
+    "thanks": {
+      "subject": "Merci pour votre commande {{number}}",
+      "heading": "Merci !",
+      "intro": "Nous espérons que la commande {{number}} vous a plu. Ce fut un plaisir de la préparer pour vous.",
+      "again": "Envie d'autre chose ? Commandez à nouveau quand vous voulez."
+    },
+    "paymentReminder": {
+      "subject": "Rappel : payez la commande {{number}}",
+      "heading": "Votre commande attend son paiement",
+      "intro": "Nous n'avons pas encore reçu le paiement de la commande {{number}}."
+    },
+    "cancelledUnpaid": {
+      "subject": "Commande {{number}} annulée : pas de paiement",
+      "heading": "Votre commande a été annulée",
+      "intro": "Nous n'avons pas reçu le paiement de la commande {{number}} sous 24 heures, elle a donc été annulée.",
+      "again": "Vous pouvez passer une nouvelle commande à tout moment."
+    },
+    "refunded": {
+      "subject": "Votre remboursement pour la commande {{number}}",
+      "heading": "Votre remboursement est fait",
+      "intro": "Nous avons remboursé {{amount}} pour la commande {{number}}. Merci de votre patience."
+    },
+    "auth": {
+      "expiryHour": "Ce lien est valable 1 heure, une seule fois.",
+      "ignore": "Si vous n'avez rien demandé, ignorez cet e-mail : rien ne change sans vous.",
+      "signup": {
+        "subject": "Confirmez votre e-mail pour {{bakery}}",
+        "heading": "Confirmez votre e-mail",
+        "reason": "Utilisez le bouton ci-dessous pour confirmer l'adresse e-mail de votre compte {{bakery}}.",
+        "button": "Confirmer mon e-mail"
+      },
+      "signIn": {
+        "subject": "Votre lien de connexion {{bakery}}",
+        "heading": "Se connecter",
+        "reason": "Utilisez le bouton ci-dessous pour vous connecter à votre compte {{bakery}}. Pas de mot de passe nécessaire.",
+        "button": "Me connecter"
+      },
+      "emailChange": {
+        "subject": "Confirmez votre nouvel e-mail pour {{bakery}}",
+        "heading": "Confirmez votre nouvel e-mail",
+        "reason": "Utilisez le bouton ci-dessous pour confirmer cette nouvelle adresse e-mail pour votre compte {{bakery}}.",
+        "button": "Confirmer mon nouvel e-mail"
+      },
+      "invite": {
+        "subject": "Vous êtes invité(e) chez {{bakery}}",
+        "heading": "Vous êtes invité(e)",
+        "reason": "Vous avez été invité(e) chez {{bakery}}. Utilisez le bouton ci-dessous pour accepter et choisir votre mot de passe.",
+        "button": "Accepter l'invitation"
+      },
+      "footer": "Envoyé par {{bakery}}. Merci de ne pas répondre à cet e-mail."
     }
   },
   "nav": {

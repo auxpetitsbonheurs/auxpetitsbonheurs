@@ -1,5 +1,5 @@
 # S-187: Stay inside the free email limit and show the Owner today's usage
-Status: ready
+Status: done (2026-11-13; sending untested live: no sender domain yet)
 Epic: E-10-notifications
 Spec: docs/specs/features/notifications.md#edge-cases
 Estimate: 3 pts

@@ -68,8 +68,9 @@ export const HookPayload = z.object({
 
 export type HookPayload = z.infer<typeof HookPayload>;
 
-/** Email types the hook sends: recovery (S-024); E-11 adds signup and magiclink (email change is out of v1). */
-export const HANDLED_ACTIONS = ["recovery", "signup", "magiclink"] as const;
+/** Every Supabase email type the hook renders (S-194 AC1) and the email each one becomes. */
+export const HANDLED_ACTIONS = ["recovery", "signup", "magiclink", "email_change", "invite"] as const;
+export type HandledAction = (typeof HANDLED_ACTIONS)[number];
 
 /** `user_metadata.locale` when it is one we have; undefined otherwise (AC4: then English or the admin's own). */
 export function metadataLocale(payload: HookPayload): Locale | undefined {

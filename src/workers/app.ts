@@ -6,9 +6,10 @@ import { clockContext, createClock } from "~/server/clock.server";
 import { confirmationContext, confirmationSignerFor } from "~/server/confirmation-cookie.server";
 import { handleWithDb, requestDbContext } from "~/server/db.server";
 import { type ServerEnv, getEnv } from "~/server/env.server";
-import { EMAIL_TIMEOUT_MS, resendMailer } from "~/server/email/sender.server";
+import { mailerFromEnv, siteUrlFromEnv } from "~/server/email/mailer-config.server";
+import { processOutbox } from "~/server/email/process-outbox.server";
+import { EMAIL_TIMEOUT_MS } from "~/server/email/sender.server";
 import { backgroundContext, emailContext } from "~/server/email/context.server";
-import { integrationConfigured } from "~/lib/integrations";
 import { refuseCrossSiteAdminRequest } from "~/server/origin.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { withDbTiming } from "~/server/db-timing.server";
@@ -19,6 +20,9 @@ import { createSupabaseAuth } from "~/server/supabase-auth.server";
 import { supabaseUserAdmin, userAdminContext } from "~/server/user-admin.server";
 import { withEnvironmentHeaders, withServerTiming } from "./headers";
 import { requestLogLine } from "./log-redact";
+
+/** Rows sent right after a request; the hourly cron takes up to 50. */
+const FLUSH_LIMIT = 10;
 
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
@@ -55,13 +59,19 @@ async function respond(request: Request, settings: ServerEnv, ctx: ExecutionCont
     context.set(userAdminContext, supabaseUserAdmin({ url: settings.SUPABASE_URL, serviceRoleKey: settings.SUPABASE_SERVICE_ROLE_KEY }));
     // Email (S-024): optional integrations; without their keys the hook answers a safe 500
     // and the forgot page still shows its calm message (ADR-0002 amendment).
-    context.set(emailContext, {
-      mailer: integrationConfigured(settings, "email") ? resendMailer({ apiKey: settings.RESEND_API_KEY!, from: settings.EMAIL_FROM! }) : null,
-      hookSecret: settings.SUPABASE_AUTH_HOOK_SECRET ?? null,
-      timeoutMs: EMAIL_TIMEOUT_MS,
-    });
+    const mailer = mailerFromEnv(settings);
+    const siteUrl = siteUrlFromEnv(settings);
+    context.set(emailContext, { mailer, hookSecret: settings.SUPABASE_AUTH_HOOK_SECRET ?? null, timeoutMs: EMAIL_TIMEOUT_MS, siteUrl });
     context.set(backgroundContext, { waitUntil: (promise) => ctx.waitUntil(promise) });
-    return requestHandler(request, context);
+    return requestHandler(request, context).then((response) => {
+      // Emails queued by this action go out right after the response (S-186 AC1); the hourly cron
+      // retries what fails. Without email set up this costs nothing: no query, no send.
+      const mutation = request.method !== "GET" && request.method !== "HEAD" && !new URL(request.url).pathname.startsWith("/hooks/");
+      if (mutation && response.status < 400 && mailer && siteUrl) {
+        afterResponse.defer("sendQueuedEmails", () => processOutbox(requestDb.db, { now: context.get(clockContext).now(), mailer, siteUrl, limit: FLUSH_LIMIT }));
+      }
+      return response;
+    });
   }, undefined, { idempotent: request.method === "GET" || request.method === "HEAD", afterResponse });
 }
 

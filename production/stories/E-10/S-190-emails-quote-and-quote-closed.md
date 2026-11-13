@@ -1,5 +1,5 @@
 # S-190: Customer gets the quote email and is told when a quote closes
-Status: ready
+Status: done (2026-11-13; sending untested live: no sender domain yet)
 Epic: E-10-notifications
 Spec: docs/specs/features/notifications.md#email-catalogue
 Estimate: 3 pts

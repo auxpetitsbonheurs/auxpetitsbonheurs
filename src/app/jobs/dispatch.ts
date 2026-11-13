@@ -8,7 +8,9 @@ import { integrationsCheck } from "./integrations";
 import { keepAlive } from "./keep-alive";
 import { paymentDeadlines } from "./payment-deadlines";
 import { purgeRateLimits } from "./purge-rate-limits";
+import { purgeEmails } from "./purge-emails";
 import { purgeStorage } from "./purge-storage";
+import { retryEmails } from "./retry-emails";
 import type { JobContext, JobResult } from "./types";
 
 export type { JobContext, JobResult } from "./types";
@@ -26,6 +28,9 @@ export const JOBS: readonly Job[] = [
   // Juice payment (S-280): 12 h reminder, 24 h unpaid cancel.
   { name: "paymentDeadlines", run: paymentDeadlines },
   { name: "expireQuotes", run: expireQuotes },
+  // Notifications (E-10): after the jobs that queue emails, so one tick can send what it queued.
+  { name: "retryEmails", run: retryEmails },
+  { name: "purgeEmails", run: purgeEmails },
 ];
 
 /** Error name and message with any URL (it could carry credentials) replaced. */

@@ -22,9 +22,9 @@ export interface Integration {
 export const INTEGRATIONS: readonly Integration[] = [
   {
     name: "email",
-    keys: ["RESEND_API_KEY", "EMAIL_FROM"],
+    keys: ["RESEND_API_KEY", "EMAIL_FROM", "SITE_URL"],
     launchBlocker: true,
-    whenMissing: "order emails stay queued in the outbox; nothing is sent",
+    whenMissing: "not sent: email not set up. Order emails stay queued in the outbox and go out once it is",
   },
   {
     name: "push",

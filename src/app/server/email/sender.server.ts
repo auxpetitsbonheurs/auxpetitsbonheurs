@@ -18,11 +18,14 @@ export type EmailFailure = "timeout" | "provider" | "network";
 
 export class EmailSendError extends Error {
   readonly kind: EmailFailure;
+  /** A refusal retrying cannot fix (a 4xx other than 429, e.g. an invalid address): the row goes dead at once. */
+  readonly permanent: boolean;
 
-  constructor(kind: EmailFailure) {
+  constructor(kind: EmailFailure, permanent = false) {
     super(`email not sent (${kind})`);
     this.name = "EmailSendError";
     this.kind = kind;
+    this.permanent = permanent;
   }
 }
 
@@ -72,7 +75,10 @@ export function resendMailer(config: ResendConfig): Mailer {
       } catch (error) {
         throw new EmailSendError(error instanceof Error && error.name === "TimeoutError" ? "timeout" : "network");
       }
-      if (!response.ok) throw new EmailSendError("provider");
+      if (!response.ok) {
+        const permanent = response.status >= 400 && response.status < 500 && response.status !== 429 && response.status !== 408;
+        throw new EmailSendError("provider", permanent);
+      }
       const body = (await response.json().catch(() => ({}))) as { id?: unknown };
       return { id: typeof body.id === "string" ? body.id : null };
     },

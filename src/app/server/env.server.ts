@@ -32,6 +32,8 @@ const coreSchema = z.object({
 const integrationSchema = z.object({
   RESEND_API_KEY: required,
   EMAIL_FROM: required,
+  /** The public address of the site (`https://<domain>`): the origin of every link in an email. */
+  SITE_URL: url,
   VAPID_PUBLIC_KEY: required,
   VAPID_PRIVATE_KEY: required,
   VAPID_SUBJECT: required,

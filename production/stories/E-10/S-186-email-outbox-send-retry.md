@@ -1,5 +1,5 @@
 # S-186: Order emails are queued and retried so no order is lost when email fails
-Status: ready
+Status: done (2026-11-13; sending untested live: no sender domain yet)
 Epic: E-10-notifications
 Spec: docs/specs/features/notifications.md#edge-cases
 Estimate: 5 pts
@@ -36,3 +36,8 @@ As a customer placing an order, I want my order saved even when the email provid
 - Replaces the E-01 outbox stub; keeps its table and `dedupe_key` pattern. Resend is mocked (no real network, fixed clock).
 - The order-log display of `email_failed` is in S-203.
 - Dependencies (R9): E-01 (outbox stub, jobs dispatch), E-05/E-06/E-08 (callers). Not yet done; expected.
+
+## Delivery notes (2026-11-13)
+- Tests: src/app/server/email/process-outbox.test.ts (AC2-AC9), src/app/jobs/purge-emails.test.ts; the send path shares the one hourly Cron Trigger via the `retryEmails` job, and a request-time flush after each successful mutation.
+- AC4: the Sentry alert is an error-level `email_dead` log line until the Sentry client is wired (E-12). AC10: env keys RESEND_API_KEY, EMAIL_FROM and the new SITE_URL are read from validated env (env.server.test.ts covers the key list).
+- AC1: rows are inserted in the business transaction by the services already; flush runs after the response.

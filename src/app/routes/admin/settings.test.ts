@@ -61,7 +61,7 @@ describe("S-058 AC1: the Owner sees every business value", () => {
       eveningReminderAt: "18:00",
       orderNumberPrefix: "APB-",
     });
-    expect(page.resendUsage).toBeNull();
+    expect(page.resendUsage).toEqual({ sentToday: 0, dailyLimit: 100 });
   });
 });
 
