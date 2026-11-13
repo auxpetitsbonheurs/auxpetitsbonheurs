@@ -138,6 +138,28 @@ describe("Settings images (S-059 AC6, AC8): scope site", () => {
   });
 });
 
+describe("Promotion images (S-053 AC8): scope promotions", () => {
+  test("an Admin (promotions are Admin and Owner work) gets paths under promotions/<admin>/<editor session>/", async () => {
+    const helper = await signedInAdmin(database, { role: "admin" });
+    const uploads = gateway();
+
+    const response = await post({ uploadSessionId: SESSION, scope: "promotions", type: "image/webp", size: "1000" }, helper, uploads);
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { uploads: { path: string }[] };
+    expect(body.uploads[0]!.path).toMatch(new RegExp(`^promotions/${helper.admin.id}/${SESSION}/[0-9a-f-]{36}\\.webp$`));
+  });
+
+  test("a non-image type or an over-limit size is UPLOAD_REJECTED, as for product photos", async () => {
+    const helper = await signedInAdmin(database, { role: "admin" });
+    const uploads = gateway();
+
+    expect((await post({ uploadSessionId: SESSION, scope: "promotions", type: "application/pdf", size: "1000" }, helper, uploads)).status).toBe(422);
+    expect((await post({ uploadSessionId: SESSION, scope: "promotions", type: "image/webp", size: String(50 * 1024 * 1024) }, helper, uploads)).status).toBe(422);
+    expect(uploads.signUpload).not.toHaveBeenCalled();
+  });
+});
+
 describe("Brand page photos (E-13 S-247 AC6, AC8): scope page:<key>", () => {
   test("an Admin (not only an Owner) gets paths under site/pages/<key>/<admin>/<editor session>/", async () => {
     const helper = await signedInAdmin(database, { role: "admin" });

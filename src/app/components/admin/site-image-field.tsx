@@ -1,4 +1,5 @@
-// One Settings image (S-059 AC6: homepage hero, About): same rules as product photos (S-047).
+// One image field (S-059 AC6: homepage hero, About; S-053 AC8: a promotion's image): same rules
+// as product photos (S-047), with the 480/960 copies (S-276).
 // The chosen photo is checked, compressed in the browser (code loaded on first use), given a
 // signed URL under `site/` and uploaded; the posted path is saved with Settings. Remove clears
 // it (the file is removed after the save). A failure keeps the old image and says why.
@@ -21,14 +22,16 @@ interface Props {
   path: string | null;
   url: string | null;
   error?: string;
-  /** The page's upload session (one per Settings page view). */
+  /** The page's upload session (one per Settings page or editor view). */
   sessionId: () => string;
+  /** Where the upload goes: Settings images (`site`, Owners) or promotion images (`promotions`, any admin). */
+  scope?: "site" | "promotions";
   onChange: (state: ImageState) => void;
 }
 
 type Failure = "type" | "too_big" | "unreadable" | "heic" | "too_big_after" | "signed_out" | "refused" | "network";
 
-export function SiteImageField({ id, name, label, hint, path: savedPath, url: savedUrl, error, sessionId, onChange }: Props) {
+export function SiteImageField({ id, name, label, hint, path: savedPath, url: savedUrl, error, sessionId, onChange, scope = "site" }: Props) {
   const { t } = useI18n();
   const [current, setCurrent] = useState({ path: savedPath, url: savedUrl });
   const [state, setState] = useState<ImageState>("idle");
@@ -49,9 +52,9 @@ export function SiteImageField({ id, name, label, hint, path: savedPath, url: sa
     try {
       const { compressPhoto, uploadVariants } = await import("~/lib/image-compress");
       const photo = await compressPhoto(file);
-      const issued = await requestUpload(sessionId(), photo.type, photo.blob.size, undefined, "site");
+      const issued = await requestUpload(sessionId(), photo.type, photo.blob.size, undefined, scope);
       await putFile(issued.signedUrl, photo.blob, () => {});
-      await uploadVariants(sessionId(), "site", { path: issued.path, type: photo.type }, photo.variants);
+      await uploadVariants(sessionId(), scope, { path: issued.path, type: photo.type }, photo.variants);
       setCurrent({ path: issued.path, url: URL.createObjectURL(photo.blob) });
       update("idle");
       setMessage(t("admin.settings.image.uploaded"));

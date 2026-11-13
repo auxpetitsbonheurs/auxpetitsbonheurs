@@ -156,6 +156,8 @@ export const promotion = pgTable(
     textEn: text("text_en"),
     textFr: text("text_fr"),
     imagePath: text("image_path"),
+    /** Widths of the smaller copies stored beside the image (S-053 AC8, as product photos, S-276); empty = original only. */
+    imageVariants: smallint("image_variants").array().notNull().default(sql`'{}'::smallint[]`),
     startsAt: timestamp("starts_at", tz).notNull(),
     endsAt: timestamp("ends_at", tz).notNull(),
     active: boolean("active").notNull().default(true),

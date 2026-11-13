@@ -127,6 +127,13 @@
       "when": 1794587000000,
       "tag": "0019_place_order_rate_limit",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794599621407,
+      "tag": "0020_promotion_image_variants",
+      "breakpoints": true
     }
   ]
 }

@@ -4,6 +4,7 @@
 // promo-banner spec uses 2031-2040), with the server clock fixed inside it for the customer
 // pages, so specs running in parallel never see this promotion.
 import { randomInt } from "node:crypto";
+import { fileURLToPath } from "node:url";
 import { expectNoA11yViolations, expectNoHorizontalScroll, expectTapTargets } from "./support/a11y";
 import { createE2eAdmin, signIn } from "./support/admin";
 import { createProduct } from "./support/catalogue";
@@ -92,6 +93,42 @@ test.describe("S-052, S-053 admin promotions", () => {
     await expect(page.getByRole("status").filter({ hasText: "Promotion deleted" })).toBeVisible();
     await expect(page.getByRole("listitem").filter({ hasText: title })).toHaveCount(0);
     await expect.poll(async () => (await db`select 1 from promotion where title_en = ${title}`).length).toBe(0);
+  });
+
+  test("S-053 AC8: a photo is compressed to WebP with its 480/960 copies, saved, and shown on the home card with srcset; a PDF is refused", async ({ page, db, baseURL }) => {
+    const admin = await createE2eAdmin(db, { role: "admin" });
+    const day = ownDay();
+    const title = `Photo week ${randomInt(1e6)}`;
+    await signIn(page, admin, "/admin/promotions/new");
+    await hydrated(page);
+    const photo = page.getByLabel("Choose Photo for the card and banner");
+
+    await photo.setInputFiles([{ name: "menu.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7\n") }]);
+    await expect(page.getByText("This file is not a photo we can use (JPEG, PNG, WebP or HEIC).")).toBeVisible();
+
+    await photo.setInputFiles(fileURLToPath(new URL("./fixtures/cake-exif.jpg", import.meta.url)));
+    await expect(page.getByRole("status").filter({ hasText: "Photo ready. Save to use it." })).toBeAttached({ timeout: 30_000 });
+    await page.getByLabel("Title (English)").fill(title);
+    await page.getByLabel("Starts").fill(day.starts);
+    await page.getByLabel("Ends").fill(day.ends);
+    await page.getByRole("radio", { name: "Home card", exact: true }).check();
+    await expectNoA11yViolations(page);
+    await expectNoHorizontalScroll(page);
+    await page.getByRole("button", { name: "Save promotion" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Promotion saved" })).toBeVisible();
+
+    const [stored] = await db<{ image_path: string; image_variants: number[] }[]>`select image_path, image_variants from promotion where title_en = ${title}`;
+    expect(stored!.image_path).toMatch(/^promotions\/[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.webp$/);
+    expect(stored!.image_variants).toEqual([480, 960]);
+    const bytes = Buffer.from(await (await fetch(`http://127.0.0.1:54321/__storage/object?path=${encodeURIComponent(stored!.image_path)}`)).arrayBuffer());
+    expect(bytes.subarray(8, 12).toString("latin1")).toBe("WEBP");
+
+    await setClock(page.context(), baseURL!, day.inside);
+    await page.goto("/");
+    const card = page.getByRole("region", { name: "Current offers" }).getByRole("listitem").filter({ hasText: title }).locator("img");
+    await expect(card).toHaveAttribute("loading", "lazy");
+    await expect(card).toHaveAttribute("srcset", new RegExp(`${stored!.image_path.replace(/\.webp$/, "-480w\\.webp")} 480w`));
+    await expect(card).toHaveAttribute("sizes", /47vw/);
   });
 
   test("S-052 AC6: a load failure keeps the heading and shows an Alert with Retry; Retry loads the list", async ({ page, db }) => {

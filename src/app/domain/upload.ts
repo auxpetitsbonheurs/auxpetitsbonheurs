@@ -77,7 +77,10 @@ export function isIssuedPhotoPath(path: string, adminId: string, uploadSessionId
 /** Hero and About images (S-059 AC6): `site/<adminId>/<uploadSessionId>/<uuid>.<ext>`, same rules as product photos. */
 const SITE_PHOTO_PATH = new RegExp(`^site/(${UUID})/(${UUID})/${UUID}\\.(webp|jpg|png)$`);
 
-export type UploadScope = "products" | "site";
+/** Promotion images (S-053 AC8): `promotions/<adminId>/<uploadSessionId>/<uuid>.<ext>`, Admins and Owners. */
+const PROMOTION_PHOTO_PATH = new RegExp(`^promotions/(${UUID})/(${UUID})/${UUID}\\.(webp|jpg|png)$`);
+
+export type UploadScope = "products" | "site" | "promotions";
 
 export function uploadPrefix(scope: UploadScope, adminId: string, uploadSessionId: string): string {
   return `${scope}/${adminId}/${uploadSessionId}/`;
@@ -86,6 +89,12 @@ export function uploadPrefix(scope: UploadScope, adminId: string, uploadSessionI
 /** True when `path` is exactly a site image path issued to this admin for this Settings session. */
 export function isIssuedSitePath(path: string, adminId: string, uploadSessionId: string): boolean {
   const match = SITE_PHOTO_PATH.exec(path);
+  return match !== null && match[1] === adminId.toLowerCase() && match[2] === uploadSessionId.toLowerCase();
+}
+
+/** True when `path` is exactly a promotion image path issued to this admin for this editor session. */
+export function isIssuedPromotionPath(path: string, adminId: string, uploadSessionId: string): boolean {
+  const match = PROMOTION_PHOTO_PATH.exec(path);
   return match !== null && match[1] === adminId.toLowerCase() && match[2] === uploadSessionId.toLowerCase();
 }
 

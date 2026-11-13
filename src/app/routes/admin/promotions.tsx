@@ -15,6 +15,8 @@ import { requireAdmin } from "~/server/auth.server";
 import { clockContext } from "~/server/clock.server";
 import { PromotionActiveInput, PromotionIdInput } from "~/server/contracts/promotions";
 import { requestDbContext } from "~/server/db.server";
+import { afterResponseContext } from "~/server/after-response.server";
+import { storageContext } from "~/server/storage.server";
 import { deletePromotion, listAdminPromotions, setPromotionActive } from "~/server/services/save-promotion.server";
 import type { Route } from "./+types/promotions";
 
@@ -63,7 +65,7 @@ export async function action(args: Route.ActionArgs) {
   if (intent === "delete") {
     const parsed = PromotionIdInput.safeParse({ id: form.get("id") });
     if (!parsed.success) return actionError("VALIDATION_FAILED", me.locale, { extra: { intent } });
-    const outcome = await deletePromotion(db, parsed.data.id, args.context.get(clockContext).now());
+    const outcome = await deletePromotion(db, parsed.data.id, args.context.get(clockContext).now(), { storage: args.context.get(storageContext), after: args.context.get(afterResponseContext) });
     if (outcome === "not_found") return actionError("NOT_FOUND", me.locale, { extra: { intent } });
     if (outcome === "live") return actionError("VALIDATION_FAILED", me.locale, { fields: { id: translate("admin.promotions.endFirst", me.locale) }, extra: { intent } });
     console.log(JSON.stringify({ level: "info", event: "promotion_deleted", id: parsed.data.id, actorRole: me.role }));

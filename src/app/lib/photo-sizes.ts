@@ -18,6 +18,8 @@ export const CARD_SIZES = "(min-width: 72rem) 22rem, (min-width: 48rem) 31vw, (m
 export const CATEGORY_SIZES = "(min-width: 72rem) 17rem, (min-width: 48rem) 24vw, (min-width: 20rem) calc(50vw - 1.5rem), 100vw";
 /** Home hero: full width on phones, the 6/11 column from 48rem. */
 export const HERO_SIZES = "(min-width: 72rem) 40rem, (min-width: 48rem) 55vw, (min-width: 30rem) 90vw, 20rem";
+/** Home promotion cards (S-053 AC8): full width, 2 columns from 48rem. */
+export const PROMO_CARD_SIZES = "(min-width: 72rem) 34rem, (min-width: 48rem) 47vw, (min-width: 30rem) 90vw, 20rem";
 /** Gallery page tiles: 2 columns, 3 from 48rem. */
 export const GALLERY_TILE_SIZES = "(min-width: 72rem) 22rem, (min-width: 48rem) 31vw, calc(50vw - 1.5rem)";
 /** Home gallery preview: 2 columns, 3 from 23rem. */

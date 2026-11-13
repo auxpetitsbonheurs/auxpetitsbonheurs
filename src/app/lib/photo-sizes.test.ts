@@ -43,6 +43,7 @@ describe("photo sizes on phones (S-276 AC7)", () => {
     ["PRODUCT_VIEWER_SIZES", SIZES.PRODUCT_VIEWER_SIZES],
     ["PAGE_SINGLE_SIZES", SIZES.PAGE_SINGLE_SIZES],
     ["PAGE_PAIR_SIZES", SIZES.PAGE_PAIR_SIZES],
+    ["PROMO_CARD_SIZES", SIZES.PROMO_CARD_SIZES],
   ])("%s: a full-width phone photo takes the 960 px copy, not a slightly wider original", (_name, sizes) => {
     for (const original of [1024, 1200, 1600]) {
       expect(pick(sizes, ...PIXEL_7, [480, 960, original])).toBe(960);

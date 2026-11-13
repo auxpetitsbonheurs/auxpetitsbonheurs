@@ -29,7 +29,7 @@ Phase 2 exit: an admin creates a cake with sizes, flavours, add-ons and a messag
 | [S-050](../stories/E-03/S-050-slug-history-redirect.md) | Renamed product links keep working | ready | 3 |
 | [S-051](../stories/E-03/S-051-preview-as-customer.md) | Preview a product as a customer would see it | ready | 3 |
 | [S-052](../stories/E-03/S-052-promotions-list-lifecycle.md) | Promotions list with automatic Scheduled, Live and Ended | review | 3 |
-| [S-053](../stories/E-03/S-053-promotion-editor.md) | Create and edit a promotion with discounts | ready | 5 |
+| [S-053](../stories/E-03/S-053-promotion-editor.md) | Create and edit a promotion with discounts | review | 5 |
 | [S-054](../stories/E-03/S-054-gallery-upload-tag.md) | Upload gallery photos and tag them by occasion | ready | 5 |
 | [S-055](../stories/E-03/S-055-gallery-caption-reorder-delete.md) | Caption, reorder and delete gallery photos | ready | 3 |
 | [S-056](../stories/E-03/S-056-availability-rules.md) | Owner sets notice days, closed days and time windows | ready | 5 |

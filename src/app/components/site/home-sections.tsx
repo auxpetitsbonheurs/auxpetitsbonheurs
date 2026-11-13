@@ -9,7 +9,7 @@ import { localized } from "~/i18n/localized";
 import { useI18n } from "~/i18n/react";
 import { localePath } from "~/lib/locale";
 import type { HomeCategory, HomeData, HomePhoto, HomeProduct, HomePromoCard } from "~/domain/home";
-import { CARD_SIZES, CATEGORY_SIZES, GALLERY_PREVIEW_SIZES, HERO_SIZES } from "~/lib/photo-sizes";
+import { CARD_SIZES, CATEGORY_SIZES, GALLERY_PREVIEW_SIZES, HERO_SIZES, PROMO_CARD_SIZES } from "~/lib/photo-sizes";
 
 const iconProps = { "aria-hidden": true, strokeWidth: 1.5 } as const;
 
@@ -210,7 +210,21 @@ function PromoCard({ card }: { card: HomePromoCard }) {
   const title = localized(card.title, locale);
   return (
     <li className="relative flex flex-col overflow-hidden rounded-card border border-gold/60 bg-muted">
-      {card.photo && <img src={card.photo.url} alt="" width={card.photo.width} height={card.photo.height} loading="lazy" fetchPriority="low" decoding="async" className="aspect-[3/1] h-auto w-full object-cover" />}
+      {/* Below the hero (the LCP): lazy and low priority, the copy the card's width needs. */}
+      {card.photo && (
+        <img
+          src={card.photo.url}
+          srcSet={card.photo.srcSet}
+          sizes={card.photo.srcSet && PROMO_CARD_SIZES}
+          alt=""
+          width={card.photo.width}
+          height={card.photo.height}
+          loading="lazy"
+          fetchPriority="low"
+          decoding="async"
+          className="aspect-[3/1] h-auto w-full object-cover"
+        />
+      )}
       <div className="p-4">
         <h3 className="text-xl wrap-anywhere">
           {card.href ? (

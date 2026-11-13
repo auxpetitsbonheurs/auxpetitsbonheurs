@@ -20,6 +20,8 @@ export interface SitePromotion extends PromotionRule {
   title: { en: string; fr: string | null };
   text: { en: string; fr: string | null } | null;
   imagePath: string | null;
+  /** Widths of the image's smaller copies (S-053 AC8, S-276); empty = original only. */
+  imageVariants: number[];
   linkKind: "none" | "product" | "category" | "custom_request";
   linkCategory: string | null;
   /** The linked product's slug and status (a hidden product gets no link), or null. */
@@ -41,6 +43,7 @@ export async function listCurrentPromotions(db: Database, now: Date): Promise<Si
       textEn: promotion.textEn,
       textFr: promotion.textFr,
       imagePath: promotion.imagePath,
+      imageVariants: promotion.imageVariants,
       startsAt: promotion.startsAt,
       endsAt: promotion.endsAt,
       active: promotion.active,
@@ -65,6 +68,7 @@ export async function listCurrentPromotions(db: Database, now: Date): Promise<Si
     title: { en: r.titleEn, fr: r.titleFr },
     text: r.textEn && r.textEn.trim() !== "" ? { en: r.textEn, fr: r.textFr } : null,
     imagePath: r.imagePath,
+    imageVariants: r.imageVariants ?? [],
     linkKind: r.linkKind,
     linkCategory: r.linkCategory,
     linkProduct: r.linkSlug && r.linkStatus ? { slug: r.linkSlug, status: r.linkStatus } : null,

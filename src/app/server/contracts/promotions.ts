@@ -31,7 +31,12 @@ export interface PromotionInput {
   placement: (typeof PROMO_PLACEMENTS)[number];
   link: { kind: (typeof PROMO_LINK_KINDS)[number]; productId: string | null; category: ProductType | null };
   discounts: PromotionDiscountInput[];
+  /** S-053 AC8: the uploaded image's Storage path, or null for none; checked against Storage on save. */
+  imagePath: string | null;
 }
+
+/** Longest image path accepted from the form (a Storage path is far shorter). */
+const IMAGE_PATH_MAX = 300;
 
 type Problems = Record<string, PromotionProblem>;
 type Parsed = { ok: true; input: PromotionInput } | { ok: false; problems: Problems };
@@ -113,10 +118,12 @@ export function parsePromotionForm(form: FormData, productIds: ReadonlySet<strin
   const placement = (PROMO_PLACEMENTS as readonly string[]).includes(placementRaw) ? (placementRaw as PromotionInput["placement"]) : ((problems.placement = "missing"), "both");
   const link = checkLink(problems, form, productIds);
   const discounts = [...productIds].flatMap((productId) => checkDiscount(problems, form, productId) ?? []);
+  const imagePath = text(form, "imagePath") || null;
+  if (imagePath && imagePath.length > IMAGE_PATH_MAX) problems.imagePath = "format";
   if (Object.keys(problems).length > 0 || !titleEn || !startsAt || !endsAt) return { ok: false, problems };
   return {
     ok: true,
-    input: { id, title: { en: titleEn, fr: titleFr }, text: { en: textEn, fr: textFr }, startsAt, endsAt, active: form.get("active") === "on", placement, link, discounts },
+    input: { id, title: { en: titleEn, fr: titleFr }, text: { en: textEn, fr: textFr }, startsAt, endsAt, active: form.get("active") === "on", placement, link, discounts, imagePath },
   };
 }
 
