@@ -29,6 +29,7 @@ Home and menu load under 3 s on a mid-range phone over 4G and meet the project.y
 | S-070 | About, Contact and FAQ pages from Settings | ready | 3 |
 | S-071 | Titles, descriptions, share previews and sitemap | ready | 2 |
 | S-072 | Browsing pages meet the performance and accessibility budgets | ready | 2 |
+| S-276 | Photos come in phone sizes (480/960 px copies, srcset) | in-progress | 5 |
 
 Total: 35 pts. Files: `production/stories/E-04/`.
 
