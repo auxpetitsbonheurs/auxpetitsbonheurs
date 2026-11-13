@@ -183,12 +183,89 @@ async function tabStop(page: Page) {
   }, INTERACTIVE);
 }
 
+/** Tab presses between two reads of the in-page recorder (`tabThroughBatched`). */
+const TAB_BATCH = 40;
+
+type RecordedStop = { total: number; stop: FocusStop | null };
+
+/**
+ * `tabThrough` for long pages (hundreds of stops): the same stops, computed by the same rules,
+ * but in the page at the instant each Tab lands (a `focusin` recorder; focus leaving the
+ * document records "no stop"), so the presses go in batches with one read per batch instead
+ * of a round trip per stop. Same result as `tabThrough`; the walk ends at the same point (focus
+ * leaves the document or wraps to the first stop), at most one batch of presses later.
+ */
+export async function tabThroughBatched(page: Page, limit: number): Promise<{ stops: FocusStop[]; total: number }> {
+  await page.evaluate((selector) => {
+    const isTabStop = (el: HTMLElement) => {
+      if (!(el instanceof HTMLInputElement) || el.type !== "radio" || !el.name) return true;
+      const group = [...(el.form ?? document).querySelectorAll<HTMLInputElement>(`input[type="radio"][name="${CSS.escape(el.name)}"]`)];
+      const checked = group.find((radio) => radio.checked);
+      return checked ? checked === el : group[0] === el;
+    };
+    const record = (el: HTMLElement | null) => {
+      const all = [...document.querySelectorAll<HTMLElement>(selector)].filter((e) => e.getClientRects().length > 0 && isTabStop(e));
+      if (!el || el === document.body) return { total: all.length, stop: null };
+      const s = getComputedStyle(el);
+      const outline = s.outlineStyle !== "none" && Number.parseFloat(s.outlineWidth) >= 2;
+      const shadow = s.boxShadow !== "none";
+      const name = (el.getAttribute("aria-label") ?? el.textContent ?? "").trim().slice(0, 40);
+      return { total: all.length, stop: { index: all.indexOf(el), name, visibleFocus: outline || shadow } };
+    };
+    const recorded: unknown[] = [];
+    const onIn = (event: FocusEvent) => recorded.push(record(event.target as HTMLElement));
+    // Focus leaving the document (to the browser) is the end of the walk, as in tabThrough.
+    const onOut = (event: FocusEvent) => {
+      if (event.relatedTarget === null) recorded.push(record(null));
+    };
+    document.addEventListener("focusin", onIn, true);
+    document.addEventListener("focusout", onOut, true);
+    const marker = document.createElement("span");
+    marker.tabIndex = -1;
+    marker.dataset.tabStart = "";
+    document.body.insertBefore(marker, document.body.firstChild);
+    marker.focus();
+    recorded.length = 0;
+    Object.assign(window, {
+      __tabWalk: {
+        take: () => recorded.splice(0),
+        stop: () => {
+          document.removeEventListener("focusin", onIn, true);
+          document.removeEventListener("focusout", onOut, true);
+          marker.remove();
+        },
+      },
+    });
+  }, INTERACTIVE);
+  const stops: FocusStop[] = [];
+  let total = 0;
+  try {
+    for (let pressed = 0; pressed < limit; ) {
+      const batch = Math.min(TAB_BATCH, limit - pressed);
+      for (let i = 0; i < batch; i += 1) await page.keyboard.press("Tab");
+      pressed += batch;
+      const recorded = await page.evaluate(() => (window as unknown as { __tabWalk: { take: () => RecordedStop[] } }).__tabWalk.take());
+      for (const entry of recorded) {
+        total = entry.total;
+        if (!entry.stop || (stops.length > 0 && entry.stop.index === stops[0]!.index)) return { stops, total };
+        // One control with inner Tab stops (a date field's day, month and year) counts once.
+        if (stops.length > 0 && entry.stop.index === stops.at(-1)!.index) continue;
+        stops.push(entry.stop);
+      }
+    }
+    return { stops, total };
+  } finally {
+    await page.evaluate(() => (window as unknown as { __tabWalk?: { stop: () => void } }).__tabWalk?.stop());
+  }
+}
+
 /**
  * Keyboard reaches every control once, in DOM order, each with a visible focus indicator.
- * `limit` caps the Tab presses (raise it for long lists that other specs keep adding to).
+ * `limit` caps the Tab presses (raise it for long lists that other specs keep adding to);
+ * `batched` walks long pages with `tabThroughBatched` (same checks, far fewer round trips).
  */
-export async function expectKeyboardOperable(page: Page, limit = 60) {
-  const { stops, total } = await tabThrough(page, limit);
+export async function expectKeyboardOperable(page: Page, limit = 60, options: { batched?: boolean } = {}) {
+  const { stops, total } = await (options.batched ? tabThroughBatched(page, limit) : tabThrough(page, limit));
   expect(stops.map((s) => s.index), "focus order follows the page order").toEqual([...Array(total).keys()]);
   const invisible = stops.filter((s) => !s.visibleFocus).map((s) => s.name);
   expect(invisible, "controls without a visible focus indicator").toEqual([]);
