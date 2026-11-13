@@ -56,12 +56,12 @@ describe("expireQuotes (S-160)", () => {
     expect(await closedMails(quote.orderId)).toHaveLength(1);
   });
 
-  test("AC3: a customer accepted after the job read the row: the versioned update misses and it stays Approved", async () => {
+  test("AC3: a customer accepted after the job read the row: the versioned update misses and the order stays accepted", async () => {
     const quote = await quoteUntil("2026-11-15");
     await acceptQuote(db, { token: quote.trackingToken, version: quote.version, today: "2026-11-15", now: new Date("2026-11-15T19:59:00Z") });
 
     expect(await closeExpiredQuote(context("2026-11-16T08:00:00Z"), { id: quote.orderId, version: quote.version })).toBe(false);
-    expect(await status(quote.orderId)).toBe("approved");
+    expect(await status(quote.orderId)).toBe("awaiting_payment");
   });
 
   test("AC5: today's or later quotes stay Quote sent", async () => {

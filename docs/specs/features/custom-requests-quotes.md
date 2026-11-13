@@ -159,3 +159,11 @@ Flag: none · Rollout: part of launch (Phase 4) · Rollback: standard redeploy; 
 2. `site/tracking` `acceptQuote` / `declineQuote`: explicitly state the `QUOTE_EXPIRED` check uses `todayMU > quote_expires_on` and runs before the version check. — **Resolved in contracts.md (2026-11-10).**
 3. `site/custom-cake` `submitCustomRequest`: `photoPaths` plus `galleryPhotoId` together must be ≤ 5; add to the `UPLOAD_REJECTED` description. — **Resolved in contracts.md (2026-11-10).**
 4. `admin/order` `sendQuote`: `amountRs` must be ≥ 1 (domain rule, not the zod `Rs` default). — **Resolved in contracts.md (2026-11-10).**
+
+## As built (2026-11-13, E-08; contracts v0.43)
+- **Accepting a quote enters the Juice payment flow** (juice-payment spec, on main the same day): Accept moves the order to Awaiting payment (not Approved) with `awaiting_payment_since`; the 24 h deadline and 12 h reminder count from the acceptance; the customer gets `quote_accepted` (how to pay) and the tracking page shows the Juice instructions; the admin's Payment received makes it Approved and sends "Order confirmed". The quote progress path is Quote needed, Quote sent, Awaiting payment, Approved, ... (supersedes FR-031's "accept makes order Approved" and AC13).
+- Upload URLs are the resource route `POST /api/custom-cake/uploads` (JSON, Turnstile, RL-upload), not a page intent. Every issued path waits in `storage_purge` for 24 h; the submit removes the rows of the photos it attaches.
+- The request form lives on the existing Custom order page (S-252) under its intro; WhatsApp is the second way to ask. Signed-in prefill and "Save my details" wait for customer accounts.
+- Admin Refuse is the shared order-screen step (Juice payment S-281) extended to Quote needed; its email is "Request declined".
+- Turnstile runs only when `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` are set (non-interactive widget).
+- Admin push alerts (new request, answers, expiry) wait for E-10; email alerts and every customer email are queued in the outbox now.

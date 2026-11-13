@@ -1,6 +1,6 @@
 # E-08: Custom cake requests and quotes
 
-Status: in progress · Milestone: MVP
+Status: done · Milestone: MVP
 PRD: FR-028, FR-029, FR-030, FR-031, FR-032, FR-033 (NFR-003) · Specs: docs/specs/features/custom-requests-quotes.md
 Release phase: 4 Order management (part 3)
 
@@ -21,13 +21,13 @@ J5: request appears in admin within 10 s (p95), quote sent, accepted, Approved o
 | S-152 | Pick photos and shrink them on the phone | done | 5 |
 | S-153 | Upload request photos and verify them on the server | done | 5 |
 | S-154 | Request something similar from a gallery photo | done | 2 |
-| S-155 | Admin sees a new custom request with photos | ready | 3 |
-| S-156 | Admin sends a quote | ready | 3 |
-| S-157 | Admin declines a custom request | ready | 2 |
-| S-158 | Customer accepts a quote | ready | 3 |
-| S-159 | Customer declines a quote | ready | 2 |
+| S-155 | Admin sees a new custom request with photos | done | 3 |
+| S-156 | Admin sends a quote | done | 3 |
+| S-157 | Admin declines a custom request | done | 2 |
+| S-158 | Customer accepts a quote | done | 3 |
+| S-159 | Customer declines a quote | done | 2 |
 | S-160 | Expired quotes close themselves | done | 3 |
-| S-161 | Re-send a quote that replaces the old one (FR-033, Should) | ready | 3 |
+| S-161 | Re-send a quote that replaces the old one (FR-033, Should) | done | 3 |
 | S-162 | Spam protection and rate limits on the custom request form | done | 3 |
 
 Total: 39 pts. Files: `production/stories/E-08/`.

@@ -82,7 +82,8 @@ function timeLeftText(createdAt: Date, now: Date, locale: Locale): string {
 
 interface PaymentFactsSource {
   status: string;
-  createdAt: Date;
+  /** Start of the Juice payment clock: creation, or an accepted quote's acceptance (E-08). */
+  paymentFrom: Date;
   paid: boolean;
   paidAt: Date | null;
   refundDueRs: number | null;
@@ -95,8 +96,8 @@ interface PaymentFactsSource {
 export function paymentFacts(order: PaymentFactsSource, now: Date, locale: Locale) {
   return {
     awaiting: order.status === "awaiting_payment",
-    deadlineLabel: formatLogTime(paymentDeadline(order.createdAt), locale),
-    timeLeft: timeLeftText(order.createdAt, now, locale),
+    deadlineLabel: formatLogTime(paymentDeadline(order.paymentFrom), locale),
+    timeLeft: timeLeftText(order.paymentFrom, now, locale),
     paidLabel: order.paid && order.paidAt ? formatLogTime(order.paidAt, locale) : null,
     refund: order.refundDueRs === null ? null : { amountRs: order.refundDueRs, refundedLabel: order.refundedAt ? formatLogTime(order.refundedAt, locale) : null },
     cancelledUnpaid: order.status === "cancelled" && order.cancelReason === "unpaid",

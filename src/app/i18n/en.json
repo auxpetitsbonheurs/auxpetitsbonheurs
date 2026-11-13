@@ -644,7 +644,7 @@
         "quote_sent": "Quote sent by {{actor}}, {{time}}",
         "quote_accepted": "Quote accepted by {{actor}}, {{time}}",
         "quote_declined": "Quote declined by {{actor}}, {{time}}",
-        "quote_expired": "Quote expired, {{time}}",
+        "quote_expired": "Quote expired, closed by {{actor}}, {{time}}",
         "status_advanced": "Moved to {{status}} by {{actor}}, {{time}}",
         "status_reverted": "Moved back to {{status}} by {{actor}}, {{time}}",
         "marked_paid": "Marked paid by {{actor}}, {{time}}",
@@ -1769,6 +1769,35 @@
       "badge_other": "{{count}} reviews to approve",
       "moreRow": "Reviews",
       "toApprove": "Back in To approve."
+    },
+    "request": {
+      "title": "Custom request",
+      "photosTitle": "Reference photos",
+      "noPhotos": "No photos",
+      "photoAlt": "Reference photo {{n}}",
+      "openPhoto": "Open photo {{n}} of {{total}}",
+      "photoTitle": "Photo {{n}} of {{total}}",
+      "photoUnavailable": "Photo {{n}} could not load. Reload the page.",
+      "close": "Close",
+      "quoteTitle": "Quote",
+      "noQuote": "No quote sent yet.",
+      "expiresOn": "Valid until",
+      "sendQuote": "Send quote",
+      "sendNewQuote": "Send a new quote",
+      "sending": "Sending the quote…",
+      "quoteSent": "Quote sent",
+      "amount": "Price for the whole order (Rs)",
+      "amountHint": "Include delivery if the customer chose it. Between Rs 1 and Rs 1,000,000.",
+      "note": "Note to the customer",
+      "noteHint": "Up to 1000 characters, sent with the quote.",
+      "expiry": "Valid until",
+      "expiryHint": "The customer can accept until 23:59 that day (Mauritius time).",
+      "expiryAfterEvent": "This date is after the cake's date ({{date}}). You can still send it.",
+      "errors": {
+        "amountRs": "Enter a price from Rs 1 to Rs 1,000,000",
+        "note": "Keep the note under 1000 characters",
+        "expiresOn": "Choose today or a later date"
+      }
     }
   },
   "email": {
@@ -1972,6 +2001,11 @@
         "button": "Accept the invitation"
       },
       "footer": "Sent by {{bakery}}. Please do not reply to this email."
+    },
+    "quoteAccepted": {
+      "subject": "Quote accepted: pay to confirm {{number}}",
+      "heading": "Thank you, you accepted our quote",
+      "intro": "Your cake {{number}} is confirmed once we receive your Juice payment. Here is how to pay."
     }
   },
   "nav": {
@@ -2264,7 +2298,7 @@
       "declineBody": "We will close your request. You can always send a new one.",
       "declineConfirm": "Yes, decline",
       "cancel": "Keep the quote",
-      "accepted": "Thank you, your cake is confirmed.",
+      "accepted": "Thank you, quote accepted. Pay by Juice below to confirm your cake.",
       "declined": "Your request is closed. Thank you for letting us know.",
       "expired": "This quote has expired. Send a new request or message us on WhatsApp",
       "changed": "This quote was updated, reload to see the new amount",
@@ -2275,7 +2309,8 @@
       "newRequest": "Send a new request",
       "seeMenu": "See our menu",
       "requestTitle": "Your request",
-      "servings": "{{count}} people"
+      "servings": "{{count}} people",
+      "close": "Close"
     }
   },
   "account": {

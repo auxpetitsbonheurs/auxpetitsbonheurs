@@ -75,7 +75,13 @@ export interface PaymentLists {
   cancelled: PaymentOrderRow[];
 }
 
-const paymentColumns = { ...summaryColumns, createdAt: orders.createdAt, refundDueRs: orders.refundDueRs } as const;
+/**
+ * When the payment clock started: creation, or for an accepted quote the moment it began to wait
+ * for its payment (E-08, migration 0016). The deadline and time-left badges count from it.
+ */
+const paymentClock = sql<Date>`coalesce(${orders.awaitingPaymentSince}, ${orders.createdAt})`.mapWith(orders.createdAt);
+
+const paymentColumns = { ...summaryColumns, createdAt: paymentClock, refundDueRs: orders.refundDueRs } as const;
 const LIST_CAP = 100;
 const WEEK_MS = 7 * 24 * 3_600_000;
 
@@ -151,6 +157,8 @@ export interface AdminOrder extends AdminOrderRow {
   customerNote: string | null;
   locale: Locale;
   createdAt: Date;
+  /** Start of the Juice payment clock (creation, or an accepted quote's acceptance). */
+  paymentFrom: Date;
   paidAt: Date | null;
   cancelReason: string | null;
   declineReason: string | null;
@@ -207,6 +215,7 @@ export async function findAdminOrder(db: Executor, id: string): Promise<AdminOrd
       customerNote: orders.customerNote,
       locale: orders.locale,
       createdAt: orders.createdAt,
+      paymentFrom: paymentClock,
       paidAt: orders.paidAt,
       cancelReason: orders.cancelReason,
       declineReason: orders.declineReason,

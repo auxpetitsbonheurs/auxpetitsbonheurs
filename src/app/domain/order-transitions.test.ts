@@ -153,7 +153,8 @@ describe("allowed (S-115 AC5, AC6)", () => {
 
 describe("customer transitions from the same module (S-115 AC7)", () => {
   test("quote accept, decline and expiry; customer cancel only while waiting", () => {
-    expect(customerTransition("acceptQuote", "quote_sent")?.to).toBe("approved");
+    // E-08: an accepted quote enters the Juice payment flow (Payment received approves it).
+    expect(customerTransition("acceptQuote", "quote_sent")).toMatchObject({ to: "awaiting_payment", email: "quote_accepted" });
     expect(customerTransition("declineQuote", "quote_sent")?.to).toBe("closed");
     expect(customerTransition("expireQuote", "quote_sent")?.to).toBe("closed");
     expect(customerTransition("cancel", "awaiting_payment")?.to).toBe("cancelled");

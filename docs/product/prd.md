@@ -380,7 +380,7 @@ Gaps found by product-manager (proposed answers in assumptions):
 | Quote needed | Quote sent | Admin | Your quote |
 | Quote needed | Declined | Admin | Request declined |
 | Quote needed | Cancelled | Customer or admin | Cancellation confirmed |
-| Quote sent | Approved | Customer accepts | Order confirmed |
+| Quote sent | Awaiting payment | Customer accepts | Quote accepted (how to pay by Juice; Order confirmed follows Payment received) |
 | Quote sent | Closed | Customer declines, or quote expires | Quote closed |
 | Quote sent | Cancelled | Admin only (quote withdrawn; owner 2026-11-10) | Cancellation confirmed |
 | (new manual order) | Approved | Admin | Order confirmed, only if email entered |
@@ -393,6 +393,7 @@ Rules: An admin edit that changes an order's date and/or total sends "Your order
 
 ## Changelog
 - 2026-11-09 v0.1 draft by product-manager from build-brief.md and feature-plan.md.
+- 2026-11-13 E-08 as built: an accepted quote goes to Awaiting payment (the Juice payment flow, juice-payment spec) instead of Approved; the admin's Payment received approves it and sends Order confirmed (custom-requests-quotes spec "As built").
 - 2026-11-10 v0.2 owner answers applied: notice 3 days, Sunday closed, quote validity 5 days, cancellation policy and storage advice in FAQ, Admin rights confirmed, new FR-075 (24 h pending reminder); fee, address, Juice number, domain still open.
 - 2026-11-12 v0.4 scope change (Owner decisions, product-manager): new section 5.10 with FR-076 to FR-081 (site navigation, collection page, editable brand pages, contact, custom-order interim page, SEO; epic E-13) and FR-082 to FR-086 (bakery reviews by signed-in customers with approval; epic E-14, Should). "Customer reviews and ratings" removed from Non-goals for the general bakery review only; per-product reviews stay out. Release plan and cut order updated; open questions 17 and 18 added. Pending product-director confirmation of the cut-order position.
 - 2026-11-10 v0.3 launch values: fee Rs 200, pickup Beau Bassin, Juice number and exact address set by the owner on deploy day, Cloudflare default address at launch; bakery's Cloudflare, Supabase and Resend accounts created by the owner.

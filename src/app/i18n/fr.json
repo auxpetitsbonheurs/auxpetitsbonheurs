@@ -644,7 +644,7 @@
         "quote_sent": "Devis envoyé par {{actor}}, {{time}}",
         "quote_accepted": "Devis accepté par {{actor}}, {{time}}",
         "quote_declined": "Devis refusé par {{actor}}, {{time}}",
-        "quote_expired": "Devis expiré, {{time}}",
+        "quote_expired": "Devis expiré, fermé par {{actor}}, {{time}}",
         "status_advanced": "Passée à « {{status}} » par {{actor}}, {{time}}",
         "status_reverted": "Revenue à « {{status}} » par {{actor}}, {{time}}",
         "marked_paid": "Marquée payée par {{actor}}, {{time}}",
@@ -1769,6 +1769,35 @@
       "badge_other": "{{count}} avis à valider",
       "moreRow": "Avis",
       "toApprove": "De retour dans À valider."
+    },
+    "request": {
+      "title": "Demande sur mesure",
+      "photosTitle": "Photos de référence",
+      "noPhotos": "Aucune photo",
+      "photoAlt": "Photo de référence {{n}}",
+      "openPhoto": "Ouvrir la photo {{n}} sur {{total}}",
+      "photoTitle": "Photo {{n}} sur {{total}}",
+      "photoUnavailable": "La photo {{n}} n'a pas pu s'afficher. Rechargez la page.",
+      "close": "Fermer",
+      "quoteTitle": "Devis",
+      "noQuote": "Aucun devis envoyé pour l'instant.",
+      "expiresOn": "Valable jusqu'au",
+      "sendQuote": "Envoyer le devis",
+      "sendNewQuote": "Envoyer un nouveau devis",
+      "sending": "Envoi du devis…",
+      "quoteSent": "Devis envoyé",
+      "amount": "Prix de toute la commande (Rs)",
+      "amountHint": "Livraison comprise si le client l'a choisie. Entre Rs 1 et Rs 1 000 000.",
+      "note": "Message au client",
+      "noteHint": "1000 caractères maximum, envoyé avec le devis.",
+      "expiry": "Valable jusqu'au",
+      "expiryHint": "Le client peut accepter jusqu'à 23 h 59 ce jour-là (heure de Maurice).",
+      "expiryAfterEvent": "Cette date est après la date du gâteau ({{date}}). Vous pouvez quand même l'envoyer.",
+      "errors": {
+        "amountRs": "Indiquez un prix entre Rs 1 et Rs 1 000 000",
+        "note": "Le message doit faire moins de 1000 caractères",
+        "expiresOn": "Choisissez aujourd'hui ou une date plus tard"
+      }
     }
   },
   "email": {
@@ -1972,6 +2001,11 @@
         "button": "Accepter l'invitation"
       },
       "footer": "Envoyé par {{bakery}}. Merci de ne pas répondre à cet e-mail."
+    },
+    "quoteAccepted": {
+      "subject": "Devis accepté : payez pour confirmer {{number}}",
+      "heading": "Merci, vous avez accepté notre devis",
+      "intro": "Votre gâteau {{number}} est confirmé dès réception de votre paiement Juice. Voici comment payer."
     }
   },
   "nav": {
@@ -2264,7 +2298,7 @@
       "declineBody": "Nous fermerons votre demande. Vous pourrez toujours en envoyer une nouvelle.",
       "declineConfirm": "Oui, refuser",
       "cancel": "Garder le devis",
-      "accepted": "Merci, votre gâteau est confirmé.",
+      "accepted": "Merci, devis accepté. Payez par Juice ci-dessous pour confirmer votre gâteau.",
       "declined": "Votre demande est fermée. Merci de nous avoir prévenus.",
       "expired": "Ce devis a expiré. Envoyez une nouvelle demande ou écrivez-nous sur WhatsApp",
       "changed": "Ce devis a été modifié, rechargez pour voir le nouveau montant",
@@ -2275,7 +2309,8 @@
       "newRequest": "Envoyer une nouvelle demande",
       "seeMenu": "Voir notre carte",
       "requestTitle": "Votre demande",
-      "servings": "{{count}} personnes"
+      "servings": "{{count}} personnes",
+      "close": "Fermer"
     }
   },
   "account": {

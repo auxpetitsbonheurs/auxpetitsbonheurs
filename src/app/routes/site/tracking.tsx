@@ -4,6 +4,7 @@ import { type ShouldRevalidateFunctionArgs, data, isRouteErrorResponse, redirect
 import { CancelOrder, type CancelRefusal, CancelRefusalAlert } from "~/components/order/cancel-order";
 import { OrderNotFound } from "~/components/order/order-not-found";
 import { PaymentInstructions } from "~/components/order/payment-instructions";
+import { QuotePanel, type QuoteRefusal } from "~/components/order/quote-panel";
 import { StatusBadge } from "~/components/order/status-badge";
 import { StatusProgress } from "~/components/order/status-progress";
 import { Alert } from "~/components/ui/alert";
@@ -11,11 +12,12 @@ import { buttonVariants } from "~/components/ui/button";
 import { formatOrderNumber } from "~/domain/order-number";
 import { canCustomerCancel, customerProgress } from "~/domain/status";
 import { normalizePhone } from "~/domain/phone";
-import { formatDayLabel, todayMU } from "~/domain/time";
+import { formatDayLabel, formatLongDate, todayMU } from "~/domain/time";
+import { canRespondToQuote, isQuoteExpired } from "~/domain/custom-request";
 import { t as translate } from "~/i18n/catalog.server";
 import { localized } from "~/i18n/localized";
 import { useI18n } from "~/i18n/react";
-import { type Locale, formatRupees, localeFromPathname } from "~/lib/locale";
+import { type Locale, formatRupees, localeFromPathname, localePath } from "~/lib/locale";
 import { whatsappHref } from "~/lib/contact";
 import { actionError } from "~/server/action-result.server";
 import { clientIp, rateLimitedResult } from "~/server/auth-rate-limit.server";
@@ -25,6 +27,8 @@ import { requestDbContext } from "~/server/db.server";
 import { paymentView } from "~/server/payment-view.server";
 import { RL_TRACK, type RateLimitSubject, consumeRateLimit, rateLimitBucketFor, rateLimitVerdict } from "~/server/rate-limit.server";
 import { findTrackedOrder } from "~/server/repos/orders.server";
+import { findQuote } from "~/server/repos/custom-requests.server";
+import { acceptQuote, declineQuote } from "~/server/services/quotes.server";
 import { cancelOrderByCustomer } from "~/server/services/cancel-order.server";
 import { isTrackingToken, orderLanguageRedirect, tokenPageHeaders } from "~/server/token-page.server";
 import type { Route } from "./+types/tracking";
@@ -62,7 +66,15 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
   // One query: the order, its items and the Settings it is shown with (ADR-0003 amendment 3).
   const { id: _id, locale: _orderLocale, number, orderNumberPrefix, payment: settings, createdAt, refundDueRs, refundedAt, contactWhatsapp, source, ...shown } = order;
   const reference = formatOrderNumber(orderNumberPrefix, number);
+  const isRequest = source === "custom_request";
   return {
+    isRequest,
+    /** This page, for the "Reload" link after a refused answer. */
+    selfPath: url.pathname,
+    // A custom request's quote (E-08 S-158): the server's amount, note and expiry; Accept and
+    // Decline only while Quote sent and not past 23:59 MU on the expiry day.
+    quote: isRequest ? await quoteView(db, order.id, order.status, todayMU(now), locale) : null,
+    justAccepted: url.searchParams.get("accepted") === "1" && order.status !== "quote_sent",
     title: translate("order.tracking.metaTitle", locale),
     order: { ...shown, number: reference, dateLabel: formatDayLabel(order.fulfilOn, locale) },
     // The Juice instructions only while the order waits for its payment (S-278 AC5).
@@ -75,6 +87,27 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
     /** Set by the redirect after the customer's own cancel, so the page can say it worked. */
     justCancelled: url.searchParams.get("cancelled") === "1" && order.status === "cancelled",
   };
+}
+
+async function quoteView(db: Parameters<typeof findQuote>[0], orderId: string, status: Parameters<typeof canRespondToQuote>[0], today: string, locale: Locale) {
+  const quote = await findQuote(db, orderId);
+  if (!quote) return null;
+  return {
+    amountRs: quote.amountRs,
+    note: quote.note,
+    expiresLabel: formatLongDate(quote.expiresOn, locale),
+    canRespond: canRespondToQuote(status, quote.expiresOn, today),
+    expired: status === "quote_sent" && isQuoteExpired(quote.expiresOn, today),
+  };
+}
+
+/** `acceptQuote` / `declineQuote { version }` (S-158, S-159): QUOTE_EXPIRED and INVALID_TRANSITION before ORDER_CHANGED; success redirects back. */
+async function answerQuote(intent: "acceptQuote" | "declineQuote", token: string, version: number, ctx: { db: Parameters<typeof acceptQuote>[0]; now: Date; url: URL; locale: Locale }) {
+  const input = { token, version, today: todayMU(ctx.now), now: ctx.now };
+  const result = intent === "acceptQuote" ? await acceptQuote(ctx.db, input) : await declineQuote(ctx.db, input);
+  if (result.ok) return redirect(intent === "acceptQuote" ? `${ctx.url.pathname}?accepted=1` : `${ctx.url.pathname}?declined=1`);
+  if (result.code === "NOT_FOUND") throw data(null, { status: 404 });
+  return actionError(result.code, ctx.locale, { extra: { intent } });
 }
 
 /** The bakery's public WhatsApp as a wa.me link (a local number gets +230), prefilled with the order number (S-094 AC1). */
@@ -97,7 +130,10 @@ export async function action({ request, url, params, context }: Route.ActionArgs
   if (!limit.ok) return rateLimitedResult(limit.retryAfterSeconds, locale, {});
   const form = Object.fromEntries(await request.formData());
   const version = Version.safeParse(form.version);
-  // Customers cannot edit orders (S-096 AC9): cancel is the only intent.
+  if ((form.intent === "acceptQuote" || form.intent === "declineQuote") && version.success) {
+    return answerQuote(form.intent, params.token, version.data, { db, now, url, locale });
+  }
+  // Customers cannot edit orders (S-096 AC9): cancel and the quote answers are the only intents.
   if (form.intent !== "cancel" || !version.success) return actionError("VALIDATION_FAILED", locale);
   const result = await cancelOrderByCustomer(db, { token: params.token, version: version.data, now });
   if (result.ok) return redirect(`${url.pathname}?cancelled=1`);
@@ -284,9 +320,11 @@ function ChangeSection({ data, refusal }: { data: Route.ComponentProps["loaderDa
 }
 
 export default function Tracking({ loaderData, actionData }: Route.ComponentProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { order, payment, progress } = loaderData;
-  const refusal = actionData && !actionData.ok ? (actionData.error as CancelRefusal) : undefined;
+  const quoteAnswer = actionData && !actionData.ok && "intent" in actionData;
+  const refusal = actionData && !actionData.ok && !quoteAnswer ? (actionData.error as CancelRefusal) : undefined;
+  const quoteRefusal = quoteAnswer ? (actionData.error as QuoteRefusal) : undefined;
   return (
     <>
       <h1>{t("order.tracking.heading", { number: order.number })}</h1>
@@ -298,6 +336,17 @@ export default function Tracking({ loaderData, actionData }: Route.ComponentProp
         </span>
       </div>
       {payment && <PaymentInstructions view={payment} />}
+      {loaderData.isRequest && (
+        <QuotePanel
+          status={order.status}
+          quote={loaderData.quote}
+          version={order.version}
+          refusal={quoteRefusal}
+          justAccepted={loaderData.justAccepted}
+          newRequestHref={localePath(locale, "/custom-cake")}
+          reloadHref={loaderData.selfPath}
+        />
+      )}
       <OrderState data={loaderData} />
       {order.status === "pending_approval" && (
         <Alert tone="info" title={t("order.confirmed.notConfirmedTitle")} className="mt-6">
@@ -315,7 +364,8 @@ export default function Tracking({ loaderData, actionData }: Route.ComponentProp
           {t("order.tracking.detailsTitle")}
         </h2>
         <OrderFacts order={order} />
-        <ItemsAndTotal order={order} />
+        {/* A custom request has no items: its price is the quote above (E-08). */}
+        {!loaderData.isRequest && <ItemsAndTotal order={order} />}
       </section>
       <ChangeSection data={loaderData} refusal={refusal} />
     </>

@@ -6,6 +6,7 @@ import type { Database } from "~/server/db.server";
 import { insertAdmin } from "~/server/testing/admins";
 import { submitTestRequest } from "~/server/testing/custom-requests";
 import { FakeAuth } from "~/server/testing/fake-auth";
+import { paymentDeadlines } from "~/jobs/payment-deadlines";
 import { acceptQuote, declineQuote, declineRequest, sendQuote } from "./quotes.server";
 
 let database: TestDatabase;
@@ -134,14 +135,16 @@ describe("decline a request (S-157)", () => {
 });
 
 describe("accept a quote (S-158)", () => {
-  test("AC1: Approved, event quote_accepted, 'Order confirmed' queued and admins alerted", async () => {
+  test("AC1 (Juice payment hand-off): Awaiting payment from now, event quote_accepted, how-to-pay email queued, admins alerted", async () => {
     const sent = await quoted();
 
-    expect(await acceptQuote(db, answer(sent.trackingToken, sent.version))).toEqual({ ok: true, order: { status: "approved", version: 3 } });
+    expect(await acceptQuote(db, answer(sent.trackingToken, sent.version))).toEqual({ ok: true, order: { status: "awaiting_payment", version: 3 } });
 
-    expect(await query("select actor_type, type, from_status, to_status from order_event where type = 'quote_accepted'")).toEqual([{ actor_type: "customer", type: "quote_accepted", from_status: "quote_sent", to_status: "approved" }]);
+    expect(await query("select actor_type, type, from_status, to_status from order_event where type = 'quote_accepted'")).toEqual([{ actor_type: "customer", type: "quote_accepted", from_status: "quote_sent", to_status: "awaiting_payment" }]);
+    expect(await query("select awaiting_payment_since = $1::timestamptz as since from orders", [NOW.toISOString()])).toEqual([{ since: true }]);
     const templates = (await query<{ template: string; to_email: string }>("select template, to_email from email_outbox where order_id = $1", [sent.orderId])).map((r) => `${r.template}:${r.to_email}`);
-    expect(templates).toContain("order_confirmed:aisha@example.com");
+    expect(templates).toContain("quote_accepted:aisha@example.com");
+    expect(templates).not.toContain("order_confirmed:aisha@example.com");
     expect(templates).toContain("admin_alert_quote_accepted:owner@example.com");
   });
 
@@ -161,7 +164,7 @@ describe("accept a quote (S-158)", () => {
     const sent = await quoted();
     await acceptQuote(db, answer(sent.trackingToken, sent.version));
     expect(await acceptQuote(db, answer(sent.trackingToken, sent.version + 1))).toEqual({ ok: false, code: "INVALID_TRANSITION" });
-    expect((await outbox(sent.orderId)).filter((r) => r.template === "order_confirmed")).toHaveLength(1);
+    expect((await outbox(sent.orderId)).filter((r) => r.template === "quote_accepted")).toHaveLength(1);
 
     const withdrawn = await quoted();
     await query("update orders set status = 'cancelled', version = version + 1 where id = $1", [withdrawn.orderId]);
@@ -178,6 +181,20 @@ describe("accept a quote (S-158)", () => {
     const sent = await quoted();
     await sendQuote(db, { orderId: sent.orderId, version: sent.version, adminId, amountRs: 5000, note: null, expiresOn: "2026-11-15", now: NOW });
     expect(await acceptQuote(db, answer(sent.trackingToken, sent.version))).toEqual({ ok: false, code: "ORDER_CHANGED" });
+  });
+
+  test("AC1: the 24 h payment deadline runs from the acceptance, not from the request days before; then Payment received confirms it", async () => {
+    const sent = await quoted();
+    const acceptedAt = new Date("2026-11-12T08:00:00Z");
+    await acceptQuote(db, { ...answer(sent.trackingToken, sent.version), now: acceptedAt });
+    const tick = (iso: string) => paymentDeadlines({ db, now: new Date(iso), supabase: { url: "https://ref.supabase.co", anonKey: "anon" } });
+
+    await tick("2026-11-12T19:00:00Z");
+    expect((await orderRow(sent.orderId)).status).toBe("awaiting_payment");
+    await tick("2026-11-12T20:00:00Z");
+    expect(await query("select type from order_event where type = 'payment_reminder_sent'")).toHaveLength(1);
+    await tick("2026-11-13T08:00:00Z");
+    expect((await orderRow(sent.orderId)).status).toBe("cancelled");
   });
 
   test("AC8: an unknown token is NOT_FOUND", async () => {
