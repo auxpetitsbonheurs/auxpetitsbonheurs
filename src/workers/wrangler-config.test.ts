@@ -7,7 +7,7 @@ import { readJsonc } from "~/lib/deploy-guard";
 import { ENV_KEYS } from "~/server/env.server";
 
 const source = readFileSync(fileURLToPath(new URL("../wrangler.jsonc", import.meta.url)), "utf8");
-type Section = { name: string; vars?: Record<string, string>; triggers?: { crons: string[] }; placement?: { mode: string } };
+type Section = { name: string; vars?: Record<string, string>; triggers?: { crons: string[] }; placement?: { mode: string; region?: string } };
 const config = readJsonc(source) as Section & { env: Record<string, Section> };
 const staging = config.env.staging!;
 const production = config.env.production!;
@@ -26,8 +26,12 @@ describe("wrangler.jsonc environments (S-002 AC1)", () => {
     expect(env.triggers?.crons).toEqual(["0 * * * *"]);
   });
 
-  test("staging runs with Smart Placement until the database region is confirmed (ADR-0003 amendment 6)", () => {
-    expect(staging.placement).toEqual({ mode: "smart" });
+  test("staging is placed next to its Supabase project in Seoul (ADR-0003 amendment 7)", () => {
+    expect(staging.placement).toEqual({ mode: "targeted", region: "aws:ap-northeast-2" });
+  });
+
+  test("production is placed next to its Supabase project in Frankfurt (ADR-0003 amendment 7)", () => {
+    expect(production.placement).toEqual({ mode: "targeted", region: "aws:eu-central-1" });
   });
 
   test("holds no secret and no account id", () => {

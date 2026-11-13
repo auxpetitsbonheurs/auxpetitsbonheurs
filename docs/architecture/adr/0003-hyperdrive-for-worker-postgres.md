@@ -307,3 +307,20 @@ Supavisor session-pooler path, or both). Staging goes back to `"mode": "smart"`.
 Open (Owner, one step): Supabase → Project Settings → General → **Region**; then targeted
 placement with that region and the runbook corrected. If queries stay above ~50 ms next to the
 database, investigate the Hyperdrive origin (direct connection instead of the session pooler).
+
+## Amendment 2026-11-13 (7): regions confirmed; targeted placement per environment
+Appended. The Owner confirmed the Supabase regions (2026-11-13): staging is Northeast Asia
+(Seoul, AWS `ap-northeast-2`), production is Central EU (Frankfurt, AWS `eu-central-1`). The
+runbook said Mumbai (`ap-south-1`), which was never true; that explains amendment 6: the
+Worker in Mumbai (165 ms per query), Chicago (185 ms) and Sydney (142 ms) was far from Seoul in
+every trial.
+
+Decision: `src/wrangler.jsonc` sets targeted placement per environment:
+staging `{ "mode": "targeted", "region": "aws:ap-northeast-2" }`, production
+`{ "mode": "targeted", "region": "aws:eu-central-1" }`. `src/workers/wrangler-config.test.ts`
+pins both values; `docs/runbooks/deploy-keys.md` carries the regions. Staging goes first; the
+Owner deploys production, then checks the `cf-placement` header (a remote location) and
+`db-query` (a few ms to tens of ms, not 150+).
+Way back: `"placement": { "mode": "smart" }` or remove the key. Moving a project to another
+region means changing this value in the same commit.
+Result on staging: see the S-276 notes (measured after the deploy).
