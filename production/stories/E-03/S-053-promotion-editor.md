@@ -1,5 +1,5 @@
 # S-053: Create and edit a promotion with discounts
-Status: ready
+Status: review
 Epic: E-03-menu-content-management
 Spec: docs/specs/features/admin-menu-content.md#promotions
 Estimate: 5 pts
@@ -37,5 +37,6 @@ As a bakery admin, I want to set up a promotion with a banner and discounted pro
 - AC12 → src/tests/e2e/admin-promotions.spec.ts
 
 ## Notes
+- As built (2026-11-13): `/admin/promotions/new` and `/admin/promotions/:id`. Built: AC1 (toast "Promotion saved", back to the list), AC2, AC3 (resulting price per product; a sale price not below base saves and shows "no offer will show"), AC4 (one row per product, so a product cannot be added twice), AC5 (note on the row), AC6, AC7, AC9, AC10. Not built: AC8 (promotion image upload). Tests: `src/app/routes/admin/promotion.test.ts`, `src/tests/e2e/admin-promotions.spec.ts`.
 - Depends on: S-052, S-047 (upload path).
 - Contract: `admin/promotion` loader and `save` (contracts.md). Discount applies to base price only, never options or delivery (FR-016, FR-017); the price rules and the customer display are E-04 and E-05.

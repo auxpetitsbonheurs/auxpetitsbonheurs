@@ -1,8 +1,8 @@
 // Promotion rules (pricing-availability-promotions spec, S-082; FR-016, FR-017, FR-002, FR-004).
 // One rule set: the server prices with it (product page, menu, placeOrder), the `place_order`
 // procedure applies the same rules in SQL (drizzle/0012, `product_promotion`; tested to agree
-// in promotions.sql.test.ts), and the browser only filters the server's ranked list by its
-// end instant (domain/menu-promotions.ts). Pure: no db, react, router or network; `now` is injected.
+// in server/services/promotion-rules-agree.server.test.ts), and the browser only filters the
+// server's ranked list by its end instant (domain/live-promo.ts). Pure: no db, react, router or network; `now` is injected.
 
 export type PromoStatus = "scheduled" | "live" | "ended" | "inactive";
 export type PromoPlacement = "banner" | "card" | "both";

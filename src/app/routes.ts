@@ -58,6 +58,10 @@ const adminPages = [
     route("menu/new", "routes/admin/product.tsx", { id: "admin-product-new" }),
     route("menu/:id", "routes/admin/product.tsx", { id: "admin-product" }),
     route("more", "routes/admin/more.tsx"),
+    // Promotions (S-052 list, S-053 editor).
+    route("promotions", "routes/admin/promotions.tsx"),
+    route("promotions/new", "routes/admin/promotion.tsx", { id: "admin-promotion-new" }),
+    route("promotions/:id", "routes/admin/promotion.tsx", { id: "admin-promotion" }),
     route("gallery", "routes/admin/gallery.tsx"),
     route("customers", "routes/admin/customers.tsx"),
     route("sales", "routes/admin/sales.tsx"),
