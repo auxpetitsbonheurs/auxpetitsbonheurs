@@ -859,6 +859,49 @@ test.describe("E-05 basket and summary", () => {
   });
 });
 
+test.describe("S-098 journeys on a phone", () => {
+  test.beforeEach(async ({ context, baseURL }) => {
+    await setClock(context, baseURL!, "2026-11-20T06:00:00Z");
+  });
+
+  test("J1 (AC1, AC7) then J3 (AC3): two items delivered; displayed, stored, confirmation and tracking totals agree; the guest cancels from tracking", async ({ page, db, baseURL }) => {
+    const first = await createProduct(db, { name: "Lemon tart" });
+    const second = await createProduct(db, { name: "Fraisier" });
+    const lines = [first, second].map((p, i) => ({ lineId: `j${i}`, productId: p.id, options: [], quantity: 1 }));
+    await page.context().addCookies([{ name: "apb_basket", value: encodeURIComponent(JSON.stringify(lines)), url: baseURL!, sameSite: "Lax" }]);
+    await page.goto("/basket");
+    await hydrated(page);
+    await fillOrder(page, "delivery");
+
+    // Rs 850 + Rs 850 + delivery Rs 200, on the button and in the bar.
+    const button = page.getByRole("button", { name: /^Place order at Rs\s1,900$/ });
+    await expect(page.locator("[data-sticky-bar]").getByText("Rs 1,900", { exact: true })).toBeVisible();
+    await shot(page, "basket-ready");
+    await button.click();
+
+    await expect(page).toHaveURL(TOKEN_URL);
+    const token = TOKEN_URL.exec(page.url())![1]!;
+    const [order] = await db<{ number: number; total_rs: number; status: string }[]>`select number, total_rs, status from orders where tracking_token = ${token}`;
+    expect(order).toMatchObject({ total_rs: 1900, status: "awaiting_payment" });
+    const number = `APB-${String(order!.number).padStart(4, "0")}`;
+    await expect(page.getByText(number, { exact: true })).toBeVisible();
+    await expect(page.getByText("Rs 1,900").first()).toBeVisible();
+    await shot(page, "confirmation");
+
+    await page.getByRole("link", { name: "Follow my order" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: `Order ${number}` })).toBeVisible();
+    await expect(page.getByText("Rs 1,900").first()).toBeVisible();
+    await shot(page, "tracking-awaiting-payment");
+
+    await page.getByRole("button", { name: `Cancel order ${number}` }).click();
+    await page.getByRole("dialog").getByRole("button", { name: `Cancel order ${number}` }).click();
+    await expect(page.getByText("Nothing will be prepared. We have sent you an email to confirm.")).toBeVisible();
+    const [after] = await db<{ status: string; cancel_reason: string }[]>`select status, cancel_reason from orders where tracking_token = ${token}`;
+    expect(after).toEqual({ status: "cancelled", cancel_reason: "customer" });
+    await expectNoA11yViolations(page);
+  });
+});
+
 test.describe("E-05 basket without JavaScript", () => {
   test.use({ javaScriptEnabled: false });
 

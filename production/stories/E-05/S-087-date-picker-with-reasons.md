@@ -33,3 +33,6 @@ As a customer, I want to pick a pickup or delivery date and see why some days ar
 - Copy: blocked and too far both read "Not available" (AC2); a past day reads "This day has passed".
 - At 200% zoom on a 320 px phone the grid becomes a list of 44 px days (weekday shown in each) so nothing scrolls sideways.
 - AC9 caveat: lazy-loading and the no-JS fallback are built and tested; the INP <= 200 ms measurement has no perf spec yet (`perf-budgets.spec.ts` does not exist). Basket route initial JS is 168.9 / 170 kB gz.
+
+## Implementation notes (2026-11-13, E-05 finish)
+- AC9 partly met: the calendar is a lazy chunk swapped in after hydration, with a native `<input type=date>` fallback constrained by the server (e2e "S-087 AC9 without JavaScript"). Date statuses are now computed in one pass (`dayStatuses`, S-097 AC3). The INP figure of the date change has not been measured; it belongs with the S-098 AC9 Lighthouse run on staging. AC left open until then.
