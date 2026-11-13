@@ -39,6 +39,15 @@ test.describe("product page content (S-065)", () => {
     await expectNoA11yViolations(page);
   });
 
+  test("a sold-out product says Sold out and gives no earliest date (leftovers bug)", async ({ page, db }) => {
+    const product = await createProduct(db, { status: "sold_out" });
+    await page.goto(`/menu/${product.slug}`);
+    const main = page.getByRole("main");
+
+    await expect(main.getByText("Sold out this week", { exact: true })).toBeVisible();
+    await expect(main.getByText(/^Earliest date: /)).toHaveCount(0);
+  });
+
   test("AC5: a hidden product answers 404 'no longer available' with a link to the menu", async ({ page, db }) => {
     const product = await createProduct(db, { status: "hidden" });
     const response = await page.goto(`/fr/menu/${product.slug}`);
