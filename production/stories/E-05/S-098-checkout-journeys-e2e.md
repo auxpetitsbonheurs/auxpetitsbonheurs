@@ -40,3 +40,6 @@ As the bakery owner, I want the main ordering journeys proven end to end on a ph
 - AC4: tracking.spec.ts S-016 AC3. AC5: checkout.spec.ts S-014 AC7 (double click, one order); the offer ending at 18:00 between render and submit is pinned with a fixed clock in place-order-options.server.test.ts, and the PRICE_CHANGED page flow end to end in basket-instant.spec.ts (price changed after render, then the second submit succeeds). AC6: checkout-dates.spec.ts (S-087 AC5, AC6; S-084).
 - AC8: axe, 44 px targets, keyboard and 200% zoom run on the empty basket, error summary, price changed, date picker, confirmation, tracking, cancel dialog and not-found.
 - AC9 open: LCP/INP/CLS on throttled 4G need the Lighthouse run against staging (S-276 measured LCP there). Not run from this job.
+
+## Launchprep notes (2026-11-14)
+- AC9 on staging /basket (3 lines, slow 4G, 4x CPU, real Chrome): LCP median 1.99 s EN / 2.33 s FR (one FR run 2.60 s), CLS ≤ 0.076: pass; INP median 280 ms throttled on a loaded machine, 24-120 ms unthrottled: needs the real-phone run (production/audits/perf-checkout-2026.md).

@@ -17,7 +17,7 @@ As a customer, I want to see my basket, change quantities or remove items, so th
 - [x] AC6 (FR-018): Given a line whose product became sold out, hidden or out of season, when `/basket` loads, then the line shows an Alert and Remove, excluded from the subtotal.
 - [x] AC7 (FR-018): Given 10 lines, when an 11th distinct configuration is added (from the product page), then `BASKET_FULL`; the cookie stays < 4 kB.
 - [x] AC8 (FR-018, NFR-002, NFR-006): Given the basket at 320 px and 375 px, at 200% zoom and keyboard-only, when the Stepper and Remove are used, then the buttons have distinct accessible names ("Increase quantity of <product>", "Decrease quantity of <product>", "Remove <product> (<options>)"; no copied aria-labels), tap targets >= 44 px, the quantity is a labelled input or announced value, line totals are announced politely, contrast is AA per `docs/design/tokens.json`, no sideways scroll.
-- [ ] AC9 (FR-018, NFR-001): Given `/basket`, when measured, then it is server-rendered (works without JS), price skeleton only after 300 ms, route JS <= 170 kB gz, CLS <= 0.1.
+- [x] AC9 (FR-018, NFR-001): Given `/basket`, when measured, then it is server-rendered (works without JS), price skeleton only after 300 ms, route JS <= 170 kB gz, CLS <= 0.1.
 
 ## Tests
 - AC1 → src/app/routes/site/basket.test.tsx
@@ -40,3 +40,6 @@ As a customer, I want to see my basket, change quantities or remove items, so th
 - AC4 (new): the stepper now stops at the product's `minQuantity` with "This item comes in at least 6. To take it out, press Remove." tied to the button, and the no-JavaScript `updateLine` post refuses a quantity below it (VALIDATION_FAILED on `quantity`). Before, a tap below the minimum silently dropped the line from the order. Unknown line ids change nothing.
 - AC6 adjusted (ADR-0004): an unavailable line shows dimmed with "No longer available" and Remove, out of the subtotal, instead of an Alert per line; checkout stays open for the rest.
 - AC9 open: server-rendered with prices from the loader (no price skeleton is needed, so none is shown), route JS 150.6 kB gz (budget 170). CLS on `/basket` has not been measured; it belongs with S-098 AC9 (throttled 4G Lighthouse on staging).
+
+## Launchprep notes (2026-11-14)
+- AC9 CLS measured on staging in real Chrome (Pixel 7 size, slow 4G, 4x CPU, 3-line basket): 0.000-0.076 over 10 runs (budget 0.1). Lighthouse's lab CLS 0.567 on /basket is an artifact (production/audits/perf-checkout-2026.md).

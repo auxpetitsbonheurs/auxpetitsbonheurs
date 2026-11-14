@@ -36,3 +36,6 @@ As a customer, I want to pick a pickup or delivery date and see why some days ar
 
 ## Implementation notes (2026-11-13, E-05 finish)
 - AC9 partly met: the calendar is a lazy chunk swapped in after hydration, with a native `<input type=date>` fallback constrained by the server (e2e "S-087 AC9 without JavaScript"). Date statuses are now computed in one pass (`dayStatuses`, S-097 AC3). The INP figure of the date change has not been measured; it belongs with the S-098 AC9 Lighthouse run on staging. AC left open until then.
+
+## Launchprep notes (2026-11-14)
+- AC9 INP of the date tap on staging: 24-120 ms without CPU slowdown; median 280 ms with 4x slowdown on a heavily loaded build machine. Not proven ≤ 200 ms: measure on a real mid-range phone (production/audits/perf-real-phone.md).
