@@ -17,14 +17,21 @@ export function testIp(): string {
  * text only (parameters are `$n`, never values). Bounded: a stuck connection never hangs teardown.
  */
 async function postgresActivity(sql: postgres.Sql): Promise<unknown[]> {
-  const report = sql`
-    select pid, state, wait_event_type, wait_event, pg_blocking_pids(pid) as blocked_by,
-      extract(epoch from now() - xact_start)::int as xact_seconds, left(query, 200) as query
-    from pg_stat_activity
-    where datname = current_database() and pid <> pg_backend_pid()
-      and (wait_event_type = 'Lock' or state like 'idle in transaction%' or now() - xact_start > interval '3 seconds')`;
-  const timeout = new Promise<unknown[]>((resolve) => setTimeout(() => resolve([{ error: "activity query timed out" }]), 3_000));
-  return Promise.race([report.then((rows) => [...rows]), timeout]).catch((error: unknown) => [{ error: String(error) }]);
+  try {
+    return await sql.begin(async (tx) => {
+      // Bounded by the server, not a timer (no fixed sleeps in e2e support).
+      await tx`set local statement_timeout = 3000`;
+      const rows = await tx`
+        select pid, state, wait_event_type, wait_event, pg_blocking_pids(pid) as blocked_by,
+          extract(epoch from now() - xact_start)::int as xact_seconds, left(query, 200) as query
+        from pg_stat_activity
+        where datname = current_database() and pid <> pg_backend_pid()
+          and (wait_event_type = 'Lock' or state like 'idle in transaction%' or now() - xact_start > interval '3 seconds')`;
+      return [...rows];
+    });
+  } catch (error) {
+    return [{ error: String(error) }];
+  }
 }
 
 export const test = base.extend<{ lockReport: void }, { db: postgres.Sql }>({
