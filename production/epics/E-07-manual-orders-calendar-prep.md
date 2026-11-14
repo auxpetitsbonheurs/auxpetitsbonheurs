@@ -1,6 +1,6 @@
 # E-07: Manual orders, calendar and prep list
 
-Status: planned · Milestone: MVP
+Status: in progress · Milestone: MVP
 PRD: FR-055, FR-056, FR-057, FR-058, FR-059, FR-060 · Specs: docs/specs/features/admin-manual-orders.md, admin-calendar-prep.md
 Release phase: 4 Order management (part 2)
 
@@ -22,11 +22,11 @@ J6: a manual order for an existing customer shows Approved in the calendar and t
 | S-133 | Manual order finds the existing customer | ready | 3 |
 | S-134 | Manual order warnings and relaxed availability rules | ready | 3 |
 | S-135 | Manual order confirmation email only when appropriate | ready | 2 |
-| S-136 | Calendar month view with order counts | ready | 5 |
-| S-137 | Calendar week and day lists | ready | 3 |
-| S-138 | Block and reopen a single day | ready | 5 |
-| S-139 | Prep list grouped by product and variant | ready | 5 |
-| S-140 | Share and print the prep list | ready | 3 |
+| S-136 | Calendar month view with order counts | done | 5 |
+| S-137 | Calendar week and day lists | done | 3 |
+| S-138 | Block and reopen a single day | done | 5 |
+| S-139 | Prep list grouped by product and variant | done | 5 |
+| S-140 | Share and print the prep list | done | 3 |
 
 Total: 37 pts. Files: `production/stories/E-07/`.
 
