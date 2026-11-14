@@ -18,6 +18,7 @@ export const ADMIN_MODULE_POLICY = {
   home: "admin",
   orders: "admin",
   order: "admin",
+  "order-edit": "admin",
   "not-found": "admin",
   more: "admin",
   calendar: "admin",

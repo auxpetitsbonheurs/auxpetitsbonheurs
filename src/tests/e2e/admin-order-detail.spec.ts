@@ -160,6 +160,8 @@ test.describe("S-124 two admins on one order", () => {
     const alert = page.getByRole("alert");
     await expect(alert).toContainText("This order changed. Reload");
     await expect(alert).toBeFocused();
+    // S-126 AC5: the conflict state is axe clean too.
+    await expectNoA11yViolations(page);
     // The optimistic status went back to what the page knew.
     await expect(page.getByTestId("order-status")).toHaveText("Approved");
     const reload = alert.getByRole("link", { name: "Reload the order" });
@@ -214,6 +216,18 @@ test.describe("S-113 detail and S-114 note", () => {
 });
 
 test.describe("S-126 layout and accessibility of the detail", () => {
+  test("AC1: at 375x667 the action bar and the bottom navigation take at most 128 px; the primary action is in the bottom half", async ({ page, db }) => {
+    test.skip(test.info().project.name !== "phone-375", "The budget is for the 375x667 phone");
+    const order = await orderIn(db, "Bar Budget", "approved");
+    await open(page, order);
+
+    const bar = (await page.locator("[data-sticky-bar]").boundingBox())!;
+    const nav = (await page.locator("[data-bottom-bar]").boundingBox())!;
+    expect(bar.height + nav.height).toBeLessThanOrEqual(128);
+    const primary = (await page.getByRole("button", { name: "Mark in preparation" }).boundingBox())!;
+    expect(primary.y).toBeGreaterThan(667 / 2);
+  });
+
   for (const colorScheme of ["light", "dark"] as const) {
     test(`keyboard, 200% zoom, 44 px targets, no clipping, axe clean (${colorScheme}), sheet included`, async ({ page, db }) => {
       const order = await orderIn(db, `Layout ${colorScheme}`, "in_preparation", { delivery: true });

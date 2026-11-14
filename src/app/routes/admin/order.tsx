@@ -2,6 +2,7 @@ import { data, isRouteErrorResponse } from "react-router";
 import { OrderActionBar } from "~/components/admin/order/action-bar";
 import { ActivityLog } from "~/components/admin/order/activity-log";
 import { OrderConflict } from "~/components/admin/order/conflict";
+import { EDIT_WARNINGS, type EditWarning, EditedNotice } from "~/components/admin/order/edited-notice";
 import { OrderHeader } from "~/components/admin/order/header";
 import { PaymentSection } from "~/components/admin/order/payment-section";
 import { PrivateNote } from "~/components/admin/order/private-note";
@@ -61,6 +62,10 @@ export async function loader(args: Route.LoaderArgs) {
   return {
     request,
     today,
+    // The edit's flash (S-123 AC8): only known warning words are read back.
+    edited: args.url.searchParams.get("updated") === "1"
+      ? { emailed: args.url.searchParams.get("emailed") === "1", warnings: (args.url.searchParams.get("warnings") ?? "").split(",").filter((w): w is EditWarning => (EDIT_WARNINGS as readonly string[]).includes(w)) }
+      : null,
     title: translate("admin.order.metaTitle", me.locale, { number }),
     order: {
       ...rest,
@@ -160,6 +165,7 @@ export default function AdminOrder({ loaderData, actionData }: Route.ComponentPr
   return (
     <>
       <OrderHeader data={loaderData} />
+      <EditedNotice edited={loaderData.edited} />
       <OrderConflict data={loaderData} actionData={actionData} />
       <PaymentSection data={loaderData} />
       <CustomerSection data={loaderData} />

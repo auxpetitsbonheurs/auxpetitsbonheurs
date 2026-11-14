@@ -1,5 +1,5 @@
 # S-122: Edit an order with recalculated total or manual override
-Status: ready
+Status: done
 Epic: E-06-order-management
 Spec: docs/specs/features/admin-orders.md#flow
 Estimate: 5 pts
@@ -37,3 +37,9 @@ As an admin, I want to change an order's items, date, window, fulfilment or cont
 ## Notes
 - The item/contact form fields are shared with Manual order (E-07, FR-055); whoever lands first builds the shared form component and the other reuses it (cross-epic dependency noted).
 - Depends on S-081 (pricing), S-113, S-115. Worker CPU: reuses S-097 measurements.
+
+## Implementation notes (2026-11-14)
+- Built: `/admin/orders/:id/edit` with the shared form (`app/components/admin/order-form/`, made for E-07's manual order: `OrderForm`, `LinesEditor`, product and free-text sheets, `model.ts` payload and live total), `app/server/services/edit-order.server.ts`, contract `app/server/contracts/order-edit.ts`.
+- Adjusted: `AdminLine` gains a kept line `{ itemId, quantity }`, so an existing item keeps its ordered price (FR-017) instead of being repriced; new catalogue lines are priced now. The form posts one JSON `payload` field (the line list is nested); the edit needs JavaScript (admin app).
+- AC7: sold-out products are accepted; hidden ones are PRODUCT_UNAVAILABLE naming the product. AC9: the state lives in the page, so a refused save keeps every typed change.
+- Tests: `app/domain/order-edit.test.ts`, `app/components/admin/order-form/model.test.ts`, `app/server/services/edit-order.server.test.ts`, `app/routes/admin/order-edit.test.ts`, `tests/e2e/admin-order-edit.spec.ts`.

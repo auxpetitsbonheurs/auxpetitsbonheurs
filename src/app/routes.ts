@@ -69,6 +69,8 @@ const adminPages = [
     index("routes/admin/home.tsx"),
     route("orders", "routes/admin/orders.tsx"),
     route("orders/:id", "routes/admin/order.tsx"),
+    // Edit an order (E-06 S-122, S-123); its form is shared with the manual order (E-07).
+    route("orders/:id/edit", "routes/admin/order-edit.tsx"),
     // Bottom bar and More (S-033); "Not available yet" placeholders until later epics build them.
     route("calendar", "routes/admin/calendar.tsx"),
     route("menu", "routes/admin/menu.tsx"),

@@ -1,4 +1,4 @@
-import { Ban, CircleCheck, CircleDashed, Undo2, X } from "lucide-react";
+import { Ban, CircleCheck, CircleDashed, Pencil, Undo2, X } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { Alert } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
@@ -39,7 +39,7 @@ export function MoreActionsSheet(props: {
   const { t } = useI18n();
   const { order, allowed } = props.data;
   const canDecline = allowed.decline || allowed.declineRequest;
-  const nothing = !canDecline && !allowed.revert && !allowed.setPaid && !allowed.cancel;
+  const nothing = !allowed.edit && !canDecline && !allowed.revert && !allowed.setPaid && !allowed.cancel;
   return (
     <Modal open={props.open} onClose={props.onClose} title={t("admin.order.moreTitle", { number: order.number })} closeLabel={t("admin.states.close")}>
       {nothing && <p>{t("admin.order.noActions")}</p>}
@@ -62,6 +62,14 @@ export function MoreActionsSheet(props: {
           >
             {order.paid ? t("admin.order.flagUnpaid") : t("admin.order.flagPaid")}
           </SheetItem>
+        )}
+        {allowed.edit && (
+          <li>
+            <a href={`/admin/orders/${order.id}/edit`} className="inline-flex min-h-12 w-full items-center gap-3 rounded-md border-2 border-input bg-card px-6 font-semibold whitespace-normal hover:bg-accent">
+              <Pencil aria-hidden="true" className="size-5" />
+              {t("admin.orderEdit.editOrder")}
+            </a>
+          </li>
         )}
         {allowed.cancel && (
           <SheetItem icon={<Ban aria-hidden="true" />} onClick={() => props.onAsk("cancel")} destructive disabled={props.busy}>

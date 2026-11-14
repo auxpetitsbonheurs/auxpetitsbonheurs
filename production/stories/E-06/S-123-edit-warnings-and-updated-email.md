@@ -1,5 +1,5 @@
 # S-123: Edit warnings and the "Your order was updated" email trigger
-Status: ready
+Status: done
 Epic: E-06-order-management
 Spec: docs/specs/features/admin-orders.md#acceptance-criteria
 Estimate: 3 pts
@@ -30,3 +30,8 @@ As an admin, I want to save an edit even to a blocked or too-soon date, with a w
 
 ## Notes
 - Email content/template `order_updated` is E-10; this story queues the outbox row. Warning logic from S-083 `adminDateWarnings`. Depends on S-122.
+
+## Implementation notes (2026-11-14)
+- Warnings are computed only when the date changed (an unchanged date never warns). They arrive as the redirect's query (`warnings=`) and the order page shows them in a `role=status` Alert, focused, plus the toast.
+- AC6: sending and `email_failed` belong to the E-10 outbox sender (on main); the edit only queues the row in the same transaction.
+- Tests: `app/server/services/edit-order.server.test.ts` (email rule, one transaction), `app/routes/admin/order-edit.test.ts` (flash), `tests/e2e/admin-order-edit.spec.ts` (warning in words).

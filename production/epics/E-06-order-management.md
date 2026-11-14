@@ -1,6 +1,6 @@
 # E-06: Order management
 
-Status: in-progress · Milestone: MVP
+Status: done · Milestone: MVP
 PRD: FR-048, FR-049, FR-050, FR-051, FR-052, FR-053, FR-054 (NFR-013) · Specs: docs/specs/features/admin-orders.md
 Release phase: 4 Order management (part 1)
 
@@ -28,11 +28,11 @@ J4: Owner goes from alert to Approve to Completed and paid, each step logged. Tw
 | S-119 | Mark paid or unpaid and cancel an order | done | 3 |
 | S-120 | Today screen with counts and today/tomorrow orders | done | 3 |
 | S-121 | One-tap next status on Today with Undo | done | 3 |
-| S-122 | Edit an order with recalculated total or manual override | ready | 5 |
-| S-123 | Edit warnings and the "Your order was updated" email trigger | ready | 3 |
+| S-122 | Edit an order with recalculated total or manual override | done | 5 |
+| S-123 | Edit warnings and the "Your order was updated" email trigger | done | 3 |
 | S-124 | Two admins on one order get "this order changed, reload" | done | 3 |
 | S-125 | Activity log on the order | done | 2 |
-| S-126 | One-handed admin layout and accessibility pass | in-progress | 2 |
+| S-126 | One-handed admin layout and accessibility pass | done | 2 |
 
 Total: 47 pts. Files: `production/stories/E-06/`.
 
