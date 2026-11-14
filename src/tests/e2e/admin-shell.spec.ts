@@ -117,12 +117,11 @@ test.describe("S-033 admin frame", () => {
     await expect(page.getByRole("banner")).toContainText("Admin");
   });
 
-  test("AC7: Calendar, Customers and Gallery show Not available yet inside the frame; Today links to orders to review", async ({ page }) => {
+  test("AC7: Calendar and Gallery show Not available yet inside the frame; Today links to orders to review", async ({ page }) => {
     await signIn(page, E2E_ACCOUNTS.owner, "/admin");
     await expect(page.getByRole("main").getByRole("link", { name: /^To review: \d+ orders?$/ })).toHaveAttribute("href", "/admin/orders?tab=review");
     for (const [path, title] of [
       ["/admin/calendar", "Calendar"],
-      ["/admin/customers", "Customers"],
       ["/admin/gallery", "Gallery"],
     ] as const) {
       const response = await page.goto(path);
@@ -132,7 +131,11 @@ test.describe("S-033 admin frame", () => {
       await expect(page.getByRole("link", { name: "Back to Today" })).toBeVisible();
       await expect(bar(page)).toBeVisible();
     }
-    // The Sales summary is built (E-09): its own page inside the frame, not the placeholder.
+    // Customers and the Sales summary are built (E-09): their own pages inside the frame, not the placeholder.
+    expect((await page.goto("/admin/customers"))!.status()).toBe(200);
+    await expect(page.getByRole("heading", { level: 1, name: "Customers" })).toBeVisible();
+    await expect(page.getByRole("search")).toBeVisible();
+    await expect(page.getByText("Not available yet")).toHaveCount(0);
     expect((await page.goto("/admin/sales"))!.status()).toBe(200);
     await expect(page.getByRole("heading", { level: 1, name: "Sales summary" })).toBeVisible();
     await expect(page.getByRole("tablist", { name: "Period" })).toBeVisible();

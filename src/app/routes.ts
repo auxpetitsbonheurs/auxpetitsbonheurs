@@ -81,6 +81,7 @@ const adminPages = [
     route("promotions/:id", "routes/admin/promotion.tsx", { id: "admin-promotion" }),
     route("gallery", "routes/admin/gallery.tsx"),
     route("customers", "routes/admin/customers.tsx"),
+    route("customers/:id", "routes/admin/customer.tsx"),
     route("sales", "routes/admin/sales.tsx"),
     route("profile", "routes/admin/profile.tsx"),
     // Brand pages text and photos (E-13 S-246, S-247): Admins and Owners.

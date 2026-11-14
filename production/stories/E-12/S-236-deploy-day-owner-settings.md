@@ -1,5 +1,5 @@
 # S-236: Deploy-day checklist: the Owner enters the real Juice number and pickup address
-Status: ready
+Status: in-progress
 Epic: E-12-polish-test-launch
 Spec: docs/product/prd.md#12-open-questions
 Estimate: 3 pts
@@ -30,3 +30,6 @@ As the Owner, I want a short deploy-day checklist, so that I set the Juice numbe
 - Owner decision: fee Rs 200, pickup area Beau Bassin; exact address and real Juice number entered by the Owner on deploy day (PRD 12.1). Domain: launch on the free Cloudflare default (PRD 12.6). The agent never invents or sees real payment details; the Owner types them.
 - Needs the Owner; may be blocked until she is available.
 - Dependencies (R9): E-03 (Settings), E-10, S-235. Not yet done; expected.
+
+## Launchprep notes (2026-11-14)
+- Deploy-day checklist: production/releases/launch-checklist.md (domain/email decision first, secrets, first production deploy and migrations, every Setting with its agreed value, proving email, push, sign-in and Turnstile). Needs the Owner.

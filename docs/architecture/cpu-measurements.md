@@ -62,3 +62,19 @@ Verdict: still FAIL against the 10 ms p99 target, but p50 fell by 40-60% on all 
 (24 → 9, 38 → 26, 34 → 20). Cloudflare stopped no request. The remaining cost is mostly the
 per-request TLS + SCRAM handshake to the pooler, which Hyperdrive would take off the Worker.
 Decision of 2026-11-11 (accept and monitor) unchanged.
+
+## Staging run 2026-11-13 (warm, 50 rounds, 10-line basket; cpu-measure run 43499983884, S-097)
+
+Each round's basket held 10 distinct lines from the staging menu (`lines: 10`), with options and
+cake messages; staging had no live promotion. Build of 2026-11-13 15:13 (3693222).
+
+| Route | Count | p50 | p95 | p99 | Max | Exceeded CPU |
+|---|---|---|---|---|---|---|
+| POST /basket (place order, 10 lines) | 39 | 4 | 11 | 11 | 11 | 0 |
+| GET /basket (10 lines) | 38 | 22 | 34 | 40 | 40 | 0 |
+| GET /t/[token] (tracking) | 35 | 11 | 21 | 31 | 31 | 0 |
+| POST /menu/<slug> (add to basket, 367 adds) | 367 | 4 | 7 | 12-14 | 26 | 0 |
+
+Verdict: FAIL against the 10 ms p99 target as before, and a 10-line basket costs no more than one
+line (p50 26 → 22 on GET /basket, 9 → 4 on the submit). Cloudflare stopped no request. Decision of
+2026-11-11 (accept and monitor) unchanged. Details: `production/audits/perf-checkout-2026.md`.

@@ -12,7 +12,6 @@ import { signedInAdmin } from "~/server/testing/admin-session";
 import { placeTestOrder } from "~/server/testing/orders";
 import { routeArgs } from "~/server/testing/route-context";
 import * as calendar from "./calendar";
-import * as customers from "./customers";
 import * as gallery from "./gallery";
 import * as layoutModule from "./layout";
 import { clientLoader as layoutClientLoader, loader as layoutLoader } from "./layout";
@@ -164,7 +163,6 @@ describe("More (AC3, AC4)", () => {
 describe("destinations not built yet (AC7)", () => {
   test.each([
     ["calendar", calendar, "Calendar"],
-    ["customers", customers, "Customers"],
     ["gallery", gallery, "Gallery"],
   ] as const)("/admin/%s loads its placeholder for an Admin, with its title", async (name, module, title) => {
     const args = await as("admin");

@@ -1,4 +1,5 @@
-// S-171 AC14, S-178 AC6: with a year of 12,000 orders the Sales loader answers p95 ≤ 500 ms and
+// S-171 AC14, S-178 AC6, S-174 AC10: with a year of 12,000 orders the Sales loader answers p95 ≤ 500 ms,
+// the Customers list p95 ≤ 300 ms, and
 // the CSV of the whole year streams to the end. Desktop project only (one seed of 12k rows),
 // in a year no other spec uses.
 import { signIn } from "./support/admin";
@@ -13,7 +14,7 @@ test.skip(() => test.info().project.name !== "desktop-1280", "one seed of 12k or
 // Seeding 12k rows and 20 timed requests outlast the default test budget.
 test.describe.configure({ timeout: 180_000 });
 
-test("12k orders: sales p95 ≤ 500 ms and the year CSV streams completely", async ({ page, db }) => {
+test("12k orders: sales p95 ≤ 500 ms, customers p95 ≤ 300 ms, and the year CSV streams completely", async ({ page, db }) => {
   const [customer] = await db<{ id: string }[]>`insert into customer (name, phone) values ('Perf Customer', '+23050000001') returning id`;
   const [product] = await db<{ id: string }[]>`select id from product limit 1`;
   const [counter] = await db<{ value: number }[]>`update counter set value = value + ${ORDERS} where name = 'order_number' returning value`;
@@ -36,9 +37,9 @@ test("12k orders: sales p95 ≤ 500 ms and the year CSV streams completely", asy
   await signIn(page, E2E_ACCOUNTS.owner, "/admin/sales");
   // The Worker's own time for the request (Server-Timing `app`), so a busy test runner's
   // queueing is not counted; wall clock only if the header is missing. Three warm-up requests.
-  const serverMs = async () => {
+  const serverMs = async (path = `/admin/sales.data?${RANGE}`) => {
     const started = Date.now();
-    const response = await page.request.get(`/admin/sales.data?${RANGE}`);
+    const response = await page.request.get(path);
     expect(response.status()).toBe(200);
     const app = /(?:^|,\s*)app;dur=([\d.]+)/.exec(response.headers()["server-timing"] ?? "");
     return app ? Number(app[1]) : Date.now() - started;
@@ -50,6 +51,15 @@ test("12k orders: sales p95 ≤ 500 ms and the year CSV streams completely", asy
   const p95 = timings[Math.ceil(timings.length * 0.95) - 1]!;
   console.log(`sales loader at ${ORDERS} orders: p50 ${timings[9]} ms, p95 ${p95} ms`);
   expect(p95).toBeLessThanOrEqual(500);
+
+  // S-174 AC10: the customers list aggregates every customer's orders on each page.
+  for (let i = 0; i < 3; i += 1) await serverMs("/admin/customers.data");
+  const list: number[] = [];
+  for (let i = 0; i < 20; i += 1) list.push(await serverMs("/admin/customers.data?sort=spent"));
+  list.sort((a, b) => a - b);
+  const listP95 = list[Math.ceil(list.length * 0.95) - 1]!;
+  console.log(`customers list at ${ORDERS} orders: p50 ${list[9]} ms, p95 ${listP95} ms`);
+  expect(listP95).toBeLessThanOrEqual(300);
 
   const csv = await page.request.get(`/admin/sales.csv?${RANGE}`, { timeout: 60_000 });
   expect(csv.status()).toBe(200);

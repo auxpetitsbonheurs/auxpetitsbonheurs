@@ -29,3 +29,6 @@ As a customer on a mid-range phone over 4G, I want home and menu to load fast, s
 ## Notes
 - Phase 6 exit. Budgets from project.yaml. Report file names take the run date if the team prefers. CPU result may trigger an Owner decision on a paid plan (breaks NFR-009).
 - Dependencies (R9): S-221, S-223, E-01..E-11. Not yet done; expected.
+
+## Launchprep notes (2026-11-14)
+- Method prepared (production/audits/perf-real-phone.md); needs a real mid-range phone and the real menu. Checkout lab figures: production/audits/perf-checkout-2026.md.

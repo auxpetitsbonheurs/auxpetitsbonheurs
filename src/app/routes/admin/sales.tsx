@@ -275,7 +275,7 @@ function Unpaid({ report, awaitingPayment, query }: { report: Report; awaitingPa
       ) : (
         <ul className="mt-3 grid gap-3" aria-labelledby="sales-unpaid">
           {report.unpaid.map((row) => (
-            <li key={row.id} className="rounded-card border border-border bg-card px-4 py-2">
+            <li key={row.id} className="min-w-0 rounded-card border border-border bg-card px-2 py-2 min-[20rem]:px-4">
               <Link to={`/admin/orders/${row.id}`} className={cn(linkClass, "wrap-anywhere")}>
                 {t("admin.sales.unpaidRow", { number: row.number, name: row.contactName, amount: formatRupees(row.totalRs) })}
               </Link>

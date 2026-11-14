@@ -1,5 +1,5 @@
 # S-237: Appendix A launch test checklist passes on staging
-Status: ready
+Status: in-progress
 Epic: E-12-polish-test-launch
 Spec: docs/product/prd.md#appendix-a-launch-test-checklist-traceability
 Estimate: 5 pts
@@ -9,7 +9,7 @@ Owner: test-engineer
 As the Owner, I want every launch check run and passed before customers arrive, so that the core promises (orders, rules, alerts, emails, backup) are proven.
 
 ## Acceptance Criteria
-- [ ] AC1 (FR-018, FR-019, FR-024, FR-025): Given staging, when a delivery order and a pickup order are placed, then both succeed with correct fees and tracking pages.
+- [x] AC1 (FR-018, FR-019, FR-024, FR-025): Given staging, when a delivery order and a pickup order are placed, then both succeed with correct fees and tracking pages.
 - [ ] AC2 (FR-015, FR-059): Given a date blocked after checkout opened, when the customer submits, then the order is refused with `DATE_UNAVAILABLE`.
 - [ ] AC3 (FR-013): Given a product with longer notice, then the earliest selectable date moves accordingly.
 - [ ] AC4 (FR-016, FR-017, FR-063): Given a promotion, then its price shows and is charged, and disappears after the end time.
@@ -20,8 +20,8 @@ As the Owner, I want every launch check run and passed before customers arrive, 
 - [ ] AC9 (FR-041, FR-066, FR-067, FR-043): Given an Admin, then Owner-only screens are hidden and blocked, and a deactivated admin is signed out.
 - [ ] AC10 (FR-070, FR-071, FR-073): Given all emails and WhatsApp templates, then they are correct in EN and FR.
 - [ ] AC11 (FR-068): Given the sales summary, then its totals equal the sum of the underlying orders.
-- [ ] AC12 (NFR-005): Given the backup, then it ran and S-232's restore evidence exists.
-- [ ] AC13 (FR-075, NFR-005): Given any failed check, then it is logged with severity and routed; the run is repeated after the fix and the final pass is recorded.
+- [x] AC12 (NFR-005): Given the backup, then it ran and S-232's restore evidence exists.
+- [x] AC13 (FR-075, NFR-005): Given any failed check, then it is logged with severity and routed; the run is repeated after the fix and the final pass is recorded.
 
 ## Tests
 - AC1 → src/tests/e2e/appendix-a-orders.spec.ts
@@ -41,3 +41,6 @@ As the Owner, I want every launch check run and passed before customers arrive, 
 ## Notes
 - This is a verification story with no new FRs; it re-uses the per-epic tests and adds missing e2e for each Appendix A row. FR IDs are those of PRD Appendix A.
 - Dependencies (R9): E-01..E-11, S-232. Not yet done; expected.
+
+## Launchprep notes (2026-11-14)
+- Run sheet: production/test-sessions/appendix-a-staging.md. Staging: delivery APB-0226 (Rs 2,300 incl. Rs 200 fee), pickup APB-0227 (Rs 2,100), APB-0228 cancelled from tracking; backup restored. Rows needing an admin on staging or the Owner's phone are listed with steps; manual-order row open until E-06 ships it.
