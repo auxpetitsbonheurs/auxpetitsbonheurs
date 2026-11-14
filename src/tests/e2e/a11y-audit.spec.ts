@@ -99,6 +99,8 @@ test.describe("S-227 AC6: fields bring up the right phone keyboard and have a vi
   test("checkout contact fields are tel and email, each with a visible label", async ({ page }) => {
     await page.goto(`/menu/${SAMPLE_PRODUCT.slug}`);
     await page.getByRole("button", { name: /add to basket/i }).click();
+    // Wait for the add to land (toast on the page, or the basket page when the form posted) before leaving.
+    await expect(page.getByRole("status").filter({ hasText: "Added to your basket" }).or(page.getByRole("heading", { level: 1, name: "Your basket" }))).toBeVisible();
     await page.goto("/basket");
     const phone = page.getByLabel(/^Phone/);
     const email = page.getByLabel(/^Email/);
