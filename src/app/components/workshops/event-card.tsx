@@ -89,8 +89,8 @@ export function EventCard({ event, index }: { event: EventView; index: number })
   return (
     <li className="flex flex-col gap-3 rounded-card border border-border bg-card p-3 sm:p-4">
       {event.photo && <EventPhoto photo={event.photo} sizes={EVENT_CARD_SIZES} eager={index === 0} />}
-      <h3 className="text-xl">
-        <Link to={href} className="inline-flex min-h-11 items-center link">
+      <h3 className="min-w-0 text-xl wrap-anywhere">
+        <Link to={href} className="inline-flex min-h-11 max-w-full items-center link">
           {event.title}
         </Link>
       </h3>

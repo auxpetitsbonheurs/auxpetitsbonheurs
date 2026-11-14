@@ -31,7 +31,9 @@ test.describe("every nav page answers (S-242 Notes)", () => {
         expect(response.status(), url).toBe(200);
       }
     }
-    const body = await (await request.get("/workshops")).text();
+    // /workshops turns indexable once a workshop is listed (E-15, unit-tested in workshops.test.tsx) and
+    // parallel specs publish workshops, so the placeholder check reads the seeded Our story page.
+    const body = await (await request.get("/our-story")).text();
     expect(body).toContain('<meta name="robots" content="noindex"');
   });
 });

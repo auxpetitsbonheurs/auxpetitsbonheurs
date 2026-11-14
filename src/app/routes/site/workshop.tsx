@@ -184,7 +184,7 @@ export default function Workshop({ loaderData, actionData }: Route.ComponentProp
           {t("workshops.back")}
         </Link>
         <header className="grid gap-4">
-          <h1>{event.title}</h1>
+          <h1 className="max-w-full wrap-anywhere">{event.title}</h1>
           {event.photo && <EventPhoto photo={event.photo} sizes="(min-width: 48rem) 42rem, 100vw" eager />}
           <EventFacts event={event} />
           {event.mapUrl && (

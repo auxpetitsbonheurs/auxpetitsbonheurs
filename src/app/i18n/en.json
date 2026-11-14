@@ -2868,9 +2868,6 @@
     "workshops": {
       "title": "Workshops",
       "metaDescription": "Cake decorating workshops at Aux petits bonheurs in Beau Bassin, Mauritius: ask us about the next one.",
-      "nextTitle": "Next workshop",
-      "seats_one": "{{count}} seat",
-      "seats_other": "{{count}} seats",
       "noneTitle": "No workshop planned right now",
       "noneBody": "Follow us or message us to hear about the next one.",
       "ask": "Ask about workshops on WhatsApp",

@@ -2868,9 +2868,6 @@
     "workshops": {
       "title": "Ateliers",
       "metaDescription": "Ateliers de décoration de gâteaux chez Aux petits bonheurs à Beau Bassin, Maurice : renseignez-vous sur le prochain.",
-      "nextTitle": "Prochain atelier",
-      "seats_one": "{{count}} place",
-      "seats_other": "{{count}} places",
       "noneTitle": "Aucun atelier prévu pour le moment",
       "noneBody": "Suivez-nous ou écrivez-nous pour connaître le prochain.",
       "ask": "Poser une question sur les ateliers sur WhatsApp",

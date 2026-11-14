@@ -6,8 +6,9 @@
 // horizontal scroll on every screen; 375 px screenshots go to the job's scratchpad.
 import { randomInt } from "node:crypto";
 import type postgres from "postgres";
-import { expectNoA11yViolations, expectNoHorizontalScroll, expectTapTargets } from "./support/a11y";
+import { expectNoA11yViolations, expectNoHorizontalScroll, expectTapTargets, withZoom } from "./support/a11y";
 import { createE2eAdmin, signIn } from "./support/admin";
+import { E2E_ACCOUNTS } from "./support/auth-users";
 import { type Page, expect, test } from "./support/fixtures";
 
 const SHOTS = process.env.WORKSHOP_SHOTS_DIR;
@@ -26,9 +27,8 @@ function ownDay(): string {
 }
 
 /** A published workshop straight in the database (for the customer-side tests). */
-async function publishedWorkshop(db: postgres.Sql, capacity = 10) {
+async function publishedWorkshop(db: postgres.Sql, capacity = 10, title = `Valentine's workshop ${randomInt(1e6)}`) {
   const slug = `ws-${randomInt(1e9)}`;
-  const title = `Valentine's workshop ${randomInt(1e6)}`;
   await db`insert into workshop_event (slug, title_en, title_fr, description_en, event_on, starts_at, ends_at, address, price_rs, capacity, cake_options, status)
     values (${slug}, ${title}, ${`Atelier ${title}`}, 'Ten couples decorate a cake together.', ${ownDay()}, '14:00', '16:30', '12 Rue Example, Beau Bassin', 1500, ${capacity},
       ${db.json([{ id: "choc", name: { en: "Chocolate", fr: "Chocolat" } }, { id: "rv", name: { en: "Red velvet" } }])}, 'published')`;
@@ -102,7 +102,8 @@ test.describe("E-15 workshops", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Thank you, we received your registration" })).toBeVisible();
     await expect(page.getByText("Your place is held while we look at your registration")).toBeVisible();
 
-    const admin = await createE2eAdmin(db, { role: "owner" });
+    // The seeded Owner: a second owner row would break the one-Owner invariant other specs read.
+    const admin = E2E_ACCOUNTS.owner;
     const context = await browser.newContext({ baseURL, viewport: page.viewportSize() ?? undefined });
     const owner = await context.newPage();
     const [event] = await db<{ id: string }[]>`select id from workshop_event where slug = ${slug}`;
@@ -194,5 +195,19 @@ test.describe("E-15 workshops", () => {
     // The language chosen on the French page is remembered, so the French page answers.
     await expect(page.getByRole("heading", { level: 2, name: "Cet atelier est complet" })).toBeVisible();
     await expect(page.getByRole("button", { name: "S'inscrire" })).toHaveCount(0);
+  });
+
+  test("a title with a long unbroken word wraps: no sideways scroll on the list or the event page at 200% zoom, in both languages", async ({ page, db }) => {
+    // An Owner may paste a long word or link; parallel specs also publish titles like this one.
+    const { slug } = await publishedWorkshop(db, 10, `Valentine's cake workshop Chocolatepassionfruitcelebration-${randomInt(1e9)}`);
+    for (const url of ["/workshops", "/fr/workshops", `/workshops/${slug}`, `/fr/workshops/${slug}`]) {
+      await page.goto(url);
+      await hydrated(page);
+      await expectNoHorizontalScroll(page);
+      await withZoom(page, 2, async () => {
+        await expectNoHorizontalScroll(page);
+        await expectTapTargets(page);
+      });
+    }
   });
 });
