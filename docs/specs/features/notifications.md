@@ -131,6 +131,7 @@ Server-side counters, no PII, no cookies.
 |---|---|---|
 | email_sent / email_failed / email_dead | outbox outcome | template, attempt |
 | email_deferred_cap | daily cap reached | template |
+| email_recipient_capped | 3 order/request-received emails already sent to that address in 24 h (SEC-07, G-08): row dead with `recipient_cap`, order log line | template, cap |
 | push_sent / push_gone | push result | event type, status code class |
 | whatsapp_link_opened | `whatsappLink` | template key, locale |
 | alert_prefs_changed | `setAlerts` | push, email booleans |

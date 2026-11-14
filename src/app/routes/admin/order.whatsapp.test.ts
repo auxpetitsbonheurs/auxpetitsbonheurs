@@ -129,6 +129,18 @@ describe("the WhatsApp menu (S-203)", () => {
     expect(failed.notes).toEqual(["The address refused it.", "Send the tracking link by WhatsApp instead."]);
   });
 
+  test("SEC-07: an email held back by the per-recipient cap says so, with the cap, in EN and FR", async () => {
+    const id = await placed();
+    await database.client.query("insert into order_event (order_id, actor_type, type, details) values ($1, 'system', 'email_failed', $2)", [id, JSON.stringify({ template: "order_received", reason: "recipient_cap" })]);
+    const french = await signedInAdmin(database, { name: "Lea", locale: "fr" });
+
+    const english = (await load(id)).events.find((event) => event.type === "email_failed")!;
+    const page = (await loader(routeArgs(database, { path: `/admin/orders/${id}`, params: { id }, auth: french.auth, cookie: french.cookie }) as never)) as unknown as Page;
+
+    expect(english.notes[0]).toBe("Not sent: this address already got 3 order or request emails in 24 hours (anti-spam limit).");
+    expect(page.events.find((event) => event.type === "email_failed")?.notes[0]).toBe("Non envoyé : cette adresse a déjà reçu 3 e-mails de commande ou de demande en 24 heures (limite anti-spam).");
+  });
+
   test("AC9: the failure text and the labels exist in French", async () => {
     const french = await signedInAdmin(database, { name: "Lea", locale: "fr" });
     const id = await placed();

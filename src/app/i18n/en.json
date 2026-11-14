@@ -685,7 +685,8 @@
       "emailFailedReason": {
         "permanent": "The address refused it.",
         "retries": "The email service failed 6 times.",
-        "other": "The email could not be prepared."
+        "other": "The email could not be prepared.",
+        "recipientCap": "Not sent: this address already got {{max}} order or request emails in 24 hours (anti-spam limit)."
       },
       "emailFailedHint": "Send the tracking link by WhatsApp instead."
     },

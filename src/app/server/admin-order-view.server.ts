@@ -6,6 +6,7 @@ import { formatLogTime } from "~/domain/time";
 import { waMeUrl } from "~/domain/whatsapp";
 import { t as translate } from "~/i18n/catalog.server";
 import { type Locale, formatRupees } from "~/lib/locale";
+import { RECIPIENT_DAILY_CAP } from "~/server/email/daily-cap";
 import type { OrderEventView } from "~/server/repos/order-events.server";
 
 const KNOWN_EVENTS = new Set([
@@ -45,6 +46,9 @@ const rupees = (value: unknown): number | null => (typeof value === "number" && 
 /** A dead customer email (S-203 AC3): why, in words, then what to do instead. */
 function emailFailedNotes(details: Record<string, unknown>, locale: Locale): string[] {
   const reason = text(details.reason) ?? "";
+  if (reason === "recipient_cap") {
+    return [translate("admin.log.emailFailedReason.recipientCap", locale, { max: RECIPIENT_DAILY_CAP }), translate("admin.log.emailFailedHint", locale)];
+  }
   const kind = reason.endsWith("_permanent") ? "permanent" : reason === "render" || reason === "order_missing" ? "other" : "retries";
   return [translate(`admin.log.emailFailedReason.${kind}`, locale), translate("admin.log.emailFailedHint", locale)];
 }

@@ -685,7 +685,8 @@
       "emailFailedReason": {
         "permanent": "L'adresse l'a refusé.",
         "retries": "Le service d'e-mail a échoué 6 fois.",
-        "other": "L'e-mail n'a pas pu être préparé."
+        "other": "L'e-mail n'a pas pu être préparé.",
+        "recipientCap": "Non envoyé : cette adresse a déjà reçu {{max}} e-mails de commande ou de demande en 24 heures (limite anti-spam)."
       },
       "emailFailedHint": "Envoyez plutôt le lien de suivi par WhatsApp."
     },

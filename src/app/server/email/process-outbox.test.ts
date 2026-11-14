@@ -6,6 +6,7 @@ import type { Database } from "~/server/db.server";
 import { placeTestOrder } from "~/server/testing/orders";
 import { retryEmails } from "~/jobs/retry-emails";
 import type { JobContext } from "~/jobs/types";
+import { RECIPIENT_DAILY_CAP } from "./daily-cap";
 import { processOutbox } from "./process-outbox.server";
 import { EmailSendError, type EmailMessage, type Mailer, resendMailer } from "./sender.server";
 
@@ -83,7 +84,7 @@ describe("delivery (S-186 AC3)", () => {
   test("no due rows: nothing sent, no error (AC9)", async () => {
     await database.client.query("update email_outbox set next_attempt_at = $1", [new Date(NOW.getTime() + HOUR).toISOString()]);
 
-    expect(await run(new FakeMailer())).toEqual({ sent: 0, failed: 0, dead: 0, deferred: 0, notConfigured: false });
+    expect(await run(new FakeMailer())).toEqual({ sent: 0, failed: 0, dead: 0, deferred: 0, capped: 0, notConfigured: false });
   });
 });
 
@@ -221,3 +222,61 @@ describe("the daily cap (S-187)", () => {
     expect(await run(mailer, new Date("2026-11-13T20:30:00Z"))).toMatchObject({ sent: 1 });
   });
 });
+
+describe("per-recipient cap on publicly triggered emails (SEC-07, threat model G-08)", () => {
+  const VICTIM = "Victim@Example.com";
+
+  /** `count` order or request emails already sent to the victim, `hoursAgo` before NOW. */
+  async function sentToVictim(count: number, hoursAgo: number, template = "order_received") {
+    await database.client.query(
+      "insert into email_outbox (template, to_email, locale, payload, dedupe_key, status, sent_at) select $4, 'victim@example.com', 'en', '{}', 'v-' || $3 || '-' || g, 'sent', $1 from generate_series(1, $2::int) g",
+      [new Date(NOW.getTime() - hoursAgo * HOUR).toISOString(), count, `${hoursAgo}-${template}`, template],
+    );
+  }
+  const pointQueuedRowAtVictim = (template = "order_received") =>
+    database.client.query("update email_outbox set to_email = $1, template = $2 where status = 'pending'", [VICTIM, template]);
+
+  test(`after ${RECIPIENT_DAILY_CAP} order or request emails to one address in 24 h, the next is not sent: dead, logged on the order, never retried`, async () => {
+    await sentToVictim(2, 3, "order_received");
+    await sentToVictim(1, 1, "request_received");
+    await pointQueuedRowAtVictim();
+    const mailer = new FakeMailer();
+
+    expect(await run(mailer)).toMatchObject({ sent: 0, dead: 0, capped: 1 });
+
+    expect(mailer.sent).toEqual([]);
+    expect(await outbox()).toMatchObject({ status: "dead", last_error: "recipient_cap" });
+    const { rows } = await database.client.query("select type, details from order_event where type = 'email_failed'");
+    expect(rows).toEqual([{ type: "email_failed", details: { template: "order_received", reason: "recipient_cap" } }]);
+    expect(await run(mailer, new Date(NOW.getTime() + 2 * HOUR))).toMatchObject({ sent: 0, capped: 0 });
+  });
+
+  test("emails older than 24 h, and other kinds of email (quotes, confirmations), do not count", async () => {
+    await sentToVictim(5, 25);
+    await sentToVictim(5, 1, "order_confirmed");
+    await pointQueuedRowAtVictim();
+    const mailer = new FakeMailer();
+
+    expect(await run(mailer)).toMatchObject({ sent: 1, capped: 0 });
+  });
+
+  test("only publicly triggered emails are capped: an order update to the same address still goes", async () => {
+    await sentToVictim(RECIPIENT_DAILY_CAP, 1);
+    await pointQueuedRowAtVictim("order_confirmed");
+    const mailer = new FakeMailer();
+
+    expect(await run(mailer)).toMatchObject({ sent: 1, capped: 0 });
+  });
+
+  test("many queued at once (one script, many IPs) still send at most the cap in one run", async () => {
+    await database.client.query(
+      "insert into email_outbox (template, to_email, locale, payload, order_id, dedupe_key, next_attempt_at) select template, to_email, locale, payload, order_id, dedupe_key || g, next_attempt_at from email_outbox, generate_series(1, 5) g",
+    );
+    await pointQueuedRowAtVictim();
+    const mailer = new FakeMailer();
+
+    expect(await run(mailer)).toMatchObject({ sent: RECIPIENT_DAILY_CAP, capped: 6 - RECIPIENT_DAILY_CAP });
+    expect(mailer.sent.every((message) => message.to === VICTIM)).toBe(true);
+  });
+});
+

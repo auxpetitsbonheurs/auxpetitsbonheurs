@@ -8,7 +8,7 @@
 import { eq, sql } from "drizzle-orm";
 import { emailOutbox, orderEvent } from "~/db/schema";
 import type { Database } from "~/server/db.server";
-import { DAILY_LIMIT, SOFT_CAP, capDecision, nextMuMidnight, sentToday as countSentToday } from "./daily-cap";
+import { DAILY_LIMIT, RECIPIENT_DAILY_CAP, SOFT_CAP, capDecision, isPublicTriggered, nextMuMidnight, recentPublicSends, sentToday as countSentToday } from "./daily-cap";
 import { loadOrderEmailData } from "./order-data.server";
 import { EMAIL_TIMEOUT_MS, EmailSendError, type Mailer, sendWithTimeout } from "./sender.server";
 import { ADMIN_ALERT_KEYS, isAdminAlertKey, renderAdminAlertEmail } from "./templates/admin-alert-emails";
@@ -38,6 +38,8 @@ export interface OutboxReport {
   failed: number;
   dead: number;
   deferred: number;
+  /** Not sent: the address already got RECIPIENT_DAILY_CAP public-form emails in 24 h (SEC-07). */
+  capped: number;
   /** Email is not set up: nothing was tried. */
   notConfigured: boolean;
 }
@@ -93,6 +95,28 @@ async function markDead(db: Database, row: Claimed, reason: string, now: Date) {
   line("error", "email_dead", { template: row.template, reason, attempts: row.attempts + 1 });
 }
 
+/** The per-recipient cap (SEC-07): dead at once, never retried; the order log says why. Info level: not an outage. */
+async function markCapped(db: Database, row: Claimed, now: Date) {
+  await db.update(emailOutbox).set({ status: "dead", attempts: row.attempts + 1, lastError: "recipient_cap" }).where(eq(emailOutbox.id, row.id));
+  if (row.order_id) {
+    await db.insert(orderEvent).values({ orderId: row.order_id, actorType: "system", type: "email_failed", details: { template: row.template, reason: "recipient_cap" }, createdAt: now });
+  }
+  line("info", "email_recipient_capped", { template: row.template, cap: RECIPIENT_DAILY_CAP });
+}
+
+/**
+ * True when this row would pass its address's cap. Counts are preloaded per run and reserved
+ * here synchronously, so parallel workers in one run cannot overshoot it.
+ */
+function overRecipientCap(row: Claimed, recipients: Map<string, number>): boolean {
+  if (!isPublicTriggered(row.template)) return false;
+  const key = row.to_email.toLowerCase();
+  const used = recipients.get(key) ?? 0;
+  if (used >= RECIPIENT_DAILY_CAP) return true;
+  recipients.set(key, used + 1);
+  return false;
+}
+
 async function recordFailure(db: Database, row: Claimed, error: unknown, now: Date): Promise<"failed" | "dead"> {
   const kind = error instanceof EmailSendError ? error.kind : "network";
   const permanent = error instanceof EmailSendError && error.permanent;
@@ -109,7 +133,16 @@ async function recordFailure(db: Database, row: Claimed, error: unknown, now: Da
 type Loaded = Awaited<ReturnType<typeof loadOrderEmailData>>;
 
 /** Decides, renders and sends one claimed row; returns what happened. */
-async function deliver(db: Database, row: Claimed, ctx: { options: OutboxOptions; mailer: Mailer; siteUrl: string; orders: Loaded; sent: { n: number } }): Promise<"sent" | "failed" | "dead" | "deferred" | "waiting"> {
+interface DeliverContext {
+  options: OutboxOptions;
+  mailer: Mailer;
+  siteUrl: string;
+  orders: Loaded;
+  sent: { n: number };
+  recipients: Map<string, number>;
+}
+
+async function deliver(db: Database, row: Claimed, ctx: DeliverContext): Promise<"sent" | "failed" | "dead" | "deferred" | "waiting" | "capped"> {
   const { options, mailer, siteUrl, orders, sent } = ctx;
   const decision = capDecision(row.template, sent.n);
   if (decision === "wait") {
@@ -120,6 +153,10 @@ async function deliver(db: Database, row: Claimed, ctx: { options: OutboxOptions
     await release(db, row.id, nextMuMidnight(options.now));
     line("info", "email_deferred_cap", { template: row.template });
     return "deferred";
+  }
+  if (overRecipientCap(row, ctx.recipients)) {
+    await markCapped(db, row, options.now);
+    return "capped";
   }
   const orderId = row.order_id ?? (typeof row.payload.orderId === "string" ? row.payload.orderId : null);
   const loaded = orderId ? orders.get(orderId) : undefined;
@@ -148,7 +185,7 @@ async function deliver(db: Database, row: Claimed, ctx: { options: OutboxOptions
 }
 
 export async function processOutbox(db: Database, options: OutboxOptions): Promise<OutboxReport> {
-  const report: OutboxReport = { sent: 0, failed: 0, dead: 0, deferred: 0, notConfigured: false };
+  const report: OutboxReport = { sent: 0, failed: 0, dead: 0, deferred: 0, capped: 0, notConfigured: false };
   if (!options.mailer || !options.siteUrl) {
     line("info", "email_not_sent", { reason: "email not set up" });
     return { ...report, notConfigured: true };
@@ -159,7 +196,8 @@ export async function processOutbox(db: Database, options: OutboxOptions): Promi
   if (rows.length === 0) return report;
   const orders = await loadOrderEmailData(db, rows.flatMap((row) => (row.order_id ? [row.order_id] : [])));
   const queue = [...rows];
-  const ctx = { options, mailer: options.mailer, siteUrl: options.siteUrl, orders, sent };
+  const recipients = await recentPublicSends(db, rows.filter((row) => isPublicTriggered(row.template)).map((row) => row.to_email), options.now);
+  const ctx: DeliverContext = { options, mailer: options.mailer, siteUrl: options.siteUrl, orders, sent, recipients };
   const worker = async () => {
     for (let row = queue.shift(); row; row = queue.shift()) {
       try {
@@ -168,6 +206,7 @@ export async function processOutbox(db: Database, options: OutboxOptions): Promi
         else if (outcome === "failed") report.failed += 1;
         else if (outcome === "dead") report.dead += 1;
         else if (outcome === "deferred") report.deferred += 1;
+        else if (outcome === "capped") report.capped += 1;
       } catch {
         // A database hiccup on one row: it keeps its lease and comes back when the lease ends.
         line("error", "email_row_error", { template: row.template });
