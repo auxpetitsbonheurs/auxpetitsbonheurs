@@ -100,6 +100,22 @@ describe("failure and backoff (S-186 AC2, AC4, AC7)", () => {
     expect(row.next_attempt_at.getTime()).toBe(NOW.getTime() + HOUR);
   });
 
+  test("a failed attempt that will be retried is logged (template, kind, attempt; no address) so Workers Logs show it", async () => {
+    const mailer = new FakeMailer();
+    mailer.next = new EmailSendError("provider");
+    const lines: string[] = [];
+    const original = console.log;
+    console.log = (line: string) => void lines.push(String(line));
+    try {
+      await run(mailer);
+    } finally {
+      console.log = original;
+    }
+
+    const logged = lines.map((l) => JSON.parse(l) as Record<string, unknown>).find((l) => l.event === "email_attempt_failed");
+    expect(logged).toEqual({ level: "error", event: "email_attempt_failed", template: "order_received", kind: "provider", attempt: 1 });
+  });
+
   test("the delays are 1, 2, 4, 8 and 24 hours; the sixth failure is dead with an email_failed event", async () => {
     const mailer = new FakeMailer();
     mailer.next = new EmailSendError("network");

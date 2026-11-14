@@ -125,6 +125,8 @@ async function recordFailure(db: Database, row: Claimed, error: unknown, now: Da
     await markDead(db, row, permanent ? `${kind}_permanent` : kind, now);
     return "dead";
   }
+  // A retried failure used to leave no trace until the 6th: log it now (kind only, never the provider's text).
+  line("error", "email_attempt_failed", { template: row.template, kind, attempt: attempts });
   const delay = RETRY_DELAYS_HOURS[row.attempts] ?? 24;
   await db.update(emailOutbox).set({ attempts, lastError: kind, nextAttemptAt: new Date(now.getTime() + delay * HOUR_MS) }).where(eq(emailOutbox.id, row.id));
   return "failed";
