@@ -22,7 +22,7 @@ Done: domain auxpetitsbonheursmu.com, sales@ forwarding, Resend verified, email 
    - WhatsApp messages: read each template (EN and FR), including "Payment details".
    - Save settings.
 6. Phone alerts: GitHub → Actions → vapid-keys → Run workflow → staging + bakery email. Then on each admin phone: admin app → My profile → Enable push → Send test push.
-7. Spam check: Cloudflare → Turnstile → Add widget → hostnames `auxpetitsbonheurs-staging.kshana-auxpetitsbonheurs.workers.dev` and `auxpetitsbonheursmu.com`, mode Managed. Then in the staging Worker → Variables and Secrets add `TURNSTILE_SITE_KEY` (text) and `TURNSTILE_SECRET_KEY` (secret).
+7. Spam check: Cloudflare → Turnstile → Add widget → hostnames `auxpetitsbonheurs-staging.kshana-auxpetitsbonheurs.workers.dev` and `auxpetitsbonheursmu.com`, mode Non-interactive. Then in the staging Worker → Variables and Secrets add `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`, both type Secret (a Text variable is erased by the next deploy).
 8. Phone test, on a real phone: place an order → approve in admin → pay guide and email → Payment received → download the invoice. Then: a custom cake request → quote → accept; a workshop → register → accept; a review → approve; sign up for an account.
 
 ## B. Backups (before launch; the weekly run fails and emails you until this is done)
