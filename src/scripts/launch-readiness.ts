@@ -5,9 +5,9 @@
 // a step summary. Exit 0 (warn only) unless --strict, which fails when not launch ready.
 // Usage: node scripts/launch-readiness.ts <staging|production> [--strict]
 import { execFileSync } from "node:child_process";
-import { appendFileSync } from "node:fs";
+import { appendFileSync, readFileSync } from "node:fs";
 import { launchReadiness, parseSecretList, readinessAnnotations } from "../app/lib/integrations.ts";
-import { parseDeployTarget } from "../app/lib/deploy-guard.ts";
+import { parseDeployTarget, readJsonc } from "../app/lib/deploy-guard.ts";
 
 const target = parseDeployTarget(process.argv[2]);
 const strict = process.argv.includes("--strict");
@@ -24,7 +24,10 @@ try {
   process.exit(strict ? 1 : 0);
 }
 
-const report = launchReadiness(names);
+// Plain vars deploy with the Worker from wrangler.jsonc (EMAIL_FROM, SITE_URL), not as secrets.
+const wrangler = readJsonc(readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8")) as { env?: Record<string, { vars?: Record<string, unknown> }> };
+const plainVars = Object.keys(wrangler.env?.[target]?.vars ?? {});
+const report = launchReadiness([...names, ...plainVars]);
 const lines = readinessAnnotations(report, target);
 for (const line of lines) console.log(line);
 
