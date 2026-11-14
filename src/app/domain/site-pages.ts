@@ -30,14 +30,6 @@ export const PAGE_PHOTO_LIMITS: Record<SitePageKey, number> = { our_story: 4, wo
 /** Alt text per language (S-247 AC3). */
 export const PHOTO_ALT_MAX = 200;
 
-/**
- * Workshops "next workshop" block (S-249 Owner clarification): occasional events, such as a
- * Valentine's Day session. Shown only while its date is today or later (Mauritius date).
- */
-export const EVENT_TITLE_MAX = 120;
-export const EVENT_TEXT_MAX = 600;
-export const EVENT_SEATS_MAX = 500;
-
 /** Text in English and (optionally) French; blank French shows the English (NFR-007). */
 export interface PageText {
   en: string;
@@ -45,14 +37,6 @@ export interface PageText {
 }
 
 export type PageContent = Partial<Record<SitePageField, PageText>>;
-
-export interface PageEvent {
-  title: PageText;
-  /** Mauritius calendar date, YYYY-MM-DD. */
-  date: string;
-  seats: number | null;
-  text: PageText | null;
-}
 
 /** Public paths of the pages that have their own route (contact and custom order: batch D). */
 export const SITE_PAGE_PATHS: Partial<Record<SitePageKey, string>> = {
@@ -84,8 +68,3 @@ export function isPagePhotoPath(path: string, key: SitePageKey): boolean {
 
 /** The upload scope the editor asks `admin/uploads` for: `page:<key>`. */
 export const pageUploadScope = (key: SitePageKey) => `page:${key}` as const;
-
-/** True when a next workshop titled `title` on `date` still shows on `today` (YYYY-MM-DD, Mauritius). */
-export function isUpcoming(title: string, date: string, today: string): boolean {
-  return title.trim() !== "" && /^\d{4}-\d{2}-\d{2}$/.test(date) && date >= today;
-}

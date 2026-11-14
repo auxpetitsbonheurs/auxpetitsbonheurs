@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { boolean, check, integer, jsonb, pgTable, smallint, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
-import type { PageContent, PageEvent } from "../../domain/site-pages";
+import type { PageContent } from "../../domain/site-pages";
 import { admin } from "./people";
 
 const tz = { withTimezone: true } as const;
@@ -15,8 +15,12 @@ export const sitePage = pgTable(
   {
     key: text("key").primaryKey(),
     content: jsonb("content").$type<PageContent>().notNull().default(sql`'{}'::jsonb`),
-    /** Workshops "next workshop" block (S-249), null when none is planned. */
-    event: jsonb("event").$type<PageEvent>(),
+    /**
+     * Retired: the Workshops "next workshop" block (S-249), replaced by E-15 events. Emptied by
+     * 0027 and read by nothing; dropped by a later migration once every environment runs code
+     * that no longer selects it (expand/contract, production/tech-debt.md TD-site-page-event).
+     */
+    event: jsonb("event"),
     isPlaceholder: boolean("is_placeholder").notNull().default(true),
     version: integer("version").notNull().default(1),
     updatedAt: timestamp("updated_at", tz).notNull().defaultNow(),
@@ -26,9 +30,9 @@ export const sitePage = pgTable(
 ).enableRLS();
 
 /**
- * Ordered photos of a page (S-247). `role` = `page` (the page's photos) or `event` (the one
- * photo of the Workshops next-workshop block). The slot check is the per-page limit
- * (our_story 4, workshops 6 + 1 event photo, custom_order 3, others none).
+ * Ordered photos of a page (S-247). `role` is always `page`: the Workshops next-workshop
+ * photo went with that block (E-15 replaced it with events). The slot check is the per-page
+ * limit (our_story 4, workshops 6, custom_order 3, others none).
  */
 export const sitePagePhoto = pgTable(
   "site_page_photo",
@@ -52,11 +56,10 @@ export const sitePagePhoto = pgTable(
     check("site_page_photo_size_ck", sql`${t.width} > 0 and ${t.height} > 0`),
     check(
       "site_page_photo_slot_ck",
-      sql`(${t.role} = 'page' and (
+      sql`${t.role} = 'page' and (
             (${t.pageKey} = 'our_story' and ${t.sortOrder} between 0 and 3)
             or (${t.pageKey} = 'workshops' and ${t.sortOrder} between 0 and 5)
-            or (${t.pageKey} = 'custom_order' and ${t.sortOrder} between 0 and 2)))
-        or (${t.role} = 'event' and ${t.pageKey} = 'workshops' and ${t.sortOrder} = 0)`,
+            or (${t.pageKey} = 'custom_order' and ${t.sortOrder} between 0 and 2))`,
     ),
   ],
 ).enableRLS();

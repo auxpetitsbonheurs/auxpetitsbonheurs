@@ -35,7 +35,7 @@ export async function loader({ context, url }: Route.LoaderArgs) {
   ]);
   const seo = { title: serverT("sitePages.workshops.title", locale), description: serverT("sitePages.workshops.metaDescription", locale) };
   if (!read.ok) return data({ ...seo, page: null, events: [] as EventView[], indexable: false }, { status: 503 });
-  const { event: _legacyNext, ...page } = read.page;
+  const { page } = read;
   const views: EventView[] = events.map(({ options: _options, status: _status, id: _id, ...e }) => ({
     ...e,
     dateLabel: formatLongDate(e.eventOn, locale),

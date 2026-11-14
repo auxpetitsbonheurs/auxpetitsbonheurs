@@ -5,7 +5,7 @@
 // stored: pages render it only through `PlainText` (escaped, paragraphs kept).
 import { type SQL, asc, eq, sql } from "drizzle-orm";
 import { galleryPhoto, sitePage, sitePagePhoto } from "~/db/schema";
-import { type PageContent, type PageEvent, SITE_PAGE_FIELDS, type SitePageField, type SitePageKey, isPagePhotoPath } from "~/domain/site-pages";
+import { type PageContent, SITE_PAGE_FIELDS, type SitePageField, type SitePageKey, isPagePhotoPath } from "~/domain/site-pages";
 import { localized } from "~/i18n/localized";
 import { webPhoto } from "~/lib/images";
 import type { Locale } from "~/lib/locale";
@@ -13,7 +13,6 @@ import type { Database } from "~/server/db.server";
 import { SETTINGS_TTL_MS, type TtlCache, createTtlCache } from "~/server/settings-cache.server";
 
 export interface StoredPagePhoto {
-  role: "page" | "event";
   path: string;
   width: number;
   height: number;
@@ -26,7 +25,6 @@ export interface StoredPagePhoto {
 export interface StoredSitePage {
   key: SitePageKey;
   content: PageContent;
-  event: PageEvent | null;
   isPlaceholder: boolean;
   photos: StoredPagePhoto[];
 }
@@ -47,7 +45,6 @@ export interface PublicSitePage {
   /** Field → text in the locale; a field with no English text is left out. */
   text: Partial<Record<SitePageField, string>>;
   photos: PagePhoto[];
-  event: { title: string; date: string; seats: number | null; text: string | null; photo: PagePhoto | null } | null;
 }
 
 export type SitePageRead = { ok: true; page: PublicSitePage } | { ok: false; code: "PAGE_UNAVAILABLE" };
@@ -60,9 +57,7 @@ function selectStoredPage<E extends Record<string, SQL>>(db: Database, key: Site
   return db
     .select({
       content: sitePage.content,
-      event: sitePage.event,
       isPlaceholder: sitePage.isPlaceholder,
-      role: sitePagePhoto.role,
       path: sitePagePhoto.storagePath,
       width: sitePagePhoto.width,
       height: sitePagePhoto.height,
@@ -74,14 +69,12 @@ function selectStoredPage<E extends Record<string, SQL>>(db: Database, key: Site
     .from(sitePage)
     .leftJoin(sitePagePhoto, eq(sitePagePhoto.pageKey, sitePage.key))
     .where(eq(sitePage.key, key))
-    .orderBy(asc(sitePagePhoto.role), asc(sitePagePhoto.sortOrder));
+    .orderBy(asc(sitePagePhoto.sortOrder));
 }
 
 interface StoredPageRow {
   content: PageContent;
-  event: PageEvent | null;
   isPlaceholder: boolean;
-  role: string | null;
   path: string | null;
   width: number | null;
   height: number | null;
@@ -94,9 +87,9 @@ function storedPageFrom(key: SitePageKey, rows: StoredPageRow[]): StoredSitePage
   const first = rows[0];
   if (!first) return null;
   const photos: StoredPagePhoto[] = rows
-    .filter((r) => r.path !== null && r.width !== null && r.height !== null && (r.role === "page" || r.role === "event"))
-    .map((r) => ({ role: r.role as "page" | "event", path: r.path!, width: r.width!, height: r.height!, variantWidths: r.variantWidths ?? [], alt: { en: r.altEn ?? "", fr: r.altFr } }));
-  return { key, content: first.content, event: first.event, isPlaceholder: first.isPlaceholder, photos };
+    .filter((r) => r.path !== null && r.width !== null && r.height !== null)
+    .map((r) => ({ path: r.path!, width: r.width!, height: r.height!, variantWidths: r.variantWidths ?? [], alt: { en: r.altEn ?? "", fr: r.altFr } }));
+  return { key, content: first.content, isPlaceholder: first.isPlaceholder, photos };
 }
 
 /** One query: the page and its photos in role, then slot order. */
@@ -147,18 +140,8 @@ export function localizeSitePage(stored: StoredSitePage, locale: Locale, supabas
     if (value && value.en.trim() !== "") text[field] = localized(value, locale);
   }
   const usable = stored.photos.filter((p) => usablePath(p.path, stored.key));
-  const pagePhotos = usable.filter((p) => p.role === "page").map((p) => photoView(p, locale, supabaseUrl));
-  const eventPhoto = usable.find((p) => p.role === "event");
-  const event = stored.event
-    ? {
-        title: localized(stored.event.title, locale),
-        date: stored.event.date,
-        seats: stored.event.seats,
-        text: stored.event.text && stored.event.text.en.trim() !== "" ? localized(stored.event.text, locale) : null,
-        photo: eventPhoto ? photoView(eventPhoto, locale, supabaseUrl) : null,
-      }
-    : null;
-  return { key: stored.key, isPlaceholder: stored.isPlaceholder, text, photos: pagePhotos, event };
+  const photos = usable.map((p) => photoView(p, locale, supabaseUrl));
+  return { key: stored.key, isPlaceholder: stored.isPlaceholder, text, photos };
 }
 
 /** The page for a customer view; a database failure is a typed error, never a thrown 500 (AC5). */

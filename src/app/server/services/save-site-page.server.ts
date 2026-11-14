@@ -1,5 +1,5 @@
-// Admin Pages save (E-13 S-246, S-247, FR-078): one page's text, photos and (Workshops) next
-// workshop in one versioned write. Photos follow the S-047 rules: a path the page already has
+// Admin Pages save (E-13 S-246, S-247, FR-078): one page's text and photos in one versioned
+// write. Photos follow the S-047 rules: a path the page already has
 // is kept as stored; any other must be issued to this admin for this page and editor session
 // (`site/pages/<key>/<adminId>/<uploadSessionId>/`), used by no page, and stored in the bucket
 // as a JPEG, PNG or WebP of at most 1 MB by its first bytes; its smaller copies (S-276) are
@@ -8,7 +8,7 @@
 // `is_placeholder`. Removed photo files are deleted after commit (or queued in storage_purge).
 import { eq, inArray } from "drizzle-orm";
 import { sitePage, sitePagePhoto } from "~/db/schema";
-import { PAGE_PHOTO_LIMITS, type PageEvent, type SitePageKey, isIssuedPagePhotoPath } from "~/domain/site-pages";
+import { PAGE_PHOTO_LIMITS, type SitePageKey, isIssuedPagePhotoPath } from "~/domain/site-pages";
 import type { AfterResponse } from "~/server/after-response.server";
 import type { PagePhotoInput, SitePageInput } from "~/server/contracts/site-pages";
 import type { Database } from "~/server/db.server";
@@ -25,7 +25,7 @@ export type SaveSitePageResult =
 export interface SaveSitePageContext {
   adminId: string;
   now: Date;
-  /** The editor's upload sessions (page photos, workshop photo). */
+  /** The editor's upload session (page photos). */
   uploadSessionIds: string[];
   uploads?: UploadGateway | null;
   storage?: StorageGateway | null;
@@ -33,14 +33,11 @@ export interface SaveSitePageContext {
 }
 
 type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
-type Role = "page" | "event";
-type Row = { role: Role; photo: PagePhotoInput; slot: number; field: string };
+type Row = { photo: PagePhotoInput; slot: number; field: string };
 
-/** Every posted photo with its role, slot and the form field a refusal points at. */
+/** Every posted photo with its slot and the form field a refusal points at. */
 function postedRows(input: SitePageInput): Row[] {
-  const rows: Row[] = input.photos.map((photo, slot) => ({ role: "page", photo, slot, field: `photos.${slot}` }));
-  if (input.event?.photo) rows.push({ role: "event", photo: input.event.photo, slot: 0, field: "eventPhoto" });
-  return rows;
+  return input.photos.map((photo, slot) => ({ photo, slot, field: `photos.${slot}` }));
 }
 
 async function storedPaths(db: Database | Tx, key: SitePageKey): Promise<Map<string, { width: number; height: number; variantWidths: number[] }>> {
@@ -71,22 +68,16 @@ async function checkPhotos(db: Database, key: SitePageKey, rows: Row[], known: M
   };
 }
 
-function storedEvent(input: SitePageInput): PageEvent | null {
-  if (!input.event) return null;
-  const { title, date, seats, text } = input.event;
-  return { title, date, seats, text };
-}
-
 async function writePhotos(tx: Tx, key: SitePageKey, rows: Row[], verified: VerifiedPhotos): Promise<string[] | null> {
   const current = await storedPaths(tx, key);
   if (rows.some((r) => !current.has(r.photo.path) && !verified.has(r.photo.path))) return null;
   await tx.delete(sitePagePhoto).where(eq(sitePagePhoto.pageKey, key));
   if (rows.length > 0) {
     await tx.insert(sitePagePhoto).values(
-      rows.map(({ role, photo, slot }) => {
+      rows.map(({ photo, slot }) => {
         const kept = current.get(photo.path);
         const variantWidths = [...(kept?.variantWidths ?? verified.get(photo.path) ?? [])];
-        return { pageKey: key, role, storagePath: photo.path, width: kept?.width ?? photo.width, height: kept?.height ?? photo.height, variantWidths, altEn: photo.alt.en, altFr: photo.alt.fr ?? null, sortOrder: slot };
+        return { pageKey: key, role: "page", storagePath: photo.path, width: kept?.width ?? photo.width, height: kept?.height ?? photo.height, variantWidths, altEn: photo.alt.en, altFr: photo.alt.fr ?? null, sortOrder: slot };
       }),
     );
   }
@@ -110,7 +101,7 @@ export async function saveSitePage(db: Database, key: SitePageKey, version: numb
     if (!removed) return { code: "PAGE_CHANGED" as const };
     await tx
       .update(sitePage)
-      .set({ content: input.content, event: storedEvent(input), isPlaceholder: false, version: row.version + 1, updatedAt: context.now, updatedBy: context.adminId })
+      .set({ content: input.content, isPlaceholder: false, version: row.version + 1, updatedAt: context.now, updatedBy: context.adminId })
       .where(eq(sitePage.key, key));
     return { code: "OK" as const, version: row.version + 1, removed };
   });

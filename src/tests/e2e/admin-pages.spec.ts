@@ -118,6 +118,9 @@ test.describe("S-246 Pages list and text editor", () => {
 
   test("AC8: 320/375/1280 and 200% zoom: no sideways scroll, nothing clipped, 44 px targets, keyboard order, axe clean", async ({ page }) => {
     await openEditor(page, "workshops", "Workshops");
+    // Tidy job: the retired S-249 "Next workshop" fields are gone (E-15 events replaced them).
+    await expect(page.getByRole("heading", { name: "Next workshop" })).toHaveCount(0);
+    await expect(page.getByLabel("Workshop title (English)")).toHaveCount(0);
     const english = await page.getByRole("textbox", { name: "Main text (English)" }).boundingBox();
     const french = await page.getByRole("textbox", { name: "Main text (French)" }).boundingBox();
     const wide = (page.viewportSize()?.width ?? 0) >= 768;

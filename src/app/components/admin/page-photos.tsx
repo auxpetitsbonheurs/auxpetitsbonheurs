@@ -167,29 +167,27 @@ export interface PagePhotosProps {
   photos: PagePhotoUploads;
   alts: AltTexts;
   setAlt: (key: string, alt: { en: string; fr: string }) => void;
-  /** `photos` (indexed rows) or `eventPhoto` (one photo). */
-  formName: "photos" | "eventPhoto";
   errors: Record<string, string | undefined>;
   onChange: () => void;
   announce: (text: string) => void;
 }
 
 /** Form names in display order: only stored photos are posted, numbered from 0 without gaps. */
-function postedNames(items: PhotoItem[], formName: PagePhotosProps["formName"]): (string | null)[] {
+function postedNames(items: PhotoItem[]): (string | null)[] {
   let n = 0;
   return items.map((item) => {
     if (item.state !== "ready" || !item.path) return null;
-    return formName === "eventPhoto" ? "eventPhoto" : `photos.${n++}`;
+    return `photos.${n++}`;
   });
 }
 
-export function PagePhotos({ id, legend, hint, max, photos, alts, setAlt, formName, errors, onChange, announce }: PagePhotosProps) {
+export function PagePhotos({ id, legend, hint, max, photos, alts, setAlt, errors, onChange, announce }: PagePhotosProps) {
   const { t } = useI18n();
   const [rejected, setRejected] = useState<RejectedFile[]>([]);
   const { items } = photos;
   const full = items.length >= max;
-  const names = postedNames(items, formName);
-  const groupError = formName === "photos" ? errors.photos : undefined;
+  const names = postedNames(items);
+  const groupError = errors.photos;
 
   const choose = (event: ChangeEvent<HTMLInputElement>) => {
     const files = [...(event.currentTarget.files ?? [])];

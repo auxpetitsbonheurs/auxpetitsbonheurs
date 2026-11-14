@@ -1,12 +1,9 @@
 // Admin Pages save input (contracts.md `admin/page` `save`, S-246, S-247). Flat form names:
 // `<field>.en` / `<field>.fr` per page field, photos as `photos.<n>.path|width|height|alt.en|alt.fr`
-// in display order, `uploadSessionId` (repeated, at most two), and for Workshops `event.title.en|fr`, `event.date`, `event.seats`,
-// `event.text.en|fr`, `eventPhoto.path|width|height|alt.en|alt.fr`. Every field is checked so
-// the page can mark all problems at once; problems are short codes (`admin.pages.errors.*`).
+// in display order and `uploadSessionId` (at most one). Every field is checked so the page can
+// mark all problems at once; problems are short codes (`admin.pages.errors.*`). Workshops'
+// "next workshop" block (S-249) is gone: E-15 events replaced it.
 import {
-  EVENT_SEATS_MAX,
-  EVENT_TEXT_MAX,
-  EVENT_TITLE_MAX,
   PAGE_PHOTO_LIMITS,
   PHOTO_ALT_MAX,
   type PageContent,
@@ -16,7 +13,7 @@ import {
   type SitePageKey,
   fieldMax,
 } from "~/domain/site-pages";
-import { MuDate, Uuid, Version } from "./shared";
+import { Uuid, Version } from "./shared";
 
 export type Problems = Record<string, string>;
 
@@ -27,18 +24,9 @@ export interface PagePhotoInput {
   alt: PageText;
 }
 
-export interface PageEventInput {
-  title: PageText;
-  date: string;
-  seats: number | null;
-  text: PageText | null;
-  photo: PagePhotoInput | null;
-}
-
 export interface SitePageInput {
   content: PageContent;
   photos: PagePhotoInput[];
-  event: PageEventInput | null;
 }
 
 export type SitePageForm = { ok: true; version: number; uploadSessionIds: string[]; input: SitePageInput } | { ok: false; problems: Problems };
@@ -92,40 +80,20 @@ function photoRows(form: FormData, key: SitePageKey, problems: Problems): PagePh
   return photos;
 }
 
-/** The Workshops next-workshop block: null when every field is blank (none planned). */
-function eventBlock(form: FormData, problems: Problems): PageEventInput | null {
-  const title = pageText(form, "event.title", EVENT_TITLE_MAX, problems);
-  const body = pageText(form, "event.text", EVENT_TEXT_MAX, problems);
-  const rawDate = text(form, "event.date");
-  const rawSeats = text(form, "event.seats");
-  const photo = photoRow(form, "eventPhoto", problems);
-  if (!title && !body && rawDate === "" && rawSeats === "" && !photo) return null;
-  if (!title && !problems["event.title.en"]) problems["event.title.en"] = "required";
-  const date = MuDate.safeParse(rawDate);
-  if (!date.success) problems["event.date"] = rawDate === "" ? "required" : "invalid";
-  let seats: number | null = null;
-  if (rawSeats !== "") {
-    seats = /^\d{1,4}$/.test(rawSeats) ? Number(rawSeats) : Number.NaN;
-    if (!(seats >= 1 && seats <= EVENT_SEATS_MAX)) problems["event.seats"] = "invalid";
-  }
-  return { title: title ?? { en: "" }, date: date.success ? date.data : "", seats, text: body, photo };
-}
-
 export function parseSitePageForm(form: FormData, key: SitePageKey): SitePageForm {
   const problems: Problems = {};
   const version = Version.safeParse(form.get("version"));
   if (!version.success) problems.version = "invalid";
-  // One upload session per photo list on the page (page photos, workshop photo): at most two.
+  // One upload session per editor (the page's photos).
   const sessions = form.getAll("uploadSessionId").map(String).filter((s) => s !== "");
-  if (sessions.length > 2 || !sessions.every((s) => Uuid.safeParse(s).success)) problems.uploadSessionId = "invalid";
-  const uploadSessionIds = sessions.slice(0, 2).map((s) => s.toLowerCase());
+  if (sessions.length > 1 || !sessions.every((s) => Uuid.safeParse(s).success)) problems.uploadSessionId = "invalid";
+  const uploadSessionIds = sessions.slice(0, 1).map((s) => s.toLowerCase());
   const content: PageContent = {};
   for (const field of SITE_PAGE_FIELDS[key] as readonly SitePageField[]) {
     const value = pageText(form, field, fieldMax(field), problems);
     if (value) content[field] = value;
   }
   const photos = photoRows(form, key, problems);
-  const event = key === "workshops" ? eventBlock(form, problems) : null;
   if (Object.keys(problems).length > 0) return { ok: false, problems };
-  return { ok: true, version: version.data!, uploadSessionIds, input: { content, photos, event } };
+  return { ok: true, version: version.data!, uploadSessionIds, input: { content, photos } };
 }

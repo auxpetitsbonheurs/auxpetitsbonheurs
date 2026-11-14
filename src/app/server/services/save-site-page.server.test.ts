@@ -222,33 +222,17 @@ describe("S-247: photos", () => {
   });
 });
 
-describe("S-249: the next workshop", () => {
-  test("title, date, seats and text are stored; all blank clears it", async () => {
-    await save("workshops", { "intro.en": "Hi", "event.title.en": "Valentine's cake workshop", "event.title.fr": "Atelier Saint-Valentin", "event.date": "2027-02-14", "event.seats": "10", "event.text.en": "Decorate a cake together." });
+describe("S-249 next workshop retired (E-15)", () => {
+  test("old next-workshop fields are ignored: the save stores text only and leaves the retired column empty", async () => {
+    const answer = await save("workshops", { "intro.en": "Hi", "event.title.en": "Valentine's cake workshop", "event.date": "2027-02-30", "event.seats": "0" });
 
-    expect((await database.client.query("select event from site_page where key = 'workshops'")).rows[0]).toEqual({
-      event: { title: { en: "Valentine's cake workshop", fr: "Atelier Saint-Valentin" }, date: "2027-02-14", seats: 10, text: { en: "Decorate a cake together." } },
-    });
-
-    await save("workshops", { version: "2", "intro.en": "Hi", "event.title.en": "", "event.date": "", "event.seats": "" });
-    expect((await database.client.query("select event from site_page where key = 'workshops'")).rows[0]).toEqual({ event: null });
+    expect(answer).toMatchObject({ ok: true });
+    expect((await database.client.query("select event, content from site_page where key = 'workshops'")).rows[0]).toEqual({ event: null, content: { intro: { en: "Hi" } } });
   });
 
-  test("a title without a date, a bad date or seats out of range are named problems", async () => {
-    const answer = refusal(await save("workshops", { "intro.en": "Hi", "event.title.en": "Workshop", "event.date": "2027-02-30", "event.seats": "0" }));
+  test("more than one upload session is refused (one photo list per page)", async () => {
+    const answer = refusal(await save("our_story", { "intro.en": "Hi", uploadSessionId: [SESSION, "44444444-4444-4444-8444-444444444444"] }));
 
-    expect(answer?.data.error.fields).toEqual({ "event.date": "Next workshop: choose a real date.", "event.seats": "Next workshop: seats must be a whole number from 1 to 500." });
-  });
-
-  test("a date without a title asks for the title", async () => {
-    const answer = refusal(await save("workshops", { "intro.en": "Hi", "event.date": "2027-02-14" }));
-
-    expect(answer?.data.error.fields).toEqual({ "event.title.en": "Next workshop: add a title, or clear the next workshop." });
-  });
-
-  test("the event block is ignored on other pages", async () => {
-    await save("our_story", { "intro.en": "Hi", "event.title.en": "Nope", "event.date": "2027-02-14" });
-
-    expect((await database.client.query("select event from site_page where key = 'our_story'")).rows[0]).toEqual({ event: null });
+    expect(answer?.data.error.code).toBe("VALIDATION_FAILED");
   });
 });

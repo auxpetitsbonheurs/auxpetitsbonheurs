@@ -73,3 +73,6 @@
 
 ## Order-dependent unit tests (added 2026-11-12)
 - [x] DONE 2026-11-13 (leftovers job; both files pass under `--sequence.shuffle` with seeds 4242, 1, 7 and 99). Causes: the transactions block shared one PGlite, so the throwing test saw the row the completing test left (now `delete from counter` before each test); every fake GoTrue signed with the same key id "test-key", and the auth client caches the JWKS per isolate by key id, so a test verified with the key an earlier test had cached (each fake now has its own key id). Was: `db.server.test.ts` ("a transaction that throws midway") and `supabase-auth.server.test.ts` ("…memoised") pass only in file order; they fail with `--sequence.shuffle --sequence.seed=4242`, on main too. Make each test set up its own state. Found by the CI speed-up work.
+
+## Retired columns (added 2026-11-14, tidy job)
+- TD: drop `site_page.event` (S-249 next workshop, retired by migration 0027, emptied and read by nothing). Deploys apply migrations before the new worker is live, so the drop must ship in a later release than 0027, after production runs the 0027 code: remove `event` from `src/app/db/tables/content.ts`, `npm run db:generate`, check the SQL is only `DROP COLUMN "event"`. Low.

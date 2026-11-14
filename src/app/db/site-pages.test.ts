@@ -48,17 +48,38 @@ describe("S-245 AC1: one row per page, typed fields and flags", () => {
     expect(rows.every((r) => r.is_placeholder && r.version === 1 && r.updated_by === null)).toBe(true);
   });
 
-  test("photo limits are enforced by the database: our_story 4, custom_order 3, workshops 6 + 1 event photo, none elsewhere", async () => {
+  test("photo limits are enforced by the database: our_story 4, custom_order 3, workshops 6, none elsewhere", async () => {
     for (let slot = 0; slot < 4; slot += 1) await photo("our_story", slot);
     await expect(photo("our_story", 4)).rejects.toThrow(/site_page_photo_slot_ck/);
     await expect(photo("our_story", 3)).rejects.toThrow(/site_page_photo_slot_key/);
     await expect(photo("custom_order", 3)).rejects.toThrow(/site_page_photo_slot_ck/);
     await expect(photo("workshops", 6)).rejects.toThrow(/site_page_photo_slot_ck/);
-    await photo("workshops", 0, "event");
-    await expect(photo("our_story", 0, "event")).rejects.toThrow(/site_page_photo_slot_ck/);
+    // The S-249 next-workshop photo is gone (0027): no other role is accepted.
+    await expect(photo("workshops", 0, "event")).rejects.toThrow(/site_page_photo_slot_ck/);
     await expect(photo("gallery", 0)).rejects.toThrow(/site_page_photo_slot_ck/);
     await expect(photo("contact", 0)).rejects.toThrow(/site_page_photo_slot_ck/);
     await query("delete from site_page_photo");
+  });
+});
+
+describe("0027: the S-249 next workshop is retired", () => {
+  test("its photo is queued for the storage purge and removed, its text cleared; page photos stay", async () => {
+    // The pre-0027 shape: the old slot check allowed one `event` photo on Workshops.
+    await query("alter table site_page_photo drop constraint site_page_photo_slot_ck");
+    await query(`alter table site_page_photo add constraint site_page_photo_slot_ck check ((role = 'page' and page_key in ('our_story', 'workshops', 'custom_order')) or (role = 'event' and page_key = 'workshops' and sort_order = 0))`);
+    await query("insert into site_page_photo (page_key, role, storage_path, width, height, alt_en, sort_order) values ('workshops', 'event', 'site/pages/workshops/old-event.webp', 800, 600, 'Event', 0)");
+    await photo("workshops", 0);
+    await query(`update site_page set event = '{"title":{"en":"Valentine"},"date":"2027-02-14","seats":10,"text":null}' where key = 'workshops'`);
+    const sql = readFileSync(`${migrationsFolder}/0027_site_page_retire_next_workshop.sql`, "utf8");
+
+    for (const statement of sql.split("--> statement-breakpoint")) await query(statement);
+
+    expect(await query("select role from site_page_photo where page_key = 'workshops'")).toEqual([{ role: "page" }]);
+    expect(await query("select bucket, path from storage_purge")).toEqual([{ bucket: "public-images", path: "site/pages/workshops/old-event.webp" }]);
+    expect(await query("select count(*)::int as n from site_page where event is not null")).toEqual([{ n: 0 }]);
+    await expect(photo("workshops", 1, "event")).rejects.toThrow(/site_page_photo_slot_ck/);
+    await query("delete from site_page_photo");
+    await query("delete from storage_purge");
   });
 });
 

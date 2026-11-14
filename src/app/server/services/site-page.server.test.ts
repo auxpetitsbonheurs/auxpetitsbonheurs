@@ -101,11 +101,9 @@ describe("AC5: cached like Settings; failures are typed", () => {
 });
 
 describe("AC6: photos in order, public URL, size, locale alt with English fallback", () => {
-  test("photos are sorted by slot; French alt falls back to English; event photo is separate", async () => {
+  test("photos are sorted by slot; French alt falls back to English", async () => {
     await addPhoto("workshops", 1, pagePath("workshops", 2), "Second", null);
     await addPhoto("workshops", 0, pagePath("workshops", 1), "First", "Premier");
-    await addPhoto("workshops", 0, pagePath("workshops", 3), "Event", null, "event");
-    await database.client.query("update site_page set event = $1 where key = 'workshops'", [JSON.stringify({ title: { en: "Valentine's", fr: "Saint-Valentin" }, date: "2027-02-14", seats: 10, text: null })]);
 
     const read = await getSitePage(db(), "workshops", "fr", SUPABASE);
 
@@ -113,8 +111,6 @@ describe("AC6: photos in order, public URL, size, locale alt with English fallba
       { url: `${SUPABASE}/storage/v1/object/public/public-images/${pagePath("workshops", 1)}`, width: 1200, height: 900, alt: "Premier" },
       { url: `${SUPABASE}/storage/v1/object/public/public-images/${pagePath("workshops", 2)}`, width: 1200, height: 900, alt: "Second" },
     ]);
-    expect(read.ok && read.page.event).toMatchObject({ title: "Saint-Valentin", date: "2027-02-14", seats: 10, photo: { alt: "Event" } });
-    await database.client.query("update site_page set event = null where key = 'workshops'");
   });
 
   test("a row whose path is not a photo of this page is skipped, not shown broken", async () => {
@@ -133,7 +129,7 @@ describe("AC7: published columns only", () => {
 
     const read = await getSitePage(db(), "contact", "en", SUPABASE);
 
-    expect(read.ok && Object.keys(read.page).sort()).toEqual(["event", "isPlaceholder", "key", "photos", "text"]);
+    expect(read.ok && Object.keys(read.page).sort()).toEqual(["isPlaceholder", "key", "photos", "text"]);
   });
 });
 

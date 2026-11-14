@@ -1,6 +1,6 @@
-// E-13 S-245..S-249 page rules: issued photo paths per page and session, and when the next workshop shows.
+// E-13 S-245..S-249 page rules: issued photo paths per page and session.
 import { describe, expect, test } from "vitest";
-import { PAGE_PHOTO_LIMITS, isIssuedPagePhotoPath, isPagePhotoPath, isSitePageKey, isUpcoming, pagePhotoPrefix } from "./site-pages";
+import { PAGE_PHOTO_LIMITS, isIssuedPagePhotoPath, isPagePhotoPath, isSitePageKey, pagePhotoPrefix } from "./site-pages";
 
 const ADMIN = "11111111-1111-4111-8111-111111111111";
 const SESSION = "22222222-2222-4222-8222-222222222222";
@@ -27,14 +27,5 @@ describe("page photo paths (S-247 AC6)", () => {
     expect(PAGE_PHOTO_LIMITS).toEqual({ our_story: 4, workshops: 6, gallery: 0, contact: 0, custom_order: 3 });
     expect(isSitePageKey("our_story")).toBe(true);
     expect(isSitePageKey("home")).toBe(false);
-  });
-});
-
-describe("next workshop (S-249 Owner clarification)", () => {
-  test("shows on its day and before, not after; never without a title", () => {
-    expect(isUpcoming("Valentine's", "2027-02-14", "2027-02-14")).toBe(true);
-    expect(isUpcoming("Valentine's", "2027-02-14", "2027-02-15")).toBe(false);
-    expect(isUpcoming("  ", "2027-02-14", "2027-01-01")).toBe(false);
-    expect(isUpcoming("Valentine's", "", "2027-01-01")).toBe(false);
   });
 });

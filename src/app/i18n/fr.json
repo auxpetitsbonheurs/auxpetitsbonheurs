@@ -1776,19 +1776,6 @@
         "keep": "La garder",
         "announceRemoved": "Photo {{n}} retirée. Il en reste {{count}}."
       },
-      "event": {
-        "legend": "Prochain atelier",
-        "hint": "Facultatif. Remplissez-le quand un atelier est prévu. Laissez tout vide sinon : la page indique alors qu'aucun atelier n'est prévu. Il quitte aussi la page le lendemain de sa date.",
-        "title": "Titre de l'atelier",
-        "date": "Date",
-        "seats": "Places",
-        "seatsHint": "Combien de personnes peuvent participer, par exemple 10.",
-        "text": "Courte description",
-        "photo": "Photo de l'atelier",
-        "photoHint": "Facultative, une photo.",
-        "clear": "Effacer le prochain atelier",
-        "cleared": "Prochain atelier effacé. Enregistrez pour mettre la page à jour."
-      },
       "errors": {
         "tooLong": "{{field}} ({{language}}) : trop long. Raccourcissez à {{max}} caractères au plus.",
         "missingEn": "{{field}} : écrivez d'abord le texte anglais. Le français seul n'est pas enregistré.",
@@ -1797,12 +1784,6 @@
         "photosTooMany": "Trop de photos : cette page peut en avoir {{max}}. Retirez-en une.",
         "photoRejected": "La photo {{n}} n'a pas pu être enregistrée. Retirez-la et ajoutez-la de nouveau.",
         "photosRejected": "Une photo n'a pas pu être enregistrée. Retirez-la et ajoutez-la de nouveau.",
-        "eventTitleRequired": "Prochain atelier : ajoutez un titre, ou effacez le prochain atelier.",
-        "eventDateRequired": "Prochain atelier : choisissez la date.",
-        "eventDateInvalid": "Prochain atelier : choisissez une date valide.",
-        "eventSeats": "Prochain atelier : le nombre de places doit être un nombre entier de 1 à 500.",
-        "eventPhotoAlt": "Photo de l'atelier : décrivez ce que montre la photo (anglais).",
-        "eventPhotoRejected": "La photo de l'atelier n'a pas pu être enregistrée. Retirez-la et ajoutez-la de nouveau.",
         "invalid": "Un élément du formulaire n'était pas correct. Rechargez la page et réessayez."
       },
       "textTitle": "Textes"

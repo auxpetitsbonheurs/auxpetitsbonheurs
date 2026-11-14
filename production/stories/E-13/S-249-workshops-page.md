@@ -33,3 +33,8 @@ Workshops are occasional event workshops, for example a Valentine's Day session 
 ## Build notes (2026-11-12, review)
 - Next workshop (Owner clarification): edited in the Pages editor (title EN/FR, date, seats, short text EN/FR, one photo); shown while its date is today or later (Mauritius date), otherwise the calm empty state. Seats show as "10 seats" (capacity, not availability: no booking).
 - Tests as built: AC1-AC4 and the next workshop → `src/app/routes/site/workshops.test.tsx`; link builder → `src/app/lib/contact.test.ts` (`whatsappHref(number, text)`); AC5 → `src/tests/e2e/content-pages.spec.ts`.
+
+## Update (2026-11-14, tidy job)
+- The "next workshop" block is retired: E-15 (S-301, S-302) replaced it with real workshop events, and the site had stopped showing it. Removed from the Pages editor (fields, loader, save, messages, i18n) and from the public page read.
+- Migration 0027 queues its photo for the storage purge, deletes the photo row, tightens `site_page_photo_slot_ck` to `role = 'page'` and empties `site_page.event`. The column itself is dropped by a later migration once every environment runs this code (deploys migrate before the worker goes live; expand/contract, production/tech-debt.md).
+- Tests: `src/app/db/site-pages.test.ts` (0027 migration and slot check), `src/app/server/services/save-site-page.server.test.ts` (old fields ignored, one upload session), `src/app/server/services/site-page.server.test.ts` (no `event` in the public page).

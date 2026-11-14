@@ -8,21 +8,9 @@ import { LeaveDialog, keepAboveSaveBar, useUnsavedGuard } from "~/components/adm
 import { usePagePhotoUploads } from "~/components/admin/use-page-photo-uploads";
 import { ErrorSummary } from "~/components/checkout/error-summary";
 import { Alert } from "~/components/ui/alert";
-import { Button } from "~/components/ui/button";
 import { SubmitButton } from "~/components/ui/submit-button";
-import { TextField } from "~/components/ui/text-field";
 import { showToast } from "~/components/ui/toaster";
-import {
-  EVENT_TEXT_MAX,
-  EVENT_TITLE_MAX,
-  PAGE_PHOTO_LIMITS,
-  SITE_PAGE_FIELDS,
-  SITE_PAGE_PATHS,
-  type SitePageField,
-  fieldMax,
-  isSitePageKey,
-  pageUploadScope,
-} from "~/domain/site-pages";
+import { PAGE_PHOTO_LIMITS, SITE_PAGE_FIELDS, SITE_PAGE_PATHS, type SitePageField, fieldMax, isSitePageKey, pageUploadScope } from "~/domain/site-pages";
 import { t as translate } from "~/i18n/catalog.server";
 import { useI18n } from "~/i18n/react";
 import { thumbnailUrl } from "~/lib/images";
@@ -41,8 +29,8 @@ import type { Route } from "./+types/page-editor";
 
 /**
  * `admin/page-editor` (`/admin/pages/:key`, **admin**, E-13 S-246, S-247): one brand page's
- * text in English and French, its photos (S-047 upload rules) and, for Workshops, the next
- * workshop. One versioned Save. Its own route chunk: the product editor's JS is not touched.
+ * text in English and French and its photos (S-047 upload rules). One versioned Save. Workshop
+ * dates live in Admin → Workshops (E-15), not here. Its own route chunk: the product editor's JS is not touched.
  */
 export const handle = { titleKey: "admin.pages.title" };
 
@@ -63,9 +51,7 @@ export async function loader(args: Route.LoaderArgs) {
     isPlaceholder: page.isPlaceholder,
     version: page.version,
     photoLimit: PAGE_PHOTO_LIMITS[key],
-    photos: page.photos.filter((p) => p.role === "page").map(photo),
-    event: page.event,
-    eventPhoto: page.photos.filter((p) => p.role === "event").map(photo),
+    photos: page.photos.map(photo),
     publicPath: SITE_PAGE_PATHS[key] ?? null,
     isOwner: me.role === "owner",
   };
@@ -107,14 +93,12 @@ const FIELD_IDS: Record<SitePageField, string> = { intro: "intro", body: "body",
 
 /** Field name → element id for the error summary's links. */
 function anchorsFor(fields: readonly SitePageField[]): Record<string, string> {
-  const anchors: Record<string, string> = { photos: "photos", version: "page-title", uploadSessionId: "page-title", "event.date": "event-date", "event.seats": "event-seats", eventPhoto: "event-photo" };
+  const anchors: Record<string, string> = { photos: "photos", version: "page-title", uploadSessionId: "page-title" };
   for (const field of fields) for (const lang of ["en", "fr"]) anchors[`${field}.${lang}`] = `${FIELD_IDS[field]}-${lang}`;
-  for (const part of ["title", "text"]) for (const lang of ["en", "fr"]) anchors[`event.${part}.${lang}`] = `event-${part}-${lang}`;
   for (let n = 0; n < 6; n += 1) {
     anchors[`photos.${n}`] = "photos";
     for (const lang of ["en", "fr"]) anchors[`photos.${n}.alt.${lang}`] = `photos-${n}-alt-${lang}`;
   }
-  for (const lang of ["en", "fr"]) anchors[`eventPhoto.alt.${lang}`] = `event-photo-0-alt-${lang}`;
   return anchors;
 }
 
@@ -171,48 +155,6 @@ function ContactNote({ isOwner }: { isOwner: boolean }) {
   );
 }
 
-interface EventProps {
-  loaderData: LoaderData;
-  errors: Errors;
-  eventPhotos: ReturnType<typeof usePagePhotoUploads>;
-  eventAlts: ReturnType<typeof useAltTexts>;
-  onChange: () => void;
-  announce: (text: string) => void;
-}
-
-/** Workshops "next workshop" (S-249 Owner clarification): all blank = none planned. */
-function NextWorkshop({ loaderData, errors, eventPhotos, eventAlts, onChange, announce }: EventProps) {
-  const { t } = useI18n();
-  const [generation, setGeneration] = useState(0);
-  const [cleared, setCleared] = useState(false);
-  const event = cleared ? null : loaderData.event;
-  const clear = () => {
-    setCleared(true);
-    setGeneration((n) => n + 1);
-    for (const item of eventPhotos.items) eventPhotos.remove(item.key);
-    onChange();
-    announce(t("admin.pages.event.cleared"));
-  };
-  return (
-    <SettingsSection id="event" title={t("admin.pages.event.legend")} intro={t("admin.pages.event.hint")}>
-      <div key={generation} className="grid gap-5">
-        <BilingualField name="event.title" id="event-title" label={t("admin.pages.event.title")} max={EVENT_TITLE_MAX} value={event?.title ?? null} errors={errors} frEmptyHint={t("admin.pages.frEmpty")} />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <TextField id="event-date" name="event.date" type="date" label={t("admin.pages.event.date")} defaultValue={event?.date ?? ""} error={errors["event.date"]} className="min-w-0 max-w-sm" />
-          <TextField id="event-seats" name="event.seats" label={t("admin.pages.event.seats")} optionalLabel={t("admin.product.optional")} hint={t("admin.pages.event.seatsHint")} inputMode="numeric" pattern="[0-9]*" maxLength={3} autoComplete="off" defaultValue={event?.seats ?? ""} error={errors["event.seats"]} className="min-w-0 max-w-sm" />
-        </div>
-        <BilingualField name="event.text" id="event-text" label={t("admin.pages.event.text")} max={EVENT_TEXT_MAX} value={event?.text ?? null} multiline rows={3} errors={errors} frEmptyHint={t("admin.pages.frEmpty")} />
-      </div>
-      <PagePhotos id="event-photo" legend={t("admin.pages.event.photo")} hint={t("admin.pages.event.photoHint")} max={1} photos={eventPhotos} alts={eventAlts.alts} setAlt={eventAlts.setAlt} formName="eventPhoto" errors={errors} onChange={onChange} announce={announce} />
-      <p>
-        <Button type="button" variant="outline" onClick={clear} className="h-auto min-h-11 whitespace-normal">
-          {t("admin.pages.event.clear")}
-        </Button>
-      </p>
-    </SettingsSection>
-  );
-}
-
 /** After a save: toast "Saved" (announced); on a refusal, focus the summary. */
 function useSaveFeedback(fetcher: ReturnType<typeof useFetcher<SaveAnswer>>, onSaved: () => void) {
   const { t } = useI18n();
@@ -264,26 +206,23 @@ export default function AdminPageEditor({ loaderData }: Route.ComponentProps) {
   const scope = pageUploadScope(loaderData.key);
   const say = useCallback((key: string, values: Record<string, string>) => announce(t(key, values)), [announce, t]);
   const photos = usePagePhotoUploads(loaderData.photos, Math.max(loaderData.photoLimit, 1), scope, say);
-  const eventPhotos = usePagePhotoUploads(loaderData.eventPhoto, 1, scope, say);
   const pageAlts = useAltTexts(loaderData.photos);
-  const eventAlts = useAltTexts(loaderData.eventPhoto);
   const [blocked, setBlocked] = useState(false);
   const { summary, answer } = useSaveFeedback(fetcher, () => {
     dirtyRef.current = false;
     setDirty(false);
     photos.settle();
-    eventPhotos.settle();
   });
   const refusal = answer && !answer.ok ? answer.error : undefined;
   const saved = answer?.ok === true;
-  const busy = photos.summary.busy || eventPhotos.summary.busy;
-  const failed = photos.summary.failed + eventPhotos.summary.failed;
+  const busy = photos.summary.busy;
+  const failed = photos.summary.failed;
   const markDirty = () => {
     setDirty(true);
     setBlocked(false);
   };
   const errors: Errors = refusal?.fields ?? {};
-  const sessions = [photos.sessionId(), eventPhotos.sessionId()].filter((s): s is string => s !== null);
+  const session = photos.sessionId();
   return (
     <div className="mx-auto max-w-4xl">
       <p>
@@ -329,16 +268,13 @@ export default function AdminPageEditor({ loaderData }: Route.ComponentProps) {
       >
         <input type="hidden" name="intent" value="save" />
         <input type="hidden" name="version" value={answer?.ok ? answer.version : loaderData.version} />
-        {sessions.map((session) => (
-          <input key={session} type="hidden" name="uploadSessionId" value={session} />
-        ))}
+        {session !== null && <input type="hidden" name="uploadSessionId" value={session} />}
         <TextSections loaderData={loaderData} errors={errors} />
         {loaderData.photoLimit > 0 && (
           <SettingsSection id="photos-section" title={t("admin.pages.photos.legend")}>
-            <PagePhotos id="photos" legend={t("admin.pages.photos.listLabel")} hint={t("admin.pages.photos.hint", { max: loaderData.photoLimit })} max={loaderData.photoLimit} photos={photos} alts={pageAlts.alts} setAlt={pageAlts.setAlt} formName="photos" errors={errors} onChange={markDirty} announce={announce} />
+            <PagePhotos id="photos" legend={t("admin.pages.photos.listLabel")} hint={t("admin.pages.photos.hint", { max: loaderData.photoLimit })} max={loaderData.photoLimit} photos={photos} alts={pageAlts.alts} setAlt={pageAlts.setAlt} errors={errors} onChange={markDirty} announce={announce} />
           </SettingsSection>
         )}
-        {loaderData.key === "workshops" && <NextWorkshop loaderData={loaderData} errors={errors} eventPhotos={eventPhotos} eventAlts={eventAlts} onChange={markDirty} announce={announce} />}
         <div data-editor-bar="" className="sticky bottom-0 z-30 -mx-4 border-t border-border bg-card px-4 py-3 shadow-md min-[20rem]:bottom-[calc(3.5rem+env(safe-area-inset-bottom))] md:-mx-6 md:px-6">
           {blocked && failed > 0 && (
             <p role="alert" className="mb-2 font-semibold text-destructive">

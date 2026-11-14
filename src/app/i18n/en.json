@@ -1776,19 +1776,6 @@
         "keep": "Keep it",
         "announceRemoved": "Photo {{n}} removed. {{count}} left."
       },
-      "event": {
-        "legend": "Next workshop",
-        "hint": "Optional. Fill this in when a workshop is planned. Leave everything empty when none is: the page then says no workshop is planned. It also leaves the page the day after its date.",
-        "title": "Workshop title",
-        "date": "Date",
-        "seats": "Seats",
-        "seatsHint": "How many people can join, for example 10.",
-        "text": "Short description",
-        "photo": "Workshop photo",
-        "photoHint": "Optional, one photo.",
-        "clear": "Clear next workshop",
-        "cleared": "Next workshop cleared. Save to update the page."
-      },
       "errors": {
         "tooLong": "{{field}} ({{language}}): too long. Shorten it to {{max}} characters or fewer.",
         "missingEn": "{{field}}: write the English text first. French alone is not saved.",
@@ -1797,12 +1784,6 @@
         "photosTooMany": "Too many photos: this page can have {{max}}. Remove one.",
         "photoRejected": "Photo {{n}} could not be saved. Remove it and add it again.",
         "photosRejected": "A photo could not be saved. Remove it and add it again.",
-        "eventTitleRequired": "Next workshop: add a title, or clear the next workshop.",
-        "eventDateRequired": "Next workshop: choose the date.",
-        "eventDateInvalid": "Next workshop: choose a real date.",
-        "eventSeats": "Next workshop: seats must be a whole number from 1 to 500.",
-        "eventPhotoAlt": "Workshop photo: describe what the photo shows (English).",
-        "eventPhotoRejected": "Workshop photo could not be saved. Remove it and add it again.",
         "invalid": "Something in the form was not right. Reload the page and try again."
       },
       "textTitle": "Text"

@@ -10,7 +10,7 @@ import { routeArgs } from "~/server/testing/route-context";
 import { loader as aboutLoader } from "./about-redirect";
 import OurStory, { loader, meta } from "./our-story";
 
-const page = (overrides: Partial<PublicSitePage> = {}): PublicSitePage => ({ key: "our_story", isPlaceholder: false, text: { intro: "Welcome.", body: "First paragraph.\nSame paragraph.\n\nSecond paragraph." }, photos: [], event: null, ...overrides });
+const page = (overrides: Partial<PublicSitePage> = {}): PublicSitePage => ({ key: "our_story", isPlaceholder: false, text: { intro: "Welcome.", body: "First paragraph.\nSame paragraph.\n\nSecond paragraph." }, photos: [], ...overrides });
 
 function render(loaderData: { page: PublicSitePage | null }, path = "/our-story") {
   return renderInSite(<OurStory {...({ loaderData: { title: "Our story", description: "", indexable: true, ...loaderData } } as unknown as Parameters<typeof OurStory>[0])} />, path);

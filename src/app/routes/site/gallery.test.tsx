@@ -12,7 +12,7 @@ type LoaderData = Parameters<typeof Gallery>[0]["loaderData"];
 const photo = (n: number, caption: string | null = null) => ({ id: null as string | null, url: `https://cdn.test/g${n}.webp`, width: 800, height: 800, alt: caption ?? "A cake by Aux petits bonheurs", caption });
 
 function render(data: Partial<LoaderData>, path = "/gallery") {
-  const loaderData = { title: "", description: "", indexable: true, page: { key: "gallery", isPlaceholder: false, text: { intro: "Some of our cakes." }, photos: [], event: null }, photos: [], total: 0, ...data } as LoaderData;
+  const loaderData = { title: "", description: "", indexable: true, page: { key: "gallery", isPlaceholder: false, text: { intro: "Some of our cakes." }, photos: [] }, photos: [], total: 0, ...data } as LoaderData;
   return renderInSite(<Gallery {...({ loaderData } as unknown as Parameters<typeof Gallery>[0])} />, path);
 }
 
