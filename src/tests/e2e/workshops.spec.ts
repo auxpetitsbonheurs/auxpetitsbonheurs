@@ -126,6 +126,41 @@ test.describe("E-15 workshops", () => {
     await context.close();
   });
 
+  test("tidy: the Owner moves the start time; the registrant is emailed and a WhatsApp link with the change appears", async ({ page, db }) => {
+    const { slug, title } = await publishedWorkshop(db);
+    const email = `moved-${randomInt(1e9)}@example.com`;
+    await page.goto(`/workshops/${slug}`);
+    await hydrated(page);
+    await page.getByLabel("Cake 1", { exact: true }).selectOption({ label: "Chocolate" });
+    await page.getByLabel("None", { exact: true }).check();
+    await page.getByLabel("Name", { exact: true }).fill("Mia Test");
+    await page.getByLabel("Phone", { exact: true }).fill("5712 3456");
+    await page.getByLabel("Email", { exact: true }).fill(email);
+    await page.getByRole("button", { name: "Register" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Thank you, we received your registration" })).toBeVisible();
+
+    const admin = await createE2eAdmin(db, { role: "owner" });
+    const [event] = await db<{ id: string }[]>`select id from workshop_event where slug = ${slug}`;
+    await signIn(page, admin, `/admin/workshops/${event!.id}`);
+    await hydrated(page);
+    await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Tell Mia Test about the change on WhatsApp" })).toHaveCount(0);
+    await page.getByLabel("Start", { exact: true }).fill("15:00");
+    await page.getByLabel("End", { exact: true }).fill("17:30");
+    await page.getByRole("button", { name: "Save workshop" }).click();
+
+    await expect(page.getByText("Saved. 1 registrant was emailed about the change.")).toBeVisible();
+    const whatsapp = page.getByRole("link", { name: "Tell Mia Test about the change on WhatsApp" });
+    await expect(whatsapp).toBeVisible();
+    await expect(whatsapp).toHaveAttribute("href", /^https:\/\/wa\.me\/23057123456\?text=.*15%3A00/);
+    const mails = await db<{ payload: { previousStart?: string; previousEnd?: string } }[]>`select payload from email_outbox where template = 'workshop_changed' and to_email = ${email}`;
+    expect(mails.map((m) => [m.payload.previousStart, m.payload.previousEnd])).toEqual([["14:00", "16:30"]]);
+    await expectNoA11yViolations(page);
+    await expectNoHorizontalScroll(page);
+    await expectTapTargets(page);
+    await shot(page, "admin-event-changed");
+  });
+
   test("the French page, the explicit allergies choice, and a full workshop", async ({ page, db }) => {
     const { slug, title } = await publishedWorkshop(db, 1);
     await page.goto(`/fr/workshops/${slug}`);

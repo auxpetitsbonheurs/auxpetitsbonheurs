@@ -26,8 +26,9 @@ See the spec "Decisions". In short: one registration = cakes shared by up to 2 p
 | S-306 | Cancel an event (tell everyone, refunds) and mark it completed | review | 3 |
 | S-307 | Workshop emails EN/FR and admin alerts | review | 3 |
 | S-308 | Allergies privacy, accessibility and the registration journey | review | 3 |
+| S-316 | Tell registrants when a workshop's date, time or place changes (tidy job) | review | 2 |
 
-Total: 33 pts. Files: `production/stories/E-15/`. Story numbers S-300 to S-315 are reserved for this epic (S-309 to S-315 spare; S-283 and S-284 went to E-13 while this epic was built); next free number after the block: S-316.
+Total: 35 pts. Files: `production/stories/E-15/`. Story numbers S-300 to S-315 are reserved for this epic (S-309 to S-315 spare; S-283 and S-284 went to E-13 while this epic was built); next free number after the block: S-316.
 
 Build order: S-300 → S-301 → S-302 → S-303 → S-304 → S-307 → S-305 → S-306 → S-308.
 

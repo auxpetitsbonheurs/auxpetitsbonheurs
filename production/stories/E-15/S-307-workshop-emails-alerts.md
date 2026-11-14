@@ -20,4 +20,4 @@ As a registrant, I want clear emails at each step in my language, so that I know
 - Owner and client decisions 2026-11-14 (spec "Decisions").
 
 ## Build notes (2026-11-14)
-- Built: templates workshop_received, workshop_cancelled; workshop wording in payment_instructions, confirmed, declined, reminder, unpaid release; admin_alert_new_workshop and push `new_workshop`. Date or time changes of an event send no automatic email (WhatsApp links in admin); recorded for E-10.
+- Built: templates workshop_received, workshop_cancelled; workshop wording in payment_instructions, confirmed, declined, reminder, unpaid release; admin_alert_new_workshop and push `new_workshop`. Date or time changes of an event send no automatic email (WhatsApp links in admin); recorded for E-10. Update 2026-11-14: closed by S-316 (`workshop_changed`).

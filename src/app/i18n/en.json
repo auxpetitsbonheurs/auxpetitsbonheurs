@@ -693,7 +693,8 @@
         "marked_unpaid": "Marked unpaid by {{actor}}, {{time}}",
         "edited": "Edited by {{actor}}, {{time}}",
         "email_failed": "An email to the customer could not be delivered, {{time}}",
-        "pending_alert_sent": "Reminder sent to the team, {{time}}"
+        "pending_alert_sent": "Reminder sent to the team, {{time}}",
+        "workshop_changed": "Workshop date, time or place changed by {{actor}}, {{time}}"
       },
       "reason": "Reason: {{reason}}",
       "paidRefund": "The order was paid: refund outside the site.",
@@ -2413,8 +2414,10 @@
       "allergiesLabel": "Allergies or dietary needs",
       "allergiesNone": "No allergies",
       "tellOnWhatsapp": "Tell {{name}} on WhatsApp",
+      "tellChangeOnWhatsapp": "Tell {{name}} about the change on WhatsApp",
       "waCancelled": "Hello, we are very sorry: we had to cancel the workshop {{title}}. We will be in touch about the next one.",
       "waHello": "Hello, about your registration for the workshop {{title}}:",
+      "waChanged": "Hello, a change to the workshop {{title}}: it is now on {{date}}, {{time}}, at {{address}}. We also sent you an email.",
       "editSection": "Edit the workshop",
       "newSection": "Workshop details",
       "textSection": "Texts",
@@ -2450,6 +2453,8 @@
       "removeOption": "Remove cake option {{n}}",
       "save": "Save workshop",
       "saved": "Workshop saved",
+      "savedTold_one": "Saved. {{count}} registrant was emailed about the change.",
+      "savedTold_other": "Saved. {{count}} registrants were emailed about the change.",
       "errors": {
         "field": "{{field}}: please check this.",
         "endsAt": "End time: it must be after the start.",
@@ -2761,6 +2766,14 @@
         "subject": "Workshop cancelled: {{title}} ({{number}})",
         "heading": "The workshop is cancelled",
         "intro": "We are sorry: we had to cancel {{title}}. Your registration {{number}} is cancelled."
+      },
+      "changed": {
+        "subject": "Workshop changed: {{title}} ({{number}})",
+        "heading": "Your workshop has changed",
+        "intro": "We had to change {{title}}. Your registration {{number}} still stands: here are the new details.",
+        "newTime": "New time",
+        "newPlace": "New place",
+        "suits": "If the new details do not suit you, reply to this email or message us: we will find a solution together."
       }
     },
     "paymentInstructions": {

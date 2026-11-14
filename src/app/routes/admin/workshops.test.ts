@@ -122,6 +122,22 @@ describe("S-305, S-306: registrations, printable list, cancel", () => {
     expect(page.registrations[0]).toMatchObject({ status: "cancelled", whatsappUrl: expect.stringContaining("https://wa.me/23057123456?text=") });
   });
 
+  test("tidy: a new time says how many registrants were emailed and offers a WhatsApp link with the new details", async () => {
+    const session = await as("owner");
+    const id = await insertWorkshopEvent(database);
+    await registerTest(database, id);
+    const before = (await eventLoader(routeArgs(database, { path: `/admin/workshops/${id}`, params: { id }, auth: session.auth, cookie: session.cookie, now: NOW }) as never)) as { registrations: { changed: boolean }[] };
+    expect(before.registrations[0]).toMatchObject({ changed: false });
+
+    const saved = (await eventAction(routeArgs(database, { path: `/admin/workshops/${id}`, params: { id }, auth: session.auth, cookie: session.cookie, form: { ...editor, id, version: "1", startsAt: "15:00", endsAt: "17:30" }, now: NOW }) as never)) as Answer & { told?: number };
+
+    expect(saved).toMatchObject({ ok: true, intent: "save", told: 1 });
+    const page = (await eventLoader(routeArgs(database, { path: `/admin/workshops/${id}`, params: { id }, auth: session.auth, cookie: session.cookie, now: NOW }) as never)) as { registrations: { changed: boolean; whatsappUrl: string }[] };
+    expect(page.registrations[0]!.changed).toBe(true);
+    const text = decodeURIComponent(new URL(page.registrations[0]!.whatsappUrl).searchParams.get("text") ?? "");
+    expect(text).toBe("Hello, a change to the workshop Valentine's cake workshop: it is now on Sunday, 14 February 2027, 15:00–17:30, at 12 Rue Example, Beau Bassin. We also sent you an email.");
+  });
+
   test("a stale page gets EVENT_CHANGED", async () => {
     const id = await insertWorkshopEvent(database);
     const session = await as();

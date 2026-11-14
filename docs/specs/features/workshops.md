@@ -30,14 +30,14 @@ List (upcoming first, then past): title, date, status (Draft, Published, Cancell
 A "Workshop" badge on rows of source `workshop`; the order screen shows the event, people's names and allergies, and "Accept" (the shared approve) for a pending registration (moves to Awaiting payment).
 
 ## Emails (outbox, EN/FR; S-307)
-`workshop_received` (registration received, what happens next), `payment_instructions` from the shared approve (worded for a workshop: accepted + Juice payment steps, deadline 24 h), `order_confirmed` / `payment_reminder` / `order_cancelled_unpaid` / `order_declined` / `order_refunded` use workshop wording for a workshop order (event title, date, times, address, map link), `workshop_cancelled` (event cancelled, reason, refund line when paid). Admin: `admin_alert_new_workshop` email and a push "New workshop registration" (number, name, event, cakes; never allergies).
+`workshop_received` (registration received, what happens next), `payment_instructions` from the shared approve (worded for a workshop: accepted + Juice payment steps, deadline 24 h), `order_confirmed` / `payment_reminder` / `order_cancelled_unpaid` / `order_declined` / `order_refunded` use workshop wording for a workshop order (event title, date, times, address, map link), `workshop_cancelled` (event cancelled, reason, refund line when paid), `workshop_changed` (S-316: new date, time or address, each with its previous value). Admin: `admin_alert_new_workshop` email and a push "New workshop registration" (number, name, event, cakes; never allergies).
 
 ## Permissions
 Owner and Admin: everything in Workshops (like Promotions). Customers: register; see their own registration on the tracking page and My orders.
 
 ## Edge cases
 - Price or capacity changed after registrations: existing registrations keep their price (copied); capacity cannot go below the places held (field error "N places are already held").
-- Date or times changed: active registrations move with the event (their order date and window); registrants are not emailed automatically (the admin uses the WhatsApp links); recorded as a gap for E-10.
+- Date, times or address changed (S-316): active registrations move with the event (their order date and window); each active registrant (pending approval, awaiting payment or confirmed) with an email gets `workshop_changed` listing what changed, each order logs `workshop_changed`, the save says how many were told, and the event screen offers a WhatsApp link per registrant told with the new details.
 - A cake option removed: existing registrations keep their copied choice.
 - Two people register for the last place at once: one succeeds, the other gets "Only 0 places left" with the form kept.
 - The 24 h release frees the place; the event shows the place again at once.

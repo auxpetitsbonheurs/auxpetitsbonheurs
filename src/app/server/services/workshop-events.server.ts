@@ -4,7 +4,8 @@
 //
 // - save: a new event is a draft; an edit that moves the date or times moves its active
 //   registrations too (their order date and time window), in the same statement; the capacity
-//   may never go below the places held.
+//   may never go below the places held. A change of date, start, end or address logs
+//   `workshop_changed` on each active registration and emails its registrant (outbox).
 // - cancel: the event and every active registration in one statement: each order is cancelled
 //   ("event_cancelled"), a paid one owes its total back (refund step, as admin cancel), and each
 //   registrant with an email gets `workshop_cancelled` from the outbox.
@@ -32,7 +33,7 @@ export interface EventSaveContext {
 
 export type EventFailure = "NOT_FOUND" | "EVENT_CHANGED" | "INVALID_TRANSITION";
 export type SaveEventResult =
-  | { ok: true; id: string; slug: string; version: number }
+  | { ok: true; id: string; slug: string; version: number; told: number }
   | { ok: false; code: "NOT_FOUND" | "EVENT_CHANGED" | "UPLOAD_REJECTED" }
   | { ok: false; code: "CAPACITY_BELOW_HELD"; held: number };
 
@@ -87,28 +88,60 @@ async function removeLater(db: Database, path: string, ctx: EventSaveContext): P
   else await cleanUp();
 }
 
-/** One statement: the versioned event update, and its active registrations' date and window. */
-async function updateEvent(db: Database, id: string, version: number, values: ReturnType<typeof columns>): Promise<{ id: string; slug: string; version: number } | null> {
+/** Statuses whose registration still holds a place: pending, awaiting payment or confirmed. */
+const ACTIVE_ORDER = sql`o.status not in ('declined', 'cancelled', 'closed', 'completed')`;
+
+/**
+ * One statement: the versioned event update; its active registrations' date and window; and,
+ * when the date, start, end or address changed, per active registration an order log line
+ * `workshop_changed` and a `workshop_changed` email (outbox, once per event version) naming the
+ * previous values of what changed. `told` counts those registrations.
+ */
+async function updateEvent(db: Database, id: string, version: number, values: ReturnType<typeof columns>): Promise<{ id: string; slug: string; version: number; told: number } | null> {
   const window = { id: "workshop", start: values.startsAt, end: values.endsAt, label: { en: `${values.startsAt}–${values.endsAt}`, fr: `${values.startsAt}–${values.endsAt}` } };
   const at = values.updatedAt.toISOString();
   const { rows } = (await db.execute(sql`
-    with changed as (
+    with before as (
+      select id, event_on, starts_at, ends_at, address from workshop_event where id = ${id}::uuid
+    ), changed as (
       update workshop_event set title_en = ${values.titleEn}, title_fr = ${values.titleFr}, description_en = ${values.descriptionEn},
         description_fr = ${values.descriptionFr}, photo_path = ${values.photoPath}, photo_variants = ${`{${values.photoVariants.join(",")}}`}::smallint[],
         event_on = ${values.eventOn}::date, starts_at = ${values.startsAt}, ends_at = ${values.endsAt}, address = ${values.address},
         map_url = ${values.mapUrl}, price_rs = ${values.priceRs}, capacity = ${values.capacity}, cake_options = ${JSON.stringify(values.cakeOptions)}::jsonb,
         updated_by = ${values.updatedBy}::uuid, updated_at = ${at}::timestamptz, version = version + 1
       where id = ${id}::uuid and version = ${version}::integer and status in ('draft', 'published')
-      returning id, slug, version, event_on, starts_at, ends_at
+      returning id, slug, version, event_on, starts_at, ends_at, address
     ), moved as (
       update orders o set fulfil_on = c.event_on, time_window = ${JSON.stringify(window)}::jsonb, version = o.version + 1, updated_at = ${at}::timestamptz
       from changed c, workshop_registration r
-      where r.event_id = c.id and o.id = r.order_id and o.status not in ('declined', 'cancelled', 'closed', 'completed')
+      where r.event_id = c.id and o.id = r.order_id and ${ACTIVE_ORDER}
         and (o.fulfil_on <> c.event_on or o.time_window->>'start' <> c.starts_at or o.time_window->>'end' <> c.ends_at)
+    ), diff as (
+      select c.id, c.version,
+        case when b.event_on <> c.event_on then b.event_on::text end as prev_date,
+        case when b.starts_at <> c.starts_at then b.starts_at end as prev_start,
+        case when b.ends_at <> c.ends_at then b.ends_at end as prev_end,
+        case when b.address <> c.address then b.address end as prev_address
+      from changed c join before b on b.id = c.id
+      where b.event_on <> c.event_on or b.starts_at <> c.starts_at or b.ends_at <> c.ends_at or b.address <> c.address
+    ), told as (
+      select o.id, o.contact_email, o.locale, d.version,
+        jsonb_strip_nulls(jsonb_build_object('previousDate', d.prev_date, 'previousStart', d.prev_start, 'previousEnd', d.prev_end, 'previousAddress', d.prev_address)) as was
+      from diff d join workshop_registration r on r.event_id = d.id join orders o on o.id = r.order_id
+      where ${ACTIVE_ORDER}
+    ), logged as (
+      insert into order_event (order_id, actor_type, actor_admin_id, type, details, created_at)
+      select id, 'admin', ${values.updatedBy}::uuid, 'workshop_changed', was, ${at}::timestamptz from told
+    ), queued as (
+      insert into email_outbox (template, to_email, locale, payload, order_id, dedupe_key)
+      select 'workshop_changed', contact_email, locale, was || jsonb_build_object('orderId', id), id, 'order:' || id || ':workshop_changed:' || version
+      from told where contact_email is not null
+      on conflict (dedupe_key) do nothing
     )
-    select id, slug, version from changed
-  `)) as unknown as { rows: { id: string; slug: string; version: number }[] };
-  return rows[0] ?? null;
+    select id, slug, version, (select count(*) from told)::int as told from changed
+  `)) as unknown as { rows: { id: string; slug: string; version: number; told: number }[] };
+  const row = rows[0];
+  return row ? { ...row, told: Number(row.told) } : null;
 }
 
 export async function saveWorkshopEvent(db: Database, input: WorkshopEventInput, ctx: EventSaveContext): Promise<SaveEventResult> {
@@ -121,7 +154,7 @@ export async function saveWorkshopEvent(db: Database, input: WorkshopEventInput,
   const variants = await checkPhoto(stored, input.photoPath, ctx);
   if (!variants) return { ok: false, code: "UPLOAD_REJECTED" };
   const values = columns(input, variants, ctx);
-  let saved: { id: string; slug: string; version: number } | null;
+  let saved: { id: string; slug: string; version: number; told: number } | null;
   if (input.id) {
     saved = await updateEvent(db, input.id, input.version ?? 0, values);
     if (!saved) return { ok: false, code: "EVENT_CHANGED" };
@@ -130,7 +163,7 @@ export async function saveWorkshopEvent(db: Database, input: WorkshopEventInput,
       .insert(workshopEvent)
       .values({ ...values, slug: await freeSlug(db, input.titleEn), createdBy: ctx.adminId, createdAt: ctx.now })
       .returning({ id: workshopEvent.id, slug: workshopEvent.slug, version: workshopEvent.version });
-    saved = created!;
+    saved = { ...created!, told: 0 };
   }
   if (stored?.photoPath && stored.photoPath !== input.photoPath) await removeLater(db, stored.photoPath, ctx);
   return { ok: true, ...saved };

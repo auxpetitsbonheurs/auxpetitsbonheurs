@@ -227,6 +227,72 @@ describe("admin event actions (S-301, S-306)", () => {
     expect(await query("select fulfil_on::text as on, time_window->>'start' as start, version from orders where id = $1", [orderId])).toEqual([{ on: "2027-02-13", start: "15:00", version: 2 }]);
   });
 
+  describe("tidy: a change of date, time or address tells the active registrants", () => {
+    const save = async (overrides: Record<string, string>, eventId: string, v: number) => {
+      const parsed = parseWorkshopEvent({ ...editorForm({ eventOn: WORKSHOP_DATE, startsAt: "14:00", endsAt: "16:30", ...overrides }), id: eventId, version: String(v) });
+      if (!parsed.ok) throw new Error(parsed.fields.join());
+      return saveWorkshopEvent(db, parsed.data, { adminId, now });
+    };
+    const changedMails = () => query("select to_email, payload, dedupe_key from email_outbox where template = 'workshop_changed' order by created_at, to_email");
+
+    /** Pending (aisha), awaiting payment (ravi), confirmed (mia) and refused (zoe). */
+    async function registrants(eventId: string) {
+      const pending = await registerTest(database, eventId);
+      const awaiting = await registerTest(database, eventId, { "contact.email": "ravi@example.com" });
+      await approveOrder(db, { orderId: awaiting.orderId, version: 1, adminId, now });
+      const confirmed = await registerTest(database, eventId, { "contact.email": "mia@example.com" });
+      await approveOrder(db, { orderId: confirmed.orderId, version: 1, adminId, now });
+      await markPaid(db, { orderId: confirmed.orderId, version: 2, adminId, now });
+      const refused = await registerTest(database, eventId, { "contact.email": "zoe@example.com" });
+      await declineOrder(db, { orderId: refused.orderId, version: 1, adminId, now, reason: null });
+      return { pending, awaiting, confirmed, refused };
+    }
+
+    test("a new date and time email pending, awaiting-payment and confirmed registrants once, naming the previous values; refused ones are not told", async () => {
+      const eventId = await insertWorkshopEvent(database);
+      const { refused } = await registrants(eventId);
+
+      const saved = await save({ eventOn: "2027-02-21", startsAt: "15:00", endsAt: "17:30" }, eventId, 1);
+
+      expect(saved).toMatchObject({ ok: true, version: 2, told: 3 });
+      const mails = await changedMails();
+      expect(mails.map((m) => m.to_email).sort()).toEqual(["aisha@example.com", "mia@example.com", "ravi@example.com"]);
+      for (const mail of mails) {
+        expect(mail.payload).toEqual({ orderId: expect.any(String), previousDate: WORKSHOP_DATE, previousStart: "14:00", previousEnd: "16:30" });
+        expect(mail.dedupe_key).toMatch(/^order:.+:workshop_changed:2$/);
+      }
+      const logged = await query("select order_id, type, details from order_event where type = 'workshop_changed'");
+      expect(logged).toHaveLength(3);
+      expect(logged.some((row) => row.order_id === refused.orderId)).toBe(false);
+      expect(logged[0]!.details).toEqual({ previousDate: WORKSHOP_DATE, previousStart: "14:00", previousEnd: "16:30" });
+    });
+
+    test("a title-only edit tells no one; an address change alone names the previous address", async () => {
+      const eventId = await insertWorkshopEvent(database);
+      await registerTest(database, eventId);
+
+      expect(await save({ titleEn: "Valentine's cakes, new name" }, eventId, 1)).toMatchObject({ ok: true, told: 0 });
+      expect(await changedMails()).toEqual([]);
+
+      expect(await save({ address: "3 Royal Road, Rose Hill" }, eventId, 2)).toMatchObject({ ok: true, told: 1 });
+      const [mail] = await changedMails();
+      expect(mail!.payload).toEqual({ orderId: expect.any(String), previousAddress: "12 Rue Example, Beau Bassin" });
+    });
+
+    test("each change is its own email: changing back later tells the registrant again", async () => {
+      const eventId = await insertWorkshopEvent(database);
+      await registerTest(database, eventId);
+
+      await save({ startsAt: "15:00" }, eventId, 1);
+      await save({ startsAt: "14:00" }, eventId, 2);
+
+      expect((await changedMails()).map((m) => m.payload)).toEqual([
+        { orderId: expect.any(String), previousStart: "14:00" },
+        { orderId: expect.any(String), previousStart: "15:00" },
+      ]);
+    });
+  });
+
   test("cancelling the event cancels and tells every registrant; a paid one owes a refund", async () => {
     const eventId = await insertWorkshopEvent(database);
     const unpaid = await registerTest(database, eventId);

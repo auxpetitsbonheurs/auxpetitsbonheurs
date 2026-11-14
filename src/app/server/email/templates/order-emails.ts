@@ -5,6 +5,7 @@
 // Only the recipient's own data goes in: never the admin note, never another customer.
 import type { OrderItemOption, TimeWindow } from "~/db/tables/json-types";
 import { formatLongDate } from "~/domain/time";
+import { timeRange } from "~/domain/workshop";
 import { t } from "~/i18n/catalog.server";
 import { localized } from "~/i18n/localized";
 import { type Locale, formatRupees, localePath } from "~/lib/locale";
@@ -31,7 +32,8 @@ export type OrderEmailKey =
   | "order_cancelled_unpaid"
   | "order_refunded"
   | "workshop_received"
-  | "workshop_cancelled";
+  | "workshop_cancelled"
+  | "workshop_changed";
 
 export const ORDER_EMAIL_KEYS: readonly OrderEmailKey[] = [
   "order_received",
@@ -53,6 +55,7 @@ export const ORDER_EMAIL_KEYS: readonly OrderEmailKey[] = [
   "order_refunded",
   "workshop_received",
   "workshop_cancelled",
+  "workshop_changed",
 ];
 
 export const isOrderEmailKey = (value: string): value is OrderEmailKey => (ORDER_EMAIL_KEYS as readonly string[]).includes(value);
@@ -103,8 +106,8 @@ export interface OrderEmailData {
    * own emails may repeat them (S-307); admin alerts never load this.
    */
   workshop?: { title: string; address: string; mapUrl: string | null; cakes: number; peopleNames: string | null; allergies: string | null } | null;
-  /** What the queueing statement stored next to the order id. */
-  payload: { reason?: string; why?: string; previousDate?: string; previousTotalRs?: number };
+  /** What the queueing statement stored next to the order id (workshop_changed: the previous values of what changed). */
+  payload: { reason?: string; why?: string; previousDate?: string; previousTotalRs?: number; previousStart?: string; previousEnd?: string; previousAddress?: string };
 }
 
 const origin = (siteUrl: string) => new URL(siteUrl).origin;
@@ -196,6 +199,27 @@ const mapLink = (data: OrderEmailData): Block[] => (data.workshop?.mapUrl ? [{ k
 
 /** The workshop wording of a shared email: `email.workshop.<key>.<part>` when the order is a registration. */
 const wk = (data: OrderEmailData, key: string, part: string) => (data.workshop ? `email.workshop.${key}.${part}` : null);
+
+/** Date, time and place of a changed workshop: each changed one says "New …" with its previous value. */
+function changedRows(data: OrderEmailData): { label: string; value: string }[] {
+  const { locale, order, payload } = data;
+  const was = (value: string) => t("email.orderUpdated.was", locale, { value });
+  const start = order.window.start;
+  const end = order.window.end;
+  const now = { date: formatLongDate(order.fulfilOn, locale), time: timeRange(start, end, locale), place: data.workshop?.address ?? "" };
+  const timeChanged = payload.previousStart !== undefined || payload.previousEnd !== undefined;
+  return [
+    payload.previousDate !== undefined
+      ? { label: t("email.orderUpdated.newDate", locale), value: `${now.date} (${was(formatLongDate(payload.previousDate, locale))})` }
+      : { label: t("email.common.date", locale), value: now.date },
+    timeChanged
+      ? { label: t("email.workshop.changed.newTime", locale), value: `${now.time} (${was(timeRange(payload.previousStart ?? start, payload.previousEnd ?? end, locale))})` }
+      : { label: t("email.common.time", locale), value: now.time },
+    payload.previousAddress !== undefined
+      ? { label: t("email.workshop.changed.newPlace", locale), value: `${now.place} (${was(payload.previousAddress)})` }
+      : { label: t("email.workshop.where", locale), value: now.place },
+  ];
+}
 
 type Builder = (data: OrderEmailData) => { subject: string; heading: string; blocks: Block[] };
 
@@ -485,6 +509,23 @@ const BUILDERS: Record<OrderEmailKey, Builder> = {
         ...(payload.reason ? [{ kind: "note" as const, text: `${t("email.common.reason", locale)}: ${payload.reason}` }] : []),
         ...(due > 0 ? [{ kind: "note" as const, text: t("email.cancellation.refund", locale, { amount: formatRupees(due) }) }] : []),
         { kind: "button", label: t("email.workshop.seeWorkshops", locale), href: sitePath(data, "/workshops") },
+      ],
+    };
+  },
+  // E-15 tidy: the bakery moved the event's date or time, or its address: what changed, then the new details.
+  workshop_changed(data) {
+    const { locale } = data;
+    const title = data.workshop?.title ?? "";
+    return {
+      subject: t("email.workshop.changed.subject", locale, { ...vars(data), title }),
+      heading: t("email.workshop.changed.heading", locale),
+      blocks: [
+        hello(data),
+        { kind: "note", text: t("email.workshop.changed.intro", locale, { ...vars(data), title }) },
+        { kind: "facts", rows: changedRows(data) },
+        ...mapLink(data),
+        { kind: "p", text: t("email.workshop.changed.suits", locale) },
+        trackBlock(data),
       ],
     };
   },

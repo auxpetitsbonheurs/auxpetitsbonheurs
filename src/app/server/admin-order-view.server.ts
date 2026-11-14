@@ -25,6 +25,8 @@ const KNOWN_EVENTS = new Set([
   "edited",
   "email_failed",
   "pending_alert_sent",
+  // E-15 tidy: the event's date, time or place changed; the registrant was emailed.
+  "workshop_changed",
   // Juice payment (S-279..S-281).
   "payment_received",
   "payment_undone",

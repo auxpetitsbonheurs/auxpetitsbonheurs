@@ -12,7 +12,7 @@ import { Modal } from "~/components/ui/modal";
 import { SubmitButton } from "~/components/ui/submit-button";
 import { TextField } from "~/components/ui/text-field";
 import { showToast } from "~/components/ui/toaster";
-import { formatDayLabel, todayMU } from "~/domain/time";
+import { formatDayLabel, formatLongDate, todayMU } from "~/domain/time";
 import { whatsappLinkFor } from "~/domain/whatsapp";
 import { WORKSHOP_LIMITS, holdsPlace, inLocale, placesLeft, timeRange } from "~/domain/workshop";
 import { t as translate } from "~/i18n/catalog.server";
@@ -58,8 +58,12 @@ function editorValues(event: AdminEvent | null, supabaseUrl: string): EditorValu
   };
 }
 
-function whatsappText(locale: Locale, title: string, cancelled: boolean): string {
-  return translate(cancelled ? "admin.workshops.waCancelled" : "admin.workshops.waHello", locale, { title });
+/** The WhatsApp message in the registrant's language: cancelled, changed (the new date, time and place) or a plain hello. */
+function whatsappText(locale: Locale, event: AdminEvent, changed: boolean): string {
+  const title = inLocale(event.titleEn, event.titleFr, locale);
+  if (event.status === "cancelled") return translate("admin.workshops.waCancelled", locale, { title });
+  if (changed) return translate("admin.workshops.waChanged", locale, { title, date: formatLongDate(event.eventOn, locale), time: timeRange(event.startsAt, event.endsAt, locale), address: event.address });
+  return translate("admin.workshops.waHello", locale, { title });
 }
 
 export async function loader(args: Route.LoaderArgs) {
@@ -76,8 +80,8 @@ export async function loader(args: Route.LoaderArgs) {
     const active = holdsPlace(r.status);
     const choices = r.choices.map((c) => `${localized(c.name, me.locale)} × ${c.quantity}`);
     if (active) for (const c of r.choices) totals.set(localized(c.name, me.locale), (totals.get(localized(c.name, me.locale)) ?? 0) + c.quantity);
-    const title = event ? inLocale(event.titleEn, event.titleFr, r.locale) : "";
-    return { ...r, active, choices, whatsappUrl: whatsappLinkFor(r.contactPhone, whatsappText(r.locale, title, event?.status === "cancelled")) };
+    const changed = active && r.changed;
+    return { ...r, active, changed, choices, whatsappUrl: event ? whatsappLinkFor(r.contactPhone, whatsappText(r.locale, event, changed)) : null };
   });
   return {
     title: event ? event.titleEn : translate("admin.workshops.newTitle", me.locale),
@@ -130,7 +134,7 @@ async function saveAction(args: Route.ActionArgs, form: ReturnType<typeof flatFo
   });
   if (result.ok) {
     console.log(JSON.stringify({ level: "info", event: "workshop_saved", id: result.id, isNew: !parsed.data.id, actorRole: me.role }));
-    return { ok: true as const, intent: "save" as const, id: result.id, created: !parsed.data.id };
+    return { ok: true as const, intent: "save" as const, id: result.id, created: !parsed.data.id, told: result.told };
   }
   if (result.code === "CAPACITY_BELOW_HELD") return actionError("VALIDATION_FAILED", me.locale, { fields: { capacity: translate("admin.workshops.errors.capacityHeld", me.locale, { count: result.held }) }, extra: { intent: "save" } });
   if (result.code === "UPLOAD_REJECTED") return actionError("UPLOAD_REJECTED", me.locale, { fields: { photoPath: translate("admin.promotions.imageRejected", me.locale) }, extra: { intent: "save" } });
@@ -175,7 +179,7 @@ export const ErrorBoundary = AdminErrorBoundary;
 
 type LoaderData = Route.ComponentProps["loaderData"];
 type EventData = NonNullable<LoaderData["event"]>;
-type Answer = { ok: true; intent: string; id?: string; created?: boolean; status?: string } | { ok: false; error: { code: string; message: string; fields?: Record<string, string> } };
+type Answer = { ok: true; intent: string; id?: string; created?: boolean; status?: string; told?: number } | { ok: false; error: { code: string; message: string; fields?: Record<string, string> } };
 
 function CancelDialog({ event, open, onClose }: { event: EventData; open: boolean; onClose: () => void }) {
   const { t } = useI18n();
@@ -265,23 +269,30 @@ function StatusActions({ event, answer }: { event: EventData; answer: Answer | u
   );
 }
 
+/**
+ * Save answers already acted on. The editor remounts when the saved event's version arrives
+ * (its key), so the fetcher is keyed to outlive that remount and its answer is handled once
+ * here, not per mount: the "Saved" toast shows after an edit too.
+ */
+const handledSaves = new WeakSet<object>();
+
 function Editor({ loaderData }: { loaderData: LoaderData }) {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const fetcher = useFetcher<Answer>();
+  const fetcher = useFetcher<Answer>({ key: `workshop-editor-save:${loaderData.values.id ?? "new"}` });
   const [dirty, setDirty] = useState(false);
   const [photo, setPhoto] = useState<ImageState>("idle");
   const { blocker, dirtyRef } = useUnsavedGuard(dirty);
   const summary = useRef<HTMLDivElement>(null);
-  const handled = useRef<unknown>(null);
   const result = fetcher.state === "idle" ? fetcher.data : undefined;
   useEffect(() => {
-    if (!result || handled.current === result) return;
-    handled.current = result;
+    if (!result || handledSaves.has(result)) return;
+    handledSaves.add(result);
     if (result.ok) {
       // The revalidated page remounts the editor (its key carries the new version), clean.
       dirtyRef.current = false;
-      showToast(t("admin.workshops.saved"));
+      // A date, time or place change emailed the active registrants: say how many (instant feedback).
+      showToast(result.told ? t("admin.workshops.savedTold", { count: result.told }) : t("admin.workshops.saved"));
       if (result.created && result.id) void navigate(`/admin/workshops/${result.id}`);
     } else summary.current?.focus();
   });

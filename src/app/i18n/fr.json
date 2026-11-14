@@ -693,7 +693,8 @@
         "marked_unpaid": "Marquée non payée par {{actor}}, {{time}}",
         "edited": "Modifiée par {{actor}}, {{time}}",
         "email_failed": "Un e-mail au client n'a pas pu être remis, {{time}}",
-        "pending_alert_sent": "Rappel envoyé à l'équipe, {{time}}"
+        "pending_alert_sent": "Rappel envoyé à l'équipe, {{time}}",
+        "workshop_changed": "Date, horaire ou lieu de l'atelier modifié par {{actor}}, {{time}}"
       },
       "reason": "Motif : {{reason}}",
       "paidRefund": "La commande était payée : remboursement hors site.",
@@ -2413,8 +2414,10 @@
       "allergiesLabel": "Allergies ou régime alimentaire",
       "allergiesNone": "Aucune allergie",
       "tellOnWhatsapp": "Prévenir {{name}} sur WhatsApp",
+      "tellChangeOnWhatsapp": "Prévenir {{name}} du changement sur WhatsApp",
       "waCancelled": "Bonjour, nous sommes vraiment désolés : nous avons dû annuler l'atelier {{title}}. Nous vous tiendrons au courant du prochain.",
       "waHello": "Bonjour, au sujet de votre inscription à l'atelier {{title}} :",
+      "waChanged": "Bonjour, un changement pour l'atelier {{title}} : il a maintenant lieu le {{date}}, {{time}}, à {{address}}. Nous vous avons aussi envoyé un e-mail.",
       "editSection": "Modifier l'atelier",
       "newSection": "Détails de l'atelier",
       "textSection": "Textes",
@@ -2450,6 +2453,8 @@
       "removeOption": "Supprimer le choix de gâteau {{n}}",
       "save": "Enregistrer l'atelier",
       "saved": "Atelier enregistré",
+      "savedTold_one": "Enregistré. {{count}} personne inscrite a reçu un e-mail sur le changement.",
+      "savedTold_other": "Enregistré. {{count}} personnes inscrites ont reçu un e-mail sur le changement.",
       "errors": {
         "field": "{{field}} : à vérifier.",
         "endsAt": "Heure de fin : elle doit être après le début.",
@@ -2761,6 +2766,14 @@
         "subject": "Atelier annulé : {{title}} ({{number}})",
         "heading": "L'atelier est annulé",
         "intro": "Nous sommes désolés : nous avons dû annuler {{title}}. Votre inscription {{number}} est annulée."
+      },
+      "changed": {
+        "subject": "Atelier modifié : {{title}} ({{number}})",
+        "heading": "Votre atelier a changé",
+        "intro": "Nous avons dû modifier {{title}}. Votre inscription {{number}} reste valable : voici les nouvelles informations.",
+        "newTime": "Nouvel horaire",
+        "newPlace": "Nouveau lieu",
+        "suits": "Si ces changements ne vous conviennent pas, répondez à cet e-mail ou écrivez-nous : nous trouverons une solution ensemble."
       }
     },
     "paymentInstructions": {

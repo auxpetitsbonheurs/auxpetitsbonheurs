@@ -155,6 +155,8 @@ export interface EventRegistration {
   message: string | null;
   locale: Locale;
   createdAt: string;
+  /** The event's date, time or address changed while this registration was active (`workshop_changed` logged). */
+  changed: boolean;
 }
 
 export async function listEventRegistrations(db: Executor, eventId: string): Promise<EventRegistration[]> {
@@ -162,6 +164,7 @@ export async function listEventRegistrations(db: Executor, eventId: string): Pro
     select o.id as "orderId", o.number, coalesce(o.number_prefix, s.order_number_prefix) as prefix, o.status, o.paid,
       o.contact_name as "contactName", o.contact_phone as "contactPhone", o.contact_email as "contactEmail", r.cakes, o.total_rs as "totalRs",
       r.people_names as "peopleNames", r.allergies, o.customer_note as message, o.locale, o.created_at as "createdAt",
+      exists (select 1 from order_event e where e.order_id = o.id and e.type = 'workshop_changed') as changed,
       coalesce((select json_agg(json_build_object('name', i.options->0->'choice', 'quantity', i.quantity) order by i.sort_order)
         from order_item i where i.order_id = o.id), '[]'::json) as choices
     from workshop_registration r join orders o on o.id = r.order_id cross join settings s

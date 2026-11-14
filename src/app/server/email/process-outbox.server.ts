@@ -66,7 +66,7 @@ function renderRow(row: Claimed, loaded: LoadedRow, siteUrl: string) {
   if (isAdminAlertKey(row.template)) {
     return renderAdminAlertEmail(row.template, { siteUrl, locale: row.locale, orderId: row.order_id ?? String(row.payload.orderId), orderNumber: loaded.order.number, contactName: loaded.order.contactName });
   }
-  const payload = row.payload as { reason?: string; why?: string; previousDate?: string; previousTotalRs?: number };
+  const payload = row.payload as { reason?: string; why?: string; previousDate?: string; previousTotalRs?: number; previousStart?: string; previousEnd?: string; previousAddress?: string };
   return renderOrderEmail(row.template as OrderEmailKey, { ...loaded, siteUrl, locale: row.locale, payload });
 }
 

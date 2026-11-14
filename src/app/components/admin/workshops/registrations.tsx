@@ -1,7 +1,7 @@
 // An event's registrations on its admin screen (E-15 S-305 AC1, S-306 AC1): each with number,
 // name, status, cakes and choices, total, the people's names and the allergies (highlighted),
 // a link to the order (Accept, Refuse and Payment received live there), and after a cancelled
-// event a WhatsApp link per registrant. Totals per cake option count active registrations only.
+// event, or a change of its date, time or place, a WhatsApp link per registrant concerned. Totals per cake option count active registrations only.
 import { ChevronRight, MessageCircle } from "lucide-react";
 import { Link } from "react-router";
 import { PaidTag } from "~/components/admin/order/header";
@@ -25,6 +25,8 @@ export interface RegistrationView {
   allergies: string | null;
   message: string | null;
   whatsappUrl: string | null;
+  /** Active and told by email about a date, time or place change: the WhatsApp link shows. */
+  changed: boolean;
 }
 
 export function OptionTotals({ totals }: { totals: { name: string; cakes: number }[] }) {
@@ -67,10 +69,10 @@ export function RegistrationList({ registrations, cancelled }: { registrations: 
             <AllergyBadge allergies={r.allergies} />
           </div>
           {r.message && <p className="text-sm wrap-anywhere">{t("admin.workshops.messageLine", { text: r.message })}</p>}
-          {cancelled && r.whatsappUrl && (
+          {(cancelled || r.changed) && r.whatsappUrl && (
             <a href={r.whatsappUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 self-start font-semibold link">
               <MessageCircle aria-hidden="true" className="size-5" />
-              {t("admin.workshops.tellOnWhatsapp", { name: r.contactName })}
+              {t(cancelled ? "admin.workshops.tellOnWhatsapp" : "admin.workshops.tellChangeOnWhatsapp", { name: r.contactName })}
             </a>
           )}
         </li>

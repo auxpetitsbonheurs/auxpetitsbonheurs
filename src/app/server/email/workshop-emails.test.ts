@@ -70,6 +70,28 @@ describe("customer emails (S-307 AC1, AC2)", () => {
   });
 });
 
+describe("workshop changed (tidy job)", () => {
+  test("lists what changed with its previous value, then the unchanged facts; map, track and a calm way out", async () => {
+    await database.client.query("update orders set status = 'approved', fulfil_on = '2027-02-21', time_window = time_window || '{\"start\":\"15:00\",\"end\":\"17:30\"}' where id = $1", [orderId]);
+    const mail = await render("workshop_changed", orderId, undefined, { previousDate: "2027-02-14", previousStart: "14:00", previousEnd: "16:30" });
+
+    expect(mail.subject).toBe("Workshop changed: Valentine's cake workshop (APB-0001)");
+    for (const text of ["New date", "Sunday, 21 February 2027 (before: Sunday, 14 February 2027)", "New time", "15:00–17:30 (before: 14:00–16:30)", "12 Rue Example, Beau Bassin", "we will find a solution together"]) expect(mail.text).toContain(text);
+    expect(mail.text).not.toContain("New place");
+    expect(mail.html).toContain("/t/");
+  });
+
+  test("an address change alone, in French for a French registration", async () => {
+    const mail = await render("workshop_changed", frOrderId, undefined, { previousAddress: "Ancienne adresse, Curepipe" });
+
+    expect(mail.subject).toBe("Atelier modifié : Atelier gâteau de la Saint-Valentin (APB-0002)");
+    expect(mail.text).toContain("Nouveau lieu");
+    expect(mail.text).toContain("Ancienne adresse, Curepipe");
+    expect(mail.text).toContain("14 h 00 – 16 h 30");
+    expect(mail.text).not.toContain("Nouvel horaire");
+  });
+});
+
 describe("admin alerts never carry health data (S-307 AC3)", () => {
   test("the email and the push name the number and first name only", () => {
     const mail = renderAdminAlertEmail("admin_alert_new_workshop", { siteUrl: SITE, locale: "en", orderId, orderNumber: "APB-0001", contactName: "Aisha Test" });
