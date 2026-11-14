@@ -19,12 +19,23 @@ export function Fact({ term, children }: { term: string; children: ReactNode }) 
   );
 }
 
-export function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+/** `action` sits beside the heading (wrapping under it when narrow), so it adds no height on a phone. */
+export function Section({ id, title, children, action }: { id: string; title: string; children: ReactNode; action?: ReactNode }) {
+  const heading = (
+    <h2 id={id} className="text-h2">
+      {title}
+    </h2>
+  );
   return (
     <section aria-labelledby={id} className="mt-8">
-      <h2 id={id} className="text-h2">
-        {title}
-      </h2>
+      {action ? (
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          {heading}
+          {action}
+        </div>
+      ) : (
+        heading
+      )}
       {children}
     </section>
   );

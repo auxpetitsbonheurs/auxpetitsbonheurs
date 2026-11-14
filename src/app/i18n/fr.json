@@ -2348,6 +2348,7 @@
     },
     "invoice": {
       "download": "Télécharger la facture",
+      "short": "Facture",
       "title": "Facture",
       "preparing": "Préparation de la facture…",
       "ready": "{{file}} est prête.",

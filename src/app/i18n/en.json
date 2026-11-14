@@ -2348,6 +2348,7 @@
     },
     "invoice": {
       "download": "Download invoice",
+      "short": "Invoice",
       "title": "Invoice",
       "preparing": "Preparing invoice…",
       "ready": "{{file}} is ready.",

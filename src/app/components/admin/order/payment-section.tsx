@@ -36,8 +36,10 @@ export function SendPaymentWhatsapp({ data, className }: { data: OrderLoaderData
 }
 
 /**
- * Download invoice in the Payment section (tidy job): reachable in every state, also while the
+ * Download invoice beside the Payment heading (tidy job): reachable in every state, also while the
  * action bar shows the refund step instead of More actions. Same dialog as More actions (S-127).
+ * In the heading row it adds no height, so the contact buttons below never move under the
+ * phone's sticky action bar. Visible "Invoice", named "Download invoice" (the label is in the name).
  */
 function InvoiceButton({ orderId }: { orderId: string }) {
   const { t } = useI18n();
@@ -48,14 +50,15 @@ function InvoiceButton({ orderId }: { orderId: string }) {
         type="button"
         variant="outline"
         size="lg"
-        className="mt-2 h-auto min-h-12 max-w-full justify-self-start whitespace-normal max-[22rem]:px-2"
+        className="-my-1 h-auto min-h-11 shrink-0 px-3"
+        aria-label={t("admin.invoice.download")}
         onPointerEnter={() => void preloadInvoicePdf()}
         onFocus={() => void preloadInvoicePdf()}
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
       >
-        <FileText aria-hidden="true" className="max-[22rem]:hidden" />
-        {t("admin.invoice.download")}
+        <FileText aria-hidden="true" />
+        {t("admin.invoice.short")}
       </Button>
       <InvoiceDialog orderId={orderId} open={open} onClose={() => setOpen(false)} />
     </>
@@ -68,7 +71,7 @@ export function PaymentSection({ data }: { data: OrderLoaderData }) {
   const { t } = useI18n();
   const amount = formatRupees(order.totalRs);
   return (
-    <Section id="payment-heading" title={t("admin.order.paymentTitle")}>
+    <Section id="payment-heading" title={t("admin.order.paymentTitle")} action={<InvoiceButton orderId={order.id} />}>
       <div className="mt-3 grid gap-1">
         {payment.awaiting ? (
           <>
@@ -85,7 +88,6 @@ export function PaymentSection({ data }: { data: OrderLoaderData }) {
         )}
         {order.status === "declined" && payment.declineReason && <p className="wrap-anywhere">{t("admin.order.declineReasonShown", { reason: payment.declineReason })}</p>}
         {payment.refund?.refundedLabel && <p className="font-semibold">{t("admin.order.refundedAt", { amount: formatRupees(payment.refund.amountRs), time: payment.refund.refundedLabel })}</p>}
-        <InvoiceButton orderId={order.id} />
       </div>
     </Section>
   );
