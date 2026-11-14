@@ -44,7 +44,8 @@ describe("Orders view", () => {
     const html = render({});
 
     expect(html).toContain("No orders to review. Enjoy the quiet.");
-    expect(html).not.toContain("/admin/orders/");
+    // No order row (the "+ Add order" link, E-07, is not one).
+    expect(html).not.toMatch(/\/admin\/orders\/[0-9a-f-]{36}/);
   });
 
   test.each([

@@ -173,7 +173,6 @@ export default function AdminOrder({ loaderData, actionData }: Route.ComponentPr
       <OrderConflict data={loaderData} actionData={actionData} />
       <PaymentSection data={loaderData} />
       <CustomerSection data={loaderData} />
-      <TrackingLink url={loaderData.trackingUrl} />
       <FulfilmentSection data={loaderData} />
       {/* A custom request has no items: its price is the quote in the request section (E-08). */}
       {!loaderData.request && <ItemsSection data={loaderData} />}
@@ -185,6 +184,7 @@ export default function AdminOrder({ loaderData, actionData }: Route.ComponentPr
       <ReasonSection data={loaderData} />
       <PrivateNote orderId={loaderData.order.id} initial={loaderData.adminNote} />
       <ActivityLog events={loaderData.events} />
+      <TrackingLink url={loaderData.trackingUrl} />
       <OrderActionBar data={loaderData} actionData={actionData} />
     </>
   );
