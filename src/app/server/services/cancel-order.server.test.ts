@@ -8,6 +8,7 @@ import { FakeAuth } from "~/server/testing/fake-auth";
 import { placeTestOrder } from "~/server/testing/orders";
 import { approveOrder } from "./approve-order.server";
 import { cancelOrderByCustomer } from "./cancel-order.server";
+import { markPaid } from "./order-payment.server";
 
 let database: TestDatabase;
 let token: string;
@@ -88,12 +89,19 @@ describe("cancel while pending (S-096 AC1, AC2)", () => {
 });
 
 describe("refusals change nothing (S-096 AC3-AC5, AC7)", () => {
-  test("approved or later: a forged cancel is CANCEL_NOT_ALLOWED", async () => {
+  test("approved or later (approved, then paid): a forged cancel is CANCEL_NOT_ALLOWED", async () => {
+    await approveOrder(database.db, { orderId, version: 1, adminId, now: NOW });
+    await markPaid(database.db, { orderId, version: 2, adminId, now: NOW });
+
+    expect(await cancel(3)).toEqual({ ok: false, code: "CANCEL_NOT_ALLOWED" });
+    expect(await orderRow()).toEqual({ status: "approved", version: 3 });
+    expect(await cancelEvents()).toEqual([]);
+  });
+
+  test("approve, then pay: after the approval and before paying the customer may still cancel", async () => {
     await approveOrder(database.db, { orderId, version: 1, adminId, now: NOW });
 
-    expect(await cancel(2)).toEqual({ ok: false, code: "CANCEL_NOT_ALLOWED" });
-    expect(await orderRow()).toEqual({ status: "approved", version: 2 });
-    expect(await cancelEvents()).toEqual([]);
+    expect(await cancel(2)).toEqual({ ok: true, order: { status: "cancelled", version: 3 } });
   });
 
   test("a paid pending order is CANCEL_NOT_ALLOWED: the refund goes through the bakery", async () => {
@@ -112,6 +120,7 @@ describe("refusals change nothing (S-096 AC3-AC5, AC7)", () => {
 
   test("CANCEL_NOT_ALLOWED is checked before the version", async () => {
     await approveOrder(database.db, { orderId, version: 1, adminId, now: NOW });
+    await markPaid(database.db, { orderId, version: 2, adminId, now: NOW });
 
     expect(await cancel(1)).toEqual({ ok: false, code: "CANCEL_NOT_ALLOWED" });
   });

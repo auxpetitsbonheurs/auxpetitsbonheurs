@@ -68,7 +68,7 @@ async function placePickupOrder(page: Page, email: string) {
   await expect(page.getByRole("status").filter({ hasText: "Added to your basket" })).toBeVisible();
   await page.goto("/basket");
   await expect(page.locator("html")).toHaveAttribute("data-hydrated", "true");
-  await expect(page.getByText("Payment: the full amount by MCB Juice. You get the payment details as soon as you place your order.")).toBeVisible();
+  await expect(page.getByText("Payment: the full amount by MCB Juice. We confirm your order first, then send you the payment details.")).toBeVisible();
   await expect(page.getByText("5000 0071")).toHaveCount(0);
   await page.getByRole("radio", { name: /^Pickup/ }).check();
   await chooseDate(page, "2026-11-24");
@@ -83,20 +83,68 @@ async function placePickupOrder(page: Page, email: string) {
 }
 
 test.describe("S-282 Juice payment", () => {
-  test("AC1: place order → Juice instructions with copy buttons and proof link → Owner Payment received → tracking shows paid", async ({ page, context, browser, baseURL, db }) => {
+  test("AC1: place → pending approval, no Juice details → Owner approves (payment details on WhatsApp) → payment guide on tracking → Payment received → confirmed", async ({ page, context, browser, baseURL, db }) => {
     await setClock(context, baseURL!, "2026-11-20T06:00:00Z");
     await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: baseURL! });
     await withJuiceSettings(db, async () => {
       const token = await placePickupOrder(page, `juice-${test.info().project.name}@e2e.test`);
       const [order] = await db<{ id: string; number: number; status: string }[]>`select id, number, status from orders where tracking_token = ${token}`;
       const number = numberOf(order!.number);
-      expect(order!.status).toBe("awaiting_payment");
+      // Approve, then pay (Owner decision 2026-11-14): received, waiting for the bakery's approval.
+      expect(order!.status).toBe("pending_approval");
+      const next = page.getByTestId("next-steps");
+      await expect(next.getByText("Your order is received. We check it and confirm it with you, then send you the payment details. Please do not pay yet.")).toBeVisible();
+      await expect(next.getByRole("listitem")).toHaveText([
+        "We check your order and approve it.",
+        "We email you how to pay by MCB Juice. The payment details also appear on your tracking page.",
+        "You pay within 24 hours and send us the proof on WhatsApp. Your order is then confirmed.",
+      ]);
+      await expect(page.getByRole("region", { name: "Pay now to confirm your order" })).toHaveCount(0);
+      await expect(page.getByText("5000 0071")).toHaveCount(0);
+      await accessible(page);
+      if (isPhone375()) await page.screenshot({ path: `${SHOTS}/approvepay-confirmation.png`, fullPage: true });
+      await page.goto(`/t/${token}`);
+      await expect(page.getByText("Waiting for our approval")).toBeVisible();
+      await expect(page.getByRole("region", { name: "Progress" }).getByText("Step 1 of 6: Pending approval")).toBeVisible();
+      await expect(page.getByText("5000 0071")).toHaveCount(0);
 
-      // S-278 AC2, AC3: the instructions at once.
+      // The Owner approves at 08:00Z: the payment clock starts, the customer is emailed, and the
+      // payment details are one tap away on WhatsApp.
+      const phone = await browser.newContext({ viewport: page.viewportSize()! });
+      await setClock(phone, baseURL!, "2026-11-20T08:00:00Z");
+      const owner = await phone.newPage();
+      await signIn(owner, E2E_ACCOUNTS.owner, `/admin/orders/${order!.id}`);
+      await expect(owner.locator("html")).toHaveAttribute("data-hydrated", "true");
+      await expect(owner.getByText("Not paid yet. Approving sends the customer the Juice payment details; they then have 24 hours to pay.")).toBeVisible();
+      await owner.getByRole("button", { name: `Approve ${number}` }).click();
+      await expect(owner.getByRole("status").filter({ hasText: `Order ${number} approved. The customer gets the payment details by email.` })).toBeFocused();
+      await expect(owner.getByTestId("order-status")).toHaveText("Awaiting payment");
+      const sendDetails = owner.getByRole("region", { name: "Payment" }).getByRole("link", { name: "Send payment details on WhatsApp (opens WhatsApp)" });
+      await expect(sendDetails).toBeVisible();
+      const detailsHref = await sendDetails.getAttribute("href");
+      expect(detailsHref).toMatch(/^https:\/\/wa\.me\/2305712345\d\?text=/);
+      expect(decodeURIComponent(detailsHref!.split("text=")[1]!)).toBe(
+        `Hello Juice, your order ${number} for Tuesday, 24 November 2026 is approved! To confirm it, please send Rs 850 by Juice to E2E Baker (5000 0071) with the reference ${number}, by Sat 21 Nov, 12:00. Then reply here with your payment screenshot. Thank you!`,
+      );
+      expect(await db`select template from email_outbox where order_id = ${order!.id} and template in ('order_received', 'payment_instructions') order by template`).toEqual([
+        { template: "order_received" },
+        { template: "payment_instructions" },
+      ]);
+      await accessible(owner);
+      if (isPhone375()) await owner.screenshot({ path: `${SHOTS}/approvepay-admin-approve.png`, fullPage: true });
+
+      // S-278 AC2, AC3 (since 2026-11-14 on tracking, after the approval): the payment guide.
+      await page.goto(`/t/${token}`);
       const card = page.getByRole("region", { name: "Pay now to confirm your order" });
       await expect(card).toBeVisible();
+      await expect(page.getByRole("region", { name: "Progress" }).getByText("Step 2 of 6: Awaiting payment")).toBeVisible();
       await expect(card.getByText(`Pay Rs 850 by Juice to E2E Baker (5000 0071), reference ${number}.`)).toBeVisible();
-      await expect(card.getByText("Please pay by Sat 21 Nov, 10:00. Orders not paid within 24 hours are cancelled.")).toBeVisible();
+      await expect(card.getByRole("listitem").filter({ hasText: /^(Open MCB Juice|Write|Send us)/ })).toHaveText([
+        "Open MCB Juice and send Rs 850 to 5000 0071 (E2E Baker).",
+        `Write ${number} as the reference, so we find your payment.`,
+        "Send us the Juice confirmation screenshot on WhatsApp.",
+      ]);
+      await expect(card.getByText("Please pay by Sat 21 Nov, 12:00. Orders not paid within 24 hours of approval are cancelled.")).toBeVisible();
       const status = card.getByRole("status");
       await card.getByRole("button", { name: "Copy Juice number" }).click();
       await expect(status).toHaveText("Juice number copied");
@@ -112,13 +160,12 @@ test.describe("S-282 Juice payment", () => {
       expect(decodeURIComponent(href!.split("text=")[1]!)).toBe(`Hello, here is my Juice payment proof for order ${number} (Rs 850).`);
       await accessible(page);
       await expectKeyboardOperable(page);
-      if (isPhone375()) await card.screenshot({ path: `${SHOTS}/juice-confirmation.png` });
+      if (isPhone375()) await page.screenshot({ path: `${SHOTS}/approvepay-tracking-payment.png`, fullPage: true });
 
-      // S-279 AC1, AC2: the Owner sees it waiting with the time left and confirms the payment.
-      const phone = await browser.newContext({ viewport: page.viewportSize()! });
-      await setClock(phone, baseURL!, "2026-11-20T08:00:00Z");
-      const owner = await phone.newPage();
-      await signIn(owner, E2E_ACCOUNTS.owner, "/admin/orders?tab=payment");
+      // S-279 AC1, AC2: two hours after the approval the Owner sees it waiting with the time left
+      // (counted from the approval) and confirms the payment.
+      await setClock(phone, baseURL!, "2026-11-20T10:00:00Z");
+      await owner.goto("/admin/orders?tab=payment");
       await expect(owner.getByRole("heading", { level: 2, name: "Awaiting payment" })).toBeVisible();
       const row = owner.getByRole("listitem").filter({ has: owner.getByRole("link", { name: `Order ${number}`, exact: true }) });
       await expect(row).toContainText("22 h left");
@@ -142,26 +189,34 @@ test.describe("S-282 Juice payment", () => {
       await expect(page.getByText("Paid", { exact: true })).toBeVisible();
       await expect(page.getByText("Payment received, thank you")).toBeVisible();
       await expect(page.getByRole("region", { name: "Pay now to confirm your order" })).toHaveCount(0);
-      await expect(page.getByRole("region", { name: "Progress" }).getByText("Step 2 of 5: Approved")).toBeVisible();
+      await expect(page.getByRole("region", { name: "Progress" }).getByText("Step 3 of 6: Approved")).toBeVisible();
+      expect(await db`select template from email_outbox where order_id = ${order!.id} and template = 'order_confirmed'`).toEqual([{ template: "order_confirmed" }]);
       await accessible(page);
       if (isPhone375()) await page.screenshot({ path: `${SHOTS}/juice-tracking-paid.png`, fullPage: true });
     });
   });
 
-  test("AC2: an order unpaid for 24 hours is cancelled by the hourly job; admin and tracking say so", async ({ page, browser, baseURL, db }) => {
+  test("AC2: an order unpaid 24 hours after its APPROVAL is cancelled by the hourly job (not 24 hours after placing); admin and tracking say so", async ({ page, browser, baseURL, db }) => {
     const order = await createOrder(db, `Unpaid ${test.info().project.name}`);
-    // Placed long before any other spec's clock, so the job run below touches this order only.
-    await db`update orders set status = 'awaiting_payment', created_at = '2026-01-01T06:00:00Z' where id = ${order.id}`;
-    const client = new pg.Client({ connectionString: E2E_DATABASE_URL });
-    await client.connect();
-    try {
-      const result = await paymentDeadlines({ now: new Date("2026-01-02T06:30:00Z"), db: drizzle(client) } as unknown as JobContext);
-      expect(result).toMatchObject({ ran: true });
-    } finally {
-      await client.end();
-    }
-    const [row] = await db<{ status: string; cancel_reason: string }[]>`select status, cancel_reason from orders where id = ${order.id}`;
-    expect(row).toEqual({ status: "cancelled", cancel_reason: "unpaid" });
+    // Placed long before any other spec's clock, so the job runs below touch this order only.
+    // Placed at 00:00Z and approved at 06:00Z on 1 Jan: the clock runs from the approval.
+    await db`update orders set status = 'awaiting_payment', created_at = '2026-01-01T00:00:00Z', awaiting_payment_since = '2026-01-01T06:00:00Z' where id = ${order.id}`;
+    const tick = async (now: string) => {
+      const client = new pg.Client({ connectionString: E2E_DATABASE_URL });
+      await client.connect();
+      try {
+        expect(await paymentDeadlines({ now: new Date(now), db: drizzle(client) } as unknown as JobContext)).toMatchObject({ ran: true });
+      } finally {
+        await client.end();
+      }
+      return (await db<{ status: string; cancel_reason: string | null }[]>`select status, cancel_reason from orders where id = ${order.id}`)[0];
+    };
+
+    // 29.5 h after placing, 23.5 h after approval: still waiting (its 12 h reminder is queued).
+    expect(await tick("2026-01-02T05:30:00Z")).toEqual({ status: "awaiting_payment", cancel_reason: null });
+    expect((await db<{ sent: boolean }[]>`select payment_reminder_sent_at is not null as sent from orders where id = ${order.id}`)[0]).toEqual({ sent: true });
+    // 24.5 h after approval: cancelled as unpaid, the date is free again.
+    expect(await tick("2026-01-02T06:30:00Z")).toEqual({ status: "cancelled", cancel_reason: "unpaid" });
 
     await page.goto(`/t/${order.trackingToken}`);
     await expect(page.getByText("Cancelled: we did not receive the payment within 24 hours")).toBeVisible();
@@ -180,7 +235,8 @@ test.describe("S-282 Juice payment", () => {
 
   test("AC3: a French order gets French instructions and a French WhatsApp message", async ({ page, db }) => {
     const order = await createOrder(db, `Juice FR ${test.info().project.name}`);
-    await db`update orders set status = 'awaiting_payment', locale = 'fr', created_at = '2026-11-20T06:00:00Z' where id = ${order.id}`;
+    // Approved (approve, then pay): it now waits for its payment.
+    await db`update orders set status = 'awaiting_payment', locale = 'fr', created_at = '2026-11-20T04:00:00Z', awaiting_payment_since = '2026-11-20T06:00:00Z' where id = ${order.id}`;
     await withJuiceSettings(db, async () => {
       await page.goto(`/fr/t/${order.trackingToken}`);
       const card = page.getByRole("region", { name: "Payez maintenant pour confirmer votre commande" });
@@ -188,7 +244,8 @@ test.describe("S-282 Juice payment", () => {
       await expect(card.getByText("Comment payer")).toBeVisible();
       const href = await card.getByRole("link", { name: /Envoyer la preuve sur WhatsApp/ }).getAttribute("href");
       expect(decodeURIComponent(href!.split("text=")[1]!)).toBe(`Bonjour, voici la preuve de mon paiement Juice pour la commande ${numberOf(order.number)} (Rs 850).`);
-      await expect(page.getByText("Étape 1 sur 5 : En attente de paiement")).toBeVisible();
+      await expect(page.getByText("Étape 2 sur 6 : En attente de paiement")).toBeVisible();
+      await expect(card.getByText("Merci de payer avant le sam. 21 nov., 10:00. Les commandes non payées sous 24 heures après leur validation sont annulées.")).toBeVisible();
       await expectNoA11yViolations(page);
     });
   });

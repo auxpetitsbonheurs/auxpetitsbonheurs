@@ -21,7 +21,7 @@ interface OrderView {
 }
 
 const FIXED_TARGET: Partial<Record<StatusIntent, OrderStatus>> = {
-  approve: "approved",
+  approve: "awaiting_payment",
   markPaid: "approved",
   undoPaid: "awaiting_payment",
   decline: "declined",

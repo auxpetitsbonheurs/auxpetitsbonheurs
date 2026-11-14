@@ -48,7 +48,8 @@ describe.skipIf(!dir)("email previews", () => {
     for (const locale of ["en", "fr"] as const) {
       for (const key of ORDER_EMAIL_KEYS) {
         const base = sample(locale);
-        const data = key === "order_confirmed" || key === "order_updated" ? { ...base, order: { ...base.order, status: "approved", paid: true } } : base;
+        const status = key === "order_confirmed" || key === "order_updated" ? { status: "approved", paid: true } : key === "order_received" ? { status: "pending_approval" } : {};
+        const data = { ...base, order: { ...base.order, ...status } };
         const email = renderOrderEmail(key, data);
         writeFileSync(join(dir!, `${key}.${locale}.html`), email.html);
         writeFileSync(join(dir!, `${key}.${locale}.txt`), `Subject: ${email.subject}\n\n${email.text}`);
@@ -61,6 +62,6 @@ describe.skipIf(!dir)("email previews", () => {
       }
     }
     writeFileSync(join(dir!, "index.html"), `<ul>${names.map((name) => `<li><a href="${name}.html">${name}</a></li>`).join("")}</ul>`);
-    expect(names.length).toBe(40);
+    expect(names.length).toBe((ORDER_EMAIL_KEYS.length + 5) * 2);
   });
 });

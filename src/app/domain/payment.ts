@@ -1,20 +1,21 @@
 // Full payment by MCB Juice at order (docs/specs/features/juice-payment.md, decision
-// 2026-11-13). Pure: the deadline is computed from the order's `created_at`, never stored,
+// 2026-11-13; approve-then-pay 2026-11-14). Pure: the deadline is computed from when the order
+// started waiting for its payment (its approval, `awaiting_payment_since`), never stored,
 // and every rule takes "now" from the caller (request clock or the cron tick).
 import { whatsappLinkFor } from "./whatsapp";
 
 const HOUR_MS = 3_600_000;
 /** A reminder is queued once the order has waited this long unpaid (S-280 AC1). */
 export const PAYMENT_REMINDER_AFTER_MS = 12 * HOUR_MS;
-/** An order still unpaid this long after placing is cancelled (S-280 AC2). */
+/** An order still unpaid this long after its approval is cancelled (S-280 AC2, 2026-11-14). */
 export const PAYMENT_DEADLINE_MS = 24 * HOUR_MS;
 /** Juice account name limit in Settings (S-277). */
 export const JUICE_NAME_MAX = 60;
 /** Refusal reason limit (S-281; contracts.md `decline` `{ reason?: ≤ 500 }`). */
 export const DECLINE_REASON_MAX = 500;
 
-export function paymentDeadline(createdAt: Date): Date {
-  return new Date(createdAt.getTime() + PAYMENT_DEADLINE_MS);
+export function paymentDeadline(since: Date): Date {
+  return new Date(since.getTime() + PAYMENT_DEADLINE_MS);
 }
 
 /** What the hourly job owes an order awaiting payment at `now`. */

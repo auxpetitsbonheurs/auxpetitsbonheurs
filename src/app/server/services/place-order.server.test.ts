@@ -181,7 +181,7 @@ describe("the payment snapshot of a new order (S-278 AC2)", () => {
 });
 
 describe("the stored order (S-013 AC4)", () => {
-  test("S-278 AC1: a delivery order is awaiting payment with copied prices and the Settings fee", async () => {
+  test("approve, then pay (2026-11-14): a delivery order is placed pending approval, no payment clock yet, with copied prices and the Settings fee", async () => {
     const result = await place(deliveryForm({ displayedTotalRs: "1900" }), { basket: [line("a", cakeId, 2)], locale: "fr" });
     expect(result.ok).toBe(true);
     expectRefusedNever(result);
@@ -189,7 +189,9 @@ describe("the stored order (S-013 AC4)", () => {
     const { rows } = await database.client.query(`select * from orders`);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
-      status: "awaiting_payment",
+      status: "pending_approval",
+      awaiting_payment_since: null,
+      payment_reminder_sent_at: null,
       source: "website",
       locale: "fr",
       fulfilment: "delivery",
@@ -263,7 +265,7 @@ describe("event and email outbox (S-013 AC6)", () => {
 
     const events = await database.client.query(`select order_id, actor_type, actor_admin_id, type, to_status from order_event`);
     expect(events.rows).toEqual([
-      { order_id: result.orderId, actor_type: "customer", actor_admin_id: null, type: "created", to_status: "awaiting_payment" },
+      { order_id: result.orderId, actor_type: "customer", actor_admin_id: null, type: "created", to_status: "pending_approval" },
     ]);
     const outbox = await database.client.query(`select template, to_email, locale, status, dedupe_key, order_id, attempts from email_outbox`);
     expect(outbox.rows).toEqual([

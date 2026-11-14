@@ -10,11 +10,11 @@ import { withSettingsLock } from "./support/settings-lock";
 const SHOTS = "/tmp/claude-0/-home-user-auxpetitsbonheurs/9106cb54-2393-55df-a3cb-bd8500903b6a/scratchpad";
 
 test.describe("S-202 WhatsApp templates", () => {
-  test("AC1 + AC6 + AC8: five templates with a live preview per language; an empty French text says the English one is used", async ({ page }, testInfo) => {
+  test("AC1 + AC6 + AC8: six templates (payment details added with approve, then pay) with a live preview per language; an empty French text says the English one is used", async ({ page }, testInfo) => {
     await signIn(page, E2E_ACCOUNTS.owner, "/admin/settings");
     await expect(page.locator("html")).toHaveAttribute("data-hydrated", "true");
     const section = page.getByRole("region", { name: "WhatsApp messages" });
-    await expect(section.getByRole("group")).toHaveCount(5);
+    await expect(section.getByRole("group")).toHaveCount(6);
 
     const blank = section.getByRole("textbox", { name: "Blank message (English)" });
     await blank.fill("Hi {name}, order {order_number}");

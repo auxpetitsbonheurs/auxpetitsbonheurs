@@ -38,13 +38,13 @@ test.describe("S-016 tracking page", () => {
     await expect(page.getByText("Fri 20 Nov")).toBeVisible();
     await expect(page.getByText("Pickup: free")).toBeVisible();
     await expect(page.getByText("Rs 850").first()).toBeVisible();
-    // An order placed before Juice payment (pending approval) shows no payment instructions and never the Juice number.
+    // Approve, then pay (2026-11-14): pending approval shows no payment instructions and never the Juice number.
     await expect(page.getByRole("main").getByText(/5000 0000/)).toHaveCount(0);
 
     const progress = page.getByRole("region", { name: "Progress" });
-    await expect(progress.getByText("Step 1 of 5: Pending approval")).toBeVisible();
+    await expect(progress.getByText("Step 1 of 6: Pending approval")).toBeVisible();
     const steps = progress.getByRole("listitem");
-    await expect(steps).toHaveText([/Pending approval/, /Approved/, /In preparation/, /Ready for pickup/, /Completed/]);
+    await expect(steps).toHaveText([/Pending approval/, /Awaiting payment/, /Approved/, /In preparation/, /Ready for pickup/, /Completed/]);
     await expect(steps.nth(0)).toHaveAttribute("aria-current", "step");
     await expect(progress.locator("ol")).toHaveCount(1);
   });
@@ -82,10 +82,10 @@ test.describe("S-016 tracking page", () => {
 
     await expect(page).toHaveURL(new RegExp(`/fr/t/${order.trackingToken}$`));
     await expect(page.locator("html")).toHaveAttribute("lang", "fr");
-    await expect(page.getByText("Étape 1 sur 5 : En attente d'acceptation")).toBeVisible();
+    await expect(page.getByText("Étape 1 sur 6 : En attente d'acceptation")).toBeVisible();
     await page.getByRole("link", { name: /English/ }).click();
     await expect(page).toHaveURL(new RegExp(`/t/${order.trackingToken}$`));
-    await expect(page.getByText("Step 1 of 5: Pending approval")).toBeVisible();
+    await expect(page.getByText("Step 1 of 6: Pending approval")).toBeVisible();
   });
 
   test("AC7: keyboard order, visible focus, no clipping or sideways scroll, 44 px targets at 100% and 200%", async ({ page, db }) => {
@@ -103,9 +103,18 @@ test.describe("S-016 tracking page", () => {
       await expectNoA11yViolations(page);
       await expectNoA11yViolations(page, { zoom: 2 });
 
+      // Approved by the bakery: the payment guide (or its calm fallback), still cancellable before paying.
+      await db`update orders set status = 'awaiting_payment', awaiting_payment_since = now() where id = ${order.id}`;
+      await page.reload();
+      await expect(page.getByText("Step 2 of 6: Awaiting payment")).toBeVisible();
+      await expect(page.getByTestId("payment-instructions").or(page.getByTestId("payment-fallback"))).toBeVisible();
+      await expect(page.getByRole("button", { name: `Cancel order ${numberOf(order.number)}` })).toBeVisible();
+      await expectNoA11yViolations(page);
+      await expectNoA11yViolations(page, { zoom: 2 });
+
       await db`update orders set status = 'approved' where id = ${order.id}`;
       await page.reload();
-      await expect(page.getByText("Step 2 of 5: Approved")).toBeVisible();
+      await expect(page.getByText("Step 3 of 6: Approved")).toBeVisible();
       await expectNoA11yViolations(page);
 
       await page.goto(`/t/${"Q".repeat(43)}`);
@@ -169,7 +178,7 @@ test.describe("S-096 customer cancel, S-094 WhatsApp, S-095 final states", () =>
 
     await page.getByRole("dialog").getByRole("button", { name: `Cancel order ${number}` }).click();
     await expect(page.getByRole("alert")).toContainText("This order can no longer be cancelled here.");
-    await expect(page.getByText("Step 2 of 5: Approved")).toBeVisible();
+    await expect(page.getByText("Step 3 of 6: Approved")).toBeVisible();
     await expect(page.getByRole("button", { name: `Cancel order ${number}` })).toHaveCount(0);
   });
 

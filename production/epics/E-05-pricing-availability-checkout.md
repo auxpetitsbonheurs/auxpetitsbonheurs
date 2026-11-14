@@ -36,9 +36,9 @@ Phase 3 exit: a guest places a 2-item delivery order on a phone, cancels it from
 | S-097 | Re-measure Worker CPU on pricing and checkout (risk T3) | in-progress | 2 |
 | S-098 | Checkout journeys end to end on a phone | review | 3 |
 | S-277 | Owner sets the Juice payment details | review | 2 |
-| S-278 | Orders start as Awaiting payment, with Juice instructions at once | review | 5 |
+| S-278 | Orders wait for approval, then show the Juice instructions (approve, then pay, 2026-11-14) | review | 5 |
 | S-279 | Admin sees orders awaiting payment and marks Payment received | review | 5 |
-| S-280 | Unpaid orders: reminder at 12 h, cancelled at 24 h | review | 3 |
+| S-280 | Unpaid orders: reminder at 12 h, cancelled at 24 h after approval | review | 3 |
 | S-281 | Refuse an order after payment, with the refund step | review | 3 |
 | S-282 | Juice payment journeys end to end on a phone | review | 2 |
 

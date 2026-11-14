@@ -17,6 +17,7 @@ export type OrderEmailKey =
   | "request_received"
   | "quote"
   | "order_confirmed"
+  | "payment_instructions"
   | "order_updated"
   | "order_declined"
   | "request_declined"
@@ -35,6 +36,7 @@ export const ORDER_EMAIL_KEYS: readonly OrderEmailKey[] = [
   "request_received",
   "quote",
   "order_confirmed",
+  "payment_instructions",
   "order_updated",
   "order_declined",
   "request_declined",
@@ -179,6 +181,24 @@ const BUILDERS: Record<OrderEmailKey, Builder> = {
         ...itemBlocks(data),
         whenWhere(data),
         ...(data.order.status === "awaiting_payment" ? paymentBlocks(data) : []),
+        trackBlock(data),
+        { kind: "p", text: t("email.common.policy", locale) },
+      ],
+    };
+  },
+  // Approve, then pay (2026-11-14): the bakery approved the order; how to pay by Juice, the
+  // deadline (24 h after the approval) and the proof button. Order confirmed follows the payment.
+  payment_instructions(data) {
+    const { locale } = data;
+    return {
+      subject: t("email.paymentInstructions.subject", locale, vars(data)),
+      heading: t("email.paymentInstructions.heading", locale),
+      blocks: [
+        hello(data),
+        { kind: "note", text: t("email.paymentInstructions.intro", locale, { ...vars(data), amount: formatRupees(data.order.totalRs) }) },
+        ...paymentBlocks(data),
+        ...itemBlocks(data),
+        whenWhere(data),
         trackBlock(data),
         { kind: "p", text: t("email.common.policy", locale) },
       ],

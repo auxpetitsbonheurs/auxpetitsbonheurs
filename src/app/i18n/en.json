@@ -171,7 +171,7 @@
       "whatsappText": "Hello, I would like to order but no dates are available on the website.",
       "contact": "Contact us"
     },
-    "paymentInfo": "Payment: the full amount by MCB Juice. You get the payment details as soon as you place your order.",
+    "paymentInfo": "Payment: the full amount by MCB Juice. We confirm your order first, then send you the payment details.",
     "savedAddresses": "Your saved addresses",
     "newAddress": "A new address",
     "saveAddress": "Save this address to my account"
@@ -277,8 +277,8 @@
       "numberLabel": "Your order number",
       "copyNumber": "Copy order number",
       "copiedNumber": "Order number copied",
-      "notConfirmedTitle": "Not confirmed until we approve it",
-      "notConfirmedBody": "We check every order and email you as soon as we approve it.",
+      "notConfirmedTitle": "Waiting for our approval",
+      "notConfirmedBody": "We check every order. Once we approve it, we email you how to pay by Juice and the payment details appear here. Please do not pay before that.",
       "trackingTitle": "Your private tracking link",
       "trackingHint": "Keep this link to follow your order. Anyone with it can see your order, so share it only with people you trust.",
       "followOrder": "Follow my order",
@@ -292,7 +292,13 @@
       "leftOutBody_other": "{{names}} were no longer available when you ordered.",
       "saveDetailsTitle": "Save your details for next time",
       "saveDetailsBody": "One tap makes an account with this order's email, so your next order is quicker. You choose a password after confirming your email.",
-      "saveDetailsAction": "Save my details"
+      "saveDetailsAction": "Save my details",
+      "receivedLead": "Your order is received. We check it and confirm it with you, then send you the payment details. Please do not pay yet.",
+      "nextTitle": "What happens next",
+      "nextStep1": "We check your order and approve it.",
+      "nextStep2": "We email you how to pay by MCB Juice. The payment details also appear on your tracking page.",
+      "nextStep3": "You pay within 24 hours and send us the proof on WhatsApp. Your order is then confirmed.",
+      "totalLater": "Total {{amount}}, paid by Juice once we approve your order."
     },
     "notFound": {
       "metaTitle": "Order not found",
@@ -388,7 +394,7 @@
       "step2": "Write {{reference}} as the reference, so we find your payment.",
       "step3": "Send us the Juice confirmation screenshot on WhatsApp.",
       "step3NoWhatsapp": "Keep the Juice confirmation: we check every payment and confirm your order.",
-      "deadline": "Please pay by {{time}}. Orders not paid within 24 hours are cancelled.",
+      "deadline": "Please pay by {{time}}. Orders not paid within 24 hours of approval are cancelled.",
       "sendProof": "Send proof on WhatsApp",
       "opensWhatsapp": "(opens WhatsApp)",
       "proofText": "Hello, here is my Juice payment proof for order {{number}} ({{amount}}).",
@@ -545,7 +551,7 @@
       },
       "approve": "Approve",
       "approving": "Approving the order…",
-      "approved": "Order {{number}} approved. The customer will get a confirmation email.",
+      "approved": "Order {{number}} approved. The customer gets the payment details by email.",
       "reload": "Reload the order",
       "noActions": "No action needed on this order now.",
       "actionsLabel": "Order actions",
@@ -648,10 +654,13 @@
         "ready": "Order ready",
         "on_the_way": "On the way",
         "payment_reminder": "Payment reminder",
-        "blank": "Blank message"
+        "blank": "Blank message",
+        "payment_instructions": "Payment details"
       },
       "whatsappMenuHint": "Choose a message. You can change it in WhatsApp before sending.",
-      "whatsappMenuLabel": "WhatsApp messages for {{name}}"
+      "whatsappMenuLabel": "WhatsApp messages for {{name}}",
+      "sendPaymentWhatsapp": "Send payment details on WhatsApp",
+      "paymentAfterApproval": "Not paid yet. Approving sends the customer the Juice payment details; they then have 24 hours to pay."
     },
     "log": {
       "title": "Activity",
@@ -2435,7 +2444,7 @@
     "orderReceived": {
       "subject": "We received your order {{number}}",
       "heading": "Thank you, we received your order",
-      "intro": "Your order {{number}} is not confirmed yet. We check it and confirm it with you soon."
+      "intro": "Your order {{number}} is received but not confirmed yet. We check it and approve it, then email you how to pay by MCB Juice. Please do not pay before that."
     },
     "requestReceived": {
       "subject": "We received your request {{number}}",
@@ -2590,6 +2599,11 @@
         "line": "{{name}} cancelled this order.",
         "lineNoName": "The customer cancelled this order."
       }
+    },
+    "paymentInstructions": {
+      "subject": "Order {{number}} approved: how to pay",
+      "heading": "Your order is approved, here is how to pay",
+      "intro": "Good news: we approved your order {{number}}. Pay {{amount}} by MCB Juice within 24 hours to confirm it."
     }
   },
   "nav": {

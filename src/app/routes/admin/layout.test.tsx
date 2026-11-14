@@ -64,8 +64,8 @@ describe("Orders badge (S-034)", () => {
   test("AC1: 3 orders in Pending approval or Quote needed give toReview 3; other statuses do not count", async () => {
     const placed = [];
     for (let i = 0; i < 4; i += 1) placed.push(await placePending());
-    // An order awaiting its Juice payment is listed in Orders → Payment, not counted as to review.
-    await placeTestOrder(database);
+    // An order awaiting its Juice payment (approved, not paid) is listed in Orders → Payment, not counted as to review.
+    await setStatus("awaiting_payment", (await placePending()).token);
     await setStatus("quote_needed", placed[1]!.token);
     await setStatus("approved", placed[3]!.token);
     const args = await as("admin");

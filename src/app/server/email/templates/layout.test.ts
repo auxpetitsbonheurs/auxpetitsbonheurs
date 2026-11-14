@@ -95,6 +95,37 @@ describe("content per email", () => {
     expect(en.text).toContain(`${SITE}/t/${"T".repeat(43)}`);
   });
 
+  test("approve, then pay: order_received of an order pending approval says we confirm it then send how to pay, with no Juice details (EN, FR)", () => {
+    const en = renderOrderEmail("order_received", data("en", { status: "pending_approval" }));
+    const fr = renderOrderEmail("order_received", data("fr", { status: "pending_approval" }));
+
+    expect(en.text).toContain("We check it and approve it, then email you how to pay by MCB Juice. Please do not pay before that.");
+    expect(fr.text).toContain("Nous la vérifions et la validons, puis nous vous envoyons par e-mail comment payer par MCB Juice.");
+    for (const email of [en, fr]) {
+      expect(email.text).not.toMatch(/5712 3456|Sarah B|wa\.me/);
+      expect(email.text).toContain("2 × ");
+      expect(email.text).toContain(`/t/${"T".repeat(43)}`);
+    }
+  });
+
+  test("payment_instructions: the Juice name and number, amount, reference, the pay-by time 24 h after the approval and the WhatsApp proof button (EN, FR)", () => {
+    // `createdAt` is when the payment clock started (order-data: awaiting_payment_since, the approval).
+    const approvedAt = { status: "awaiting_payment", createdAt: new Date("2026-11-13T06:30:00Z") };
+    const en = renderOrderEmail("payment_instructions", data("en", approvedAt));
+    const fr = renderOrderEmail("payment_instructions", data("fr", approvedAt));
+
+    expect(en.subject).toBe("Order APB-0042 approved: how to pay");
+    expect(en.text).toContain("Good news: we approved your order APB-0042. Pay Rs 1,250 by MCB Juice within 24 hours to confirm it.");
+    expect(en.text).toContain("Pay Rs 1,250 by Juice to Sarah B (5712 3456), reference APB-0042.");
+    expect(en.text).toContain("Please pay by Sat 14 Nov, 10:30. Orders not paid within 24 hours of approval are cancelled.");
+    expect(en.html).toContain("https://wa.me/23057123456?text=");
+    expect(en.html).toContain("Send proof on WhatsApp");
+    expect(fr.subject).toBe("Commande APB-0042 validée : comment payer");
+    expect(fr.text).toContain("Payez Rs 1,250 par Juice à Sarah B (5712 3456), référence APB-0042.");
+    expect(fr.text).toMatch(/Merci de payer avant le sam\.? 14 nov\.?, 10:30\./);
+    expect(fr.html).toContain("Envoyer la preuve sur WhatsApp");
+  });
+
   test("the French order is French all the way: subject, item name, option, window and link prefix", () => {
     const fr = renderOrderEmail("order_received", data("fr"));
 

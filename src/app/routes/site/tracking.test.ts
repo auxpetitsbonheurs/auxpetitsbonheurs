@@ -25,6 +25,10 @@ function args(path: string, token: string, headers: Record<string, string> = {})
 const load = async (path: string, token: string, headers: Record<string, string> = {}) =>
   (await loader(args(path, token, headers) as never)) as TrackingData;
 
+/** The bakery approved the order at 09:30Z (approve, then pay): it now waits for its Juice payment. */
+const approve = (token: string) =>
+  database.client.query("update orders set status = 'awaiting_payment', awaiting_payment_since = '2026-11-10T09:30:00Z' where tracking_token = $1", [token]);
+
 async function rejection(promise: Promise<unknown>) {
   return promise.then(
     () => {
@@ -38,6 +42,12 @@ describe("tracking page content (S-016 AC1)", () => {
   test("a delivery order shows number, status, paid, items, date, window, address, fee, total and the Juice payment (S-278 AC5)", async () => {
     await database.client.query("update settings set juice_name = 'A. Baker', juice_number = '5000 0001', payment_whatsapp = '5000 0002'");
     const { token } = await placeTestOrder(database, { quantity: 2, overrides: DELIVERY_ORDER });
+
+    // Approve, then pay (2026-11-14): no Juice details while it waits for the bakery's approval.
+    const pending = await load(`/t/${token}`, token);
+    expect(pending.order.status).toBe("pending_approval");
+    expect(pending.payment).toBeNull();
+    await approve(token);
 
     const data = await load(`/t/${token}`, token);
     expect(data.order).toMatchObject({
@@ -58,13 +68,15 @@ describe("tracking page content (S-016 AC1)", () => {
     expect(data.order.items).toEqual([
       { name: { en: "Chocolate cake", fr: "Gâteau au chocolat" }, quantity: 2, lineTotalRs: 1700, options: [], cakeMessage: null },
     ]);
-    expect(data.payment).toMatchObject({ totalRs: 1900, reference: "APB-0001", details: { juiceName: "A. Baker", juiceNumber: "5000 0001" } });
+    // The pay-by time is 24 h after the approval (09:30Z), not after placing.
+    expect(data.payment).toMatchObject({ totalRs: 1900, reference: "APB-0001", deadline: "2026-11-11T09:30:00.000Z", details: { juiceName: "A. Baker", juiceNumber: "5000 0001" } });
     expect(data.payment?.proofUrl).toMatch(/^https:\/\/wa\.me\/23050000002\?text=/);
     expect(data.refund).toBeNull();
   });
 
   test("a pickup order has no address and no fee; without the Juice name the payment falls back calmly (S-278 AC4)", async () => {
     const { token } = await placeTestOrder(database);
+    await approve(token);
 
     const data = await load(`/t/${token}`, token);
     expect(data.order).toMatchObject({ fulfilment: "pickup", address: null, landmark: null, deliveryFeeRs: 0, totalRs: 850 });
@@ -109,18 +121,20 @@ describe("after payment, refusal or the unpaid cancel (S-279 AC5, S-280 AC5, S-2
 });
 
 describe("progress (S-016 AC2)", () => {
-  test("awaiting payment is step 1 of the delivery path; approved is step 2 of the pickup path", async () => {
+  test("pending approval is step 1 of the delivery path, awaiting payment step 2; approved is step 3 of the pickup path", async () => {
     const delivery = await placeTestOrder(database, { overrides: { ...DELIVERY_ORDER, displayedTotalRs: "1050" } });
     const pickup = await placeTestOrder(database);
     await database.client.query("update orders set status = 'approved' where tracking_token = $1", [pickup.token]);
 
     expect((await load(`/t/${delivery.token}`, delivery.token)).progress).toEqual({
-      steps: ["awaiting_payment", "approved", "in_preparation", "out_for_delivery", "completed"],
+      steps: ["pending_approval", "awaiting_payment", "approved", "in_preparation", "out_for_delivery", "completed"],
       current: 0,
     });
+    await approve(delivery.token);
+    expect((await load(`/t/${delivery.token}`, delivery.token)).progress?.current).toBe(1);
     expect((await load(`/t/${pickup.token}`, pickup.token)).progress).toEqual({
-      steps: ["awaiting_payment", "approved", "in_preparation", "ready_for_pickup", "completed"],
-      current: 1,
+      steps: ["pending_approval", "awaiting_payment", "approved", "in_preparation", "ready_for_pickup", "completed"],
+      current: 2,
     });
   });
 });

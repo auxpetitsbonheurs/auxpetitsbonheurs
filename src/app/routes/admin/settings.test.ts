@@ -95,6 +95,8 @@ describe("S-058 AC3, AC4: checkout, footer and tracking show a change on the nex
 
   test("the tracking page of an order awaiting payment shows the new Juice details (S-278 AC5)", async () => {
     const { token } = await placeTestOrder(database);
+    // Approved, so it waits for its Juice payment (approve, then pay).
+    await database.client.query("update orders set status = 'awaiting_payment', awaiting_payment_since = created_at where tracking_token = $1", [token]);
 
     await save({ juiceName: "A. Baker", juiceNumber: "5999 1234", paymentWhatsapp: "5999 4321" });
 
@@ -114,9 +116,9 @@ describe("S-058 AC6: a new order number prefix is for new orders only", () => {
     expect(await number(first.token)).toBe("APB-0001");
     expect(await number(second.token)).toBe("CK-0002");
     const session = await owner();
-    // New orders wait for their Juice payment: the Payment tab lists them (S-279).
-    const list = await ordersLoader(routeArgs(database, { path: "/admin/orders?tab=payment", auth: session.auth, cookie: session.cookie }) as never);
-    expect(list.payment!.awaiting.map((o: { number: string }) => o.number)).toEqual(["APB-0001", "CK-0002"]);
+    // Approve, then pay (2026-11-14): new orders wait for approval, so To review lists them.
+    const list = await ordersLoader(routeArgs(database, { path: "/admin/orders?tab=review", auth: session.auth, cookie: session.cookie }) as never);
+    expect(list.data.map((o: { number: string }) => o.number)).toEqual(["APB-0001", "CK-0002"]);
   });
 });
 

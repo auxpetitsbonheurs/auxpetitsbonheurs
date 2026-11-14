@@ -85,20 +85,24 @@ test.describe("S-017 orders to review and Approve", () => {
     await expect(approve).toHaveAttribute("aria-busy", "true");
     await expect(approve).toBeFocused();
     // Optimistic (E-06): the header shows the expected status before the server answers.
-    await expect(page.getByTestId("order-status")).toHaveText("Approved");
+    // Approve, then pay (2026-11-14): approving moves it to Awaiting payment.
+    await expect(page.getByTestId("order-status")).toHaveText("Awaiting payment");
     release();
 
-    await expect(page.getByRole("status").filter({ hasText: `Order ${orderNumber(order.number)} approved.` })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: `Order ${orderNumber(order.number)} approved. The customer gets the payment details by email.` })).toBeVisible();
     await expect(page.getByRole("button", { name: /^Approve/ })).toHaveCount(0);
-    // The focused button is gone: focus lands on the result, not on <body>; the next step is offered.
+    // The focused button is gone: focus lands on the result, not on <body>; the next steps are offered:
+    // the payment details on WhatsApp in one tap, and Payment received.
     await expect(page.getByTestId("approve-result")).toBeFocused();
-    await expect(page.getByRole("button", { name: "Mark in preparation" })).toBeVisible();
-    const [row] = await db<{ status: string; version: number }[]>`select status, version from orders where id = ${order.id}`;
-    expect(row).toEqual({ status: "approved", version: 2 });
+    await expect(page.getByRole("link", { name: "Send payment details on WhatsApp (opens WhatsApp)" })).toHaveAttribute("href", /^https:\/\/wa\.me\/2305\d{7}\?text=Hello%20Approve/);
+    await expect(page.getByRole("button", { name: "Payment received" })).toBeVisible();
+    const [row] = await db<{ status: string; version: number; started: boolean }[]>`select status, version, awaiting_payment_since is not null as started from orders where id = ${order.id}`;
+    expect(row).toEqual({ status: "awaiting_payment", version: 2, started: true });
     const events = await db`select actor_admin_id from order_event where order_id = ${order.id} and type = 'approved'`;
     expect(events).toEqual([{ actor_admin_id: E2E_ACCOUNTS.helper.id }]);
-    const outbox = await db`select dedupe_key from email_outbox where order_id = ${order.id} and template = 'order_confirmed'`;
-    expect(outbox).toEqual([{ dedupe_key: `order:${order.id}:order_confirmed:v2` }]);
+    const outbox = await db`select dedupe_key from email_outbox where order_id = ${order.id} and template = 'payment_instructions'`;
+    expect(outbox).toEqual([{ dedupe_key: `order:${order.id}:payment_instructions:v2` }]);
+    expect(await db`select id from email_outbox where order_id = ${order.id} and template = 'order_confirmed'`).toEqual([]);
   });
 
   test("AC4: when someone else changed the order, Approve says \"This order changed. Reload\" and nothing changes", async ({ page, db }) => {
@@ -128,14 +132,14 @@ test.describe("S-017 orders to review and Approve", () => {
     const statuses = (await Promise.all([post("1"), post("1")])).map((r) => r.status()).sort();
 
     expect(statuses).toEqual([200, 409]);
-    expect(await db`select id from email_outbox where order_id = ${order.id} and template = 'order_confirmed'`).toHaveLength(1);
+    expect(await db`select id from email_outbox where order_id = ${order.id} and template = 'payment_instructions'`).toHaveLength(1);
     expect(await db`select id from order_event where order_id = ${order.id} and type = 'approved'`).toHaveLength(1);
     expect((await post("2")).status()).toBe(409);
     const [row] = await db<{ version: number }[]>`select version from orders where id = ${order.id}`;
     expect(row!.version).toBe(2);
     await page.goto(`/admin/orders/${order.id}`);
     await expect(page.getByRole("button", { name: /^Approve/ })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Mark in preparation" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Payment received" })).toBeVisible();
   });
 
   test("AC7: signed out or as a customer, the orders pages and approve lead to login with no order data", async ({ page, db, request, baseURL }) => {

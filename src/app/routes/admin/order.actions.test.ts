@@ -108,14 +108,14 @@ describe("status actions through the route (S-116, S-117, S-119)", () => {
 });
 
 describe("conflicts (S-124 AC1, AC3, AC6)", () => {
-  test("A approves, then B declines with the same version: B gets ORDER_CHANGED and the order stays approved", async () => {
+  test("A approves, then B declines with the same version: B gets ORDER_CHANGED and the order stays approved, awaiting its payment", async () => {
     const other = await signedInAdmin(database, { name: "Bea" });
     await post({ intent: "approve", version: "1" });
 
     const refused = (await post({ intent: "decline", version: "1" }, other)) as Refusal;
     expect(refused.init.status).toBe(409);
     expect(refused.data.error).toEqual({ code: "ORDER_CHANGED", message: "This order changed. Reload" });
-    expect(await row()).toMatchObject({ status: "approved", version: 2 });
+    expect(await row()).toMatchObject({ status: "awaiting_payment", version: 2 });
   });
 
   test.each([

@@ -9,6 +9,7 @@ import type { Fulfilment, OrderStatus } from "./status";
 /** Customer email queued with a transition (notifications spec keys; content is E-10). */
 export type TransitionEmail =
   | "order_confirmed"
+  | "payment_instructions"
   | "order_declined"
   | "request_declined"
   | "quote"
@@ -63,9 +64,12 @@ const CANCELLABLE: OrderStatus[] = [
 const REFUSABLE: OrderStatus[] = ["awaiting_payment", "pending_approval", "approved", "in_preparation"];
 
 const ADMIN_RULES: Record<AdminAction, TransitionRule[]> = {
-  approve: [{ from: "pending_approval", to: "approved", email: "order_confirmed", event: "approved" }],
-  // Juice payment (the payment agent's state model, S-279): Payment received is the confirmation;
-  // its Undo exists only right after it (the service also checks nothing happened since).
+  // Approve, then pay (Owner decision 2026-11-14, juice-payment spec): approving a website order
+  // starts its Juice payment (the 12 h / 24 h clock counts from here, `awaiting_payment_since`)
+  // and sends the payment instructions; Payment received then confirms it.
+  approve: [{ from: "pending_approval", to: "awaiting_payment", email: "payment_instructions", event: "approved" }],
+  // Juice payment (S-279): Payment received is the confirmation; its Undo exists only right
+  // after it (the service also checks nothing happened since).
   markPaid: [{ from: "awaiting_payment", to: "approved", email: "order_confirmed", event: "payment_received" }],
   undoPaid: [{ from: "approved", to: "awaiting_payment", email: null, event: "payment_undone" }],
   decline: REFUSABLE.map((from) => ({ from, to: "declined", email: "order_declined", event: "declined" })),

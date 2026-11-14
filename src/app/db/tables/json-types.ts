@@ -27,6 +27,7 @@ export type WhatsappTemplateKey =
   | "approved"
   | "ready"
   | "on_the_way"
+  | "payment_instructions"
   | "payment_reminder"
   | "blank";
 

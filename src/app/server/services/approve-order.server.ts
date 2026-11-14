@@ -1,7 +1,9 @@
-// `admin/order` approve (FR-052, FR-054): pending_approval -> approved with the activity-log
-// event (actor = the admin, FR-045) and the order_confirmed email in the outbox (order locale;
-// sending is E-10, after the response through afterResponse). Since S-115 it is the `approve`
-// row of the shared transition table, run by `transitionOrder` in one statement.
+// `admin/order` approve (FR-052, FR-054; approve-then-pay 2026-11-14): pending_approval ->
+// awaiting_payment with the activity-log event (actor = the admin, FR-045), the payment clock
+// started (`awaiting_payment_since = now`, the reminder re-armed) and the payment_instructions
+// email in the outbox (order locale; sending is E-10). Payment received then confirms the order.
+// It is the `approve` row of the shared transition table, run by `transitionOrder` in one
+// statement. Reused by other approve-then-pay flows through `approve-then-pay.server`.
 import type { Database } from "~/server/db.server";
 import { type TransitionOrderResult, transitionOrder } from "./transition-order.server";
 

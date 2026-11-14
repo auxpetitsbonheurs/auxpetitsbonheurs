@@ -6,10 +6,13 @@ import type { LocalizedText, WhatsappTemplateKey, WhatsappTemplates } from "~/db
 import type { Locale } from "~/lib/locale";
 import { normalizePhone, whatsappDigits } from "./phone";
 
-export const WHATSAPP_TEMPLATE_KEYS: readonly WhatsappTemplateKey[] = ["approved", "ready", "on_the_way", "payment_reminder", "blank"];
+export const WHATSAPP_TEMPLATE_KEYS: readonly WhatsappTemplateKey[] = ["approved", "ready", "on_the_way", "payment_instructions", "payment_reminder", "blank"];
 
-/** The placeholder allow-list (S-202 AC3); anything else in braces is refused when saving. */
-export const WHATSAPP_PLACEHOLDERS = ["name", "order_number", "date", "window", "total", "juice_number", "pickup_address", "tracking_link"] as const;
+/**
+ * The placeholder allow-list (S-202 AC3); anything else in braces is refused when saving.
+ * `juice_name` and `deadline` (the pay-by time, 24 h after approval) came with approve-then-pay.
+ */
+export const WHATSAPP_PLACEHOLDERS = ["name", "order_number", "date", "window", "total", "juice_name", "juice_number", "deadline", "pickup_address", "tracking_link"] as const;
 export type WhatsappPlaceholder = (typeof WHATSAPP_PLACEHOLDERS)[number];
 export type WhatsappValues = Partial<Record<WhatsappPlaceholder, string | null>>;
 
@@ -29,6 +32,11 @@ export const DEFAULT_WHATSAPP_TEMPLATES: WhatsappTemplates = {
   on_the_way: {
     en: "Hello {name}, your order {order_number} is on its way ({window}). See you soon!",
     fr: "Bonjour {name}, votre commande {order_number} est en route ({window}). À tout de suite !",
+  },
+  // Approve, then pay (2026-11-14): the admin's one tap right after approving.
+  payment_instructions: {
+    en: "Hello {name}, your order {order_number} for {date} is approved! To confirm it, please send {total} by Juice to {juice_name} ({juice_number}) with the reference {order_number}, by {deadline}. Then reply here with your payment screenshot. Thank you!",
+    fr: "Bonjour {name}, votre commande {order_number} du {date} est validée ! Pour la confirmer, merci d'envoyer {total} par Juice à {juice_name} ({juice_number}) avec la référence {order_number}, avant le {deadline}. Puis répondez ici avec la capture de votre paiement. Merci !",
   },
   payment_reminder: {
     en: "Hello {name}, a reminder for order {order_number}: please send {total} by Juice to {juice_number}, then reply here with your payment proof. Thank you!",

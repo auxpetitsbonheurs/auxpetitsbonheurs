@@ -6,6 +6,7 @@ import { insertAdmin } from "~/server/testing/admins";
 import { FakeAuth } from "~/server/testing/fake-auth";
 import { placeTestOrder } from "~/server/testing/orders";
 import { approveOrder } from "./approve-order.server";
+import { markPaid } from "./approve-then-pay.server";
 
 let database: TestDatabase;
 let adminId: string;
@@ -18,8 +19,8 @@ beforeEach(async () => {
   adminId = (await insertAdmin(database, new FakeAuth(), { name: "Sarah" })).id;
   const { token } = await placeTestOrder(database, { basketPath: "/fr/basket" });
   orderId = (await database.client.query<{ id: string }>("select id from orders where tracking_token = $1", [token])).rows[0]!.id;
-  // Approve is the path of orders placed before Juice payment (2026-11-13), still in pending_approval.
-  await database.client.query("update orders set status = 'pending_approval' where id = $1", [orderId]);
+  // Approve, then pay (2026-11-14): place_order leaves a website order in pending_approval.
+  expect((await database.client.query("select status from orders where id = $1", [orderId])).rows[0]).toEqual({ status: "pending_approval" });
 }, 60_000);
 
 afterEach(async () => {
@@ -36,17 +37,41 @@ async function rows(sql: string) {
   return (await database.client.query<Record<string, unknown>>(sql, [orderId])).rows;
 }
 
-describe("approve (S-017 AC3)", () => {
-  test("pending_approval becomes approved, version + 1, with an approved event and an order_confirmed outbox row", async () => {
+describe("approve, then pay (S-017 AC3; Owner decision 2026-11-14)", () => {
+  test("pending_approval becomes awaiting_payment, version + 1, with an approved event and a payment_instructions outbox row", async () => {
     const result = await approve(1);
 
-    expect(result).toEqual({ ok: true, order: { status: "approved", version: 2, paid: false } });
-    expect(await orderRow()).toEqual({ status: "approved", version: 2 });
+    expect(result).toEqual({ ok: true, order: { status: "awaiting_payment", version: 2, paid: false } });
+    expect(await orderRow()).toEqual({ status: "awaiting_payment", version: 2 });
     const events = await rows("select actor_type, actor_admin_id, type, from_status, to_status from order_event where order_id = $1 and type = 'approved'");
-    expect(events).toEqual([{ actor_type: "admin", actor_admin_id: adminId, type: "approved", from_status: "pending_approval", to_status: "approved" }]);
-    const outbox = await rows("select template, to_email, locale, dedupe_key, status, payload from email_outbox where order_id = $1 and template = 'order_confirmed'");
+    expect(events).toEqual([{ actor_type: "admin", actor_admin_id: adminId, type: "approved", from_status: "pending_approval", to_status: "awaiting_payment" }]);
+    const outbox = await rows("select template, to_email, locale, dedupe_key, status, payload from email_outbox where order_id = $1 and template = 'payment_instructions'");
     expect(outbox).toEqual([
-      { template: "order_confirmed", to_email: "aisha@example.com", locale: "fr", dedupe_key: `order:${orderId}:order_confirmed:v2`, status: "pending", payload: { orderId } },
+      { template: "payment_instructions", to_email: "aisha@example.com", locale: "fr", dedupe_key: `order:${orderId}:payment_instructions:v2`, status: "pending", payload: { orderId } },
+    ]);
+    // Not confirmed yet: Payment received sends order_confirmed.
+    expect(await rows("select id from email_outbox where order_id = $1 and template = 'order_confirmed'")).toEqual([]);
+  });
+
+  test("the payment clock starts at the approval and its one reminder is re-armed", async () => {
+    await database.client.query("update orders set payment_reminder_sent_at = '2026-11-01T00:00:00Z' where id = $1", [orderId]);
+
+    await approve(1);
+
+    const [row] = await rows("select awaiting_payment_since, payment_reminder_sent_at, paid from orders where id = $1");
+    expect((row!.awaiting_payment_since as Date).toISOString()).toBe(NOW.toISOString());
+    expect(row).toMatchObject({ payment_reminder_sent_at: null, paid: false });
+  });
+
+  test("Payment received after the approval confirms the order (approved, paid) and queues order_confirmed", async () => {
+    await approve(1);
+
+    expect(await markPaid(database.db, { orderId, version: 2, adminId, now: new Date("2026-11-12T12:00:00Z") })).toEqual({ ok: true, order: { status: "approved", version: 3 } });
+    expect(await rows("select paid from orders where id = $1")).toEqual([{ paid: true }]);
+    // Outbox ids are random: the version in each dedupe key shows the order (approval v2, payment v3).
+    expect(await rows("select template, dedupe_key from email_outbox where order_id = $1 and template in ('payment_instructions', 'order_confirmed') order by template")).toEqual([
+      { template: "order_confirmed", dedupe_key: `order:${orderId}:order_confirmed:v3` },
+      { template: "payment_instructions", dedupe_key: `order:${orderId}:payment_instructions:v2` },
     ]);
   });
 
@@ -65,7 +90,7 @@ describe("conflicts (S-017 AC4, AC5)", () => {
     expect(await approve(3)).toEqual({ ok: false, code: "ORDER_CHANGED" });
     expect(await orderRow()).toEqual({ status: "pending_approval", version: 4 });
     expect(await rows("select id from order_event where order_id = $1 and type = 'approved'")).toEqual([]);
-    expect(await rows("select id from email_outbox where order_id = $1 and template = 'order_confirmed'")).toEqual([]);
+    expect(await rows("select id from email_outbox where order_id = $1 and template = 'payment_instructions'")).toEqual([]);
   });
 
   test("two simultaneous approvals with the same version: exactly one succeeds and one outbox row exists", async () => {
@@ -76,19 +101,19 @@ describe("conflicts (S-017 AC4, AC5)", () => {
       { ok: false, code: "ORDER_CHANGED" },
       { ok: false, code: "ORDER_CHANGED" },
     ]);
-    expect(await rows("select id from email_outbox where order_id = $1 and template = 'order_confirmed'")).toHaveLength(1);
+    expect(await rows("select id from email_outbox where order_id = $1 and template = 'payment_instructions'")).toHaveLength(1);
     expect(await rows("select id from order_event where order_id = $1 and type = 'approved'")).toHaveLength(1);
-    expect(await orderRow()).toEqual({ status: "approved", version: 2 });
+    expect(await orderRow()).toEqual({ status: "awaiting_payment", version: 2 });
   });
 });
 
 describe("invalid transition and unknown order (S-017 AC6, AC7)", () => {
-  test.each(["approved", "cancelled", "quote_needed"])("an order in %s with its current version is INVALID_TRANSITION and unchanged", async (status) => {
+  test.each(["awaiting_payment", "approved", "cancelled", "quote_needed"])("an order in %s with its current version is INVALID_TRANSITION and unchanged", async (status) => {
     await database.client.query("update orders set status = $2 where id = $1", [orderId, status]);
 
     expect(await approve(1)).toEqual({ ok: false, code: "INVALID_TRANSITION" });
     expect(await orderRow()).toEqual({ status, version: 1 });
-    expect(await rows("select id from email_outbox where order_id = $1 and template = 'order_confirmed'")).toEqual([]);
+    expect(await rows("select id from email_outbox where order_id = $1 and template = 'payment_instructions'")).toEqual([]);
   });
 
   test("an unknown order id is NOT_FOUND", async () => {
@@ -112,7 +137,7 @@ describe("one transaction (S-018 AC4)", () => {
     await database.client.query("update orders set contact_email = null where id = $1", [orderId]);
 
     expect(await approve(1)).toMatchObject({ ok: true });
-    expect(await rows("select id from email_outbox where order_id = $1 and template = 'order_confirmed'")).toEqual([]);
+    expect(await rows("select id from email_outbox where order_id = $1 and template = 'payment_instructions'")).toEqual([]);
     expect(await rows("select id from order_event where order_id = $1 and type = 'approved'")).toHaveLength(1);
   });
 });

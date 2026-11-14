@@ -102,7 +102,7 @@ export const AcceptInviteInput = z.object({
 });
 
 /** `admin/order` whatsappLink `{ template }` (S-201): one of the five template keys. */
-export const WhatsappTemplateKey = z.enum(["approved", "ready", "on_the_way", "payment_reminder", "blank"]);
+export const WhatsappTemplateKey = z.enum(["approved", "ready", "on_the_way", "payment_instructions", "payment_reminder", "blank"]);
 
 /** A browser push endpoint: https on a named host (never an IP or localhost: the server POSTs to it). */
 const PushEndpoint = z

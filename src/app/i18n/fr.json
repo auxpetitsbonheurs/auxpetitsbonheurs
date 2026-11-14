@@ -171,7 +171,7 @@
       "whatsappText": "Bonjour, je voudrais commander mais aucune date n'est disponible sur le site.",
       "contact": "Nous contacter"
     },
-    "paymentInfo": "Paiement : la totalité par MCB Juice. Vous recevez les informations de paiement dès que vous passez commande.",
+    "paymentInfo": "Paiement : la totalité par MCB Juice. Nous confirmons d'abord votre commande, puis nous vous envoyons les informations de paiement.",
     "savedAddresses": "Vos adresses enregistrées",
     "newAddress": "Une nouvelle adresse",
     "saveAddress": "Enregistrer cette adresse dans mon compte"
@@ -277,8 +277,8 @@
       "numberLabel": "Votre numéro de commande",
       "copyNumber": "Copier le numéro de commande",
       "copiedNumber": "Numéro de commande copié",
-      "notConfirmedTitle": "Pas encore confirmée : nous devons d'abord l'accepter",
-      "notConfirmedBody": "Nous vérifions chaque commande et vous écrivons dès que nous l'acceptons.",
+      "notConfirmedTitle": "En attente de notre validation",
+      "notConfirmedBody": "Nous vérifions chaque commande. Dès qu'elle est validée, nous vous envoyons par e-mail comment payer par Juice et les détails du paiement apparaissent ici. Merci de ne pas payer avant.",
       "trackingTitle": "Votre lien de suivi privé",
       "trackingHint": "Gardez ce lien pour suivre votre commande. Toute personne qui l'a peut voir votre commande : ne le partagez qu'avec des personnes de confiance.",
       "followOrder": "Suivre ma commande",
@@ -292,7 +292,13 @@
       "leftOutBody_other": "Ces articles n'étaient plus disponibles au moment de votre commande : {{names}}.",
       "saveDetailsTitle": "Gardez vos coordonnées pour la prochaine fois",
       "saveDetailsBody": "En un geste, créez un compte avec l’e-mail de cette commande : votre prochaine commande sera plus rapide. Vous choisirez un mot de passe après avoir confirmé votre e-mail.",
-      "saveDetailsAction": "Garder mes coordonnées"
+      "saveDetailsAction": "Garder mes coordonnées",
+      "receivedLead": "Votre commande est bien reçue. Nous la vérifions et la confirmons avec vous, puis nous vous envoyons les détails du paiement. Merci de ne pas payer pour l'instant.",
+      "nextTitle": "Et maintenant ?",
+      "nextStep1": "Nous vérifions votre commande et la validons.",
+      "nextStep2": "Nous vous envoyons par e-mail comment payer par MCB Juice. Les détails du paiement apparaissent aussi sur votre page de suivi.",
+      "nextStep3": "Vous payez sous 24 heures et nous envoyez la preuve sur WhatsApp. Votre commande est alors confirmée.",
+      "totalLater": "Total {{amount}}, à payer par Juice une fois votre commande validée."
     },
     "notFound": {
       "metaTitle": "Commande introuvable",
@@ -388,7 +394,7 @@
       "step2": "Indiquez {{reference}} en référence, pour que nous retrouvions votre paiement.",
       "step3": "Envoyez-nous la capture d'écran de la confirmation Juice sur WhatsApp.",
       "step3NoWhatsapp": "Gardez la confirmation Juice : nous vérifions chaque paiement et confirmons votre commande.",
-      "deadline": "Merci de payer avant le {{time}}. Les commandes non payées sous 24 heures sont annulées.",
+      "deadline": "Merci de payer avant le {{time}}. Les commandes non payées sous 24 heures après leur validation sont annulées.",
       "sendProof": "Envoyer la preuve sur WhatsApp",
       "opensWhatsapp": "(ouvre WhatsApp)",
       "proofText": "Bonjour, voici la preuve de mon paiement Juice pour la commande {{number}} ({{amount}}).",
@@ -545,7 +551,7 @@
       },
       "approve": "Valider",
       "approving": "Validation de la commande…",
-      "approved": "Commande {{number}} validée. Le client recevra un e-mail de confirmation.",
+      "approved": "Commande {{number}} validée. Le client reçoit les détails du paiement par e-mail.",
       "reload": "Recharger la commande",
       "noActions": "Aucune action à faire sur cette commande pour l'instant.",
       "actionsLabel": "Actions sur la commande",
@@ -648,10 +654,13 @@
         "ready": "Commande prête",
         "on_the_way": "En route",
         "payment_reminder": "Rappel de paiement",
-        "blank": "Message libre"
+        "blank": "Message libre",
+        "payment_instructions": "Détails de paiement"
       },
       "whatsappMenuHint": "Choisissez un message. Vous pourrez le modifier dans WhatsApp avant l'envoi.",
-      "whatsappMenuLabel": "Messages WhatsApp pour {{name}}"
+      "whatsappMenuLabel": "Messages WhatsApp pour {{name}}",
+      "sendPaymentWhatsapp": "Envoyer les détails de paiement sur WhatsApp",
+      "paymentAfterApproval": "Pas encore payée. En validant, vous envoyez au client les détails du paiement Juice ; il a ensuite 24 heures pour payer."
     },
     "log": {
       "title": "Historique",
@@ -2435,7 +2444,7 @@
     "orderReceived": {
       "subject": "Nous avons reçu votre commande {{number}}",
       "heading": "Merci, nous avons reçu votre commande",
-      "intro": "Votre commande {{number}} n'est pas encore confirmée. Nous la vérifions et la confirmons avec vous très vite."
+      "intro": "Votre commande {{number}} est bien reçue mais pas encore confirmée. Nous la vérifions et la validons, puis nous vous envoyons par e-mail comment payer par MCB Juice. Merci de ne pas payer avant."
     },
     "requestReceived": {
       "subject": "Nous avons reçu votre demande {{number}}",
@@ -2590,6 +2599,11 @@
         "line": "{{name}} a annulé cette commande.",
         "lineNoName": "Le client a annulé cette commande."
       }
+    },
+    "paymentInstructions": {
+      "subject": "Commande {{number}} validée : comment payer",
+      "heading": "Votre commande est validée, voici comment payer",
+      "intro": "Bonne nouvelle : nous avons validé votre commande {{number}}. Payez {{amount}} par MCB Juice sous 24 heures pour la confirmer."
     }
   },
   "nav": {

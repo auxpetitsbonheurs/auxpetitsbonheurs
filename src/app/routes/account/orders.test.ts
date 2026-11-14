@@ -42,7 +42,7 @@ describe("My orders (S-213)", () => {
     expect(data.current).toHaveLength(2);
     expect(data.past).toHaveLength(1);
     const card = data.current.find((o) => o.trackingUrl.endsWith(first.token));
-    expect(card).toMatchObject({ status: "awaiting_payment", total: "Rs 850", trackingUrl: `/fr/t/${first.token}` });
+    expect(card).toMatchObject({ status: "pending_approval", total: "Rs 850", trackingUrl: `/fr/t/${first.token}` });
     expect(card?.number).toMatch(/^APB-\d{4}$/);
     expect(card?.fulfilOn).toMatch(/nov/i);
   });

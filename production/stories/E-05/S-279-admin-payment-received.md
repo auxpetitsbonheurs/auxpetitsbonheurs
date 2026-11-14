@@ -19,3 +19,11 @@ As the client, I want to see which orders wait for payment and how long they hav
 - AC1 → src/app/domain/payment.test.ts, src/app/routes/admin/orders.test.ts
 - AC2, AC3, AC4 → src/app/server/services/order-payment.server.test.ts, src/app/domain/status.test.ts
 - AC5 → src/tests/e2e/juice-payment.spec.ts
+
+## As built: approve, then pay (Owner decision 2026-11-14)
+- Approve (existing action) now moves `pending_approval` → `awaiting_payment` (table `domain/order-transitions.ts`, PRD Appendix B), sets `awaiting_payment_since` to the approval time, re-arms the reminder, logs `approved` and queues `payment_instructions` (not `order_confirmed`).
+- The order screen's Payment section shows, while awaiting payment, a one-tap "Send payment details on WhatsApp" link (the `payment_instructions` template in the order's language); while pending approval it says approving sends the payment details. The sticky action bar is unchanged.
+- The Payment tab lists awaiting orders nearest deadline first (the clock runs from approval, not from the order number); time-left badges count from the approval. Today tiles unchanged (To review = pending approval and quote needed; Awaiting payment = approved, unpaid).
+- Payment received still confirms (`approved`, paid) and queues `order_confirmed`; Undo unchanged.
+- Reusable for other approve-then-pay bookings: `domain/approve-then-pay.ts` (stages, timers) and `server/services/approve-then-pay.server.ts` (approveOrder, markPaid, undoPaid, declineOrder, markRefunded, paymentDeadlines).
+- Tests: `approve-order.server.test.ts`, `routes/admin/orders.test.ts`, `order.test.ts`, `order.actions.test.ts`, `tests/e2e/admin-approve.spec.ts`, `juice-payment.spec.ts`, `skeleton-order.spec.ts`.

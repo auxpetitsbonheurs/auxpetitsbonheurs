@@ -367,13 +367,13 @@ Gaps found by product-manager (proposed answers in assumptions):
 
 | From | To | Who | Customer email |
 |---|---|---|---|
-| (new website order) | Pending approval | Customer | Order received |
-| (new website order, since 2026-11-13) | Awaiting payment | Customer | Order received (with the Juice payment details) |
+| (new website order, since 2026-11-14) | Pending approval | Customer | Order received (we confirm it, then send how to pay; no Juice details yet) |
+| (website order placed 2026-11-13 to 2026-11-14) | Awaiting payment | Customer | Order received (with the Juice payment details); kept as is |
 | Awaiting payment | Approved | Admin (Payment received; juice-payment spec) | Order confirmed |
-| Awaiting payment | Cancelled | Customer (tracking page, before paying) or system (unpaid 24 h after placing) | Cancellation confirmed / Cancelled: unpaid |
+| Awaiting payment | Cancelled | Customer (tracking page, before paying) or system (unpaid 24 h after approval or quote acceptance) | Cancellation confirmed / Cancelled: unpaid |
 | Awaiting payment | Declined | Admin (Refuse) | Order declined |
 | Approved / In preparation | Declined | Admin (Refuse; a paid order then owes a refund) | Order declined |
-| Pending approval | Approved | Admin | Order confirmed |
+| Pending approval | Awaiting payment | Admin (Approve; starts the 24 h payment clock) | Payment instructions (Juice name and number, amount, reference, pay-by time, WhatsApp proof button) |
 | Pending approval | Declined | Admin (optional reason) | Order declined |
 | Pending approval | Cancelled | Customer (tracking page) or admin | Cancellation confirmed |
 | (new custom request) | Quote needed | Customer | Request received |
@@ -394,6 +394,7 @@ Rules: An admin edit that changes an order's date and/or total sends "Your order
 ## Changelog
 - 2026-11-09 v0.1 draft by product-manager from build-brief.md and feature-plan.md.
 - 2026-11-13 E-08 as built: an accepted quote goes to Awaiting payment (the Juice payment flow, juice-payment spec) instead of Approved; the admin's Payment received approves it and sends Order confirmed (custom-requests-quotes spec "As built").
+- 2026-11-14 Owner decision, approve then pay: a website order is placed Pending approval (order received, no Juice details); Approve moves it to Awaiting payment and sends the payment instructions (email and a one-tap WhatsApp for the admin); the 12 h reminder and 24 h unpaid cancel count from the approval; Payment received confirms it (juice-payment spec). Orders already Awaiting payment are kept as they are.
 - 2026-11-10 v0.2 owner answers applied: notice 3 days, Sunday closed, quote validity 5 days, cancellation policy and storage advice in FAQ, Admin rights confirmed, new FR-075 (24 h pending reminder); fee, address, Juice number, domain still open.
 - 2026-11-12 v0.4 scope change (Owner decisions, product-manager): new section 5.10 with FR-076 to FR-081 (site navigation, collection page, editable brand pages, contact, custom-order interim page, SEO; epic E-13) and FR-082 to FR-086 (bakery reviews by signed-in customers with approval; epic E-14, Should). "Customer reviews and ratings" removed from Non-goals for the general bakery review only; per-product reviews stay out. Release plan and cut order updated; open questions 17 and 18 added. Pending product-director confirmation of the cut-order position.
 - 2026-11-10 v0.3 launch values: fee Rs 200, pickup Beau Bassin, Juice number and exact address set by the owner on deploy day, Cloudflare default address at launch; bakery's Cloudflare, Supabase and Resend accounts created by the owner.

@@ -19,12 +19,12 @@ test.describe("S-203 order WhatsApp menu", () => {
     await page.keyboard.press("Enter");
     const menu = page.getByRole("menu");
     const items = menu.getByRole("menuitem");
-    await expect(items).toHaveCount(5);
+    await expect(items).toHaveCount(6);
     await expect(items.first()).toBeFocused();
     await page.keyboard.press("ArrowDown");
     await expect(items.nth(1)).toBeFocused();
     await page.keyboard.press("End");
-    await expect(items.nth(4)).toBeFocused();
+    await expect(items.nth(5)).toBeFocused();
 
     const href = (await items.first().getAttribute("href")) ?? "";
     const url = new URL(href);

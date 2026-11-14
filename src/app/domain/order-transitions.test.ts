@@ -28,7 +28,7 @@ function expected(action: AdminAction, from: OrderStatus, fulfilment: Fulfilment
   const handover = fulfilment === "pickup" ? "ready_for_pickup" : "out_for_delivery";
   switch (action) {
     case "approve":
-      return from === "pending_approval" ? "approved" : null;
+      return from === "pending_approval" ? "awaiting_payment" : null; // approve, then pay (2026-11-14)
     case "markPaid":
       return from === "awaiting_payment" ? "approved" : null;
     case "undoPaid":
@@ -88,7 +88,7 @@ describe("examples (S-115 AC2, AC3, AC4)", () => {
 
 describe("emails and events (admin-orders spec, notifications spec)", () => {
   test.each([
-    ["approve", "pending_approval", "pickup", "order_confirmed", "approved"],
+    ["approve", "pending_approval", "pickup", "payment_instructions", "approved"],
     ["decline", "pending_approval", "pickup", "order_declined", "declined"],
     ["decline", "approved", "pickup", "order_declined", "declined"],
     ["markPaid", "awaiting_payment", "pickup", "order_confirmed", "payment_received"],

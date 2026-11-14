@@ -202,7 +202,7 @@ describe("who may see and approve (S-017 AC7)", () => {
       routeArgs(database, { path: `/admin/orders/${id}`, params: { id }, auth: session.auth, cookie: session.cookie, form: { intent: "approve", version: "1" } }) as never,
     );
 
-    expect(result).toMatchObject({ ok: true, order: { status: "approved", version: 2 } });
+    expect(result).toMatchObject({ ok: true, order: { status: "awaiting_payment", version: 2 } });
   });
 
   test("an unknown order id is NOT_FOUND (404)", async () => {
@@ -224,27 +224,33 @@ describe("orders awaiting payment (S-279 AC1, S-280 AC5, S-281 AC2)", () => {
   const paymentTab = (session: Awaited<ReturnType<typeof signedInAdmin>>, now = READ_AT) =>
     loader(routeArgs(database, { path: "/admin/orders?tab=payment", auth: session.auth, cookie: session.cookie, now }) as never);
 
-  test("lists them oldest first with a time-left badge; paid and pending orders are not in it", async () => {
+  /** Approve, then pay (2026-11-14): the order was approved at `at`; its 24 h clock runs from there. */
+  const approvedAt = (token: string, at: string) =>
+    database.client.query("update orders set status = 'awaiting_payment', awaiting_payment_since = $2 where tracking_token = $1", [token, at]);
+
+  test("lists them nearest deadline first with a time-left badge counted from the approval; paid and pending orders are not in it", async () => {
     const session = await signedInAdmin(database);
-    await placeTestOrder(database, { overrides: { "contact.name": "First" } });
-    await placeTestOrder(database, { overrides: { "contact.name": "Second" } });
-    await placePending({ overrides: { "contact.name": "Old flow" } });
+    const first = await placeTestOrder(database, { overrides: { "contact.name": "First" } });
+    const second = await placeTestOrder(database, { overrides: { "contact.name": "Second" } });
+    await placePending({ overrides: { "contact.name": "Not approved yet" } });
     const paid = await placeTestOrder(database, { overrides: { "contact.name": "Paid" } });
     await database.client.query("update orders set status = 'approved', paid = true where tracking_token = $1", [paid.token]);
+    await approvedAt(first.token, "2026-11-05T10:00:00Z");
+    await approvedAt(second.token, "2026-11-05T08:00:00Z");
 
     const page = await paymentTab(session);
 
     expect(page.tab).toBe("payment");
     expect(page.payment!.awaiting.map((o) => [o.contactName, o.timeLeft])).toEqual([
-      ["First", "12 h left"],
       ["Second", "12 h left"],
+      ["First", "14 h left"],
     ]);
-    expect(page.payment!.awaiting[0]).toMatchObject({ number: "APB-0001", totalRs: 850, overdue: false });
+    expect(page.payment!.awaiting[1]).toMatchObject({ number: "APB-0001", totalRs: 850, overdue: false });
   });
 
   test("minutes in the last hour, then Cancelling soon once overdue", async () => {
     const session = await signedInAdmin(database);
-    await placeTestOrder(database);
+    await approvedAt((await placeTestOrder(database)).token, "2026-11-05T08:00:00Z");
 
     expect((await paymentTab(session, "2026-11-06T07:15:00Z")).payment!.awaiting[0]!.timeLeft).toBe("45 min left");
     expect((await paymentTab(session, "2026-11-06T08:30:00Z")).payment!.awaiting[0]).toMatchObject({ timeLeft: "Cancelling soon", overdue: true });
@@ -285,11 +291,13 @@ describe("Payment received, Refuse and Refunded from the order screen (S-279 AC2
     return orderAction(routeArgs(database, { path: `/admin/orders/${id}`, params: { id }, auth: session.auth, cookie: session.cookie, form }) as never);
   };
 
-  test("markPaid then undoPaid answer the new status and version", async () => {
+  test("approve, then pay: approve, markPaid, then undoPaid answer the new status and version", async () => {
     const id = await idOf((await placeTestOrder(database)).token);
 
-    expect(await post(id, { intent: "markPaid", version: "1" })).toMatchObject({ ok: true, intent: "markPaid", order: { status: "approved", version: 2 } });
-    expect(await post(id, { intent: "undoPaid", version: "2" })).toMatchObject({ ok: true, intent: "undoPaid", order: { status: "awaiting_payment", version: 3 } });
+    expect(await post(id, { intent: "markPaid", version: "1" })).toMatchObject({ data: { ok: false, error: { code: "INVALID_TRANSITION" } } });
+    expect(await post(id, { intent: "approve", version: "1" })).toMatchObject({ ok: true, intent: "approve", order: { status: "awaiting_payment", version: 2 } });
+    expect(await post(id, { intent: "markPaid", version: "2" })).toMatchObject({ ok: true, intent: "markPaid", order: { status: "approved", version: 3 } });
+    expect(await post(id, { intent: "undoPaid", version: "3" })).toMatchObject({ ok: true, intent: "undoPaid", order: { status: "awaiting_payment", version: 4 } });
   });
 
   test("decline takes an optional reason of 500 characters at most", async () => {

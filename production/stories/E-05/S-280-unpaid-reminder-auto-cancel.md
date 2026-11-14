@@ -18,3 +18,7 @@ As the client, I want unpaid orders reminded and then cancelled automatically, s
 ## Tests
 - AC1..AC4 → src/app/jobs/payment-deadlines.test.ts, src/app/jobs/dispatch.test.ts
 - AC5 → src/tests/e2e/juice-payment.spec.ts
+
+## As built: approve, then pay (Owner decision 2026-11-14)
+- The reminder (12 h) and the unpaid cancel (24 h) count from `awaiting_payment_since` for every order: set by Approve for website orders and by quote acceptance (E-08). A row without it (placed straight into Awaiting payment before this change) still counts from `created_at`. An order pending approval is never reminded or cancelled by the job.
+- Tests: `src/app/jobs/payment-deadlines.test.ts` (fixed clock: placed 10 h before approval), `src/app/domain/approve-then-pay.test.ts`, `tests/e2e/juice-payment.spec.ts` AC2 (not cancelled 23.5 h after approval though 29.5 h after placing; cancelled at 24.5 h).
