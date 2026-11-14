@@ -14,7 +14,7 @@ import { SitePageError } from "~/components/site/page-error";
 import { t } from "~/i18n/catalog.server";
 import { useI18n } from "~/i18n/react";
 import { localeFromPathname } from "~/lib/locale";
-import { SEO_HANDLE, rootOrigin, seoMeta } from "~/lib/seo";
+import { SEO_HANDLE, rootOrigin, seoMeta, shareImage } from "~/lib/seo";
 import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
@@ -73,7 +73,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 export function meta({ loaderData, matches, location }: Route.MetaArgs) {
   if (!loaderData) return [];
   const { title, description, home } = loaderData;
-  return seoMeta({ origin: rootOrigin(matches), locale: localeFromPathname(location.pathname), path: "/", title, description, image: home.hero.photo?.url ?? null });
+  return seoMeta({ origin: rootOrigin(matches), locale: localeFromPathname(location.pathname), path: "/", title, description, image: shareImage(home.hero.photo) });
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
