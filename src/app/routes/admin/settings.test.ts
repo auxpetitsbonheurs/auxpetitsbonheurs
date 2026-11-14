@@ -56,6 +56,7 @@ describe("S-058 AC1: the Owner sees every business value", () => {
       juiceNumber: "5000 0000",
       paymentWhatsapp: null,
       instagramUrl: null,
+      facebookUrl: null,
       quoteValidityDays: 5,
       cakeMessageMax: 40,
       eveningReminderAt: "18:00",

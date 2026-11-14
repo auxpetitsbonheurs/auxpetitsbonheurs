@@ -21,6 +21,7 @@ export async function loadedSettingsForm(database: TestDatabase, overrides: Reco
     juiceNumber: text(s.juiceNumber),
     paymentWhatsapp: text(s.paymentWhatsapp),
     instagramUrl: text(s.instagramUrl),
+    facebookUrl: text(s.facebookUrl),
     quoteValidityDays: String(s.quoteValidityDays),
     cakeMessageMax: String(s.cakeMessageMax),
     eveningReminderAt: s.eveningReminderAt,

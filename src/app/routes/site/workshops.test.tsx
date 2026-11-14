@@ -14,7 +14,7 @@ import { routeArgs } from "~/server/testing/route-context";
 import Workshops, { loader } from "./workshops";
 
 type LoaderData = Parameters<typeof Workshops>[0]["loaderData"];
-const NO_CONTACTS: FooterContacts = { whatsapp: null, phone: null, email: null, pickupAddress: null, instagramUrl: null, mapUrl: null };
+const NO_CONTACTS: FooterContacts = { whatsapp: null, phone: null, email: null, pickupAddress: null, instagramUrl: null, facebookUrl: null, mapUrl: null };
 
 /** Renders inside a site layout route so the page finds the footer contacts (WhatsApp, phone). */
 function render(loaderData: Partial<LoaderData>, contacts: FooterContacts = { ...NO_CONTACTS, whatsapp: "+230 5000 0000" }, path = "/workshops") {

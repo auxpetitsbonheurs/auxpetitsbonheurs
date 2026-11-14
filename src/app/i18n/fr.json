@@ -15,6 +15,9 @@
       "copyright": "© {{year}} Aux petits bonheurs",
       "pickup": "Retrait à {{address}}",
       "instagram": "Instagram",
+      "instagramLink": "Aux petits bonheurs sur Instagram",
+      "facebookLink": "Aux petits bonheurs sur Facebook",
+      "social": "Suivez-nous",
       "pickupHeading": "Retrait",
       "map": "Voir sur la carte",
       "explore": "Découvrir",
@@ -1344,6 +1347,8 @@
       "phoneHint": "Par exemple 5712 3456 ou +230 5712 3456.",
       "contactEmail": "E-mail",
       "instagram": "Lien Instagram",
+      "facebook": "Page Facebook",
+      "facebookHint": "L'adresse complète de votre page, commençant par https:// (facebook.com ou fb.com)",
       "paymentTitle": "Paiement",
       "juice": "Numéro Juice",
       "juiceHint": "Le numéro de mobile de votre compte Juice, par exemple 5xxx xxxx.",
@@ -1445,6 +1450,9 @@
         },
         "instagramUrl": {
           "invalid": "Saisissez le lien Instagram comme une adresse web complète commençant par https://"
+        },
+        "facebookUrl": {
+          "invalid": "Saisissez la page Facebook en adresse complète commençant par https://, sur facebook.com"
         },
         "quoteValidityDays": {
           "invalid": "Saisissez une validité de devis en jours entiers, de 1 à 60."

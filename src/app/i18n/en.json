@@ -15,6 +15,9 @@
       "copyright": "© {{year}} Aux petits bonheurs",
       "pickup": "Pickup in {{address}}",
       "instagram": "Instagram",
+      "instagramLink": "Aux petits bonheurs on Instagram",
+      "facebookLink": "Aux petits bonheurs on Facebook",
+      "social": "Follow us",
       "pickupHeading": "Pickup",
       "map": "See it on the map",
       "explore": "Explore",
@@ -1344,6 +1347,8 @@
       "phoneHint": "For example 5712 3456 or +230 5712 3456.",
       "contactEmail": "Email",
       "instagram": "Instagram link",
+      "facebook": "Facebook page",
+      "facebookHint": "Your page's full address, starting with https:// (facebook.com or fb.com)",
       "paymentTitle": "Payment",
       "juice": "Juice number",
       "juiceHint": "The mobile number your Juice account uses, for example 5xxx xxxx.",
@@ -1445,6 +1450,9 @@
         },
         "instagramUrl": {
           "invalid": "Enter the Instagram link as a full web address starting with https://"
+        },
+        "facebookUrl": {
+          "invalid": "Enter the Facebook page as a full address starting with https://, on facebook.com"
         },
         "quoteValidityDays": {
           "invalid": "Enter the quote validity as a whole number of days from 1 to 60."

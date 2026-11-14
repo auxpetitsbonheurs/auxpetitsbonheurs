@@ -12,8 +12,10 @@ export interface FooterContacts {
   phone: string | null;
   email: string | null;
   pickupAddress: string | null;
-  /** http(s) only (settings repo); null hides the link. */
+  /** http(s) only (settings repo); null hides the icon. */
   instagramUrl: string | null;
+  /** https on facebook.com or fb.com only (settings repo, S-283); null hides the icon. */
+  facebookUrl: string | null;
   /** The pickup address's map link, http(s) only. */
   mapUrl: string | null;
 }
@@ -25,7 +27,7 @@ interface ContactLinkProps {
   value?: string;
   /** Phone numbers stay on one line; emails may break anywhere at narrow widths. */
   keepTogether?: boolean;
-  /** Off-site pages (Instagram, map) open in a new tab, announced to screen readers. */
+  /** Off-site pages (the map) open in a new tab, announced to screen readers. */
   external?: boolean;
 }
 
@@ -54,22 +56,104 @@ function ContactLink({ href, icon, label, value, keepTogether = false, external 
 
 const iconProps = { "aria-hidden": true, className: "size-5 shrink-0", strokeWidth: 1.75 } as const;
 
-/** Instagram glyph (lucide ships no brand marks): a rounded square, the lens and the flash dot. */
-function InstagramIcon() {
+// The two marks below use Instagram's and Facebook's own colours (the Owner's choice, S-283):
+// third-party brand colours, so they are not design tokens.
+
+/** Id of the hidden "opens in a new tab" text the social icons point to (aria-describedby). */
+const NEW_TAB_ID = "footer-new-tab";
+
+/**
+ * Instagram mark as the Owner asked (S-283): a round button in Instagram's yellow-orange-pink-
+ * purple gradient with a white outlined camera. Inline SVG (lucide ships no brand marks); the
+ * gradient id is unique because the footer renders once per page.
+ */
+function InstagramMark() {
   return (
-    <svg {...iconProps} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="5" />
-      <circle cx="12" cy="12" r="4" />
-      <circle cx="17.5" cy="6.5" r="0.75" fill="currentColor" />
+    <svg aria-hidden="true" viewBox="0 0 36 36" className="size-9">
+      <defs>
+        <radialGradient id="apb-instagram-gradient" cx="0.3" cy="1.07" r="1.3">
+          <stop offset="0" stopColor="#fdf497" />
+          <stop offset="0.08" stopColor="#fdf497" />
+          <stop offset="0.45" stopColor="#fd5949" />
+          <stop offset="0.6" stopColor="#d6249f" />
+          <stop offset="0.9" stopColor="#285aeb" />
+        </radialGradient>
+      </defs>
+      <circle cx="18" cy="18" r="18" fill="url(#apb-instagram-gradient)" />
+      <g fill="none" stroke="#fff" strokeWidth="2">
+        <rect x="10" y="10" width="16" height="16" rx="4.5" />
+        <circle cx="18" cy="18" r="3.8" />
+      </g>
+      <circle cx="22.6" cy="13.4" r="1.1" fill="#fff" />
     </svg>
+  );
+}
+
+/** Facebook mark as the Owner asked (S-283): a solid Facebook-blue circle with the white "f" rising out of its base. */
+function FacebookMark() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 36 36" className="size-9">
+      <defs>
+        <clipPath id="apb-facebook-clip">
+          <circle cx="18" cy="18" r="18" />
+        </clipPath>
+      </defs>
+      <circle cx="18" cy="18" r="18" fill="#1877f2" />
+      <path
+        clipPath="url(#apb-facebook-clip)"
+        fill="#fff"
+        d="m24.6 23.2.8-5.2h-5v-3.4c0-1.4.7-2.8 2.9-2.8h2.3V7.4s-2.1-.4-4.1-.4c-4.2 0-6.9 2.5-6.9 7.1V18H10v5.2h4.6V36h5.8V23.2z"
+      />
+    </svg>
+  );
+}
+
+interface SocialLinkProps {
+  href: string;
+  label: string;
+  mark: ReactNode;
+}
+
+/** 44 px round target around a 36 px mark; the band's cream focus ring (app.css) follows the circle. */
+function SocialLink({ href, label, mark }: SocialLinkProps) {
+  return (
+    <li>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={label}
+        aria-describedby={NEW_TAB_ID}
+        className="inline-flex size-11 items-center justify-center rounded-full transition-transform hover:scale-105 motion-reduce:transition-none motion-reduce:hover:scale-100"
+      >
+        {mark}
+      </a>
+    </li>
+  );
+}
+
+/** Instagram and Facebook icons under the logo (S-283), each only when its link is set; nothing at all with neither. */
+function FooterSocial({ instagramUrl, facebookUrl }: Pick<FooterContacts, "instagramUrl" | "facebookUrl">) {
+  const { t } = useI18n();
+  if (!instagramUrl && !facebookUrl) return null;
+  return (
+    <>
+      <ul id="footer-social" aria-label={t("shell.footer.social")} className="mt-3 flex items-center gap-2">
+        {instagramUrl && <SocialLink href={instagramUrl} label={t("shell.footer.instagramLink")} mark={<InstagramMark />} />}
+        {facebookUrl && <SocialLink href={facebookUrl} label={t("shell.footer.facebookLink")} mark={<FacebookMark />} />}
+      </ul>
+      <span id={NEW_TAB_ID} hidden>
+        {t("sitePage.newTab")}
+      </span>
+    </>
   );
 }
 
 /** The bakery's contacts and pickup place, each item only when Settings has a value (S-061 AC3). */
 function FooterContactList({ contacts }: { contacts: FooterContacts }) {
   const { t } = useI18n();
-  const { whatsapp, phone, email, instagramUrl } = contacts;
-  if (!whatsapp && !phone && !email && !instagramUrl) return null;
+  const { whatsapp, phone, email } = contacts;
+  if (!whatsapp && !phone && !email) return null;
   return (
     <section aria-labelledby="footer-contact" className="flex flex-col items-center md:items-start">
       <h2 id="footer-contact" className="text-xl">
@@ -79,7 +163,6 @@ function FooterContactList({ contacts }: { contacts: FooterContacts }) {
         {whatsapp && <ContactLink href={whatsappHref(whatsapp)} icon={<MessageCircle {...iconProps} />} label={t("shell.footer.whatsapp")} value={whatsapp} keepTogether />}
         {phone && <ContactLink href={telHref(phone)} icon={<Phone {...iconProps} />} label={t("shell.footer.phone")} value={phone} keepTogether />}
         {email && <ContactLink href={mailHref(email)} icon={<Mail {...iconProps} />} label={t("shell.footer.email")} value={email} />}
-        {instagramUrl && <ContactLink href={instagramUrl} icon={<InstagramIcon />} label={t("shell.footer.instagram")} external />}
       </ul>
     </section>
   );
@@ -156,6 +239,7 @@ export function SiteFooter({ contacts, year, showReviews = false }: { contacts: 
           {/* Logo badge, version 2 (burgundy fill, cream script, gold ring). Its alt names the link. */}
           <img src="/brand/logo-badge-burgundy.svg" alt={t("shell.footer.home")} width={112} height={112} loading="lazy" decoding="async" className="size-24 md:size-28" />
         </Link>
+        <FooterSocial instagramUrl={contacts.instagramUrl} facebookUrl={contacts.facebookUrl} />
         <div className="mt-6 grid w-full grid-cols-1 gap-8 md:grid-cols-3 md:gap-10">
           <FooterContactList contacts={contacts} />
           {contacts.pickupAddress && <FooterPickup address={contacts.pickupAddress} mapUrl={contacts.mapUrl} />}

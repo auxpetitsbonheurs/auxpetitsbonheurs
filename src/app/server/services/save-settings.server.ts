@@ -86,6 +86,7 @@ function columns(input: SettingsInput, context: SaveSettingsContext) {
     juiceNumber: rest.juiceNumber,
     paymentWhatsapp: rest.paymentWhatsapp,
     instagramUrl: rest.instagramUrl,
+    facebookUrl: rest.facebookUrl,
     quoteValidityDays: rest.quoteValidityDays,
     cakeMessageMax: rest.cakeMessageMax,
     eveningReminderAt: rest.eveningReminderAt,

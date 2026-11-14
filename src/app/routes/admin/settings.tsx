@@ -22,6 +22,7 @@ import {
   PICKUP_ADDRESS_MAX,
   QUOTE_VALIDITY_MAX,
   QUOTE_VALIDITY_MIN,
+  URL_MAX,
 } from "~/domain/settings";
 import { JUICE_NAME_MAX } from "~/domain/payment";
 import { t as translate } from "~/i18n/catalog.server";
@@ -103,6 +104,7 @@ const ANCHORS: Record<string, string> = {
   contactWhatsapp: "contact-whatsapp",
   contactEmail: "contact-email",
   instagramUrl: "instagram",
+  facebookUrl: "facebook",
   juiceName: "juice-name",
   juiceNumber: "juice",
   paymentWhatsapp: "payment-whatsapp",
@@ -145,6 +147,7 @@ function BusinessSections({ settings, errors }: { settings: Settings; errors: Er
         <TextField id="contact-whatsapp" name="contactWhatsapp" type="tel" inputMode="tel" label={t("admin.settings.contactWhatsapp")} optionalLabel={optional} hint={t("admin.settings.phoneHint")} autoComplete="off" defaultValue={settings.contactWhatsapp ?? ""} error={errors.contactWhatsapp} className="max-w-sm" />
         <TextField id="contact-email" name="contactEmail" type="email" inputMode="email" label={t("admin.settings.contactEmail")} optionalLabel={optional} autoComplete="off" autoCapitalize="none" spellCheck={false} defaultValue={settings.contactEmail ?? ""} error={errors.contactEmail} />
         <TextField id="instagram" name="instagramUrl" type="url" inputMode="url" label={t("admin.settings.instagram")} optionalLabel={optional} hint={t("admin.settings.urlHint")} autoComplete="off" autoCapitalize="none" spellCheck={false} defaultValue={settings.instagramUrl ?? ""} error={errors.instagramUrl} />
+        <TextField id="facebook" name="facebookUrl" type="url" inputMode="url" label={t("admin.settings.facebook")} optionalLabel={optional} hint={t("admin.settings.facebookHint")} maxLength={URL_MAX} autoComplete="off" autoCapitalize="none" spellCheck={false} defaultValue={settings.facebookUrl ?? ""} error={errors.facebookUrl} />
       </SettingsSection>
       {/* Juice payment (S-277): shown only on an order's own pages, never on public ones. */}
       <SettingsSection id="payment" title={t("admin.settings.paymentTitle")} intro={t("admin.settings.paymentIntro")}>

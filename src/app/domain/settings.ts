@@ -19,6 +19,21 @@ export const ORDER_PREFIX_PATTERN = /^[A-Z]{1,5}-?$/;
 /** "HH:mm", 24-hour (Mauritius time). */
 export const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
+/** Hosts a Facebook page may live on (S-283): facebook.com and fb.com, and their subdomains (www., m.). */
+const FACEBOOK_HOST = /^(?:[a-z0-9-]+\.)?(?:facebook|fb)\.com$/;
+
+/**
+ * The Facebook page link (S-283 AC2, AC3): https only, on facebook.com or fb.com, no user info,
+ * at most URL_MAX characters. Returns the normalised href, or null when it is not one.
+ */
+export function facebookPageUrl(value: string | null | undefined): string | null {
+  const raw = value?.trim() ?? "";
+  if (raw === "" || raw.length > URL_MAX || !URL.canParse(raw)) return null;
+  const url = new URL(raw);
+  if (url.protocol !== "https:" || url.username !== "" || url.password !== "" || url.port !== "") return null;
+  return FACEBOOK_HOST.test(url.hostname) ? url.href : null;
+}
+
 /** Text in English and (optionally) French; blank French falls back to English on French pages. */
 export interface LocalizedValue {
   en: string;

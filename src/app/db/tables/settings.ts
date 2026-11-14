@@ -43,6 +43,8 @@ export const settings = pgTable(
     juiceNumber: text("juice_number"),
     paymentWhatsapp: text("payment_whatsapp"),
     instagramUrl: text("instagram_url"),
+    /** The Facebook page (S-283): https on facebook.com or fb.com only (domain/settings facebookPageUrl). */
+    facebookUrl: text("facebook_url"),
     hero: jsonb("hero").$type<HeroContent>(),
     featuredProductIds: uuid("featured_product_ids").array().notNull().default(sql`'{}'::uuid[]`),
     about: jsonb("about").$type<LocalizedText>(),

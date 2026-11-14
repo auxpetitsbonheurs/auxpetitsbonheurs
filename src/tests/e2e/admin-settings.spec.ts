@@ -120,6 +120,23 @@ test.describe("S-058, S-059 Settings", () => {
     await expectNoA11yViolations(page);
   });
 
+  test("S-283 AC1, AC2: a Facebook page that is not https on facebook.com is refused and nothing is saved", async ({ page, db }, testInfo) => {
+    test.skip(testInfo.project.name !== "phone-375", "posts to the shared Settings row: one project is enough");
+    test.slow(); // may wait for the Settings lock behind the footer spec's saves
+    await signIn(page, E2E_ACCOUNTS.owner, "/admin/settings");
+    await expect(page.locator("html")).toHaveAttribute("data-hydrated", "true");
+    await withSettingsLock(db, async () => {
+      const field = page.getByRole("textbox", { name: /^Facebook page/ });
+      await expect(field).toHaveValue("");
+      await field.fill("http://facebook.example/apb");
+      await save(page);
+      await expect(page.getByText("Enter the Facebook page as a full address starting with https://, on facebook.com").first()).toBeVisible();
+    });
+    // After the lock: it holds this worker's only connection.
+    const [stored] = await db<{ facebook_url: string | null }[]>`select facebook_url from settings`;
+    expect(stored?.facebook_url).toBeNull();
+  });
+
   test("S-058 AC8: an Admin gets Owner only and no Settings data", async ({ page, db }) => {
     const helper = await createE2eAdmin(db, { role: "admin" });
     await signIn(page, helper, "/admin/settings");

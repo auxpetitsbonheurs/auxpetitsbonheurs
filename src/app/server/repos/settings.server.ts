@@ -4,6 +4,7 @@ import type { AvailabilityRules, DateRange } from "~/domain/availability";
 import type { BusinessIdentity } from "~/domain/privacy-facts";
 import type { PaymentSettings } from "~/domain/payment";
 import { safeWebUrl } from "~/lib/contact";
+import { facebookPageUrl } from "~/domain/settings";
 import type { Database } from "~/server/db.server";
 import { SETTINGS_TTL_MS, createTtlCache } from "~/server/settings-cache.server";
 
@@ -14,6 +15,8 @@ export interface FooterContacts {
   pickupAddress: string | null;
   /** Only an http(s) link (S-061 AC1, AC6); anything else is dropped. */
   instagramUrl: string | null;
+  /** The Facebook page (S-283): https on facebook.com or fb.com only; anything else is dropped. */
+  facebookUrl: string | null;
   /** The pickup address's map link, http(s) only. */
   mapUrl: string | null;
 }
@@ -28,7 +31,7 @@ async function settingsRow(db: Database): Promise<SettingsRow> {
   return row;
 }
 
-type FooterRow = Pick<SettingsRow, "contactWhatsapp" | "contactPhone" | "contactEmail" | "pickupAddress" | "instagramUrl" | "pickupMapUrl">;
+type FooterRow = Pick<SettingsRow, "contactWhatsapp" | "contactPhone" | "contactEmail" | "pickupAddress" | "instagramUrl" | "facebookUrl" | "pickupMapUrl">;
 
 function footerFrom(row: FooterRow | undefined): FooterContacts {
   return {
@@ -37,6 +40,7 @@ function footerFrom(row: FooterRow | undefined): FooterContacts {
     email: present(row?.contactEmail),
     pickupAddress: present(row?.pickupAddress),
     instagramUrl: safeWebUrl(row?.instagramUrl),
+    facebookUrl: facebookPageUrl(row?.facebookUrl),
     mapUrl: safeWebUrl(row?.pickupMapUrl),
   };
 }
@@ -50,6 +54,7 @@ export async function getFooterContacts(db: Database): Promise<FooterContacts> {
       contactEmail: settings.contactEmail,
       pickupAddress: settings.pickupAddress,
       instagramUrl: settings.instagramUrl,
+      facebookUrl: settings.facebookUrl,
       pickupMapUrl: settings.pickupMapUrl,
     })
     .from(settings)

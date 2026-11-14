@@ -46,6 +46,7 @@ import {
   QUOTE_VALIDITY_MIN,
   TIME_PATTERN,
   URL_MAX,
+  facebookPageUrl,
 } from "~/domain/settings";
 import { Email, Uuid, Version } from "./shared";
 
@@ -90,6 +91,8 @@ export interface SettingsInput {
   juiceNumber: string | null;
   paymentWhatsapp: string | null;
   instagramUrl: string | null;
+  /** S-283: https on facebook.com or fb.com (domain/settings facebookPageUrl). */
+  facebookUrl: string | null;
   quoteValidityDays: number;
   cakeMessageMax: number;
   eveningReminderAt: string;
@@ -181,6 +184,7 @@ function businessFields(form: FormData, problems: Problems) {
     juiceNumber: optionalChecked(form, "juiceNumber", problems, (v) => v.length <= JUICE_NUMBER_MAX && normalizePhone(v) !== null),
     paymentWhatsapp: optionalChecked(form, "paymentWhatsapp", problems, (v) => v.length <= 20 && normalizePhone(v) !== null),
     instagramUrl: optionalChecked(form, "instagramUrl", problems, webUrl),
+    facebookUrl: optionalChecked(form, "facebookUrl", problems, (v) => facebookPageUrl(v) !== null),
     quoteValidityDays: requiredNumber(form, "quoteValidityDays", QUOTE_VALIDITY_MIN, QUOTE_VALIDITY_MAX, problems),
     cakeMessageMax: requiredNumber(form, "cakeMessageMax", CAKE_MESSAGE_MIN, CAKE_MESSAGE_MAX, problems),
     eveningReminderAt: requiredPattern(form, "eveningReminderAt", TIME_PATTERN, problems),
