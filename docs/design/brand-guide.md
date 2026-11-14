@@ -70,7 +70,8 @@ Source: the Owner's **official badges** (sent 2026-11-14 as raster images in SVG
 | Cream (cream disc, burgundy script, gold ring, whisk and heart) | `brand/badge-cream-{64,128,192,256,320}.webp` (2.6–17.5 kB) | Burgundy header (48 px below 23rem, else 56 px; badge only: it carries the name and a wordmark beside it does not fit at 320 px), burgundy footer (96 / 112 px), home hero placeholder (128 / 160 px) |
 | Cream | `brand/og-image.jpg` (1200×630, 51 kB) | Share card: cream badge centred on burgundy with a gold rule |
 | Cream | `brand/badge-cream-300.png` (22 kB) | Invoice PDF (pdf-lib `embedPng`) and print view: prints light on white paper, the ring edges it |
-| Burgundy (burgundy disc, cream script, gold ring) | `brand/badge-burgundy-{64,128,192}.webp` | Admin header (light), page-change loader |
+| Burgundy (burgundy disc, cream script, gold ring) | `brand/badge-burgundy-{64,128,192}.webp` | Admin header (light) |
+| Cream, whisk painted out | `brand/badge-cream-plain-{200,400}.webp` (10 / 23 kB; `docs/design/brand/plain_badge.py`) | Page loader (S-317): under the animated inline-SVG gold whisk and heart |
 | Burgundy | `brand/badge-burgundy-240.png` (12 kB) | Email header, 120 px displayed |
 | Burgundy | `favicon-32.png`, `favicon-48.png`, `favicon.ico` (16/32/48) | Browser tab: the strongest silhouette at tab size, light or dark chrome |
 | Burgundy | `apple-touch-icon.png`, `admin/apple-touch-icon.png` (180, on solid cream), `admin/icon-{192,512}.png` (transparent), `admin/icon-maskable-512.png` (cream, badge inside the 80 % safe circle) | Home-screen and app icons |

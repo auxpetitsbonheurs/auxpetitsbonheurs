@@ -5,6 +5,14 @@
 export const LOADER_DELAY_MS = 300;
 export const LOADER_MIN_VISIBLE_MS = 300;
 
+/**
+ * S-317 (Owner, 2026-11-14): customer page changes show the full-screen loader at once (delay 0)
+ * and keep it this long so it never flickers. A navigating form submission waits
+ * SUBMISSION_DELAY_MS first, so a quick validation answer does not flash the overlay.
+ */
+export const PAGE_CHANGE_MIN_VISIBLE_MS = 450;
+export const SUBMISSION_DELAY_MS = LOADER_DELAY_MS;
+
 export interface DelayedFlagOptions {
   delayMs: number;
   minVisibleMs: number;
@@ -44,7 +52,9 @@ export function createDelayedFlag({ delayMs, minVisibleMs, onChange }: DelayedFl
   function start() {
     clearTimeout(hideTimer);
     hideTimer = undefined;
-    if (!shown && showTimer === undefined) showTimer = setTimeout(show, delayMs);
+    if (shown || showTimer !== undefined) return;
+    if (delayMs <= 0) show();
+    else showTimer = setTimeout(show, delayMs);
   }
 
   function stop() {

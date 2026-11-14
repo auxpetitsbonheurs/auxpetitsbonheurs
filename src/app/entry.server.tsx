@@ -5,6 +5,7 @@ import { renderToReadableStream } from "react-dom/server";
 import type { EntryContext, HandleErrorFunction, RouterContextProvider } from "react-router";
 import { ServerRouter } from "react-router";
 import { createDeferScriptsTransform, shouldDeferHydration } from "~/lib/defer-hydration";
+import { createPageLoaderScriptTransform, isCustomerPage } from "~/lib/page-loader-script";
 import { cspNonceContext } from "~/server/csp-nonce.server";
 import { serverErrorLogLine } from "~/server/error-log.server";
 
@@ -74,7 +75,9 @@ export default async function handleRequest(
   // Browsing pages start their JavaScript after load + idle, so it never shares bandwidth with the
   // LCP photo (S-276 AC7); links and forms work as plain navigations until then.
   const routeIds = routerContext.staticHandlerContext.matches.map((match) => match.route.id);
-  const page = shouldDeferHydration(routeIds) ? body.pipeThrough(createDeferScriptsTransform(nonce)) : body;
+  const deferred = shouldDeferHydration(routeIds) ? body.pipeThrough(createDeferScriptsTransform(nonce)) : body;
+  // Customer pages: the page loader also covers full page loads before React starts (S-317 AC5).
+  const page = isCustomerPage(routeIds) ? deferred.pipeThrough(createPageLoaderScriptTransform(nonce)) : deferred;
   return new Response(page, {
     headers: responseHeaders,
     status: responseStatusCode,
