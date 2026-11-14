@@ -424,6 +424,20 @@ html:has([data-editor-bar]) {
   fieldset {
     min-inline-size: 0;
   }
+  /* iOS Safari gives date inputs a native minimum width wider than half a phone, so two side by
+     side overlapped (orders filter, Owner report 2026-11-14). Let them shrink to their box. */
+  input[type="date"] {
+    min-inline-size: 0;
+  }
+  /* iOS only (desktop keeps its native calendar button). */
+  @supports (-webkit-touch-callout: none) {
+    input[type="date"] {
+      -webkit-appearance: none;
+    }
+    input[type="date"]::-webkit-date-and-time-value {
+      text-align: start;
+    }
+  }
   html {
     @apply font-sans;
     -webkit-text-size-adjust: 100%;

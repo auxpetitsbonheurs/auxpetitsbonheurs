@@ -58,7 +58,7 @@ function FilterSheet({ open, onClose, tab, filters, problems }: Props & { open: 
         <RadioGroup legend={t("admin.orders.paidLegend")} name="paid" value={filters.paid === null ? "" : String(filters.paid)} options={[["", t("admin.orders.any")], ["true", t("admin.orders.paidOnly")], ["false", t("admin.orders.unpaidOnly")]]} />
         <div className="mt-4 grid gap-3 min-[24rem]:grid-cols-2">
           {(["from", "to"] as const).map((field) => (
-            <div key={field}>
+            <div key={field} className="min-w-0">
               <label htmlFor={`filter-${field}`} className="font-semibold">
                 {t(`admin.orders.${field}`)}
               </label>
