@@ -15,8 +15,11 @@ export type BadgeShape = ({ kind: "circle"; cx: number; cy: number; r: number } 
 
 export const BADGE_VIEWBOX = 240;
 
+/** Attribute names camel-cased (stroke-width → strokeWidth), as the DOM names them. */
+const camel = (name: string) => name.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
+
 const attributes = (source: string): Record<string, string> =>
-  Object.fromEntries([...source.matchAll(/([a-z-]+)="([^"]*)"/g)].map((m) => [m[1] ?? "", m[2] ?? ""]));
+  Object.fromEntries([...source.matchAll(/([a-z-]+)="([^"]*)"/g)].map((m) => [camel(m[1] ?? ""), m[2] ?? ""]));
 
 const color = (value: string | undefined): string | null => (value && value !== "none" ? value : null);
 
@@ -26,9 +29,9 @@ function paint(own: Record<string, string>, group: Record<string, string>): Badg
   return {
     fill: color(merged.fill),
     stroke: color(merged.stroke),
-    strokeWidth: Number(merged["stroke-width"] ?? 1),
-    strokeOpacity: Number(merged["stroke-opacity"] ?? 1),
-    lineCap: merged["stroke-linecap"] === "round" ? "round" : "butt",
+    strokeWidth: Number(merged.strokeWidth ?? 1),
+    strokeOpacity: Number(merged.strokeOpacity ?? 1),
+    lineCap: merged.strokeLinecap === "round" ? "round" : "butt",
   };
 }
 
