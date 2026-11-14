@@ -1,7 +1,7 @@
 // Full payment by MCB Juice at order (docs/specs/features/juice-payment.md, decision
 // 2026-11-13). Pure: the deadline is computed from the order's `created_at`, never stored,
 // and every rule takes "now" from the caller (request clock or the cron tick).
-import { whatsappLinkFor } from "./whatsapp";
+import { normalizePhone } from "./phone";
 
 const HOUR_MS = 3_600_000;
 /** A reminder is queued once the order has waited this long unpaid (S-280 AC1). */
@@ -54,7 +54,8 @@ export function paymentDetailsMissing(settings: PaymentSettings): boolean {
   return paymentDetails(settings) === null || filled(settings.paymentWhatsapp) === null;
 }
 
-/** The "Send proof on WhatsApp" link, or null without a usable number (the one wa.me builder, domain/whatsapp). */
+/** The "Send proof on WhatsApp" link, or null without a usable number. */
 export function proofHref(whatsapp: string | null | undefined, text: string): string | null {
-  return whatsappLinkFor(whatsapp, text);
+  const number = whatsapp ? normalizePhone(whatsapp) : null;
+  return number ? `https://wa.me/${number.slice(1)}?text=${encodeURIComponent(text)}` : null;
 }

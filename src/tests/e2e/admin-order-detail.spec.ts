@@ -176,10 +176,7 @@ test.describe("S-113 detail and S-114 note", () => {
     await open(page, order);
 
     await expect(page.getByRole("link", { name: "Call Marie" })).toHaveAttribute("href", /^tel:\+2305\d{7}$/);
-    // E-10 S-203: WhatsApp opens a menu of prefilled template messages.
-    await page.getByRole("button", { name: "WhatsApp Marie" }).click();
-    await expect(page.getByRole("menuitem").first()).toHaveAttribute("href", new RegExp(`^https://wa\\.me/2305\\d{7}\\?text=.*${orderNumber(order.number)}`));
-    await page.keyboard.press("Escape");
+    await expect(page.getByRole("link", { name: "WhatsApp Marie" })).toHaveAttribute("href", new RegExp(`^https://wa\\.me/2305\\d{7}\\?text=.*${orderNumber(order.number)}`));
     await expect(page.getByRole("link", { name: "Open Marie's address in Maps" })).toHaveAttribute("href", /maps\/search\/\?api=1&query=12%20Royal%20Road/);
     await expect(page.getByText("Blue gate")).toBeVisible();
     await expect(page.getByText("Unpaid", { exact: true })).toBeVisible();
@@ -192,7 +189,7 @@ test.describe("S-113 detail and S-114 note", () => {
     await open(page, order);
 
     await expect(page.getByRole("link", { name: "Call No Phone" })).toHaveAttribute("aria-disabled", "true");
-    await expect(page.getByRole("button", { name: "WhatsApp No Phone" })).toHaveAttribute("aria-disabled", "true");
+    await expect(page.getByRole("link", { name: "WhatsApp No Phone" })).toHaveAttribute("aria-disabled", "true");
     await expect(page.getByText("No usable phone number on this order")).toBeVisible();
   });
 

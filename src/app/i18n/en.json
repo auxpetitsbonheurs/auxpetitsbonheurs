@@ -622,16 +622,7 @@
       "backToOrders": "Back to orders",
       "noteSave": "Save note",
       "flagPaid": "Mark paid",
-      "flagUnpaid": "Mark unpaid",
-      "whatsappTemplates": {
-        "approved": "Order confirmed",
-        "ready": "Order ready",
-        "on_the_way": "On the way",
-        "payment_reminder": "Payment reminder",
-        "blank": "Blank message"
-      },
-      "whatsappMenuHint": "Choose a message. You can change it in WhatsApp before sending.",
-      "whatsappMenuLabel": "WhatsApp messages for {{name}}"
+      "flagUnpaid": "Mark unpaid"
     },
     "log": {
       "title": "Activity",
@@ -659,18 +650,12 @@
         "marked_paid": "Marked paid by {{actor}}, {{time}}",
         "marked_unpaid": "Marked unpaid by {{actor}}, {{time}}",
         "edited": "Edited by {{actor}}, {{time}}",
-        "email_failed": "An email to the customer could not be delivered, {{time}}",
+        "email_failed": "An email could not be sent yet; it will be retried, {{time}}",
         "pending_alert_sent": "Reminder sent to the team, {{time}}"
       },
       "reason": "Reason: {{reason}}",
       "paidRefund": "The order was paid: refund outside the site.",
-      "total": "Total: {{from}} → {{to}}",
-      "emailFailedReason": {
-        "permanent": "The address refused it.",
-        "retries": "The email service failed 6 times.",
-        "other": "The email could not be prepared."
-      },
-      "emailFailedHint": "Send the tracking link by WhatsApp instead."
+      "total": "Total: {{from}} → {{to}}"
     },
     "nav": {
       "today": "Today",
@@ -690,6 +675,61 @@
       "pages": "Pages",
       "promotions": "Promotions",
       "reviews": "Reviews"
+    },
+    "customers": {
+      "metaTitle": "Customers",
+      "searchLabel": "Search customers",
+      "searchHint": "Name, phone or email",
+      "search": "Search",
+      "clear": "Clear",
+      "tooLong": "Search with at most 80 characters.",
+      "sortLabel": "Sort by",
+      "sort": {
+        "last_order": "Last order",
+        "name": "Name",
+        "spent": "Total spent"
+      },
+      "count_one": "{{count}} customer",
+      "count_other": "{{count}} customers",
+      "empty": "Customers appear after the first order.",
+      "noMatch": "No match for ‘{{query}}’.",
+      "more": "Show more customers",
+      "loadingMore": "Loading more customers…",
+      "loadFailed": "More customers could not be loaded. Try again.",
+      "retry": "Retry",
+      "phone": "Phone",
+      "orders": "Orders",
+      "spent": "Total spent",
+      "spentHelp": "Total spent counts Completed orders; the order count leaves out cancelled and refused ones.",
+      "lastOrder": "Last order",
+      "none": "None",
+      "deleted": "Deleted customer",
+      "notFoundTitle": "Customer not found",
+      "notFoundBody": "This customer does not exist or was deleted.",
+      "back": "All customers",
+      "email": "Email",
+      "language": "Language",
+      "languageName": {
+        "en": "English",
+        "fr": "French"
+      },
+      "account": "Account",
+      "yes": "Yes",
+      "no": "No",
+      "call": "Call {{name}}",
+      "whatsapp": "WhatsApp {{name}}",
+      "ordersTitle": "Orders",
+      "noOrders": "No orders yet.",
+      "orderLink": "{{number}}, {{date}}, {{amount}}",
+      "orderedAs": "Ordered as {{name}}",
+      "noteLabel": "Private note",
+      "noteHelp": "Only the team sees this note: never the customer, emails or exports.",
+      "noteCount": "{{count}} of {{max}} characters",
+      "noteTooLong": "The note can have at most {{max}} characters.",
+      "save": "Save note",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "saveFailed": "The note was not saved. Your text is still here: try again."
     },
     "sales": {
       "metaTitle": "Sales summary",
@@ -1097,6 +1137,7 @@
       "alertEmail": "Email alerts",
       "alertEmailHint": "An email to {{email}}.",
       "pushDevices": "Push devices: {{count}}",
+      "pushLater": "Turning on push on this device is added with notifications",
       "saveAlerts": "Save alerts",
       "errorSummaryTitle": "Please check the form",
       "errors": {
@@ -1107,28 +1148,7 @@
         "tooLong": "Use 72 characters or fewer.",
         "weak": "Choose another password: this one is too easy to guess or the same as before."
       },
-      "loading": "Loading your profile…",
-      "pushDeviceTitle": "Push on this device",
-      "pushState": {
-        "checking": "Checking this device…",
-        "serverOff": "Push alerts are not switched on for the app yet. Email alerts still reach you.",
-        "install": "Add to Home Screen first: tap Share, then Add to Home Screen, and open the app from your home screen.",
-        "unsupported": "This browser cannot receive push alerts. Email alerts still reach you.",
-        "blocked": "Notifications are blocked for this app. Allow notifications in settings, then come back here.",
-        "off": "Push is off on this device.",
-        "on": "Push is on for this device."
-      },
-      "enablePush": "Enable push on this device",
-      "enablingPush": "Turning push on…",
-      "disablePush": "Turn off on this device",
-      "disablingPush": "Turning push off…",
-      "pushFailed": "Push could not be turned on. Please try again.",
-      "testPush": "Send test push",
-      "testSending": "Sending…",
-      "testSent_one": "Test sent to {{count}} device. It should arrive within seconds.",
-      "testSent_other": "Test sent to {{count}} devices. They should arrive within seconds.",
-      "testNone": "No device is set up for push yet. Enable push on this device first.",
-      "testFailed": "The test push could not be sent. Please try again."
+      "loading": "Loading your profile…"
     },
     "team": {
       "title": "Team",
@@ -1408,25 +1428,13 @@
         },
         "paymentWhatsapp": {
           "invalid": "Enter a WhatsApp number, for example 5712 3456."
-        },
-        "whatsappTemplate": {
-          "unknownPlaceholder": "{{template}} ({{language}}): use only the placeholders listed above.",
-          "tooLong": "{{template}} ({{language}}): use 1000 characters or fewer.",
-          "missingEn": "{{template}}: write the English text (French is optional)."
         }
       },
       "paymentIntro": "Customers pay the full amount by MCB Juice when they order. These details are shown only to a customer who has placed an order, never on public pages.",
       "juiceName": "Juice account name",
       "juiceNameHint": "The name customers see in Juice when they pay, so they know it is you. 60 characters at most.",
       "paymentWhatsapp": "WhatsApp for payment proof",
-      "paymentWhatsappHint": "Customers send their Juice screenshot here. For example 5xxx xxxx.",
-      "whatsappTitle": "WhatsApp messages",
-      "whatsappIntro": "The messages offered by the WhatsApp button on an order, in the order's language. You can still change each one in WhatsApp before sending.",
-      "whatsappPlaceholders": "Placeholders you can use:",
-      "whatsappFrEmpty": "Empty: the English text will be used.",
-      "previewEn": "Preview in English",
-      "previewFr": "Preview in French",
-      "previewUsesEn": "EN text will be used"
+      "paymentWhatsappHint": "Customers send their Juice screenshot here. For example 5xxx xxxx."
     },
     "availability": {
       "title": "Availability",
@@ -1845,83 +1853,6 @@
         "note": "Keep the note under 1000 characters",
         "expiresOn": "Choose today or a later date"
       }
-    },
-    "today": {
-      "tilesLabel": "At a glance",
-      "tile": {
-        "toReview": "To review",
-        "quotesToSend": "Quotes to send",
-        "awaitingPayment": "Awaiting payment",
-        "unpaid": "Unpaid"
-      },
-      "tileName_one": "{{label}}: {{count}} order",
-      "tileName_other": "{{label}}: {{count}} orders",
-      "todayTitle": "Today, {{date}}",
-      "tomorrowTitle": "Tomorrow, {{date}}",
-      "emptyToday": "No orders today.",
-      "emptyTomorrow": "Nothing booked for tomorrow.",
-      "nextNamed": {
-        "in_preparation": "Mark {{number}} in preparation",
-        "ready_for_pickup": "Mark {{number}} ready for pickup",
-        "out_for_delivery": "Mark {{number}} out for delivery",
-        "completed": "Mark {{number}} completed"
-      },
-      "marking": "Saving…",
-      "marked": "{{number}} marked {{status}}.",
-      "undo": "Undo",
-      "undoNamed": "Undo: put {{number}} back to {{status}}",
-      "undone": "{{number}} is back to {{status}}.",
-      "undoFailed": "Could not undo, the order changed.",
-      "changed": "{{number}} changed meanwhile; the list is up to date now.",
-      "loadFailed": "Today could not be loaded.",
-      "retry": "Retry",
-      "loading": "Loading today's orders…"
-    },
-    "push": {
-      "new_order": {
-        "title": "New order {{number}}",
-        "body": "From {{name}}. Tap to approve or decline.",
-        "bodyNoName": "Tap to approve or decline."
-      },
-      "new_request": {
-        "title": "New custom request {{number}}",
-        "body": "From {{name}}. A quote is needed.",
-        "bodyNoName": "A quote is needed."
-      },
-      "quote_accepted": {
-        "title": "Quote accepted {{number}}",
-        "body": "{{name}} accepted the quote.",
-        "bodyNoName": "The customer accepted the quote."
-      },
-      "quote_declined": {
-        "title": "Quote declined {{number}}",
-        "body": "{{name}} declined the quote.",
-        "bodyNoName": "The customer declined the quote."
-      },
-      "customer_cancelled": {
-        "title": "Order cancelled {{number}}",
-        "body": "{{name}} cancelled the order.",
-        "bodyNoName": "The customer cancelled the order."
-      },
-      "quote_expired": {
-        "title": "Quote expired {{number}}",
-        "body": "No answer from {{name}}. You may want to follow up.",
-        "bodyNoName": "No answer from the customer. You may want to follow up."
-      },
-      "pending_24h": {
-        "title": "Waiting over 24 h {{number}}",
-        "body": "{{name}} is still waiting for an answer.",
-        "bodyNoName": "The customer is still waiting for an answer."
-      },
-      "evening_reminder": {
-        "title_one": "Tomorrow: {{count}} order",
-        "title_other": "Tomorrow: {{count}} orders",
-        "body": "Tap for tomorrow's prep list."
-      },
-      "test": {
-        "title": "Test push",
-        "body": "Push alerts work on this device."
-      }
     }
   },
   "email": {
@@ -2130,30 +2061,6 @@
       "subject": "Quote accepted: pay to confirm {{number}}",
       "heading": "Thank you, you accepted our quote",
       "intro": "Your cake {{number}} is confirmed once we receive your Juice payment. Here is how to pay."
-    },
-    "adminAlert": {
-      "open": "Open the order",
-      "footer": "You get this email because email alerts are on in My profile.",
-      "new_order": {
-        "line": "A new website order from {{name}} is waiting for you to approve or decline it.",
-        "lineNoName": "A new website order is waiting for you to approve or decline it."
-      },
-      "new_request": {
-        "line": "{{name}} sent a custom cake request. It needs a quote.",
-        "lineNoName": "A custom cake request needs a quote."
-      },
-      "quote_accepted": {
-        "line": "{{name}} accepted your quote.",
-        "lineNoName": "The customer accepted your quote."
-      },
-      "quote_declined": {
-        "line": "{{name}} declined your quote.",
-        "lineNoName": "The customer declined your quote."
-      },
-      "customer_cancelled": {
-        "line": "{{name}} cancelled this order.",
-        "lineNoName": "The customer cancelled this order."
-      }
     }
   },
   "nav": {

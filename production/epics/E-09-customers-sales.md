@@ -1,6 +1,6 @@
 # E-09: Customers and sales summary
 
-Status: in progress · Milestone: MVP
+Status: done · Milestone: MVP
 PRD: FR-065, FR-068, FR-069 · Specs: docs/specs/features/admin-sales-customers.md
 Release phase: 4 Order management (part 4)
 
@@ -20,10 +20,10 @@ Sales totals match the underlying orders for every range; each customer's total 
 | S-171 | Sales summary with periods, revenue, orders and average | done | 5 |
 | S-172 | Sales breakdowns: delivery vs pickup, top 5, by source | done | 3 |
 | S-173 | Unpaid orders list on the sales summary | done | 3 |
-| S-174 | Customers list with order count and total spent (cuttable #2) | ready | 3 |
-| S-175 | Search customers by name, phone or email (cuttable #2) | ready | 2 |
-| S-176 | Customer detail with all their orders (cuttable #2) | ready | 3 |
-| S-177 | Private note on a customer (cuttable #2) | ready | 2 |
+| S-174 | Customers list with order count and total spent (cuttable #2) | done | 3 |
+| S-175 | Search customers by name, phone or email (cuttable #2) | done | 2 |
+| S-176 | Customer detail with all their orders (cuttable #2) | done | 3 |
+| S-177 | Private note on a customer (cuttable #2) | done | 2 |
 | S-178 | Export the sales summary as CSV (cuttable #1) | done | 3 |
 | S-179 | CSV safety, Excel encoding and access control (cuttable #1) | done | 2 |
 

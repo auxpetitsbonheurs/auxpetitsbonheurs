@@ -20,8 +20,6 @@ import {
 } from "~/domain/availability";
 import { JUICE_NAME_MAX } from "~/domain/payment";
 import { normalizePhone } from "~/domain/phone";
-import { WHATSAPP_TEMPLATE_KEYS, WHATSAPP_TEMPLATE_MAX, unknownPlaceholders } from "~/domain/whatsapp";
-import type { WhatsappTemplates } from "~/db/tables/json-types";
 import {
   CAKE_MESSAGE_MAX,
   CAKE_MESSAGE_MIN,
@@ -93,8 +91,6 @@ export interface SettingsInput {
   faq: LocalizedValue | null;
   policies: LocalizedValue | null;
   privacyNote: LocalizedValue | null;
-  /** S-202; null = not posted, keep the stored templates. */
-  whatsappTemplates?: WhatsappTemplates | null;
 }
 
 export type SettingsForm =
@@ -174,32 +170,11 @@ function contentFields(form: FormData, problems: Problems) {
   };
 }
 
-/**
- * WhatsApp templates (S-202): `whatsappTemplates.<key>.<en|fr>` for the five keys. Absent from
- * the form = keep what is stored (null). English is required, French may be empty (EN is used);
- * a placeholder outside the allow-list refuses that field (`unknownPlaceholder`, AC3).
- */
-function whatsappTemplatesField(form: FormData, problems: Problems): WhatsappTemplates | null {
-  if (![...form.keys()].some((key) => key.startsWith("whatsappTemplates."))) return null;
-  const out = {} as WhatsappTemplates;
-  for (const key of WHATSAPP_TEMPLATE_KEYS) {
-    const value = { en: text(form, `whatsappTemplates.${key}.en`), fr: text(form, `whatsappTemplates.${key}.fr`) };
-    for (const locale of ["en", "fr"] as const) {
-      const name = `whatsappTemplates.${key}.${locale}`;
-      if (value[locale].length > WHATSAPP_TEMPLATE_MAX) problems[name] = "tooLong";
-      else if (unknownPlaceholders(value[locale]).length > 0) problems[name] = "unknownPlaceholder";
-    }
-    if (value.en === "") problems[`whatsappTemplates.${key}.en`] = "missingEn";
-    out[key] = value.fr === "" ? { en: value.en } : value;
-  }
-  return out;
-}
-
 /** Parses the Settings form (`save`). Every field is posted: unchanged ones as loaded. */
 export function parseSettingsForm(form: FormData): SettingsForm {
   const problems: Problems = {};
   const version = versionOf(form, problems);
-  const input: SettingsInput = { ...businessFields(form, problems), ...contentFields(form, problems), whatsappTemplates: whatsappTemplatesField(form, problems) };
+  const input: SettingsInput = { ...businessFields(form, problems), ...contentFields(form, problems) };
   const session = Uuid.safeParse(form.get("uploadSessionId"));
   if (Object.keys(problems).length > 0) return { ok: false, problems };
   return { ok: true, version, input, uploadSessionId: session.success ? session.data.toLowerCase() : null };

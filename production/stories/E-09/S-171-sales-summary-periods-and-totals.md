@@ -46,4 +46,4 @@ As Sabera or Sarah, I want to see revenue, number of orders and average order fo
 - Spec Open Questions 1-4 closed by owner decisions 4, 5, 15, 16.
 - Built 2026-11-13 (E-09 sales job). Revenue counts **Completed** orders only, by `fulfil_on`, paid flag ignored (owner decision 4, spec Definitions). Juice payment's `awaiting_payment` never counts; neither do approved, cancelled, declined (refused) or closed. One rule in `domain/sales` (`REVENUE_STATUSES`) feeds the page and the CSV.
 - AC12: tabs are links with `role=tab` in a `tablist`, roving tabindex (only the selected tab is a Tab stop), arrows/Home/End move focus, Enter or Space opens. Custom uses two native date fields in a GET form, so the range stays in `?range=&from=&to=`.
-- AC14: measured by src/tests/e2e/admin-sales.perf.spec.ts (12,000 orders seeded in one year on local Postgres, 20 loader requests).
+- AC14: measured by src/tests/e2e/admin-sales.perf.spec.ts (12,000 orders seeded in one year on local Postgres; Worker Server-Timing `app`, 20 requests after warm-up): p95 58-338 ms locally depending on runner load, budget 500 ms.

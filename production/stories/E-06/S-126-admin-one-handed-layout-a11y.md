@@ -1,5 +1,5 @@
 # S-126: One-handed admin layout and accessibility pass
-Status: in-progress
+Status: ready
 Epic: E-06-order-management
 Spec: docs/specs/features/admin-orders.md#acceptance-criteria
 Estimate: 2 pts
@@ -28,8 +28,3 @@ As an admin holding a phone in one hand, I want primary actions within thumb rea
 
 ## Notes
 - Verification story, runs last in the epic (after S-111..S-125). Spec AC38 is AC1 here.
-
-## Implementation notes (2026-11-14)
-- Covered so far by each screen's e2e at 320/375/1280 px, 100% and 200% zoom: no sideways scroll, nothing clipped, 44 px targets, keyboard walk in order with visible focus, axe clean in light and dark (Orders list and filter sheet, order detail and More actions sheet, Today): `tests/e2e/admin-orders-list.spec.ts`, `admin-order-detail.spec.ts`, `admin-today.spec.ts`, `admin-approve.spec.ts`.
-- AC1: the order action bar sits above the bottom navigation (same offset as the editor bars) and its primary action is in the bottom half at 375x667 (checked); the combined height is not yet asserted.
-- Open: the edit screen (S-122, not built) and an explicit axe pass on the error/conflict states.

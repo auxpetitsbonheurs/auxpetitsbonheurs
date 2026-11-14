@@ -1,5 +1,5 @@
 # S-196: Installed admin app receives web push, including a test push
-Status: done (AC9 manual device check pending)
+Status: ready
 Epic: E-10-notifications
 Spec: docs/specs/features/notifications.md#api-contract
 Estimate: 5 pts
@@ -35,6 +35,3 @@ As an admin with the app installed on my phone, I want to subscribe this device 
 ## Notes
 - The PWA install itself is E-02 (FR-047). AC9 is a manual device check recorded in a test-session note; it is the Phase 5 exit (push on iPhone and Android). If iOS push fails the spike (T1), email fallback applies to the four push+email alerts only; raise to product-director.
 - Dependencies (R9): E-02 (installable PWA, profile route). Not yet done; expected.
-
-## Implementation notes
-- Implemented 2026-11-13. Web Push with VAPID on WebCrypto (`app/server/push/web-push.server.ts`, RFC 8291/8292), no paid service. AC3 is covered by the existing `app/lib/sw-handlers.test.ts` (the service worker already opens `url`), not a new e2e spec: headless Chromium in CI has no push service. AC8 test is in `app/server/push/push.server.test.ts` (`pushConfigFromEnv`). AC9: see `production/test-sessions/push-device-check.md`, to run once the Owner has set the keys on staging.

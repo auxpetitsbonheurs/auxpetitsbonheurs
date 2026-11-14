@@ -13,12 +13,6 @@ export function fieldMessages(problems: Problems, locale: Locale, area: "setting
       const values: Record<string, string> = language ? { language: translate(`admin.settings.language.${language}`, locale) } : {};
       // `deliveryWindows.1.start` -> "Delivery window 2: …" (one message set for every row).
       const row = /^(deliveryWindows|pickupWindows)\.(\d+)\.(.+)$/.exec(base);
-      // `whatsappTemplates.ready.fr` -> "Order ready (French): …" (S-202 AC3).
-      const template = /^whatsappTemplates\.([a-z_]+)$/.exec(base);
-      if (template) {
-        values.template = translate(`admin.order.whatsappTemplates.${template[1]}`, locale);
-        base = "whatsappTemplate";
-      }
       if (row) {
         values.window = translate(`admin.availability.windowName.${row[1]}`, locale, { n: Number(row[2]) + 1 });
         base = `window.${row[3]}`;

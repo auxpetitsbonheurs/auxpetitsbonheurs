@@ -255,9 +255,7 @@
   &::after {
     content: "";
     flex: 1 1 1.5rem;
-    /* The rule gives way to the title when space is tight (one long French word at 200% zoom,
-       S-227 AC3), instead of pushing it out of the page. */
-    min-width: 0;
+    min-width: 1.5rem;
     height: 1px;
     background-color: var(--gold);
   }

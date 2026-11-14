@@ -1,5 +1,5 @@
 # S-203: Admin opens WhatsApp from an order and sees failed emails in the log
-Status: done
+Status: ready
 Epic: E-10-notifications
 Spec: docs/specs/features/notifications.md#ux
 Estimate: 3 pts
@@ -33,6 +33,3 @@ As an admin on an order, I want a WhatsApp menu with the right message and a cle
 ## Notes
 - UX: spec UX table rows "Order detail > WhatsApp menu" and "activity log"; `docs/design/ux/admin-order-day.md`. Adds to the E-06 order detail screen.
 - Dependencies (R9): S-201, S-186, E-06. Not yet done; expected.
-
-## Implementation notes
-- Implemented 2026-11-13. The menu items are the resolved wa.me links (instant, no round trip); a tap also posts `whatsappLink` for the counter. `email_failed` (written by the emails job's sender when a customer email is dead) now reads "An email to the customer could not be delivered" with the reason in words and the WhatsApp hint; a dead admin alert email writes no such event. Replaces S-113's single WhatsApp link (E-06 spec updated).

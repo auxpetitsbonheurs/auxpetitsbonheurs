@@ -37,7 +37,7 @@ function OrderCard({ order, badge }: { order: PaymentRowView; badge?: ReactNode 
             {t("admin.orders.orderLink", { number: order.number })}
           </a>
         </h3>
-        {badge ?? <StatusBadge status={order.status} audience="admin" />}
+        {badge ?? <StatusBadge status={order.status} />}
       </div>
       <dl className="mt-2 grid gap-1">
         <Fact term={t("admin.orders.customer")}>{order.contactName}</Fact>

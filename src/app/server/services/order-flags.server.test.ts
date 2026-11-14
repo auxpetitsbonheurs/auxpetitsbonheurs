@@ -37,7 +37,7 @@ async function order() {
 
 const eventTypes = async () =>
   (await database.client.query<{ type: string }>("select type from order_event where order_id = $1 and type <> 'created' order by id", [orderId])).rows.map((r) => r.type);
-const outboxCount = async () => (await database.client.query("select id from email_outbox where order_id = $1 and template not in ('order_received', 'admin_alert_new_order')", [orderId])).rows.length;
+const outboxCount = async () => (await database.client.query("select id from email_outbox where order_id = $1 and template <> 'order_received'", [orderId])).rows.length;
 
 describe("setPaid (S-119 AC1)", () => {
   test("Mark paid sets paid, paid_at and paid_by, logs marked_paid, keeps the status, sends nothing", async () => {

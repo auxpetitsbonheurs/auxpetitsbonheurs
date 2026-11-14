@@ -9,7 +9,6 @@ import { clockContext } from "~/server/clock.server";
 import { confirmationContext, confirmationSignerFor } from "~/server/confirmation-cookie.server";
 import { type RequestDb, requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
-import { type PushConfig, pushContext } from "~/server/push/push.server";
 import { type RequestPhotoGateway, type StorageGateway, type UploadGateway, requestPhotosContext, storageContext, uploadContext } from "~/server/storage.server";
 import { NO_TURNSTILE, type TurnstileCheck, turnstileContext } from "~/server/turnstile.server";
 import { FakeAuth } from "./fake-auth";
@@ -37,8 +36,6 @@ export interface RouteArgsOptions {
   requestPhotos?: RequestPhotoGateway | null;
   /** Bot check (S-162); defaults to the one that always passes. */
   turnstile?: TurnstileCheck;
-  /** Web Push (S-196); defaults to off (no VAPID keys). */
-  push?: PushConfig;
 }
 
 const acceptingStorage: StorageGateway = { remove: async () => {} };
@@ -68,7 +65,6 @@ export function routeArgs(database: TestDatabase, options: RouteArgsOptions) {
   context.set(uploadContext, options.uploads ?? null);
   context.set(requestPhotosContext, options.requestPhotos ?? null);
   context.set(turnstileContext, options.turnstile ?? NO_TURNSTILE);
-  context.set(pushContext, options.push ?? { pusher: null, publicKey: null });
   // Deferred work starts at once (the response is "ready"); tests await `afterResponse.settled()`.
   const afterResponse = createAfterResponse(() => {});
   afterResponse.release();

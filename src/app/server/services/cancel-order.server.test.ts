@@ -40,7 +40,7 @@ async function rows(sql: string) {
 }
 
 const cancelEvents = () => rows("select actor_type, actor_admin_id, type, from_status, to_status from order_event where order_id = $1 and type = 'cancelled'");
-const outbox = () => rows("select template, to_email, locale, dedupe_key, status, payload from email_outbox where order_id = $1 and template not in ('order_received', 'admin_alert_new_order') order by template, to_email");
+const outbox = () => rows("select template, to_email, locale, dedupe_key, status, payload from email_outbox where order_id = $1 and template <> 'order_received' order by template, to_email");
 
 describe("cancel while pending (S-096 AC1, AC2)", () => {
   test("pending approval becomes cancelled, version + 1, with a customer event, the customer email and the admin alert", async () => {

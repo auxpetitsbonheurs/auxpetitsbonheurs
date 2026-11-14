@@ -41,7 +41,6 @@ import { loadMenu } from "~/server/menu.server";
 import { noStore } from "~/server/response-headers.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { findProductsByIds } from "~/server/repos/catalogue.server";
-import { alertAdmins } from "~/server/notify/admin-alerts.server";
 import { timed } from "~/server/server-timing.server";
 import { type PlaceOrderResult, placeOrder } from "~/server/services/place-order.server";
 import { turnstileContext } from "~/server/turnstile.server";
@@ -234,8 +233,6 @@ async function submitOrder(form: Record<string, unknown>, args: Route.ActionArgs
     guard: { ip: clientIp(request), turnstile: context.get(turnstileContext) },
   }));
   if (!result.ok) return refusal(result, echo(form), locale, basket.length > 0);
-  // Admins hear about a new order after the response (S-195); a replay alerts nobody again.
-  if (!result.replayed) await alertAdmins(context, "new_order", { orderId: result.orderId });
   // The order's own locale: a replay from either language returns the original redirect (S-014 AC2).
   const confirmation = localePath(result.locale, `/order/${result.trackingToken}/confirmed`);
   const headers = new Headers({ "Set-Cookie": clearBasketCookie() });

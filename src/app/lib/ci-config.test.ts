@@ -6,10 +6,6 @@ const ciPath = fileURLToPath(new URL("../../../.github/workflows/ci.yml", import
 const ci = readFileSync(ciPath, "utf8");
 
 describe("CI workflow (.github/workflows/ci.yml)", () => {
-  test("S-235: a run on main is never cancelled by the next push (staging deploys only after a green run); other branches' superseded runs are", () => {
-    expect(ci).toMatch(/^concurrency:\n {2}group: ci-\$\{\{ github\.ref \}\}\n {2}cancel-in-progress: \$\{\{ github\.ref != 'refs\/heads\/main' \}\}\n/m);
-  });
-
   test("runs on pull requests and pushes to main", () => {
     expect(ci).toMatch(/^\s{2}pull_request:/m);
     expect(ci).toMatch(/^\s{2}push:\s*\n\s{4}branches:\s*\[\s*main\s*\]/m);

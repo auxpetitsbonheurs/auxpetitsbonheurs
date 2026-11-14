@@ -3,10 +3,9 @@
 // Closed with a system event and "Quote closed" (the same dedupe key as a customer's decline, so
 // never two emails). Each row is its own versioned update: a customer who accepted a moment
 // before keeps Approved (AC3), a second run finds nothing (AC2), and one failing row does not stop
-// the others (AC6). Admins with push on get one push per closed quote (E-10 S-199).
+// the others (AC6). The admin push for an expired quote arrives with E-10's push sender.
 import { sql } from "drizzle-orm";
 import { todayMU } from "~/domain/time";
-import { pushOrderAlert } from "~/server/notify/admin-alerts.server";
 import type { JobContext, JobResult } from "./types";
 
 export const EXPIRE_BATCH = 200;
@@ -49,11 +48,7 @@ export async function expireQuotes(context: JobContext): Promise<JobResult> {
   const failed: string[] = [];
   for (const row of due) {
     try {
-      if (await closeExpiredQuote(context, row)) {
-        processed += 1;
-        // S-199: admins with push on hear about it, only after the close succeeded (AC2, AC4).
-        if (context.pusher) await pushOrderAlert(context.db, context.pusher, "quote_expired", { orderId: row.id }, context.now).catch(() => undefined);
-      }
+      if (await closeExpiredQuote(context, row)) processed += 1;
     } catch (error) {
       failed.push(row.id);
       console.log(JSON.stringify({ level: "error", event: "expire_quote_failed", orderId: row.id, error: error instanceof Error ? error.message.slice(0, 200) : "unknown" }));

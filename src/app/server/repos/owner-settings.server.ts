@@ -4,8 +4,6 @@
 import { asc, eq } from "drizzle-orm";
 import { type FaqEntry, type LocalizedText, type TimeWindow, product, settings } from "~/db/schema";
 import type { Database } from "~/server/db.server";
-import type { WhatsappTemplates } from "~/db/tables/json-types";
-import { DEFAULT_WHATSAPP_TEMPLATES, WHATSAPP_TEMPLATE_KEYS } from "~/domain/whatsapp";
 
 type Row = typeof settings.$inferSelect;
 
@@ -45,8 +43,6 @@ export interface OwnerSettings {
   faq: LocalizedText | null;
   policies: LocalizedText | null;
   privacyNote: LocalizedText | null;
-  /** S-202: every template, the Owner's text or the default (an empty French one stays empty). */
-  whatsappTemplates: WhatsappTemplates;
 }
 
 /** The Settings row minus availability (contracts.md `admin/settings` loader). */
@@ -76,9 +72,6 @@ export async function readOwnerSettings(db: Database): Promise<OwnerSettings> {
     faq: localizedOrNull(r.faq),
     policies: localizedOrNull(r.policies),
     privacyNote: localizedOrNull(r.privacyNote),
-    whatsappTemplates: Object.fromEntries(
-      WHATSAPP_TEMPLATE_KEYS.map((key) => [key, r.whatsappTemplates?.[key]?.en ? r.whatsappTemplates[key] : DEFAULT_WHATSAPP_TEMPLATES[key]]),
-    ) as WhatsappTemplates,
   };
 }
 

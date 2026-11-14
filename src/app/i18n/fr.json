@@ -622,16 +622,7 @@
       "backToOrders": "Retour aux commandes",
       "noteSave": "Enregistrer la note",
       "flagPaid": "Marquer payée",
-      "flagUnpaid": "Marquer non payée",
-      "whatsappTemplates": {
-        "approved": "Commande confirmée",
-        "ready": "Commande prête",
-        "on_the_way": "En route",
-        "payment_reminder": "Rappel de paiement",
-        "blank": "Message libre"
-      },
-      "whatsappMenuHint": "Choisissez un message. Vous pourrez le modifier dans WhatsApp avant l'envoi.",
-      "whatsappMenuLabel": "Messages WhatsApp pour {{name}}"
+      "flagUnpaid": "Marquer non payée"
     },
     "log": {
       "title": "Historique",
@@ -659,18 +650,12 @@
         "marked_paid": "Marquée payée par {{actor}}, {{time}}",
         "marked_unpaid": "Marquée non payée par {{actor}}, {{time}}",
         "edited": "Modifiée par {{actor}}, {{time}}",
-        "email_failed": "Un e-mail au client n'a pas pu être remis, {{time}}",
+        "email_failed": "Un e-mail n'a pas encore pu être envoyé ; nouvel essai prévu, {{time}}",
         "pending_alert_sent": "Rappel envoyé à l'équipe, {{time}}"
       },
       "reason": "Motif : {{reason}}",
       "paidRefund": "La commande était payée : remboursement hors site.",
-      "total": "Total : {{from}} → {{to}}",
-      "emailFailedReason": {
-        "permanent": "L'adresse l'a refusé.",
-        "retries": "Le service d'e-mail a échoué 6 fois.",
-        "other": "L'e-mail n'a pas pu être préparé."
-      },
-      "emailFailedHint": "Envoyez plutôt le lien de suivi par WhatsApp."
+      "total": "Total : {{from}} → {{to}}"
     },
     "nav": {
       "today": "Aujourd'hui",
@@ -690,6 +675,61 @@
       "pages": "Pages",
       "promotions": "Promotions",
       "reviews": "Avis"
+    },
+    "customers": {
+      "metaTitle": "Clients",
+      "searchLabel": "Rechercher un client",
+      "searchHint": "Nom, téléphone ou e-mail",
+      "search": "Rechercher",
+      "clear": "Effacer",
+      "tooLong": "Recherchez avec 80 caractères au plus.",
+      "sortLabel": "Trier par",
+      "sort": {
+        "last_order": "Dernière commande",
+        "name": "Nom",
+        "spent": "Total dépensé"
+      },
+      "count_one": "{{count}} client",
+      "count_other": "{{count}} clients",
+      "empty": "Les clients apparaissent après la première commande.",
+      "noMatch": "Aucun résultat pour « {{query}} ».",
+      "more": "Afficher plus de clients",
+      "loadingMore": "Chargement d’autres clients…",
+      "loadFailed": "Impossible de charger plus de clients. Réessayez.",
+      "retry": "Réessayer",
+      "phone": "Téléphone",
+      "orders": "Commandes",
+      "spent": "Total dépensé",
+      "spentHelp": "Le total dépensé compte les commandes Terminées ; le nombre de commandes exclut les annulées et refusées.",
+      "lastOrder": "Dernière commande",
+      "none": "Aucune",
+      "deleted": "Client supprimé",
+      "notFoundTitle": "Client introuvable",
+      "notFoundBody": "Ce client n’existe pas ou a été supprimé.",
+      "back": "Tous les clients",
+      "email": "E-mail",
+      "language": "Langue",
+      "languageName": {
+        "en": "Anglais",
+        "fr": "Français"
+      },
+      "account": "Compte",
+      "yes": "Oui",
+      "no": "Non",
+      "call": "Appeler {{name}}",
+      "whatsapp": "WhatsApp {{name}}",
+      "ordersTitle": "Commandes",
+      "noOrders": "Aucune commande pour l’instant.",
+      "orderLink": "{{number}}, {{date}}, {{amount}}",
+      "orderedAs": "Commandé au nom de {{name}}",
+      "noteLabel": "Note privée",
+      "noteHelp": "Seule l’équipe voit cette note : jamais le client, ni les e-mails, ni les exports.",
+      "noteCount": "{{count}} sur {{max}} caractères",
+      "noteTooLong": "La note peut avoir au plus {{max}} caractères.",
+      "save": "Enregistrer la note",
+      "saving": "Enregistrement…",
+      "saved": "Enregistré",
+      "saveFailed": "La note n’a pas été enregistrée. Votre texte est toujours là : réessayez."
     },
     "sales": {
       "metaTitle": "Résumé des ventes",
@@ -1097,6 +1137,7 @@
       "alertEmail": "Alertes par e-mail",
       "alertEmailHint": "Un e-mail à {{email}}.",
       "pushDevices": "Appareils push : {{count}}",
+      "pushLater": "L'activation du push sur cet appareil arrive avec les notifications",
       "saveAlerts": "Enregistrer les alertes",
       "errorSummaryTitle": "Veuillez vérifier le formulaire",
       "errors": {
@@ -1107,28 +1148,7 @@
         "tooLong": "72 caractères au maximum.",
         "weak": "Choisissez un autre mot de passe : celui-ci est trop facile à deviner ou identique au précédent."
       },
-      "loading": "Chargement de votre profil…",
-      "pushDeviceTitle": "Push sur cet appareil",
-      "pushState": {
-        "checking": "Vérification de cet appareil…",
-        "serverOff": "Les alertes push ne sont pas encore activées pour l'application. Les alertes par e-mail vous parviennent toujours.",
-        "install": "Ajoutez d'abord l'app à l'écran d'accueil : touchez Partager, puis Sur l'écran d'accueil, et ouvrez l'app depuis votre écran d'accueil.",
-        "unsupported": "Ce navigateur ne peut pas recevoir d'alertes push. Les alertes par e-mail vous parviennent toujours.",
-        "blocked": "Les notifications sont bloquées pour cette app. Autorisez les notifications dans les réglages, puis revenez ici.",
-        "off": "Le push est désactivé sur cet appareil.",
-        "on": "Le push est activé sur cet appareil."
-      },
-      "enablePush": "Activer le push sur cet appareil",
-      "enablingPush": "Activation du push…",
-      "disablePush": "Désactiver sur cet appareil",
-      "disablingPush": "Désactivation du push…",
-      "pushFailed": "Le push n'a pas pu être activé. Veuillez réessayer.",
-      "testPush": "Envoyer une notification de test",
-      "testSending": "Envoi…",
-      "testSent_one": "Test envoyé à {{count}} appareil. Il devrait arriver dans quelques secondes.",
-      "testSent_other": "Test envoyé à {{count}} appareils. Ils devraient arriver dans quelques secondes.",
-      "testNone": "Aucun appareil n'est encore configuré pour le push. Activez d'abord le push sur cet appareil.",
-      "testFailed": "La notification de test n'a pas pu être envoyée. Veuillez réessayer."
+      "loading": "Chargement de votre profil…"
     },
     "team": {
       "title": "Équipe",
@@ -1408,25 +1428,13 @@
         },
         "paymentWhatsapp": {
           "invalid": "Saisissez un numéro WhatsApp, par exemple 5712 3456."
-        },
-        "whatsappTemplate": {
-          "unknownPlaceholder": "{{template}} ({{language}}) : utilisez uniquement les repères listés plus haut.",
-          "tooLong": "{{template}} ({{language}}) : 1000 caractères au maximum.",
-          "missingEn": "{{template}} : écrivez le texte anglais (le français est facultatif)."
         }
       },
       "paymentIntro": "Les clients paient la totalité par MCB Juice en commandant. Ces informations ne sont montrées qu'à un client qui a passé commande, jamais sur les pages publiques.",
       "juiceName": "Nom du compte Juice",
       "juiceNameHint": "Le nom que les clients voient dans Juice en payant, pour savoir que c'est vous. 60 caractères au plus.",
       "paymentWhatsapp": "WhatsApp pour la preuve de paiement",
-      "paymentWhatsappHint": "Les clients y envoient leur capture Juice. Par exemple 5xxx xxxx.",
-      "whatsappTitle": "Messages WhatsApp",
-      "whatsappIntro": "Les messages proposés par le bouton WhatsApp d'une commande, dans la langue de la commande. Vous pouvez toujours les modifier dans WhatsApp avant l'envoi.",
-      "whatsappPlaceholders": "Repères utilisables :",
-      "whatsappFrEmpty": "Vide : le texte anglais sera utilisé.",
-      "previewEn": "Aperçu en anglais",
-      "previewFr": "Aperçu en français",
-      "previewUsesEn": "Le texte anglais sera utilisé"
+      "paymentWhatsappHint": "Les clients y envoient leur capture Juice. Par exemple 5xxx xxxx."
     },
     "availability": {
       "title": "Disponibilités",
@@ -1845,83 +1853,6 @@
         "note": "Le message doit faire moins de 1000 caractères",
         "expiresOn": "Choisissez aujourd'hui ou une date plus tard"
       }
-    },
-    "today": {
-      "tilesLabel": "En un coup d'œil",
-      "tile": {
-        "toReview": "À valider",
-        "quotesToSend": "Devis à envoyer",
-        "awaitingPayment": "En attente de paiement",
-        "unpaid": "Non payées"
-      },
-      "tileName_one": "{{label}} : {{count}} commande",
-      "tileName_other": "{{label}} : {{count}} commandes",
-      "todayTitle": "Aujourd'hui, {{date}}",
-      "tomorrowTitle": "Demain, {{date}}",
-      "emptyToday": "Aucune commande aujourd'hui.",
-      "emptyTomorrow": "Rien de prévu pour demain.",
-      "nextNamed": {
-        "in_preparation": "Passer {{number}} en préparation",
-        "ready_for_pickup": "Marquer {{number}} prête à retirer",
-        "out_for_delivery": "Marquer {{number}} en cours de livraison",
-        "completed": "Marquer {{number}} terminée"
-      },
-      "marking": "Enregistrement…",
-      "marked": "{{number}} : « {{status}} ».",
-      "undo": "Annuler",
-      "undoNamed": "Annuler : remettre {{number}} à « {{status}} »",
-      "undone": "{{number}} est revenue à « {{status}} ».",
-      "undoFailed": "Impossible d'annuler, la commande a changé.",
-      "changed": "{{number}} a changé entre-temps ; la liste est à jour.",
-      "loadFailed": "La page Aujourd'hui n'a pas pu être chargée.",
-      "retry": "Réessayer",
-      "loading": "Chargement des commandes du jour…"
-    },
-    "push": {
-      "new_order": {
-        "title": "Nouvelle commande {{number}}",
-        "body": "De {{name}}. Touchez pour accepter ou refuser.",
-        "bodyNoName": "Touchez pour accepter ou refuser."
-      },
-      "new_request": {
-        "title": "Nouvelle demande sur mesure {{number}}",
-        "body": "De {{name}}. Un devis est à faire.",
-        "bodyNoName": "Un devis est à faire."
-      },
-      "quote_accepted": {
-        "title": "Devis accepté {{number}}",
-        "body": "{{name}} a accepté le devis.",
-        "bodyNoName": "Le client a accepté le devis."
-      },
-      "quote_declined": {
-        "title": "Devis refusé {{number}}",
-        "body": "{{name}} a refusé le devis.",
-        "bodyNoName": "Le client a refusé le devis."
-      },
-      "customer_cancelled": {
-        "title": "Commande annulée {{number}}",
-        "body": "{{name}} a annulé la commande.",
-        "bodyNoName": "Le client a annulé la commande."
-      },
-      "quote_expired": {
-        "title": "Devis expiré {{number}}",
-        "body": "Pas de réponse de {{name}}. Vous pouvez relancer.",
-        "bodyNoName": "Pas de réponse du client. Vous pouvez relancer."
-      },
-      "pending_24h": {
-        "title": "En attente depuis plus de 24 h {{number}}",
-        "body": "{{name}} attend toujours une réponse.",
-        "bodyNoName": "Le client attend toujours une réponse."
-      },
-      "evening_reminder": {
-        "title_one": "Demain : {{count}} commande",
-        "title_other": "Demain : {{count}} commandes",
-        "body": "Touchez pour la liste de préparation de demain."
-      },
-      "test": {
-        "title": "Test de notification",
-        "body": "Les alertes push fonctionnent sur cet appareil."
-      }
     }
   },
   "email": {
@@ -2130,30 +2061,6 @@
       "subject": "Devis accepté : payez pour confirmer {{number}}",
       "heading": "Merci, vous avez accepté notre devis",
       "intro": "Votre gâteau {{number}} est confirmé dès réception de votre paiement Juice. Voici comment payer."
-    },
-    "adminAlert": {
-      "open": "Ouvrir la commande",
-      "footer": "Vous recevez cet e-mail car les alertes par e-mail sont activées dans Mon profil.",
-      "new_order": {
-        "line": "Une nouvelle commande en ligne de {{name}} attend que vous l'acceptiez ou la refusiez.",
-        "lineNoName": "Une nouvelle commande en ligne attend que vous l'acceptiez ou la refusiez."
-      },
-      "new_request": {
-        "line": "{{name}} a envoyé une demande de gâteau sur mesure. Un devis est à faire.",
-        "lineNoName": "Une demande de gâteau sur mesure attend un devis."
-      },
-      "quote_accepted": {
-        "line": "{{name}} a accepté votre devis.",
-        "lineNoName": "Le client a accepté votre devis."
-      },
-      "quote_declined": {
-        "line": "{{name}} a refusé votre devis.",
-        "lineNoName": "Le client a refusé votre devis."
-      },
-      "customer_cancelled": {
-        "line": "{{name}} a annulé cette commande.",
-        "lineNoName": "Le client a annulé cette commande."
-      }
     }
   },
   "nav": {

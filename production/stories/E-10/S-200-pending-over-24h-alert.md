@@ -1,5 +1,5 @@
 # S-200: Admins are nudged once when an order waits over 24 hours
-Status: done
+Status: ready
 Epic: E-10-notifications
 Spec: docs/specs/features/notifications.md#pending-alert-evening-reminder-quote-expired-rules
 Estimate: 3 pts
@@ -32,6 +32,3 @@ As an admin, I want a single push when a website order has been waiting for appr
 - FR-075 is Should and not in the PRD cut order (mitigates R11): keep. Email version is an open question (assumed push only).
 - AC8 is an inferred edge; the spec says once per order.
 - Dependencies (R9): S-196, E-05, E-06 (status). Not yet done; expected.
-
-## Implementation notes
-- Implemented 2026-11-13 (`app/jobs/pending-alerts.ts`). 24 h counts from `created_at` (spec); without VAPID keys nothing is marked, so waiting orders alert once push is on. At most 50 orders a tick.

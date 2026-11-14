@@ -39,8 +39,6 @@ import { listFeaturableProducts, readOwnerSettings } from "~/server/repos/owner-
 import { saveSettings } from "~/server/services/save-settings.server";
 import { DAILY_LIMIT, sentToday } from "~/server/email/daily-cap";
 import { storageContext, uploadContext } from "~/server/storage.server";
-import { whatsappPreviewSample } from "~/server/whatsapp.server";
-import { WHATSAPP_ANCHORS, WhatsappTemplatesSection } from "~/components/admin/whatsapp-templates";
 import type { Route } from "./+types/settings";
 
 /** `admin/settings` (**owner**): business values (S-058) and site content (S-059), one versioned Save. */
@@ -58,8 +56,6 @@ export async function loader(args: Route.LoaderArgs) {
     imageUrls: { hero: url(settings.heroImagePath), about: url(settings.aboutImagePath) },
     products,
     resendUsage: { sentToday: await sentToday(db, args.context.get(clockContext).now()), dailyLimit: DAILY_LIMIT },
-    // S-202: sample order values per language for the WhatsApp templates' live preview.
-    previewSample: whatsappPreviewSample(settings, args.url.origin, args.context.get(clockContext).now()),
   };
 }
 
@@ -113,7 +109,6 @@ const ANCHORS: Record<string, string> = {
   aboutImagePath: "about-image",
   featuredProductIds: "featured",
   version: "settings-title",
-  ...WHATSAPP_ANCHORS,
   ...Object.fromEntries(
     [
       ["heroTagline", "hero-tagline"],
@@ -240,7 +235,6 @@ function ContentSections({ loaderData, errors, sessionId, onImage, onChange }: C
         <BilingualField name="policies" id="policies" label={t("admin.settings.policies")} hint={t("admin.settings.policiesHint")} max={CONTENT_TEXT_MAX} value={settings.policies} multiline errors={errors} />
         <BilingualField name="privacyNote" id="privacy" label={t("admin.settings.privacy")} max={CONTENT_TEXT_MAX} value={settings.privacyNote} multiline errors={errors} />
       </SettingsSection>
-      <WhatsappTemplatesSection templates={settings.whatsappTemplates} sample={loaderData.previewSample} errors={errors} />
       <SettingsSection id="email" title={t("admin.settings.emailTitle")}>
         <p>{loaderData.resendUsage ? t("admin.settings.emailUsage", loaderData.resendUsage) : t("admin.settings.emailUsageLater")}</p>
       </SettingsSection>

@@ -44,7 +44,7 @@ async function orderRow(id = orderId) {
   return (await rows("select status, version, paid, decline_reason from orders where id = $1", id))[0]!;
 }
 
-const outbox = (id = orderId) => rows("select template, dedupe_key, payload from email_outbox where order_id = $1 and template <> 'order_received' and template not like 'admin_alert_%' order by id", id);
+const outbox = (id = orderId) => rows("select template, dedupe_key, payload from email_outbox where order_id = $1 and template <> 'order_received' order by id", id);
 const events = (id = orderId) =>
   rows("select actor_type, actor_admin_id, type, from_status, to_status, details from order_event where order_id = $1 and type <> 'created' order by id", id);
 

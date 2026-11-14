@@ -12,7 +12,6 @@ import { EMAIL_TIMEOUT_MS } from "~/server/email/sender.server";
 import { backgroundContext, emailContext } from "~/server/email/context.server";
 import { refuseCrossSiteAdminRequest } from "~/server/origin.server";
 import { publicConfigContext } from "~/server/public-config.server";
-import { pushConfigFromEnv, pushContext } from "~/server/push/push.server";
 import { withDbTiming } from "~/server/db-timing.server";
 import { ServerTiming, serverTimingContext } from "~/server/server-timing.server";
 import { requestPhotosContext, storageContext, supabaseStorage, uploadContext } from "~/server/storage.server";
@@ -67,8 +66,6 @@ async function respond(request: Request, settings: ServerEnv, ctx: ExecutionCont
     const siteUrl = siteUrlFromEnv(settings);
     context.set(emailContext, { mailer, hookSecret: settings.SUPABASE_AUTH_HOOK_SECRET ?? null, timeoutMs: EMAIL_TIMEOUT_MS, siteUrl });
     context.set(backgroundContext, { waitUntil: (promise) => ctx.waitUntil(promise) });
-    // Web Push to the installed admin app (S-196); off until the VAPID keys are set.
-    context.set(pushContext, pushConfigFromEnv(settings, () => new Date()));
     return requestHandler(request, context).then((response) => {
       // Emails queued by this action go out right after the response (S-186 AC1); the hourly cron
       // retries what fails. Without email set up this costs nothing: no query, no send.

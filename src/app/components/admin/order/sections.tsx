@@ -1,10 +1,9 @@
-import { MapPin, Phone } from "lucide-react";
+import { MapPin, MessageCircle, Phone } from "lucide-react";
 import type { ReactNode } from "react";
 import { localized } from "~/i18n/localized";
 import { useI18n } from "~/i18n/react";
 import { formatRupees } from "~/lib/locale";
 import type { OrderLoaderData } from "~/routes/admin/order";
-import { WhatsappMenu } from "./whatsapp-menu";
 
 const row = "flex flex-wrap justify-between gap-x-4";
 const money = (amount: number) => <span className="whitespace-nowrap tabular-nums">{formatRupees(amount)}</span>;
@@ -49,7 +48,7 @@ function ContactLink({ href, icon, label, hintId }: { href: string | null; icon:
 }
 
 /** Name, phone, email and the one-tap Call, WhatsApp and Maps buttons (S-113 AC1-AC4, AC9). */
-export function CustomerSection({ data: { customer, telUrl, whatsapp, mapsUrl, order } }: { data: OrderLoaderData }) {
+export function CustomerSection({ data: { customer, telUrl, whatsappUrl, mapsUrl, order } }: { data: OrderLoaderData }) {
   const { t } = useI18n();
   const name = customer.name;
   return (
@@ -62,10 +61,10 @@ export function CustomerSection({ data: { customer, telUrl, whatsapp, mapsUrl, o
       </dl>
       <div className="mt-4 flex flex-wrap gap-2">
         <ContactLink href={telUrl} hintId="no-phone-hint" icon={<Phone aria-hidden="true" className="size-5" />} label={t("admin.order.callName", { name })} />
-        <WhatsappMenu items={whatsapp.templates} name={name} orderId={order.id} hintId="no-phone-hint" />
+        <ContactLink href={whatsappUrl} hintId="no-phone-hint" icon={<MessageCircle aria-hidden="true" className="size-5" />} label={t("admin.order.whatsappName", { name })} />
         {mapsUrl && <ContactLink href={mapsUrl} hintId="" icon={<MapPin aria-hidden="true" className="size-5" />} label={t("admin.order.mapsName", { name })} />}
       </div>
-      {(!telUrl || !whatsapp.templates) && (
+      {!telUrl && (
         <p id="no-phone-hint" className="mt-2 text-sm">
           {t("admin.order.noPhone")}
         </p>

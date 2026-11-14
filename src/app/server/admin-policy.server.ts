@@ -29,6 +29,7 @@ export const ADMIN_MODULE_POLICY = {
   promotion: "admin",
   gallery: "admin",
   customers: "admin",
+  customer: "admin",
   sales: "admin",
   // Sales summary CSV download (E-09 S-178, S-179): same audience as Sales.
   "sales-csv": "admin",
