@@ -125,11 +125,35 @@ export interface FocusStop {
 }
 
 /**
+ * Waits until the page's Tab stops stop changing (late content, such as a deferred or fetched
+ * section, would otherwise appear above the focus mid-walk and make stops look skipped).
+ * Polls a condition: three identical readings in a row, no fixed sleep.
+ */
+async function waitForStableTabStops(page: Page) {
+  const readings: string[] = [];
+  await expect
+    .poll(
+      async () => {
+        const reading = await page.evaluate(
+          (selector) => `${[...document.querySelectorAll<HTMLElement>(selector)].filter((el) => el.getClientRects().length > 0).length}:${document.readyState}`,
+          INTERACTIVE,
+        );
+        readings.push(reading);
+        const last = readings.slice(-3);
+        return last.length === 3 && new Set(last).size === 1 && reading.endsWith("complete");
+      },
+      { message: "the page's Tab stops settle", intervals: [100, 100, 200, 200, 300] },
+    )
+    .toBe(true);
+}
+
+/**
  * Presses Tab from the top of the page until focus leaves the document or wraps,
  * returning each stop's position among the page's focusable elements (DOM order)
  * and whether it shows a focus indicator (outline or box-shadow).
  */
 export async function tabThrough(page: Page, limit = 60): Promise<{ stops: FocusStop[]; total: number }> {
+  await waitForStableTabStops(page);
   // Start from the top of the page: Chromium otherwise starts sequential navigation
   // from the last click, so a focused, unlisted (tabindex=-1) marker is put first.
   await page.evaluate(() => {
@@ -196,6 +220,7 @@ type RecordedStop = { total: number; stop: FocusStop | null };
  * leaves the document or wraps to the first stop), at most one batch of presses later.
  */
 export async function tabThroughBatched(page: Page, limit: number): Promise<{ stops: FocusStop[]; total: number }> {
+  await waitForStableTabStops(page);
   await page.evaluate((selector) => {
     const isTabStop = (el: HTMLElement) => {
       if (!(el instanceof HTMLInputElement) || el.type !== "radio" || !el.name) return true;
