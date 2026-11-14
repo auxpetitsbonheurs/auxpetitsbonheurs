@@ -8,6 +8,9 @@ import { addSessionCookies, signIn } from "./support/admin";
 import { expectNoA11yViolations, withZoom } from "./support/a11y";
 import { expect, test } from "./support/fixtures";
 
+// Several pages per test, each scanned at 100% and 200%: a file-level budget instead of per-test timeouts.
+test.describe.configure({ timeout: 180_000 });
+
 const CUSTOMER_PAGES = ["/", "/menu", `/menu/${SAMPLE_PRODUCT.slug}`, "/basket", "/our-story", "/workshops", "/gallery", "/contact", "/privacy", "/custom-cake", "/reviews", "/account/sign-in", "/account/sign-up", "/account/reset"];
 const ADMIN_PAGES = ["/admin", "/admin/orders", "/admin/calendar", "/admin/menu", "/admin/menu/new", "/admin/more", "/admin/promotions", "/admin/promotions/new", "/admin/gallery", "/admin/customers", "/admin/sales", "/admin/pages", "/admin/reviews", "/admin/profile", "/admin/availability", "/admin/settings", "/admin/team"];
 
@@ -32,7 +35,6 @@ test.describe("S-227 AC1, AC3: customer pages, EN and FR, at 100% and 200% zoom"
   }
 
   test("a basket with a line, tracking and confirmation pages (EN and FR)", async ({ page, db }) => {
-    test.setTimeout(120_000);
     const order = await createOrder(db, "a11y audit");
     for (const url of [`/t/${order.trackingToken}`, `/fr/t/${order.trackingToken}`, `/order/${order.trackingToken}/confirmed`, `/fr/order/${order.trackingToken}/confirmed`]) {
       await test.step(url.replace(order.trackingToken, "<token>"), async () => {
@@ -52,7 +54,6 @@ test.describe("S-227 AC1, AC3: customer pages, EN and FR, at 100% and 200% zoom"
   });
 
   test("signed-in customer pages: account and My orders", async ({ page, context, baseURL }, testInfo) => {
-    test.setTimeout(120_000);
     await addSessionCookies(context, baseURL!, E2E_ACCOUNTS.customer);
     // Open finding A11Y-06 (production/audits/a11y-2026.md, S3, E-11): at 320 px and 200% zoom the
     // French account pages are 23-24 px too wide ("Enregistrer", "Commander" buttons and the
@@ -77,7 +78,6 @@ test.describe("S-227 AC1, AC3: customer pages, EN and FR, at 100% and 200% zoom"
 
 test.describe("S-227 AC1, AC3: admin screens as the Owner", () => {
   test("every admin screen, and an order's detail, at 100% and 200% zoom", async ({ page, db }) => {
-    test.setTimeout(180_000);
     const order = await createOrder(db, "a11y admin audit");
     await page.goto("/admin/login");
     await settled(page);
