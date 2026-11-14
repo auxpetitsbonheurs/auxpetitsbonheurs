@@ -8,8 +8,8 @@ import { addSessionCookies, signIn } from "./support/admin";
 import { expectNoA11yViolations, withZoom } from "./support/a11y";
 import { expect, test } from "./support/fixtures";
 
-const CUSTOMER_PAGES = ["/", "/menu", `/menu/${SAMPLE_PRODUCT.slug}`, "/basket", "/our-story", "/workshops", "/gallery", "/contact", "/custom-cake", "/reviews", "/account/sign-in", "/account/sign-up", "/account/reset"];
-const ADMIN_PAGES = ["/admin", "/admin/orders", "/admin/calendar", "/admin/menu", "/admin/menu/new", "/admin/more", "/admin/promotions", "/admin/promotions/new", "/admin/gallery", "/admin/customers", "/admin/sales", "/admin/pages", "/admin/profile", "/admin/availability", "/admin/settings", "/admin/team"];
+const CUSTOMER_PAGES = ["/", "/menu", `/menu/${SAMPLE_PRODUCT.slug}`, "/basket", "/our-story", "/workshops", "/gallery", "/contact", "/privacy", "/custom-cake", "/reviews", "/account/sign-in", "/account/sign-up", "/account/reset"];
+const ADMIN_PAGES = ["/admin", "/admin/orders", "/admin/calendar", "/admin/menu", "/admin/menu/new", "/admin/more", "/admin/promotions", "/admin/promotions/new", "/admin/gallery", "/admin/customers", "/admin/sales", "/admin/pages", "/admin/reviews", "/admin/profile", "/admin/availability", "/admin/settings", "/admin/team"];
 
 /** Waits until the page's deferred scripts have run (browsing pages hydrate after load + idle). */
 async function settled(page: import("@playwright/test").Page) {
