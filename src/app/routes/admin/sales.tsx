@@ -237,15 +237,15 @@ function Breakdowns({ report }: { report: Report }) {
 
 function TopTable({ rows }: { rows: Report["top5"] }) {
   const { t } = useI18n();
-  const cell = "border-b border-border py-2 pr-2 align-top";
+  const cell = "border-b border-border py-2 pr-2 align-top wrap-anywhere";
   return (
     <table className="mt-2 w-full table-fixed text-left">
       <thead>
         <tr>
-          <th scope="col" className={cn(cell, "w-12")}>{t("admin.sales.rank")}</th>
+          <th scope="col" className={cn(cell, "w-[16%]")}>{t("admin.sales.rank")}</th>
           <th scope="col" className={cell}>{t("admin.sales.product")}</th>
-          <th scope="col" className={cn(cell, "w-14 text-right")}>{t("admin.sales.units")}</th>
-          <th scope="col" className={cn(cell, "w-24 pr-0 text-right")}>{t("admin.sales.revenue")}</th>
+          <th scope="col" className={cn(cell, "w-[16%] text-right")}>{t("admin.sales.units")}</th>
+          <th scope="col" className={cn(cell, "w-[34%] pr-0 text-right")}>{t("admin.sales.revenue")}</th>
         </tr>
       </thead>
       <tbody>
