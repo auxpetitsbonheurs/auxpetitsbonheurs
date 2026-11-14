@@ -15,7 +15,7 @@ export interface BuiltWorkerConfig {
 }
 
 /** Plain (non-secret) vars a deployed Worker may carry; every other binding is a `wrangler secret`. */
-const PLAIN_VARS = new Set(["APP_ENV", "APP_TIME_ZONE"]);
+const PLAIN_VARS = new Set(["APP_ENV", "APP_TIME_ZONE", "EMAIL_FROM", "SITE_URL"]);
 const LOCAL_HOST = /\b(localhost|127\.0\.0\.1|\[::1\])\b/;
 
 export function parseDeployTarget(value: string | undefined): DeployTarget {

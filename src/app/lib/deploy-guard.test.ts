@@ -59,6 +59,11 @@ describe("deployProblems (built Worker config vs deploy target)", () => {
     expect(problems.join("\n")).toMatch(/RESEND_API_KEY/);
     expect(problems.join("\n")).not.toContain("re_secret_value");
   });
+
+  test("the sender address and site URL may be plain vars (not secrets; deploys replace dashboard text vars)", () => {
+    const vars = { APP_ENV: "staging", APP_TIME_ZONE: "Indian/Mauritius", EMAIL_FROM: "Bakery <orders@mail.example.com>", SITE_URL: "https://staging.example.com" };
+    expect(deployProblems(built({ vars }), "staging").join("\n")).not.toMatch(/EMAIL_FROM|SITE_URL/);
+  });
 });
 
 describe("hyperdriveBinding (ADR-0003)", () => {
