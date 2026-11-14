@@ -95,7 +95,7 @@ describe("one-tap Next and Undo (S-121)", () => {
     expect(await post({ intent: "advance", orderId: id, version: "1" })).toEqual({ ok: true, intent: "advance", orderId: id, order: { status: "in_preparation", version: 2, paid: false } });
     expect(await post({ intent: "revert", orderId: id, version: "2" })).toMatchObject({ ok: true, order: { status: "approved", version: 3 } });
     expect(await rows("select type from order_event where order_id = $1 and type like 'status_%' order by id", id)).toEqual([{ type: "status_advanced" }, { type: "status_reverted" }]);
-    expect(await rows("select id from email_outbox where order_id = $1 and template <> 'order_received'", id)).toEqual([]);
+    expect(await rows("select id from email_outbox where order_id = $1 and template not in ('order_received', 'admin_alert_new_order')", id)).toEqual([]);
   });
 
   test("Undo after a step that emailed sends no second email; the first stays (AC6)", async () => {
@@ -103,7 +103,7 @@ describe("one-tap Next and Undo (S-121)", () => {
 
     await post({ intent: "advance", orderId: id, version: "1" });
     await post({ intent: "revert", orderId: id, version: "2" });
-    expect((await rows("select template from email_outbox where order_id = $1 and template <> 'order_received'", id)).map((r) => (r as { template: string }).template)).toEqual(["ready_for_pickup"]);
+    expect((await rows("select template from email_outbox where order_id = $1 and template not in ('order_received', 'admin_alert_new_order')", id)).map((r) => (r as { template: string }).template)).toEqual(["ready_for_pickup"]);
   });
 
   test("a stale Undo or a double tap is ORDER_CHANGED and never double-advances (AC4, AC5)", async () => {
