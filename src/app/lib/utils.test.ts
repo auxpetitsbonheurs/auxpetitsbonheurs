@@ -10,9 +10,14 @@ import { cn } from "./utils";
 
 const root = join(import.meta.dirname, "..");
 
-/** Every whitespace-separated word in a string literal of app/ source (a superset of classes). */
+/**
+ * Every whitespace-separated word in a string literal of app/ source (a superset of classes).
+ * Server-only modules never hold class names; their SQL ("count(*) filter (where …)") is not a
+ * Tailwind `filter` class, so they are left out.
+ */
 function sourceTokens(): string[] {
-  const files = (readdirSync(root, { recursive: true }) as string[]).filter((f) => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f));
+  const serverOnly = (f: string) => /(^|\/)server\//.test(f) || /\.server\.tsx?$/.test(f);
+  const files = (readdirSync(root, { recursive: true }) as string[]).filter((f) => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f) && !serverOnly(f));
   const tokens = new Set<string>();
   for (const file of files) {
     for (const match of readFileSync(join(root, file), "utf8").matchAll(/"([^"\n]*)"|'([^'\n]*)'|`([^`]*)`/g)) {
