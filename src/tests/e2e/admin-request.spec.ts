@@ -71,7 +71,7 @@ test("J5, S-155 AC2/AC8, S-156 AC1/AC8, S-158 AC1/AC2/AC9: request -> To review 
   const adminPage = await admin.newPage();
   await signIn(adminPage, ADMIN, "/admin/orders?tab=review");
   // Oldest first, 30 a page: parallel tests may push this one to a later page, so open it by its link.
-  await expect(adminPage.getByRole("listitem").filter({ hasText: "Waiting for our quote" }).first()).toBeVisible();
+  await expect(adminPage.getByRole("listitem").filter({ hasText: "Quote needed" }).first()).toBeVisible();
   await adminPage.goto(`/admin/orders/${request.id}`);
   await hydrated(adminPage);
   await expect(adminPage.getByText("Quote needed").first()).toBeVisible();
