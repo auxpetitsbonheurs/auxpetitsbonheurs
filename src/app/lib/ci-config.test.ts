@@ -30,6 +30,18 @@ describe("CI workflow (.github/workflows/ci.yml)", () => {
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
   });
 
+  test("G-18 (SEC-12): the app job fails on a high or critical npm advisory, right after the install", () => {
+    const app = ci.slice(ci.indexOf("\n  app:"), ci.indexOf("\n  secret-scan:"));
+    expect(app.indexOf("run: npm audit --audit-level=high")).toBeGreaterThan(app.indexOf("run: npm ci"));
+    expect(app.indexOf("run: npm audit --audit-level=high")).toBeLessThan(app.indexOf("run: npm run lint"));
+  });
+
+  test("SEC-12: the shadcn CLI is a dev tool, not a runtime dependency", () => {
+    const manifest = JSON.parse(readFileSync(fileURLToPath(new URL("../../package.json", import.meta.url)), "utf8")) as Record<string, Record<string, string> | undefined>;
+    expect(manifest.dependencies?.shadcn).toBeUndefined();
+    expect(manifest.devDependencies?.shadcn).toBeDefined();
+  });
+
   test("G-19: checks the client bundle for server secrets after the build", () => {
     expect(ci.indexOf("run: npm run check:client-secrets")).toBeGreaterThan(ci.indexOf("run: npm run build"));
   });

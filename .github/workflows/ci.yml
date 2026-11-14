@@ -88,6 +88,8 @@ jobs:
           cache: npm
           cache-dependency-path: src/package-lock.json
       - run: npm ci
+      # Threat model G-18 (SEC-12): fail on any known high or critical advisory, dev tools included.
+      - run: npm audit --audit-level=high
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test

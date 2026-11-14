@@ -14,7 +14,7 @@ This is not legal advice. The applicable regime (Mauritius Data Protection Act 2
 | Account: name, email, phone, saved addresses, Auth user | sign-up, Save my details | Supabase Auth (password hash) + `customer` | the customer; admins | No |
 | Review: rating, comment, display name | Write a review | `review` | public once approved; admins | No |
 | Admin: name, email, role, push endpoints | invite | `admin`, Supabase Auth | owners | No |
-| Email address of each sent email | outbox | `email_outbox.to_email` | server only | Only the provider id and status |
+| Email address of each sent email | outbox | `email_outbox.to_email`, cleared after 90 days (PRV-01) | server only | Only the provider id and status |
 | IP address and email for abuse limits | every rate-limited action | `rate_limit_bucket` as **SHA-256 hashes**, 1 day | server only | No |
 | Backups | weekly | bakery Google Drive, 8 copies | Owner | — |
 
@@ -46,14 +46,14 @@ There is no analytics, tracker or third-party script except Turnstile on forms, 
 | Backups | 8 weekly | `backup.yml` "Keep the latest 8" | Applied |
 | Orders and contact details | 5 years, then anonymised (proposed) | **nothing** | **PRV-02** |
 | Custom cake photos | 90 days after the request closes (proposed) | **nothing** | **PRV-03** |
-| Email recipient address | (included in email contents) | **kept forever** | **PRV-01** |
+| Email recipient address | (included in email contents) | `jobs/purge-emails` (`to_email` cleared with the payload) | Applied (PRV-01 fixed) |
 | Account | until deleted | manual | PRV-04 |
 | Reviews | until deleted | customer delete, cascade | Applied |
 
 ## Findings
 | ID | Sev | Finding | Suggested fix | Owner |
 |---|---|---|---|---|
-| PRV-01 | M | `purgeEmails` empties `email_outbox.payload` after 90 days but keeps `to_email` and the row forever, and auth-hook claim rows also keep the address. `data-model.md` says "Cron hard delete". | After 90 days, delete rows that are not `pending`, or set `to_email` to null. The dedupe keys only matter while an order is active. Add a test that an old row has no address. | email-specialist (emails job) |
+| PRV-01 | M | **Fixed 2026-11-14** (privacy job): after 90 days a finished row's payload is emptied and `to_email` cleared, auth-hook claim rows included; the row stays so its dedupe key still blocks a resend; pending rows wait. Tests: `jobs/purge-emails.test.ts`. Was: `purgeEmails` empties `email_outbox.payload` after 90 days but keeps `to_email` and the row forever, and auth-hook claim rows also keep the address. `data-model.md` says "Cron hard delete". | After 90 days, delete rows that are not `pending`, or set `to_email` to null. The dedupe keys only matter while an order is active. Add a test that an old row has no address. | email-specialist (emails job) |
 | PRV-02 | M | There is no anonymise or erase action (S-229 AC6) and no annual 5-year anonymise job (data-model "Customer personal"). An erase request today means editing the database by hand. | Add an Owner action on the customer screen: null the contact and address fields on the customer and their orders, set the name to "Deleted customer", delete the Auth user, keep totals. The yearly job reuses it. Until it exists, the runbook needs a manual SQL procedure so the 30-day promise can be kept. | lead-backend (customers screen) |
 | PRV-03 | M | Custom cake photos are never deleted after the request closes (data-model: 90 days after a final status). | Extend `purgeStorage`: queue each request's photos with `due_at` = closed + 90 days when the order reaches a final status. | custom requests job |
 | PRV-04 | L | Inactive accounts and reviews have no retention limit (PRD Q12 `[TO CONFIRM]`). The proposal is to keep them until deleted. | Owner answer (question 6). | Owner |

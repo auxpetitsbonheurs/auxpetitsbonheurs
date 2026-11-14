@@ -9,6 +9,7 @@ import { type Locale, localeFromPathname, localePath } from "~/lib/locale";
 import { actionError } from "~/server/action-result.server";
 import { type AuthGateway, authContext } from "~/server/auth-gateway.server";
 import type { GuardArgs } from "~/server/auth.server";
+import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
 import { assertSameOrigin } from "~/server/origin.server";
 import { type CustomerAccount, findAccountByAuthUser } from "~/server/repos/customer-accounts.server";
@@ -39,9 +40,17 @@ export type CustomerSession =
 
 const sessions = new WeakMap<AuthGateway, Promise<CustomerSession>>();
 
+/**
+ * A customer signs in again this long after their last sign-in (SEC-11; the `amr` time, so a
+ * refreshed token does not extend it). Longer than the admins' 30 days: customers order every
+ * few weeks or months, and a customer session reaches only their own orders.
+ */
+export const CUSTOMER_SESSION_MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000;
+
 async function readSession(args: GuardArgs, gateway: AuthGateway): Promise<CustomerSession> {
   const claims = await gateway.claims();
   if (!claims) return { status: "anonymous" };
+  if (args.context.get(clockContext).now().getTime() - claims.signedInAt.getTime() > CUSTOMER_SESSION_MAX_AGE_MS) return { status: "anonymous" };
   const db = args.context.get(requestDbContext).db;
   const account = await findAccountByAuthUser(db, claims.userId);
   if (account) return { status: "customer", customer: { ...account, authEmail: claims.email ?? account.email ?? "" } };

@@ -8,7 +8,12 @@
 //   - 'wasm-unsafe-eval' + blob: workers: HEIC photo conversion (heic-to/csp) in the browser.
 //   - challenges.cloudflare.com: Turnstile's script and frame on public forms.
 //   - The Supabase project origin: public photos (img) and signed uploads (connect).
-//   - style-src 'unsafe-inline': React style attributes (accepted low risk, see the audit).
+//   - style-src 'unsafe-inline' (SEC-10, kept on purpose; security-2026.md): server-rendered
+//     `style` attributes would be blocked: the product photo box's aspect ratio comes from the
+//     first photo's size, so product pages would jump (CLS) until the deferred hydration runs,
+//     and the menu drag rows set theirs too. Turnstile's third-party script may style the host
+//     page as well, which cannot be checked offline. Scripts stay nonce-only, so injected CSS can
+//     restyle a page but never run script.
 
 const TURNSTILE = "https://challenges.cloudflare.com";
 

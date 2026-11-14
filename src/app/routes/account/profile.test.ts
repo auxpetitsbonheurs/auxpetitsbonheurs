@@ -1,6 +1,7 @@
 // S-210 `account/profile` and the customer guard (S-207 AC5, AC7, AC8).
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vitest";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
+import { CUSTOMER_SESSION_MAX_AGE_MS } from "~/server/customer-auth.server";
 import { insertAdmin, insertCustomerAccount } from "~/server/testing/admins";
 import { FakeAuth } from "~/server/testing/fake-auth";
 import { placeTestOrder } from "~/server/testing/orders";
@@ -49,6 +50,19 @@ describe("the guard (S-207 AC5, AC7, AC8; S-210 AC6)", () => {
     const response = (await load({ cookie: "apb_customer=1" })) as Response;
     expect(response.headers.get("Location")).toContain("/account/sign-in?next=");
     expect(response.headers.get("Set-Cookie")).toContain("apb_customer=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0");
+  });
+
+  test("SEC-11: a customer sign-in older than the maximum age is ended (sign in again); one just inside it still works", async () => {
+    const customer = await insertCustomerAccount(database, auth);
+    const signedIn = new Date("2026-11-10T07:00:00Z");
+    const cookie = auth.sessionCookie(customer.id, signedIn);
+    const justInside = new Date(signedIn.getTime() + CUSTOMER_SESSION_MAX_AGE_MS).toISOString();
+    const justAfter = new Date(signedIn.getTime() + CUSTOMER_SESSION_MAX_AGE_MS + 1000).toISOString();
+    expect((await load({ cookie, now: justInside })) as unknown).not.toBeInstanceOf(Response);
+    const expired = (await load({ cookie: `${cookie}; apb_customer=1`, now: justAfter })) as Response;
+    expect(expired.headers.get("Location")).toContain("/account/sign-in?next=");
+    const post = (await save({ name: "X", phone: "5712 3456", locale: "en" }, { cookie, now: justAfter })) as Envelope;
+    expect(post.data.error?.code).toBe("UNAUTHENTICATED");
   });
 
   test("an admin session gets no customer data: redirect on a page, FORBIDDEN on an action", async () => {
