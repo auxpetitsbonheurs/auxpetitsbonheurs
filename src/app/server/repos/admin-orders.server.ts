@@ -149,6 +149,8 @@ export async function itemsOfOrders(db: Executor, orderIds: string[]): Promise<M
 
 export interface AdminOrder extends AdminOrderRow {
   contactPhone: string;
+  /** For the tracking link in WhatsApp messages (E-10 S-201); never shown in the admin UI. */
+  trackingToken: string;
   contactEmail: string | null;
   address: string | null;
   landmark: string | null;
@@ -207,6 +209,7 @@ export async function findAdminOrder(db: Executor, id: string): Promise<AdminOrd
     .select({
       ...summaryColumns,
       contactPhone: orders.contactPhone,
+      trackingToken: orders.trackingToken,
       contactEmail: orders.contactEmail,
       address: orders.address,
       landmark: orders.landmark,

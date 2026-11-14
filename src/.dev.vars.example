@@ -26,7 +26,8 @@ EMAIL_FROM=Aux petits bonheurs <orders@example.com>
 # RESEND_API_KEY, EMAIL_FROM and SITE_URL nothing is sent: emails wait in the outbox.
 SITE_URL=https://replace-with-your-domain.example
 
-# Web push (VAPID). Generate once per environment: npx web-push generate-vapid-keys
+# Web push (VAPID), placeholders only. Deployed sites: Actions > vapid-keys (or node scripts/set-vapid-keys.ts <env> mailto:...)
+# sets all three without printing the private key. Local: leave unset (push stays off, calmly).
 VAPID_PUBLIC_KEY=replace-with-vapid-public-key
 VAPID_PRIVATE_KEY=replace-with-vapid-private-key
 VAPID_SUBJECT=mailto:owner@example.com

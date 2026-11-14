@@ -1,0 +1,65 @@
+name: vapid-keys
+
+# Turns on phone push alerts for the admin app (E-10 S-196), without running anything on a
+# computer: Actions → vapid-keys → Run workflow, choose the site and type a contact email.
+# It generates a fresh VAPID key pair and stores it as the Worker secrets VAPID_PUBLIC_KEY,
+# VAPID_PRIVATE_KEY and VAPID_SUBJECT (src/scripts/set-vapid-keys.ts). The private key goes
+# straight to Cloudflare on stdin: it is never printed, logged or saved. Safe to re-run: keys
+# that already exist are kept unless "rotate" is ticked (rotating means every admin taps
+# "Enable push on this device" again). Uses the same Cloudflare secrets as deploy.yml and the
+# GitHub Environment's protection (production asks for the required reviewer).
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Which site
+        type: choice
+        options: [staging, production]
+        required: true
+      contact:
+        description: Contact email for the push services (for example the bakery's email)
+        type: string
+        required: true
+      rotate:
+        description: Replace keys that already exist (every phone must enable push again)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vapid-keys-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  vapid-keys:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: ${{ inputs.environment }}
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+      - run: npm ci
+      - name: Check the Cloudflare secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: scripts/check-keys.sh --require CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID
+      - name: Generate and store the push keys
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TARGET: ${{ inputs.environment }}
+          VAPID_SUBJECT_INPUT: mailto:${{ inputs.contact }}
+          ROTATE: ${{ inputs.rotate && '--rotate' || '' }}
+        run: node scripts/set-vapid-keys.ts "$TARGET" "$VAPID_SUBJECT_INPUT" $ROTATE

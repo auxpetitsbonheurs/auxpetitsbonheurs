@@ -184,7 +184,7 @@ function NamesSection({ product, errors, onFrenchName, onEnglishName }: { produc
   const [frenchName, setFrenchName] = useState(product?.name.fr ?? "");
   const optional = t("admin.product.optional");
   return (
-    <fieldset className="grid gap-4 md:grid-cols-2">
+    <fieldset className="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2">
       <legend className="mb-2 text-xl font-semibold">{t("admin.product.namesSection")}</legend>
       <TextField id="name-en" name="name.en" label={t("admin.product.nameEn")} defaultValue={product?.name.en} maxLength={PRODUCT_NAME_MAX} error={errors["name.en"]} autoComplete="off" onInput={(event) => onEnglishName(event.currentTarget.value)} />
       <TextField
@@ -314,7 +314,7 @@ function OptionsSkeleton({ initial }: { initial: readonly StoredOptionGroup[] })
         {initial.map((group) => (
           <div key={group.id} className="h-24 rounded-card bg-muted" />
         ))}
-        <div className="h-12 w-48 rounded-md bg-muted" />
+        <div className="h-12 w-48 max-w-full rounded-md bg-muted" />
       </div>
     </section>
   );
@@ -537,7 +537,7 @@ function ProductEditor({ loaderData }: { loaderData: LoaderData }) {
       <PreviewLink url={loaderData.previewUrl} />
       {refusal && <ErrorSummary ref={summary} message={refusal.message} fields={refusal.fields} anchors={anchorsFor(refusal.fields)} title={t("admin.product.errorSummaryTitle")} />}
       {region}
-      <fetcher.Form ref={formRef} method="post" onChange={markDirty} onInput={markDirty} onSubmit={save.onSubmit} onFocus={keepAboveSaveBar} className="mt-6 grid gap-8" noValidate>
+      <fetcher.Form ref={formRef} method="post" onChange={markDirty} onInput={markDirty} onSubmit={save.onSubmit} onFocus={keepAboveSaveBar} className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-8" noValidate>
         <input type="hidden" name="intent" value="save" />
         <input type="hidden" name="photos" value={JSON.stringify(photos.summary.posted)} />
         <input type="hidden" name="uploadSessionId" value={photos.sessionId() ?? ""} />

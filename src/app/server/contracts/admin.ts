@@ -86,6 +86,31 @@ export const AcceptInviteInput = z.object({
   locale: z.enum(["en", "fr"]),
 });
 
+/** `admin/order` whatsappLink `{ template }` (S-201): one of the five template keys. */
+export const WhatsappTemplateKey = z.enum(["approved", "ready", "on_the_way", "payment_reminder", "blank"]);
+
+/** A browser push endpoint: https on a named host (never an IP or localhost: the server POSTs to it). */
+const PushEndpoint = z
+  .url({ protocol: /^https$/, hostname: /^(?=.*[a-z])[a-z0-9-]+(\.[a-z0-9-]+)+$/i })
+  .max(1000);
+const Base64Url = (length: number) => z.string().length(length).regex(/^[A-Za-z0-9_-]+$/);
+
+/**
+ * `admin/profile` subscribePush (S-196 AC1, AC5): the browser's PushSubscription posted flat as
+ * `endpoint`, `keys.p256dh` (65-byte P-256 point = 87 chars) and `keys.auth` (16 bytes = 22 chars).
+ */
+export const PushSubscriptionInput = z.object({
+  endpoint: PushEndpoint,
+  keys: z.object({ p256dh: Base64Url(87), auth: Base64Url(22) }),
+});
+
+export function parsePushSubscription(form: FormData) {
+  return PushSubscriptionInput.safeParse({ endpoint: form.get("endpoint"), keys: { p256dh: form.get("keys.p256dh"), auth: form.get("keys.auth") } });
+}
+
+/** `admin/profile` unsubscribePush (S-196 AC10). */
+export const PushEndpointInput = z.object({ endpoint: z.string().min(1).max(1000) });
+
 /** `admin/profile` setAlerts (S-036 AC4): an unticked checkbox posts nothing, so absent = off. */
 export function parseAlerts(form: FormData): { alertPush: boolean; alertEmail: boolean } {
   return { alertPush: form.get("alertPush") === "on", alertEmail: form.get("alertEmail") === "on" };
@@ -122,6 +147,13 @@ export const OrderActionInput = z.discriminatedUnion("intent", [
 ]);
 
 export type OrderAction = z.infer<typeof OrderActionInput>;
+
+/** `admin/today` one-tap Next and its Undo (S-121): the row's order and the version it showed. */
+export const TodayActionInput = z.object({
+  intent: z.enum(["advance", "revert"]),
+  orderId: Uuid,
+  version: Version,
+});
 export type OrderIntent = OrderAction["intent"];
 
 export const OrderId = Uuid;

@@ -1,5 +1,5 @@
 # S-121: One-tap next status on Today with Undo
-Status: ready
+Status: done
 Epic: E-06-order-management
 Spec: docs/specs/features/admin-orders.md#flow
 Estimate: 3 pts
@@ -29,3 +29,7 @@ As an admin in the kitchen, I want to mark an order as the next status with one 
 ## Notes
 - Reuses `advance` and `revert` from S-117. Depends on S-120.
 - AC6 records a known limitation: an undone forward step that emailed the customer cannot unsend it; E-10 owns email copy and any "ignore if undone" wording.
+
+## Implementation notes (2026-11-13)
+- Undo toast: 6 s, paused while focused or hovered, `role=status`; Undo sends `revert` with the version after the forward step. A refused tap says "{number} changed meanwhile" and refreshes the list.
+- Tests: `app/routes/admin/today.test.ts`, `tests/e2e/admin-today.spec.ts`.

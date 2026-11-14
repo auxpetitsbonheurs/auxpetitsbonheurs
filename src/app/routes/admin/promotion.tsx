@@ -136,7 +136,7 @@ function TextsSection({ values, errors }: { values: Values; errors: Fields }) {
   const { t } = useI18n();
   const optional = t("admin.promotions.optional");
   return (
-    <fieldset className="grid min-w-0 gap-4 md:grid-cols-2">
+    <fieldset className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2">
       <legend className="mb-2 text-xl font-semibold">{t("admin.promotions.textSection")}</legend>
       <TextField id="title-en" name="title.en" label={t("admin.promotions.titleEn")} hint={t("admin.promotions.titleHint")} defaultValue={values.title.en} maxLength={PROMO_TITLE_MAX} error={errors["title.en"]} autoComplete="off" />
       <TextField id="title-fr" name="title.fr" label={t("admin.promotions.titleFr")} optionalLabel={optional} defaultValue={values.title.fr ?? ""} maxLength={PROMO_TITLE_MAX} error={errors["title.fr"]} autoComplete="off" />
@@ -149,7 +149,7 @@ function TextsSection({ values, errors }: { values: Values; errors: Fields }) {
 function WhenSection({ values, errors }: { values: Values; errors: Fields }) {
   const { t } = useI18n();
   return (
-    <fieldset className="grid min-w-0 gap-4 md:grid-cols-2">
+    <fieldset className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2">
       <legend className="mb-2 text-xl font-semibold">{t("admin.promotions.whenSection")}</legend>
       <TextField id="starts-at" name="startsAt" type="datetime-local" label={t("admin.promotions.startsAt")} hint={t("admin.promotions.timeHint")} defaultValue={values.startsAt} error={errors.startsAt} />
       <TextField id="ends-at" name="endsAt" type="datetime-local" label={t("admin.promotions.endsAt")} hint={t("admin.promotions.timeHint")} defaultValue={values.endsAt} error={errors.endsAt} />
@@ -164,7 +164,7 @@ function LinkFields({ values, products, errors }: { values: Values; products: Pr
   const { t } = useI18n();
   const [kind, setKind] = useState<string>(values.link.kind);
   return (
-    <div className="grid min-w-0 gap-4 md:grid-cols-2">
+    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2">
       <div>
         <label htmlFor="link-kind" className="block font-semibold">
           {t("admin.promotions.linkLegend")}
@@ -398,7 +398,7 @@ function PromotionEditor({ loaderData }: { loaderData: LoaderData }) {
       </Link>
       <h1 className="mt-2">{loaderData.title}</h1>
       {refusal && <ErrorSummary ref={summary} message={refusal.message} fields={refusal.fields} anchors={anchorsFor(refusal.fields)} title={t("admin.promotions.errorSummaryTitle")} />}
-      <fetcher.Form method="post" onChange={markDirty} onInput={markDirty} onFocus={keepAboveSaveBar} className="mt-6 grid gap-8" noValidate>
+      <fetcher.Form method="post" onChange={markDirty} onInput={markDirty} onFocus={keepAboveSaveBar} className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-8" noValidate>
         <input type="hidden" name="intent" value="save" />
         <input type="hidden" name="id" value={values.id ?? ""} />
         <TextsSection values={values} errors={errors} />

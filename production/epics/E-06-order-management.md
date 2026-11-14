@@ -20,19 +20,19 @@ J4: Owner goes from alert to Approve to Completed and paid, each step logged. Tw
 | S-111 | Orders list with tabs, counts and Load more | done | 3 |
 | S-112 | Search and filter orders | done | 3 |
 | S-113 | Order detail with Maps, Call and WhatsApp | done | 3 |
-| S-114 | Private note autosave and reference photos on the order | in-progress | 2 |
+| S-114 | Private note autosave and reference photos on the order | done | 2 |
 | S-115 | Status transitions enforced on the server per Appendix B | done | 3 |
 | S-116 | Approve or decline an order | done | 3 |
 | S-117 | Move an order forward or back one step | done | 3 |
-| S-118 | Send a quote for a custom request (admin side) | ready | 3 |
+| S-118 | Send a quote for a custom request (admin side) | done | 3 |
 | S-119 | Mark paid or unpaid and cancel an order | done | 3 |
-| S-120 | Today screen with counts and today/tomorrow orders | ready | 3 |
-| S-121 | One-tap next status on Today with Undo | ready | 3 |
+| S-120 | Today screen with counts and today/tomorrow orders | done | 3 |
+| S-121 | One-tap next status on Today with Undo | done | 3 |
 | S-122 | Edit an order with recalculated total or manual override | ready | 5 |
 | S-123 | Edit warnings and the "Your order was updated" email trigger | ready | 3 |
 | S-124 | Two admins on one order get "this order changed, reload" | done | 3 |
 | S-125 | Activity log on the order | done | 2 |
-| S-126 | One-handed admin layout and accessibility pass | ready | 2 |
+| S-126 | One-handed admin layout and accessibility pass | in-progress | 2 |
 
 Total: 47 pts. Files: `production/stories/E-06/`.
 
