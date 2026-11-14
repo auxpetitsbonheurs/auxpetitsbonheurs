@@ -97,7 +97,7 @@ describe("product page meta (S-224)", () => {
 
     const tags = await pageMeta("/menu/chocolate-cake");
 
-    expect(content(tags, "og:image")).toBe(`${ORIGIN}/brand/og-image.png`);
+    expect(content(tags, "og:image")).toBe(`${ORIGIN}/brand/og-image.jpg`);
     expect(content(tags, "og:image:width")).toBe("1200");
     expect(tags.filter((t) => (t as Record<string, string>).property === "og:image")).toHaveLength(1);
     expect(tags.every((t) => Object.values(t as Record<string, unknown>).every((v) => v !== "" && v !== undefined && v !== null))).toBe(true);

@@ -100,7 +100,7 @@ test.describe("laptop header navigation (S-242)", () => {
 
     await page.keyboard.press("Tab"); // skip link
     // E-11: the account icon ("Sign in" when signed out) sits between the language switch and the basket (S-242 AC4).
-    const expected = ["Aux petits bonheurs", ...EN, "Français", "Sign in", /^Basket/];
+    const expected = ["Aux petits bonheurs, home", ...EN, "Français", "Sign in", /^Basket/];
     for (const name of expected) {
       await page.keyboard.press("Tab");
       await expect(page.getByRole("link", { name, exact: typeof name === "string" }).and(page.locator(":focus"))).toHaveCount(1);

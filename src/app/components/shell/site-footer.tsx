@@ -3,9 +3,12 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { cn } from "~/lib/utils";
 import { useI18n } from "~/i18n/react";
+import { badgeImage } from "~/lib/brand";
 import { mailHref, telHref, whatsappHref } from "~/lib/contact";
 import { localePath } from "~/lib/locale";
 import { SITE_NAV_ITEMS } from "~/lib/site-nav";
+
+const footerBadge = badgeImage("cream", 112);
 
 export interface FooterContacts {
   whatsapp: string | null;
@@ -225,7 +228,7 @@ function FooterNav({ showReviews }: { showReviews: boolean }) {
 }
 
 /**
- * Footer (brand v0.3, S-061): burgundy band under a thin gold rule. The burgundy logo badge
+ * Footer (brand v0.3, S-061): burgundy band under a thin gold rule. The cream logo badge
  * (a link home), then contacts, pickup place and the site's pages: stacked and centred on
  * phones, three columns from md. Items with an empty Settings value are omitted (no blank row);
  * Settings text is rendered as React text, so markup in it shows as text (AC6).
@@ -236,8 +239,8 @@ export function SiteFooter({ contacts, year, showReviews = false }: { contacts: 
     <footer className="band border-t border-gold">
       <div className="mx-auto flex max-w-content flex-col items-center px-4 py-8 text-center md:px-6 md:text-start">
         <Link to={localePath(locale, "/")} className="inline-flex rounded-full">
-          {/* Logo badge, version 2 (burgundy fill, cream script, gold ring). Its alt names the link. */}
-          <img src="/brand/logo-badge-burgundy.svg" alt={t("shell.footer.home")} width={112} height={112} loading="lazy" decoding="async" className="size-24 md:size-28" />
+          {/* The Owner's cream badge on the burgundy band (the burgundy one would melt into it). Its alt names the link. */}
+          <img {...footerBadge} sizes="(min-width: 768px) 112px, 96px" alt={t("shell.footer.home")} width={112} height={112} loading="lazy" decoding="async" className="size-24 md:size-28" />
         </Link>
         <FooterSocial instagramUrl={contacts.instagramUrl} facebookUrl={contacts.facebookUrl} />
         <div className="mt-6 grid w-full grid-cols-1 gap-8 md:grid-cols-3 md:gap-10">

@@ -3,8 +3,12 @@ import { Link } from "react-router";
 import { SiteMenu } from "~/components/site/site-menu";
 import { AccountLink, SiteNav } from "~/components/site/site-nav";
 import { useI18n } from "~/i18n/react";
+import { badgeImage } from "~/lib/brand";
 import { localePath } from "~/lib/locale";
 import { BasketLink } from "./basket-link";
+
+const headerBadge = badgeImage("cream", 56);
+const HEADER_BADGE_SIZES = "(min-width: 23rem) 56px, 48px";
 
 interface SiteHeaderProps {
   basketCount: number;
@@ -35,9 +39,11 @@ export function SiteHeader({ basketCount, languageSwitch, accountHref, signedIn 
     <header className="band border-b border-gold">
       <div className="mx-auto flex max-w-content flex-wrap items-center justify-between gap-x-2 gap-y-1 px-4 py-2 min-[18rem]:grid min-[18rem]:grid-cols-[1fr_auto_1fr] md:px-6 lg:flex lg:flex-nowrap lg:gap-x-4">
         <div className="justify-self-start lg:hidden">{languageSwitch}</div>
-        {/* Logo lockup (version 2 colours: cream script, gold mark), 52 px tall; 44 px below 23rem so it fits a 320 px phone. Its alt is the link's name. */}
-        <Link to={localePath(locale, "/")} className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md">
-          <img src="/brand/logo-lockup-cream.svg" alt={t("shell.bakeryName")} width={221} height={88} className="h-11 w-auto min-[23rem]:h-13" />
+        {/* The Owner's cream badge on the burgundy band: 48 px below 23rem (320 px phones), 56 px
+            elsewhere (the band stays within 80 px, S-242 AC6). Badge only: it carries the name, and a
+            wordmark beside it would not fit at 320 px. Its alt is the link's name. Not lazy: it is above the fold. */}
+        <Link to={localePath(locale, "/")} className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full">
+          <img {...headerBadge} sizes={HEADER_BADGE_SIZES} alt={t("shell.logoHome")} width={56} height={56} decoding="async" className="size-12 min-[23rem]:size-14" data-site-logo />
         </Link>
         <SiteNav />
         <div className="flex items-center gap-1 justify-self-end lg:shrink-0 lg:gap-2">

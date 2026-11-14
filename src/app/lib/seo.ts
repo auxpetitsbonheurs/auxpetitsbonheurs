@@ -18,8 +18,8 @@ export const DESCRIPTION_LENGTH = { min: 50, max: 160 } as const;
 /** `export const handle = SEO_HANDLE` on a route whose `meta` uses seoMeta (read by the customer layout). */
 export const SEO_HANDLE = { seo: true } as const;
 
-/** The brand share image (brand v0.3 cream logo badge on burgundy), 1200 x 630. */
-export const BRAND_SHARE_IMAGE = { path: "/brand/og-image.png", width: 1200, height: 630 } as const;
+/** The brand share image: the Owner's cream badge centred on a burgundy card with a gold rule, 1200 x 630 (JPEG, 51 kB). */
+export const BRAND_SHARE_IMAGE = { path: "/brand/og-image.jpg", width: 1200, height: 630 } as const;
 
 /** True when a route handle says its meta brings its own share image. */
 export function handlesOwnShareImage(handle: unknown): boolean {

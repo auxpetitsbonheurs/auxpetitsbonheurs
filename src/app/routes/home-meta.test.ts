@@ -12,7 +12,7 @@ const ogImage = (photo: { url: string; srcSet?: string } | null) => {
 
 describe("home share image (S-224)", () => {
   test("an SVG hero (sample data) shares the brand image instead", () => {
-    expect(ogImage({ url: "/images/sample/chocolate-cake.svg" })).toBe(`${ORIGIN}/brand/og-image.png`);
+    expect(ogImage({ url: "/images/sample/chocolate-cake.svg" })).toBe(`${ORIGIN}/brand/og-image.jpg`);
   });
 
   test("a hero photo shares its widest copy up to 1200 px", () => {
@@ -21,6 +21,6 @@ describe("home share image (S-224)", () => {
   });
 
   test("no hero photo shares the brand image", () => {
-    expect(ogImage(null)).toBe(`${ORIGIN}/brand/og-image.png`);
+    expect(ogImage(null)).toBe(`${ORIGIN}/brand/og-image.jpg`);
   });
 });

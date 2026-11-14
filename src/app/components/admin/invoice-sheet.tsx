@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import { type InvoiceDocument, type InvoiceTotals, formatInvoiceDate } from "~/domain/invoice";
+import { badgeImage } from "~/lib/brand";
 import { formatRupeeAmount, formatRupees } from "~/lib/locale";
+
+/** The cream badge on white paper (prints light; the gold ring edges it), as in the PDF. */
+const invoiceBadge = badgeImage("cream", 112);
 
 // The print view of an invoice (S-127): the same document as the PDF, laid out like the client's
 // paper template. It is a printed page, not themed UI: its paper colours stay fixed in dark mode so
@@ -33,7 +37,7 @@ function Header({ doc }: { doc: InvoiceDocument }) {
         ))}
         {business.phone && <p>{`${labels.phone} ${business.phone}`}</p>}
       </div>
-      <img src="/brand/logo-badge-pink.svg" alt="Aux petits bonheurs" width={112} height={112} className="size-24 shrink-0 sm:size-28" />
+      <img {...invoiceBadge} sizes="(min-width: 640px) 112px, 96px" alt="Aux petits bonheurs" width={112} height={112} className="size-24 shrink-0 sm:size-28" />
     </header>
   );
 }

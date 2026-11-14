@@ -4,6 +4,7 @@
 // light tokens of docs/design/tokens.json; every text/background pair is checked in
 // layout.test.ts (>= 4.5:1). No tracking pixel, no script; every user string is escaped.
 import { t } from "~/i18n/catalog.server";
+import { EMAIL_BADGE } from "~/lib/brand";
 import type { Locale } from "~/lib/locale";
 
 export const BAKERY_NAME = "Aux petits bonheurs";
@@ -80,8 +81,10 @@ function logo(siteUrl: string | null): string {
   const origin = originOf(siteUrl);
   const name = `<p style="margin:12px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:22px;line-height:1.3;color:${EMAIL_COLORS.button}">${escapeHtml(BAKERY_NAME)}</p>`;
   if (!origin) return name;
-  // PNG on the site origin (email clients do not render SVG); its alt text is the bakery name.
-  return `<img src="${escapeHtml(origin)}/brand/logo-badge-cream-160.png" width="80" height="80" alt="${escapeHtml(BAKERY_NAME)}" style="display:block;margin:0 auto;border:0;border-radius:40px">`;
+  // The Owner's burgundy badge as a PNG on the site origin (email clients render neither SVG nor
+  // WebP reliably), 2x for sharp phones; its alt text is the bakery name.
+  const px = EMAIL_BADGE.displayPx;
+  return `<img src="${escapeHtml(origin)}${EMAIL_BADGE.path}" width="${px}" height="${px}" alt="${escapeHtml(BAKERY_NAME)}" style="display:block;margin:0 auto;border:0;width:${px}px;height:${px}px">`;
 }
 
 function blockHtml(block: Block): string {

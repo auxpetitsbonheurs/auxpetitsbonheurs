@@ -65,10 +65,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
-        {/* Brand v0.3: the cream logo badge (version 1) as favicon; favicon.ico stays the fallback. The
-            brand share image is the customer layout's (routes/site/layout.tsx): lib/seo stays out of
-            the admin app's JavaScript (product editor budget). */}
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        {/* The Owner's burgundy badge as favicon (PNG 32/48; favicon.ico 16/32/48 is the fallback
+            browsers ask for on their own) and as the Apple touch icon (on solid cream). The brand
+            share image is the customer layout's (routes/site/layout.tsx): lib/seo stays out of the
+            admin app's JavaScript (product editor budget). */}
+        <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+        <link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         {alternates && (
           <>
             <link rel="alternate" hrefLang="en" href={alternates.en} />

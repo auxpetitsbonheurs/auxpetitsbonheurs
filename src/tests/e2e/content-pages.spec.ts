@@ -97,7 +97,7 @@ test.describe("head and sitemap (S-253)", () => {
       await expect(head.locator('link[hreflang="x-default"]')).toHaveAttribute("href", `${origin}${path}`);
       await expect(head.locator('meta[property="og:title"]')).toHaveAttribute("content", `${h1.fr} | Aux petits bonheurs`);
       await expect(head.locator('meta[property="og:image"]')).toHaveCount(1);
-      await expect(head.locator('meta[property="og:image"]')).toHaveAttribute("content", `${origin}/brand/og-image.png`);
+      await expect(head.locator('meta[property="og:image"]')).toHaveAttribute("content", `${origin}/brand/og-image.jpg`);
       await expect(head.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
       await expect(page.getByRole("banner").locator('a[hreflang="en"]').first()).toHaveAttribute("href", path);
     }

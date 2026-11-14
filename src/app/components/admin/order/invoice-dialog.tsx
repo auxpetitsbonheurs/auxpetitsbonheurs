@@ -5,6 +5,7 @@ import { Button } from "~/components/ui/button";
 import { Modal } from "~/components/ui/modal";
 import type { InvoiceDocument } from "~/domain/invoice";
 import { useI18n } from "~/i18n/react";
+import { INVOICE_BADGE_PATH } from "~/lib/brand";
 
 // Download invoice (S-127): the PDF is built here, in the browser (the Worker's 10 ms CPU cannot),
 // from the admin-only `invoice.json`, with pdf-lib in its own lazily loaded chunk. The dialog says
@@ -23,13 +24,27 @@ export const preloadInvoicePdf = () => loadInvoicePdf().catch(() => undefined);
 
 type State = { step: "preparing" } | { step: "ready"; file: File; url: string } | { step: "failed" };
 
+/** The Owner's badge for the PDF (cached a day); a failure only leaves the badge out. */
+async function loadBadge(signal: AbortSignal): Promise<Uint8Array | undefined> {
+  try {
+    const response = await fetch(INVOICE_BADGE_PATH, { signal });
+    return response.ok ? new Uint8Array(await response.arrayBuffer()) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function prepareInvoice(orderId: string, signal: AbortSignal): Promise<File> {
-  const [response, pdf] = await Promise.all([fetch(`/admin/orders/${orderId}/invoice.json`, { headers: { Accept: "application/json" }, signal }), loadInvoicePdf()]);
+  const [response, pdf, badge] = await Promise.all([
+    fetch(`/admin/orders/${orderId}/invoice.json`, { headers: { Accept: "application/json" }, signal }),
+    loadInvoicePdf(),
+    loadBadge(signal),
+  ]);
   // A signed-out session is redirected to the sign-in page (HTML): not an invoice.
   if (!response.ok || !(response.headers.get("content-type") ?? "").includes("application/json")) throw new Error("invoice_unavailable");
   const body = (await response.json()) as { ok: boolean; invoice?: InvoiceDocument };
   if (!body.ok || !body.invoice) throw new Error("invoice_unavailable");
-  const bytes = await pdf.buildInvoicePdf(body.invoice);
+  const bytes = await pdf.buildInvoicePdf(body.invoice, badge);
   return new File([bytes as Uint8Array<ArrayBuffer>], body.invoice.fileName, { type: "application/pdf" });
 }
 

@@ -137,19 +137,23 @@
   }
 
   /*
-   * Page-change loader (S-284): the whisk rocks on its handle about once a second; the badge
-   * fades in. Both stop under reduced motion (the rule at the end of this file): a still badge.
-   * The whisk's group is drawn around its pivot, so the origin is its own 0 0.
+   * Page-change loader (S-284, the Owner's badge): a gold arc circles the badge's ring about once
+   * a second while the badge breathes softly; it fades in. All stop under reduced motion (the
+   * rule at the end of this file): a still badge.
    */
-  --animate-whisk: whisk 0.55s ease-in-out infinite alternate;
+  --animate-loader-ring: loader-ring 1.1s linear infinite;
+  --animate-loader-pulse: loader-pulse 0.9s ease-in-out infinite alternate;
   --animate-loader-in: loader-in var(--motion-fast) var(--ease-enter) both;
 
-  @keyframes whisk {
-    from {
-      transform: rotate(-16deg);
-    }
+  @keyframes loader-ring {
     to {
-      transform: rotate(10deg);
+      transform: rotate(1turn);
+    }
+  }
+
+  @keyframes loader-pulse {
+    to {
+      transform: scale(1.04);
     }
   }
 
@@ -159,10 +163,6 @@
       transform: scale(0.9);
     }
   }
-}
-
-[data-whisk] {
-  transform-origin: 0 0;
 }
 
 :root {

@@ -9,6 +9,6 @@ describe("PageLoader", () => {
     const html = renderInSite(<PageLoader />, "/");
     expect(html).not.toContain("data-page-loader");
     expect(html).not.toContain('role="status"');
-    expect(html).not.toContain("<svg");
+    expect(html).not.toContain("<img");
   });
 });

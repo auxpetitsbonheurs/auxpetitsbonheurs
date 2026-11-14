@@ -1,5 +1,8 @@
 import { Link } from "react-router";
 import { useI18n } from "~/i18n/react";
+import { badgeImage } from "~/lib/brand";
+
+const adminBadge = badgeImage("burgundy", 48);
 
 export interface AdminHeaderProps {
   /** The signed-in admin; absent on the sign-in page. */
@@ -22,8 +25,8 @@ export function AdminHeader({ me, title }: AdminHeaderProps) {
           <>
             <div className="min-w-0">
               <Link to="/admin" className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
-                {/* Small logo mark (cream badge, version 1); decorative next to the brand text. */}
-                <img src="/brand/logo-badge-cream.svg" alt="" width={32} height={32} className="size-8" />
+                {/* Small logo mark (burgundy badge on the light header); decorative next to the brand text. */}
+                <img {...adminBadge} sizes="32px" alt="" width={32} height={32} className="size-8" />
                 {t("admin.shell.brand")}
               </Link>
               {title && <p className="font-display text-xl leading-tight">{title}</p>}
@@ -35,7 +38,7 @@ export function AdminHeader({ me, title }: AdminHeaderProps) {
         ) : (
           <p className="min-w-0">
             <a href="/admin/login" className="inline-flex min-h-11 items-center gap-3">
-              <img src="/brand/logo-badge-cream.svg" alt="" width={48} height={48} className="size-12" />
+              <img {...adminBadge} sizes="48px" alt="" width={48} height={48} className="size-12" />
               <span className="flex flex-col justify-center font-display text-xl">
                 <span>{t("admin.shell.brand")}</span>
                 <span className="font-sans text-sm text-muted-foreground">{t("admin.shell.area")}</span>

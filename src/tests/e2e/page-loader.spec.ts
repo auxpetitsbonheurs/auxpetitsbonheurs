@@ -1,6 +1,6 @@
 // S-284: the branded page-change loader. A client page change still loading after 300 ms shows
-// the whisk badge with a "Loading…" status; a fast one shows nothing; the first load never does;
-// reduced motion keeps the whisk still. Page data requests (`*.data`) are held or answered from
+// the Owner's badge with a "Loading…" status; a fast one shows nothing; the first load never does;
+// reduced motion keeps it still. Page data requests (`*.data`) are held or answered from
 // a recording so the timing does not depend on the machine's speed.
 import { expectNoA11yViolations } from "./support/a11y";
 import type { Route } from "@playwright/test";
@@ -27,7 +27,7 @@ async function holdPageData(page: Page) {
 }
 
 test.describe("page-change loader (S-284)", () => {
-  test("AC1, AC4: a slow page change shows the whisk badge and Loading…, axe clean, then it goes away", async ({ page }) => {
+  test("AC1, AC4: a slow page change shows the badge and Loading…, axe clean, then it goes away", async ({ page }) => {
     await open(page, "/");
     await expect(loader(page)).toHaveCount(0);
     const release = await holdPageData(page);
@@ -36,8 +36,13 @@ test.describe("page-change loader (S-284)", () => {
     const status = page.getByRole("status").filter({ hasText: "Loading…" });
     await expect(status).toBeAttached();
     await expect(badge(page)).toBeVisible();
-    await expect(badge(page)).toHaveAttribute("aria-hidden", "true");
-    await expect(page.locator("[data-whisk]")).toHaveCSS("animation-name", "whisk");
+    // The Owner's badge image, decorative (the status text is the announcement), loaded and
+    // gently animated: the badge pulses and a gold arc circles its ring.
+    const image = badge(page).locator("img");
+    await expect(image).toHaveAttribute("alt", "");
+    await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBeGreaterThan(0);
+    await expect(image).toHaveCSS("animation-name", "loader-pulse");
+    await expect(page.locator("[data-loader-ring]")).toHaveCSS("animation-name", "loader-ring");
     // Click-through and fixed: nothing under it is blocked and the page does not move.
     await expect(loader(page)).toHaveCSS("pointer-events", "none");
     await expect(loader(page)).toHaveCSS("position", "fixed");
@@ -90,13 +95,14 @@ test.describe("page-change loader (S-284)", () => {
     expect(await page.evaluate(() => (window as unknown as { __loaderSeen: { badge: boolean } }).__loaderSeen.badge)).toBe(false);
   });
 
-  test("AC5: with reduced motion the whisk stays still", async ({ page }) => {
+  test("AC5: with reduced motion the badge and its ring stay still", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await open(page, "/");
     const release = await holdPageData(page);
     await footer(page).getByRole("link", { name: "Our story" }).click();
     await expect(badge(page)).toBeVisible();
-    await expect(page.locator("[data-whisk]")).toHaveCSS("animation-name", "none");
+    await expect(badge(page).locator("img")).toHaveCSS("animation-name", "none");
+    await expect(page.locator("[data-loader-ring]")).toHaveCSS("animation-name", "none");
     release();
     await expect(loader(page)).toHaveCount(0);
   });

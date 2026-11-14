@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigation } from "react-router";
 import { useI18n } from "~/i18n/react";
+import { badgeImage } from "~/lib/brand";
+import { cn } from "~/lib/utils";
 import { LOADER_DELAY_MS, LOADER_MIN_VISIBLE_MS, createDelayedFlag, isPageChange } from "~/lib/delayed-flag";
 
 /** True LOADER_DELAY_MS after `active` starts, kept LOADER_MIN_VISIBLE_MS once shown (lib/delayed-flag). */
@@ -16,29 +18,21 @@ function useDelayedFlag(active: boolean): boolean {
   return visible;
 }
 
+const loaderBadge = badgeImage("burgundy", 80);
+
 /**
- * The logo badge's heart flourish and whisk (public/brand/logo-badge-*.svg, brand v0.3), on a
- * small burgundy disc with the gold ring. The whisk rocks about the end of its handle, where
- * it meets the flourish (app.css `animate-whisk`; still under reduced motion).
+ * The Owner's burgundy badge (lib/brand; it stands out on the cream pages), 80 px, with a thin
+ * gold arc circling just outside its ring while the badge pulses softly (app.css
+ * `animate-loader-ring`, `animate-loader-pulse`; both still under reduced motion). Mounted,
+ * invisible, as soon as a page change starts so the image is ready when it shows; it gets
+ * `data-page-loader-badge` only once shown.
  */
-function WhiskBadge() {
+function LoaderBadge({ shown }: { shown: boolean }) {
   return (
-    <svg aria-hidden="true" viewBox="0 0 120 120" className="size-16 drop-shadow-md" data-page-loader-badge>
-      <circle cx="60" cy="60" r="57" className="fill-band stroke-gold" strokeWidth="3" />
-      <circle cx="60" cy="60" r="52.5" fill="none" className="stroke-gold" strokeOpacity=".5" strokeWidth=".8" />
-      <g transform="translate(60 60) scale(.92) translate(-136.5 -52.5)" fill="none" className="stroke-gold" strokeLinecap="round" strokeLinejoin="round">
-        <path strokeWidth="2.6" d="M92 70.8c12.6 7.2 28.8 9 45 5.4-5.4-6.3-13.5-12.6-12.6-21.6.9-7.2 9-9 12.6-.9 3.6-8.1 11.7-6.3 12.6.9.9 9-7.2 15.3-12.6 21.6 6.3-1.8 11.7 0 17.1-2.7" />
-        <g transform="translate(154.1 73.5)">
-          <g className="animate-whisk" data-whisk>
-            <g transform="translate(-154.1 -73.5)">
-              <path strokeWidth="5" d="m154.1 73.5 8.1-9.9" />
-              <path strokeWidth="3.6" d="m160.1 62.5 4.2 2.2" />
-              <path strokeWidth="1.6" d="M162.2 63.6c-3.6-12.1 5.4-36.2 18.9-35.1m-18.9 35.1c.3-10 10.9-33.3 18.9-35.1m-18.9 35.1 18.9-35.1m-18.9 35.1c8.2-5.8 21.8-27.4 18.9-35.1m-18.9 35.1c12.1-3.7 27.2-24.5 18.9-35.1" />
-            </g>
-          </g>
-        </g>
-      </g>
-    </svg>
+    <span aria-hidden="true" className={cn("relative block size-20", shown ? "animate-loader-in" : "invisible")} {...(shown ? { "data-page-loader-badge": "" } : {})}>
+      <img {...loaderBadge} sizes="80px" alt="" width={80} height={80} decoding="async" className="size-20 animate-loader-pulse rounded-full drop-shadow-md" />
+      <span className="absolute -inset-1.5 animate-loader-ring rounded-full border-2 border-transparent border-t-gold border-r-gold/40" data-loader-ring />
+    </span>
   );
 }
 
@@ -55,14 +49,8 @@ export function PageLoader() {
   if (!navigating && !visible) return null;
   return (
     <div role="status" className="pointer-events-none fixed inset-0 z-50 grid place-items-center" data-page-loader>
-      {visible && (
-        <>
-          <span className="animate-loader-in">
-            <WhiskBadge />
-          </span>
-          <span className="sr-only">{t("shell.loading")}</span>
-        </>
-      )}
+      <LoaderBadge shown={visible} />
+      {visible && <span className="sr-only">{t("shell.loading")}</span>}
     </div>
   );
 }

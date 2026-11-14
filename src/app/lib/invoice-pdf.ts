@@ -1,15 +1,13 @@
 // The invoice PDF (S-127), built in the browser: the Worker's 10 ms CPU cannot render it. Loaded
 // only when an admin asks for an invoice (its own chunk, outside every route's initial JS). A4
-// portrait after the client's paper template: the business top left, the pink badge top right, a
+// portrait after the client's paper template: the business top left, the cream badge top right, a
 // grey-blue band with the number and date, three labelled columns, the items table, the totals
 // box and the payment details. PDF standard fonts (Times for the template's serif, Helvetica for
 // its small caps labels): nothing to download, and every Latin-1 letter of EN and FR prints.
-import { type PDFFont, type PDFPage, LineCapStyle, PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
+import { type PDFFont, type PDFImage, type PDFPage, PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
 import type { InvoiceDocument, InvoiceLine } from "~/domain/invoice";
 import { formatInvoiceDate } from "~/domain/invoice";
 import { formatRupeeAmount, formatRupees } from "~/lib/locale";
-import badgeSvg from "../../public/brand/logo-badge-pink.svg?raw";
-import { BADGE_VIEWBOX, type BadgeShape, badgeShapes } from "./invoice-badge";
 
 const PAGE = { width: 595.28, height: 841.89 } as const;
 const LEFT = 53;
@@ -37,8 +35,6 @@ interface Fonts {
   sans: PDFFont;
   sansBold: PDFFont;
 }
-
-const hex = (value: string) => rgb(parseInt(value.slice(1, 3), 16) / 255, parseInt(value.slice(3, 5), 16) / 255, parseInt(value.slice(5, 7), 16) / 255);
 
 /** Standard fonts print WinAnsi only: accents are kept, anything else loses its marks or becomes "?". */
 function printable(font: PDFFont): (text: string) => string {
@@ -102,26 +98,12 @@ class Sheet {
   }
 }
 
-function drawBadge(sheet: Sheet, centerX: number, centerTop: number, size: number) {
-  const scale = size / BADGE_VIEWBOX;
-  const x = centerX - size / 2;
-  const y = PAGE.height - (centerTop - size / 2);
-  for (const shape of badgeShapes(badgeSvg)) {
-    const d = shape.kind === "circle" ? circlePath(shape) : shape.d;
-    sheet.page.drawSvgPath(d, {
-      x,
-      y,
-      scale,
-      ...(shape.fill ? { color: hex(shape.fill) } : {}),
-      ...(shape.stroke ? { borderColor: hex(shape.stroke), borderWidth: shape.strokeWidth, borderOpacity: shape.strokeOpacity } : {}),
-      ...(shape.lineCap === "round" ? { borderLineCap: LineCapStyle.Round } : {}),
-    });
-  }
+/** The Owner's cream badge (300 px PNG, transparent corners), `size` points wide. */
+function drawBadge(sheet: Sheet, badge: PDFImage, centerX: number, centerTop: number, size: number) {
+  sheet.page.drawImage(badge, { x: centerX - size / 2, y: PAGE.height - centerTop - size / 2, width: size, height: size });
 }
 
-const circlePath = (c: Extract<BadgeShape, { kind: "circle" }>) => `M${c.cx - c.r} ${c.cy}a${c.r} ${c.r} 0 1 0 ${2 * c.r} 0a${c.r} ${c.r} 0 1 0 ${-2 * c.r} 0z`;
-
-function drawHeader(sheet: Sheet, doc: InvoiceDocument, fonts: Fonts) {
+function drawHeader(sheet: Sheet, doc: InvoiceDocument, fonts: Fonts, badge: PDFImage | null) {
   const { business, labels } = doc;
   const lines = [business.legalName?.toUpperCase(), business.brn && `${labels.brn} ${business.brn}`, ...business.address, business.phone && `${labels.phone} ${business.phone}`];
   let top = 52;
@@ -130,7 +112,7 @@ function drawHeader(sheet: Sheet, doc: InvoiceDocument, fonts: Fonts) {
     sheet.text(line, LEFT, top);
     top += 12.6;
   }
-  drawBadge(sheet, RIGHT - 58, 104, 114);
+  if (badge) drawBadge(sheet, badge, RIGHT - 58, 104, 114);
   sheet.rect(LEFT, 174, RIGHT - LEFT, 29, BAND);
   sheet.text(`${labels.invoiceNo} ${doc.number}`, LEFT + 5, 193, { font: fonts.sans, size: 12, color: WHITE });
   sheet.text(`${labels.date} ${formatInvoiceDate(doc.date)}`, RIGHT - 6, 193, { font: fonts.sans, size: 12, color: WHITE, align: "right" });
@@ -276,9 +258,14 @@ function drawFooter(pdf: PDFDocument, sheet: Sheet, doc: InvoiceDocument, fonts:
   if (thanks.length > 0) thanks.forEach((line, i) => page.text(line, LEFT, top + 24 + i * 12));
 }
 
-/** The invoice as PDF bytes. Deterministic for a given document (fixed dates in the metadata). */
-export async function buildInvoicePdf(doc: InvoiceDocument): Promise<Uint8Array> {
+/**
+ * The invoice as PDF bytes. Deterministic for a given document (fixed dates in the metadata).
+ * `badgePng` is the Owner's badge (lib/brand INVOICE_BADGE_PATH); without it (it failed to load)
+ * the invoice is complete without the badge rather than not at all.
+ */
+export async function buildInvoicePdf(doc: InvoiceDocument, badgePng?: Uint8Array): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
+  const badge = badgePng ? await pdf.embedPng(badgePng) : null;
   const fonts: Fonts = {
     serif: await pdf.embedFont(StandardFonts.TimesRoman),
     serifBold: await pdf.embedFont(StandardFonts.TimesRomanBold),
@@ -294,7 +281,7 @@ export async function buildInvoicePdf(doc: InvoiceDocument): Promise<Uint8Array>
   pdf.setCreationDate(issued);
   pdf.setModificationDate(issued);
   const first = new Sheet(pdf.addPage([PAGE.width, PAGE.height]), fonts, clean);
-  drawHeader(first, doc, fonts);
+  drawHeader(first, doc, fonts, badge);
   drawFields(first, doc, fonts);
   const last = await drawTable(pdf, first, doc, fonts, clean);
   drawTotals(last, doc, fonts);

@@ -29,7 +29,7 @@ Version: 0.3 · Updated: 2026-11-12
   4. **Admin app:** same palette, calmer: burgundy buttons and accents on cream, no dark bands, no gold lines (the small logo mark in the admin header is the only gold).
 - **Idea:** a classic French pâtisserie box: cream card, a cherry-red ribbon, a fine gold rule. Burgundy frames the page (header, footer, call-outs); the content area is cream and quiet so the cakes bring the colour.
 - **What changed from v0.2:** honey and brown ink are gone; one brand colour (burgundy) plus decorative gold; Cormorant Garamond replaces Libre Caslon Display/Text; header and footer become full-bleed burgundy bands with a 1 px gold rule; the text wordmark becomes the logo; section titles get thin gold rules. Shapes are unchanged (12 px buttons, 14 px cards, 48 px buttons).
-- **Layout cues (reference):** header band = language link, centred logo lockup (cream script, gold mark), basket; cream hero with a large Cormorant headline and a short gold rule; centred titles flanked by gold rules ("Notre collection"); product cards in 2 columns on phones; burgundy custom-cake band with a cream outline pill ("Demander un devis"); burgundy footer with the burgundy logo badge.
+- **Layout cues (reference):** header band = language link, centred cream logo badge (official, 2026-11-14), basket; cream hero with a large Cormorant headline and a short gold rule; centred titles flanked by gold rules ("Notre collection"); product cards in 2 columns on phones; burgundy custom-cake band with a cream outline pill ("Demander un devis"); burgundy footer with the cream logo badge.
 - **Gold is decorative.** Antique gold #BA8430 measures 2.9:1 on cream and 3.9:1 on burgundy, so outside the logo it is used only for hairlines and rules, never for text or as the only edge of a control. Where gold must carry meaning on a band (basket count badge, link hover) the lighter gold #E2B66E is used (6.8:1).
 - **Risk:** burgundy-and-gold can tip into "black-and-gold luxury" cliché; keep gold to 1 px lines and the logo, keep pages cream, and keep the copy warm and plain.
 
@@ -61,17 +61,21 @@ We speak as the bakery ("we"), to one customer ("you"). Short sentences. Prices 
 - **Formatting:** prices as "Rs 1,250" (EN) / "Rs 1 250" (FR, narrow no-break space); dates written out with weekday; 24h time in FR, "2:30 pm" in EN.
 
 ## Logo
-Source: `docs/design/explorations/2026-11-12-logo-badges-reference.jpg`, redrawn by hand as optimised SVG. The script ("Aux Petits / Bonheurs", Great Vibes) and the tagline ("PÂTISSERIE ARTISANALE", Cormorant Garamond 600 caps, tracked) are **converted to outlined paths**, so no logo font loads; the heart-and-whisk mark is a line drawing. Accessible name everywhere: "Aux petits bonheurs" (`alt`, `aria-label`).
+Source: the Owner's **official badges** (sent 2026-11-14 as raster images in SVG wrappers), cut to transparent circles just inside the gold ring by `docs/design/brand/cut_badges.py`; 1024 px masters `docs/design/brand/master-badge-{cream,burgundy}-1024.webp`. The 2 MB wrappers are never committed. Code reads the files through `src/app/lib/brand.ts`. Accessible name: "Aux petits bonheurs" (`alt`); the header link is "Aux petits bonheurs, home" / "…, accueil".
 
-| File | Version | Use |
+**Rule: the cream badge on burgundy, the burgundy badge on cream or light.** (Each badge disappears into its own colour.)
+
+| Badge | Files (`src/public/`) | Where |
 |---|---|---|
-| `src/public/brand/logo-badge-cream.svg` (15 kB, ~5 kB gzipped) | 1 · Crème brûlée × Cherry Tart × Antique Gold: cream #FCEAD8 fill, burgundy #660C0C script and tagline, gold #BA8430 ring, mark and rules | Light pages (admin sign-in and header mark), emails (`logo-badge-cream-160.png`), OG image (`og-image.png`) |
-| `src/public/brand/logo-badge-burgundy.svg` | 2 · Cherry Tart × Crème brûlée × Antique Gold: burgundy fill, cream script | Footer band; admin app icons (`/admin/icon-*.png`, maskable on burgundy full bleed, Apple touch icon) |
-| `src/public/brand/logo-lockup-cream.svg` (10 kB) | Compact header lockup: two-line cream script, small gold mark, no ring or tagline | The burgundy header band, 52 px tall (44 px below 368 px) |
-| `src/public/brand/logo-lockup-burgundy.svg` | Same lockup in burgundy | Light surfaces where a badge is too large |
-| `src/public/favicon.svg` / `favicon.ico` | Version 1 colours reduced for 16–48 px: cream disc, gold ring, burgundy heart-and-whisk (text is illegible that small) | Browser tab |
+| Cream (cream disc, burgundy script, gold ring, whisk and heart) | `brand/badge-cream-{64,128,192,256,320}.webp` (2.6–17.5 kB) | Burgundy header (48 px below 23rem, else 56 px; badge only: it carries the name and a wordmark beside it does not fit at 320 px), burgundy footer (96 / 112 px), home hero placeholder (128 / 160 px) |
+| Cream | `brand/og-image.jpg` (1200×630, 51 kB) | Share card: cream badge centred on burgundy with a gold rule |
+| Cream | `brand/badge-cream-300.png` (22 kB) | Invoice PDF (pdf-lib `embedPng`) and print view: prints light on white paper, the ring edges it |
+| Burgundy (burgundy disc, cream script, gold ring) | `brand/badge-burgundy-{64,128,192}.webp` | Admin header (light), page-change loader |
+| Burgundy | `brand/badge-burgundy-240.png` (12 kB) | Email header, 120 px displayed |
+| Burgundy | `favicon-32.png`, `favicon-48.png`, `favicon.ico` (16/32/48) | Browser tab: the strongest silhouette at tab size, light or dark chrome |
+| Burgundy | `apple-touch-icon.png`, `admin/apple-touch-icon.png` (180, on solid cream), `admin/icon-{192,512}.png` (transparent), `admin/icon-maskable-512.png` (cream, badge inside the 80 % safe circle) | Home-screen and app icons |
 
-- **Clear space:** at least 1/8 of the badge diameter on all sides. **Minimum size:** badge 32 px (tagline is decorative below 96 px); lockup 40 px tall.
+- **Clear space:** at least 1/8 of the badge diameter on all sides. **Minimum size:** badge 32 px (the script is decorative below ~56 px, the tagline below 96 px).
 - **Contrast:** logos are exempt from WCAG 1.4.3, but both versions still pass: burgundy script on cream 11.0:1, cream on burgundy 11.0:1. The gold ring and mark are decorative.
 - **Don'ts:** recolour outside the three logo colours, stretch, add shadows or gradients, place the cream badge on a busy photo without a cream scrim, retype the script in a live font.
 

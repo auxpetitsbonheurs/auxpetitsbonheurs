@@ -1,6 +1,7 @@
 // S-127: the invoice PDF built in the browser, read back with pdf-lib (placeholder values only).
+import { PDFDocument, PDFName, PDFRawStream } from "pdf-lib";
 import { describe, expect, test } from "vitest";
-import { badgeShapes } from "./invoice-badge";
+import { INVOICE_BADGE_PATH } from "./brand";
 import { buildInvoicePdf } from "./invoice-pdf";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -59,13 +60,31 @@ describe("buildInvoicePdf (S-127)", () => {
   });
 });
 
-describe("badgeShapes", () => {
-  test("reads the pink badge: a soft pink disc first, then the line art and lettering", () => {
-    const svg = readFileSync(fileURLToPath(new URL("../../public/brand/logo-badge-pink.svg", import.meta.url)), "utf8");
-    const shapes = badgeShapes(svg);
+describe("the Owner's badge on the invoice", () => {
+  const badgePng = () => new Uint8Array(readFileSync(fileURLToPath(new URL(`../../public${INVOICE_BADGE_PATH}`, import.meta.url))));
 
-    expect(shapes[0]).toMatchObject({ kind: "circle", r: 115, fill: "#F9D9D9" });
-    expect(shapes.filter((s) => s.kind === "path").length).toBeGreaterThanOrEqual(6);
-    expect(shapes.find((s) => s.kind === "path" && s.strokeWidth === 4.5)).toMatchObject({ stroke: "#3F3A3A", lineCap: "round", fill: null });
+  /** [width, height] of each colour image in the PDF, and whether it has a soft mask (transparency). */
+  async function images(bytes: Uint8Array): Promise<[number, number, boolean][]> {
+    const pdf = await PDFDocument.load(bytes);
+    const name = (stream: PDFRawStream, key: string) => stream.dict.get(PDFName.of(key));
+    return pdf.context
+      .enumerateIndirectObjects()
+      .map(([, object]) => object)
+      .filter((object): object is PDFRawStream => object instanceof PDFRawStream && name(object, "Subtype") === PDFName.of("Image") && name(object, "ColorSpace") === PDFName.of("DeviceRGB"))
+      .map((stream) => [Number(String(name(stream, "Width"))), Number(String(name(stream, "Height"))), stream.dict.has(PDFName.of("SMask"))]);
+  }
+
+  test("embeds the cream badge PNG at 300 px (with its transparency) and keeps the PDF small", async () => {
+    const bytes = await buildInvoicePdf(sampleInvoice(), badgePng());
+
+    expect(await images(bytes)).toEqual([[300, 300, true]]);
+    expect(bytes.byteLength).toBeLessThan(250_000);
+  });
+
+  test("without the badge (it failed to load) the invoice is still complete, just without an image", async () => {
+    const bytes = await buildInvoicePdf(sampleInvoice());
+
+    expect(await images(bytes)).toEqual([]);
+    expect((await pdfText(bytes)).strings).toContain("INVOICE NO. 1108");
   });
 });

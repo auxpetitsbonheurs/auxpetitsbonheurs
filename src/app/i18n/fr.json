@@ -1,6 +1,7 @@
 {
   "shell": {
     "bakeryName": "Aux petits bonheurs",
+    "logoHome": "Aux petits bonheurs, accueil",
     "skipToContent": "Aller au contenu principal",
     "primaryNav": "Principal",
     "basketLink_one": "Panier, {{count}} article",

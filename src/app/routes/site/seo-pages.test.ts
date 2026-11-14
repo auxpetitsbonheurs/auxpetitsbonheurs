@@ -77,7 +77,7 @@ describe("seoMeta (AC1, AC3, AC5)", () => {
     expect(ogImages(seoMeta({ ...page, image: "/images/story.jpg" }))).toEqual([{ property: "og:image", content: "https://apb.test/images/story.jpg" }]);
     expect(seoMeta({ ...page, image: "https://cdn.test/a.jpg" })).toContainEqual({ name: "twitter:image", content: "https://cdn.test/a.jpg" });
     const brand = seoMeta(page);
-    expect(ogImages(brand)).toEqual([{ property: "og:image", content: "https://apb.test/brand/og-image.png" }]);
+    expect(ogImages(brand)).toEqual([{ property: "og:image", content: "https://apb.test/brand/og-image.jpg" }]);
     expect(brand).toContainEqual({ property: "og:image:width", content: "1200" });
   });
 

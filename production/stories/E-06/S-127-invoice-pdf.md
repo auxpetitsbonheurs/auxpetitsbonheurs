@@ -35,3 +35,4 @@ As the Owner on my phone, I want one tap on an order to give me a PDF invoice in
 - pdf-lib (≈ 200 kB gzipped) loads only when More actions opens (preloaded then), never with a route.
 - A custom-cake quote has no lines: it prints one "Custom cake" line at the quote less any delivery fee. A total set by hand prints an ADJUSTMENT line so the rows still add up.
 - Workshop registrations: if they are `orders` rows, they work unchanged.
+- 2026-11-14 (logo job): the Owner's official badges replace the redrawn SVGs. The PDF embeds the cream badge as a 300 px PNG (pdf-lib `embedPng`, transparent corners; `/brand/badge-cream-300.png`, fetched with the invoice data; without it the invoice is still made, badge left out), and the print view shows the same badge. `logo-badge-pink.svg` and `lib/invoice-badge.ts` are gone; app/lib/invoice-pdf.test.ts checks the embedded 300 px image and the badge-less fallback.

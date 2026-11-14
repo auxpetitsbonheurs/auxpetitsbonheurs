@@ -10,6 +10,9 @@ import { useI18n } from "~/i18n/react";
 import { localePath } from "~/lib/locale";
 import type { HomeCategory, HomeData, HomePhoto, HomeProduct, HomePromoCard } from "~/domain/home";
 import { CARD_SIZES, CATEGORY_SIZES, GALLERY_PREVIEW_SIZES, HERO_SIZES, PROMO_CARD_SIZES } from "~/lib/photo-sizes";
+import { badgeImage } from "~/lib/brand";
+
+const heroBadge = badgeImage("cream", 160);
 
 const iconProps = { "aria-hidden": true, strokeWidth: 1.5 } as const;
 
@@ -52,7 +55,7 @@ export function HomeHero({ hero }: { hero: HomeData["hero"] }) {
         ) : (
           // No photo yet: the cream logo badge on the burgundy band (brand v0.3), same box, no broken image.
           <div className="band flex aspect-4/3 w-full items-center justify-center md:absolute md:inset-0 md:aspect-auto md:h-full">
-            <img src="/brand/logo-badge-cream.svg" alt="" width={160} height={160} className="size-32 md:size-40" />
+            <img {...heroBadge} sizes="(min-width: 768px) 160px, 128px" alt="" width={160} height={160} decoding="async" className="size-32 md:size-40" />
           </div>
         )}
       </div>

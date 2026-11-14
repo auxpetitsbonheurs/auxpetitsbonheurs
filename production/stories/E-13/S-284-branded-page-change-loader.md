@@ -32,3 +32,4 @@ As a customer moving between pages, I want a small bakery badge with the whisk g
 - Page changes only: a form submission (`formMethod` set) keeps its button feedback and the thin bar (`NavProgress submissionsOnly`); admin is unchanged.
 - Route JS (gz) with S-283, vs origin/main: home 146.8 → 148.1, menu 142.8 → 144.1, product 147.9 → 149.2 kB (limit 170).
 - Screenshots: scratchpad brand-loader-375.png, brand-loader-badge-375.png.
+- 2026-11-14 (logo job): the inline SVG whisk is replaced by the Owner's burgundy badge image (`lib/brand`, 80 px) with a gold arc circling its ring and a soft pulse, CSS only, still under reduced motion. Superseded the same day by S-316 (full-screen loader on every page change).
