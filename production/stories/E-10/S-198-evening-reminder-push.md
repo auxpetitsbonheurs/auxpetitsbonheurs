@@ -1,5 +1,5 @@
 # S-198: Admins get an 18:00 reminder with tomorrow's order count
-Status: ready
+Status: done
 Epic: E-10-notifications
 Spec: docs/specs/features/notifications.md#pending-alert-evening-reminder-quote-expired-rules
 Estimate: 3 pts
@@ -33,3 +33,6 @@ As an admin, I want a push at 18:00 saying how many orders I have to make tomorr
 ## Notes
 - Owner decision Q14 (skip on 0) and README decision 5 (confirmed set). Prep list screen is E-07.
 - Dependencies (R9): S-196, E-07 (prep list route), E-03 (settings reminder time). Not yet done; expected.
+
+## Implementation notes
+- Implemented 2026-11-13 (`app/jobs/evening-reminder.ts`, hourly cron). Without VAPID keys nothing is claimed. A reminder hour of 21:00 or later still gets one tick before midnight.

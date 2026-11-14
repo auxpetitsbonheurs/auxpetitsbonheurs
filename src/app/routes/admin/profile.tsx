@@ -1,6 +1,7 @@
 import { type RefObject, useCallback, useEffect, useRef } from "react";
 import { useFetcher } from "react-router";
 import { AdminErrorBoundary } from "~/components/admin/admin-states";
+import { PushDevice } from "~/components/admin/push-device";
 import { ErrorSummary } from "~/components/checkout/error-summary";
 import { Alert } from "~/components/ui/alert";
 import { PasswordField } from "~/components/ui/password-field";
@@ -16,8 +17,12 @@ import { authContext, endOtherSessions } from "~/server/auth-gateway.server";
 import { AUTH_ACTIONS, clearAuthAttempts, consumeAuthAttempt, rateLimitedResult } from "~/server/auth-rate-limit.server";
 import { type AdminUser, requireAdmin } from "~/server/auth.server";
 import { PROFILE_NAME_MAX } from "~/domain/admin-account";
-import { ProfileInput, newPasswordProblem, parseAlerts } from "~/server/contracts/admin";
+import { ProfileInput, PushEndpointInput, newPasswordProblem, parseAlerts, parsePushSubscription } from "~/server/contracts/admin";
+import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
+import { testPushPayload } from "~/server/notify/push-text.server";
+import { pushContext, removeOwnSubscription, sendPushes } from "~/server/push/push.server";
+import { devicesOf, saveSubscription } from "~/server/push/subscriptions.server";
 import { readProfile, setAlerts, updateProfile } from "~/server/repos/admins.server";
 import type { Route } from "./+types/profile";
 
@@ -29,10 +34,11 @@ export async function loader(args: Route.LoaderArgs) {
   const me = await requireAdmin(args);
   const profile = await readProfile(args.context.get(requestDbContext).db, me.id);
   if (!profile) throw new Response(null, { status: 404 });
-  return { title: translate(handle.titleKey, me.locale), ...profile };
+  // The browser needs the VAPID public key to subscribe; null = push not configured (S-197).
+  return { title: translate(handle.titleKey, me.locale), ...profile, push: { publicKey: args.context.get(pushContext).publicKey } };
 }
 
-type Intent = "updateProfile" | "changePassword" | "setAlerts";
+type Intent = "updateProfile" | "changePassword" | "setAlerts" | "subscribePush" | "unsubscribePush" | "sendTestPush";
 
 const fieldError = (intent: Intent, locale: Locale, fields: Record<string, string>) =>
   actionError("VALIDATION_FAILED", locale, { fields: Object.fromEntries(Object.entries(fields).map(([k, key]) => [k, translate(key, locale)])), extra: { intent } });
@@ -74,6 +80,34 @@ async function changePassword(args: Route.ActionArgs, me: AdminUser, form: FormD
   return { ok: true as const, intent };
 }
 
+/** subscribePush (S-196 AC1, AC5): this browser, for the session's admin only. */
+async function subscribePush(args: Route.ActionArgs, me: AdminUser, form: FormData) {
+  const parsed = parsePushSubscription(form);
+  if (!parsed.success) return actionError("VALIDATION_FAILED", me.locale, { extra: { intent: "subscribePush" } });
+  await saveSubscription(args.context.get(requestDbContext).db, me.id, parsed.data, args.request.headers.get("user-agent"));
+  return { ok: true as const, intent: "subscribePush" as const };
+}
+
+/** unsubscribePush (S-196 AC10): only the caller's own row; any other endpoint is a quiet no-op. */
+async function unsubscribePush(args: Route.ActionArgs, me: AdminUser, form: FormData) {
+  const parsed = PushEndpointInput.safeParse({ endpoint: form.get("endpoint") });
+  if (!parsed.success) return actionError("VALIDATION_FAILED", me.locale, { extra: { intent: "unsubscribePush" } });
+  await removeOwnSubscription(args.context.get(requestDbContext).db, me.id, parsed.data.endpoint);
+  return { ok: true as const, intent: "unsubscribePush" as const };
+}
+
+/** sendTestPush (S-196 AC2): the caller's own devices; waits (5 s at most each) so the screen can say how many. */
+async function sendTestPush(args: Route.ActionArgs, me: AdminUser) {
+  const intent = "sendTestPush" as const;
+  const { pusher } = args.context.get(pushContext);
+  if (!pusher) return { ok: true as const, intent, sent: 0, configured: false as const };
+  const db = args.context.get(requestDbContext).db;
+  const payload = testPushPayload(me.locale, me.id);
+  const devices = await devicesOf(db, me.id);
+  const report = await sendPushes(db, pusher, "test", devices.map((device) => ({ device, payload })), args.context.get(clockContext).now());
+  return { ok: true as const, intent, sent: report.sent };
+}
+
 export async function action(args: Route.ActionArgs) {
   const me = await requireAdmin(args);
   const form = await args.request.formData();
@@ -84,6 +118,9 @@ export async function action(args: Route.ActionArgs) {
     await setAlerts(args.context.get(requestDbContext).db, me.id, parseAlerts(form));
     return { ok: true as const, intent };
   }
+  if (intent === "subscribePush") return subscribePush(args, me, form);
+  if (intent === "unsubscribePush") return unsubscribePush(args, me, form);
+  if (intent === "sendTestPush") return sendTestPush(args, me);
   return actionError("VALIDATION_FAILED", me.locale);
 }
 
@@ -224,14 +261,13 @@ function AlertsSection({ profile, actionData }: { profile: Profile; actionData: 
       <Refusal refused={refused} anchors={{}} summaryRef={summaryRef} />
       <fetcher.Form method="post" className="mt-4 grid gap-4">
         <input type="hidden" name="intent" value="setAlerts" />
-        <div>
-          <SwitchField id="alertPush" name="alertPush" label={t("admin.profile.alertPush")} hint={t("admin.profile.alertPushHint")} defaultChecked={profile.alertPush} />
-          <p className="mt-1 text-sm">{t("admin.profile.pushDevices", { count: profile.pushDevices })}</p>
-          <p className="text-sm text-muted-foreground">{t("admin.profile.pushLater")}</p>
-        </div>
+        <SwitchField id="alertPush" name="alertPush" label={t("admin.profile.alertPush")} hint={t("admin.profile.alertPushHint")} defaultChecked={profile.alertPush} />
         <SwitchField id="alertEmail" name="alertEmail" label={t("admin.profile.alertEmail")} hint={t("admin.profile.alertEmailHint", { email: profile.email })} defaultChecked={profile.alertEmail} />
         <SaveRow pending={pending} saved={result?.ok === true} label={t("admin.profile.saveAlerts")} pendingText={t("admin.profile.saving")} />
       </fetcher.Form>
+      <div className="mt-6">
+        <PushDevice serverKey={profile.push.publicKey} devices={profile.pushDevices} />
+      </div>
     </section>
   );
 }

@@ -1,7 +1,7 @@
-/** wa.me wants the international number as digits only; `text` pre-fills the chat (S-251, S-252). */
+import { waMeUrl } from "~/domain/whatsapp";
+/** wa.me wants the international number as digits only; `text` pre-fills the chat (S-251, S-252; one builder, domain/whatsapp). */
 export function whatsappHref(number: string, text?: string): string {
-  const base = `https://wa.me/${number.replace(/\D/g, "")}`;
-  return text ? `${base}?text=${encodeURIComponent(text)}` : base;
+  return waMeUrl(number, text);
 }
 
 export function telHref(number: string): string {

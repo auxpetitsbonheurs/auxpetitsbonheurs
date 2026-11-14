@@ -26,16 +26,16 @@ Phase 5 exit: every row of the email table arrives correctly in EN and FR, and a
 | S-192 | "Ready", "on the way" and "thank you" emails, no noise on internal steps | done | 3 |
 | S-193 | Every email arrives in the customer's language | done | 2 |
 | S-194 | Sign-in, confirmation, reset and invitation emails via Supabase hook | done | 5 |
-| S-195 | Admins alerted by push and email on orders, requests and customer replies | ready | 5 |
-| S-196 | Installed admin app receives web push, including a test push | ready | 5 |
-| S-197 | Admin controls own push and email alerts from the profile screen | ready | 3 |
-| S-198 | 18:00 reminder with tomorrow's order count | ready | 3 |
-| S-199 | Admins are told when a quote expires | ready | 2 |
-| S-200 | Admins nudged once when an order waits over 24 hours | ready | 3 |
-| S-201 | WhatsApp message and link built from templates in the order's language | ready | 3 |
-| S-202 | Owner edits WhatsApp templates in Settings with a live preview | ready | 3 |
-| S-203 | Admin opens WhatsApp from an order and sees failed emails in the log | ready | 3 |
-| S-204 | Phone numbers are stored as Mauritius-friendly E.164 | ready | 2 |
+| S-195 | Admins alerted by push and email on orders, requests and customer replies | done | 5 |
+| S-196 | Installed admin app receives web push, including a test push | done (AC9 manual device check pending) | 5 |
+| S-197 | Admin controls own push and email alerts from the profile screen | done | 3 |
+| S-198 | 18:00 reminder with tomorrow's order count | done | 3 |
+| S-199 | Admins are told when a quote expires | done | 2 |
+| S-200 | Admins nudged once when an order waits over 24 hours | done | 3 |
+| S-201 | WhatsApp message and link built from templates in the order's language | done | 3 |
+| S-202 | Owner edits WhatsApp templates in Settings with a live preview | done | 3 |
+| S-203 | Admin opens WhatsApp from an order and sees failed emails in the log | done | 3 |
+| S-204 | Phone numbers are stored as Mauritius-friendly E.164 | done | 2 |
 | S-205 | Every email and push verified end to end on staging in EN and FR | partly (no live send until the domain exists) | 3 |
 
 Total: 67 pts. Story files: `production/stories/E-10/`. All depend on earlier epics (R9) that are not yet done.

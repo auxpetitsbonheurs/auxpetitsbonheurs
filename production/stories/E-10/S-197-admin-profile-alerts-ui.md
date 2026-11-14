@@ -1,5 +1,5 @@
 # S-197: Admin controls own push and email alerts from the profile screen
-Status: ready
+Status: done
 Epic: E-10-notifications
 Spec: docs/specs/features/notifications.md#ux
 Estimate: 3 pts
@@ -37,3 +37,6 @@ As an admin, I want to turn push and email alerts on or off and enable push on t
 - AC7 zoom check automated as a reflow test (viewport at 200% equivalent); the manual 200% check is in S-227.
 - Prototype defects (unlabelled steppers, aria-label copies) must not carry over.
 - Dependencies (R9): S-196, E-02. Not yet done; expected.
+
+## Implementation notes
+- Implemented 2026-11-13. The device states (off, on, blocked, Add to Home Screen, not set up) are decided by `app/lib/push-device.ts` and unit-tested there; the repo has no DOM test library, so the AC1-AC5/AC9 view tests are route tests (`profile.push.test.ts`) plus `tests/e2e/admin-profile-alerts.spec.ts` (French, 320/375/1280, axe) and the existing `admin-profile.spec.ts` (keyboard, 200% zoom, tap targets). E-2e runs without VAPID keys, so it shows the calm "not switched on yet" state.

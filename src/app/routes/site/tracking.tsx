@@ -29,6 +29,7 @@ import { RL_TRACK, type RateLimitSubject, consumeRateLimit, rateLimitBucketFor, 
 import { findTrackedOrder } from "~/server/repos/orders.server";
 import { findQuote } from "~/server/repos/custom-requests.server";
 import { acceptQuote, declineQuote } from "~/server/services/quotes.server";
+import { alertAdmins } from "~/server/notify/admin-alerts.server";
 import { cancelOrderByCustomer } from "~/server/services/cancel-order.server";
 import { isTrackingToken, orderLanguageRedirect, tokenPageHeaders } from "~/server/token-page.server";
 import type { Route } from "./+types/tracking";
@@ -102,9 +103,11 @@ async function quoteView(db: Parameters<typeof findQuote>[0], orderId: string, s
 }
 
 /** `acceptQuote` / `declineQuote { version }` (S-158, S-159): QUOTE_EXPIRED and INVALID_TRANSITION before ORDER_CHANGED; success redirects back. */
-async function answerQuote(intent: "acceptQuote" | "declineQuote", token: string, version: number, ctx: { db: Parameters<typeof acceptQuote>[0]; now: Date; url: URL; locale: Locale }) {
+async function answerQuote(intent: "acceptQuote" | "declineQuote", token: string, version: number, ctx: { db: Parameters<typeof acceptQuote>[0]; now: Date; url: URL; locale: Locale; answered?: () => unknown }) {
   const input = { token, version, today: todayMU(ctx.now), now: ctx.now };
   const result = intent === "acceptQuote" ? await acceptQuote(ctx.db, input) : await declineQuote(ctx.db, input);
+  // Admins are alerted by push after the response (E-10 S-195 AC2); the email rows came with the answer.
+  if (result.ok) await ctx.answered?.();
   if (result.ok) return redirect(intent === "acceptQuote" ? `${ctx.url.pathname}?accepted=1` : `${ctx.url.pathname}?declined=1`);
   if (result.code === "NOT_FOUND") throw data(null, { status: 404 });
   return actionError(result.code, ctx.locale, { extra: { intent } });
@@ -131,12 +134,17 @@ export async function action({ request, url, params, context }: Route.ActionArgs
   const form = Object.fromEntries(await request.formData());
   const version = Version.safeParse(form.version);
   if ((form.intent === "acceptQuote" || form.intent === "declineQuote") && version.success) {
-    return answerQuote(form.intent, params.token, version.data, { db, now, url, locale });
+    const event = form.intent === "acceptQuote" ? "quote_accepted" : "quote_declined";
+    return answerQuote(form.intent, params.token, version.data, { db, now, url, locale, answered: () => alertAdmins(context, event, { trackingToken: params.token }) });
   }
   // Customers cannot edit orders (S-096 AC9): cancel and the quote answers are the only intents.
   if (form.intent !== "cancel" || !version.success) return actionError("VALIDATION_FAILED", locale);
   const result = await cancelOrderByCustomer(db, { token: params.token, version: version.data, now });
-  if (result.ok) return redirect(`${url.pathname}?cancelled=1`);
+  if (result.ok) {
+    // Admin push after the response (S-195 AC2); the email rows were queued with the cancel.
+    await alertAdmins(context, "customer_cancelled", { trackingToken: params.token });
+    return redirect(`${url.pathname}?cancelled=1`);
+  }
   if (result.code === "NOT_FOUND") throw data(null, { status: 404 });
   return actionError(result.code, locale);
 }

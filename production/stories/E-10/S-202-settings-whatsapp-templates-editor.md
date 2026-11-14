@@ -1,5 +1,5 @@
 # S-202: Owner edits WhatsApp templates in Settings with a live preview
-Status: ready
+Status: done
 Epic: E-10-notifications
 Spec: docs/specs/features/notifications.md#whatsapp-templates
 Estimate: 3 pts
@@ -33,3 +33,6 @@ As the Owner, I want to edit my WhatsApp messages in English and French and see 
 ## Notes
 - Adds the WhatsApp section to the E-03 Settings screen and the placeholder validation to `admin/settings` `save` (contracts.md row). Placeholder allow-list: `{name} {order_number} {date} {window} {total} {juice_number} {pickup_address} {tracking_link}`.
 - Dependencies (R9): S-201, E-03 (Settings), E-02 (Owner role). Not yet done; expected.
+
+## Implementation notes
+- Implemented 2026-11-13. Templates are posted as `whatsappTemplates.<key>.<en|fr>`; a Settings save without them keeps the stored ones (other forms are unaffected). English is required, French optional (empty = EN used). The loader returns `previewSample` (sample order values per language) and `settings.whatsappTemplates` with defaults filled in.

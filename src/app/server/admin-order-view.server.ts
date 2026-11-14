@@ -3,6 +3,7 @@
 // customers and admins is passed as values and rendered by React, so it is always escaped.
 import { paymentDeadline, timeLeft } from "~/domain/payment";
 import { formatLogTime } from "~/domain/time";
+import { waMeUrl } from "~/domain/whatsapp";
 import { t as translate } from "~/i18n/catalog.server";
 import { type Locale, formatRupees } from "~/lib/locale";
 import type { OrderEventView } from "~/server/repos/order-events.server";
@@ -41,8 +42,16 @@ export interface EventLine {
 const text = (value: unknown): string | null => (typeof value === "string" && value.trim() !== "" ? value : null);
 const rupees = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
 
+/** A dead customer email (S-203 AC3): why, in words, then what to do instead. */
+function emailFailedNotes(details: Record<string, unknown>, locale: Locale): string[] {
+  const reason = text(details.reason) ?? "";
+  const kind = reason.endsWith("_permanent") ? "permanent" : reason === "render" || reason === "order_missing" ? "other" : "retries";
+  return [translate(`admin.log.emailFailedReason.${kind}`, locale), translate("admin.log.emailFailedHint", locale)];
+}
+
 function eventNotes(event: OrderEventView, locale: Locale): string[] {
   const details = event.details ?? {};
+  if (event.type === "email_failed") return emailFailedNotes(details, locale);
   const notes: string[] = [];
   const reason = text(details.reason);
   if (reason) notes.push(translate("admin.log.reason", locale, { reason }));
@@ -125,7 +134,7 @@ export function contactLinks(order: { contactPhone: string; contactName: string;
   const address = order.address?.trim();
   return {
     telUrl: usable ? `tel:${phone}` : null,
-    whatsappUrl: usable ? `https://wa.me/${phone.slice(1)}?text=${encodeURIComponent(message)}` : null,
+    whatsappUrl: usable ? waMeUrl(phone, message) : null,
     mapsUrl: order.fulfilment === "delivery" && address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}` : null,
   };
 }

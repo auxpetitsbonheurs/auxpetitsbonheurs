@@ -16,7 +16,7 @@ import { useI18n } from "~/i18n/react";
 import { actionError } from "~/server/action-result.server";
 import { cancelReason, contactLinks, eventLine, paymentFacts } from "~/server/admin-order-view.server";
 import { requireAdmin } from "~/server/auth.server";
-import { OrderActionInput, OrderId } from "~/server/contracts/admin";
+import { OrderActionInput, OrderId, WhatsappTemplateKey } from "~/server/contracts/admin";
 import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
 import { findAdminOrder } from "~/server/repos/admin-orders.server";
@@ -28,6 +28,8 @@ import { adminRequestView } from "~/server/services/admin-request.server";
 import { sendQuote } from "~/server/services/quotes.server";
 import { requestPhotosContext } from "~/server/storage.server";
 import type { Locale } from "~/lib/locale";
+import { readWhatsappSettings, whatsappMenu, whatsappMessage } from "~/server/whatsapp.server";
+import { whatsappLinkFor } from "~/domain/whatsapp";
 import { runOrderAction } from "~/server/services/order-action.server";
 import type { Route } from "./+types/order";
 
@@ -44,11 +46,11 @@ export async function loader(args: Route.LoaderArgs) {
   const id = OrderId.safeParse(args.params.id);
   if (!id.success) throw data(null, { status: 404 });
   const db = args.context.get(requestDbContext).db;
-  const [order, events] = await Promise.all([findAdminOrder(db, id.data), listOrderEvents(db, id.data)]);
+  const [order, events, shop] = await Promise.all([findAdminOrder(db, id.data), listOrderEvents(db, id.data), readWhatsappSettings(db)]);
   if (!order) throw data(null, { status: 404 });
   // The prefix stored at placement (S-058 AC6); the Settings one only for a row without it.
   const number = formatOrderNumber(order.numberPrefix ?? (await getSiteSettings(db)).checkout.orderNumberPrefix, order.number);
-  const { contactName, contactPhone, contactEmail, createdAt, paymentFrom: _paymentFrom, paidAt: _paidAt, refundedAt, numberPrefix: _prefix, adminNote, ...rest } = order;
+  const { contactName, contactPhone, contactEmail, createdAt, paymentFrom: _paymentFrom, paidAt: _paidAt, refundedAt, numberPrefix: _prefix, adminNote, trackingToken: _token, ...rest } = order;
   const quoteExpiresOn = order.customRequest?.quoteExpiresOn;
   const now = args.context.get(clockContext).now();
   const today = todayMU(now);
@@ -70,6 +72,8 @@ export async function loader(args: Route.LoaderArgs) {
     },
     customer: { name: contactName, phone: contactPhone, email: contactEmail },
     ...contactLinks({ ...order, number }),
+    // S-201, S-203: every template resolved in the order's language; null = no usable phone.
+    whatsapp: { templates: whatsappMenu({ ...order, number }, shop, args.url.origin, me.locale) },
     payment: paymentFacts(order, now, me.locale),
     adminNote: adminNote ?? "",
     allowed: adminAllowed(order.status, order.fulfilment, { refundPending: order.refundDueRs !== null && refundedAt === null }),
@@ -117,6 +121,7 @@ export async function action(args: Route.ActionArgs) {
   const form = Object.fromEntries(await args.request.formData());
   if (form.intent === "sendQuote") return sendQuoteAction(form, args, me, id.data);
   const intent = typeof form.intent === "string" ? form.intent : null;
+  if (intent === "whatsappLink") return whatsappLink(args, me.locale, id.data, form.template);
   const input = OrderActionInput.safeParse(form);
   if (!input.success) {
     return actionError("VALIDATION_FAILED", me.locale, { fields: fieldMessage(input.error.issues[0]?.path[0], me.locale), extra: { intent } });
@@ -125,6 +130,24 @@ export async function action(args: Route.ActionArgs) {
   const result = await runOrderAction(db, input.data, { orderId: id.data, adminId: me.id, now: args.context.get(clockContext).now() });
   if (!result.ok) return actionError(result.code, me.locale, { extra: { intent } });
   return "order" in result ? { ok: true as const, intent: input.data.intent, order: result.order } : { ok: true as const, intent: input.data.intent };
+}
+
+/**
+ * `whatsappLink` `{ template }` → `{ ok, intent, url }` (S-201 AC3, AC6, AC7, AC9): no state change
+ * and no order event; a counter line with the template key and the order's locale only (no PII).
+ */
+async function whatsappLink(args: Route.ActionArgs, locale: "en" | "fr", orderId: string, template: unknown) {
+  const intent = "whatsappLink" as const;
+  const key = WhatsappTemplateKey.safeParse(template);
+  if (!key.success) return actionError("VALIDATION_FAILED", locale, { extra: { intent } });
+  const db = args.context.get(requestDbContext).db;
+  const [order, shop] = await Promise.all([findAdminOrder(db, orderId), readWhatsappSettings(db)]);
+  if (!order) return actionError("NOT_FOUND", locale, { extra: { intent } });
+  const number = formatOrderNumber(order.numberPrefix ?? (await getSiteSettings(db)).checkout.orderNumberPrefix, order.number);
+  const url = whatsappLinkFor(order.contactPhone, whatsappMessage(key.data, { ...order, number }, shop, args.url.origin));
+  if (!url) return actionError("VALIDATION_FAILED", locale, { fields: { phone: translate("admin.order.noPhone", locale) }, extra: { intent } });
+  console.log(JSON.stringify({ level: "info", event: "whatsapp_link_opened", template: key.data, locale: order.locale }));
+  return { ok: true as const, intent, url };
 }
 
 export function meta({ loaderData }: Route.MetaArgs) {
