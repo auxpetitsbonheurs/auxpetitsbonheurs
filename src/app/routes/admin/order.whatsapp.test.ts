@@ -139,7 +139,7 @@ describe("the WhatsApp menu (S-203)", () => {
 
     const failed = (await load(id)).events.find((event) => event.type === "email_failed")!;
     expect(failed.text).toMatch(/^An email to the customer could not be delivered/);
-    expect(failed.notes).toEqual(["The address refused it.", "Send the tracking link by WhatsApp instead."]);
+    expect(failed.notes).toEqual(["The email service refused it: the address may be wrong, or the email setup needs a check.", "Send the tracking link by WhatsApp instead."]);
   });
 
   test("SEC-07: an email held back by the per-recipient cap says so, with the cap, in EN and FR", async () => {
