@@ -1,5 +1,5 @@
 # S-120: Today screen with counts and today/tomorrow orders
-Status: ready
+Status: done
 Epic: E-06-order-management
 Spec: docs/specs/features/admin-orders.md#flow
 Estimate: 3 pts
@@ -33,3 +33,8 @@ As an admin opening the app in the morning, I want to see what needs review and 
 ## Notes
 - Success measure "Today counts equal the underlying data" is tested with an independent count query.
 - Depends on E-01, E-02, S-115 (status groups).
+
+## Implementation notes (2026-11-13)
+- Adjusted (Juice payment): a fourth tile, Awaiting payment (links to the Payment tab). Quotes to send links to To review (the list has no status filter); Unpaid links to Upcoming with Unpaid (completed unpaid orders are counted and listed under Completed with the same filter).
+- The greeting heading stays (S-021 sign-in check). Responses are no-store via the route middleware (AC6). Tests: `app/server/repos/admin-today.server.test.ts` (independent count query), `app/routes/admin/today.test.ts`, `tests/e2e/admin-today.spec.ts`.
+- AC9 loading skeleton: Today is server-rendered; no skeleton is shown (the page arrives with its data).

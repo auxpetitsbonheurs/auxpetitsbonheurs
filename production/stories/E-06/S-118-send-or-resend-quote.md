@@ -1,5 +1,5 @@
 # S-118: Send a quote for a custom request (admin side)
-Status: ready
+Status: done
 Epic: E-06-order-management
 Spec: docs/specs/features/admin-orders.md#api-contract
 Estimate: 3 pts
@@ -31,3 +31,7 @@ As an admin, I want to send a price quote with a note and an expiry date for a c
 ## Notes
 - Scope split: this is only the admin action (FR-052 Send quote). Customer accept/decline, expiry job and quote emails are E-08/E-10. Until E-08 lands, quote_needed orders are created from fixtures.
 - Depends on S-115.
+
+## Implementation notes (2026-11-13)
+- Delivered by E-08 (S-156, S-161, commit 2a47b7a) on the E-06 order screen: Send quote / Send a new quote sheet, `sendQuote` with field errors, expiry default today + Settings validity, re-quote keeps the old values in the event. E-06 did not build a second implementation (coordination: E-08 owns the quote state).
+- AC2 as built: an expiry of today is accepted (contract `expiresOn ≥ today`); a past date is refused on the field.

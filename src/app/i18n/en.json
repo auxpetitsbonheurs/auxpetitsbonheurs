@@ -1798,6 +1798,37 @@
         "note": "Keep the note under 1000 characters",
         "expiresOn": "Choose today or a later date"
       }
+    },
+    "today": {
+      "tilesLabel": "At a glance",
+      "tile": {
+        "toReview": "To review",
+        "quotesToSend": "Quotes to send",
+        "awaitingPayment": "Awaiting payment",
+        "unpaid": "Unpaid"
+      },
+      "tileName_one": "{{label}}: {{count}} order",
+      "tileName_other": "{{label}}: {{count}} orders",
+      "todayTitle": "Today, {{date}}",
+      "tomorrowTitle": "Tomorrow, {{date}}",
+      "emptyToday": "No orders today.",
+      "emptyTomorrow": "Nothing booked for tomorrow.",
+      "nextNamed": {
+        "in_preparation": "Mark {{number}} in preparation",
+        "ready_for_pickup": "Mark {{number}} ready for pickup",
+        "out_for_delivery": "Mark {{number}} out for delivery",
+        "completed": "Mark {{number}} completed"
+      },
+      "marking": "Saving…",
+      "marked": "{{number}} marked {{status}}.",
+      "undo": "Undo",
+      "undoNamed": "Undo: put {{number}} back to {{status}}",
+      "undone": "{{number}} is back to {{status}}.",
+      "undoFailed": "Could not undo, the order changed.",
+      "changed": "{{number}} changed meanwhile; the list is up to date now.",
+      "loadFailed": "Today could not be loaded.",
+      "retry": "Retry",
+      "loading": "Loading today's orders…"
     }
   },
   "email": {

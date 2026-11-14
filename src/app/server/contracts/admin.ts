@@ -122,6 +122,13 @@ export const OrderActionInput = z.discriminatedUnion("intent", [
 ]);
 
 export type OrderAction = z.infer<typeof OrderActionInput>;
+
+/** `admin/today` one-tap Next and its Undo (S-121): the row's order and the version it showed. */
+export const TodayActionInput = z.object({
+  intent: z.enum(["advance", "revert"]),
+  orderId: Uuid,
+  version: Version,
+});
 export type OrderIntent = OrderAction["intent"];
 
 export const OrderId = Uuid;

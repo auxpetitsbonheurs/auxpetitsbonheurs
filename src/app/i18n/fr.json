@@ -1798,6 +1798,37 @@
         "note": "Le message doit faire moins de 1000 caractères",
         "expiresOn": "Choisissez aujourd'hui ou une date plus tard"
       }
+    },
+    "today": {
+      "tilesLabel": "En un coup d'œil",
+      "tile": {
+        "toReview": "À valider",
+        "quotesToSend": "Devis à envoyer",
+        "awaitingPayment": "En attente de paiement",
+        "unpaid": "Non payées"
+      },
+      "tileName_one": "{{label}} : {{count}} commande",
+      "tileName_other": "{{label}} : {{count}} commandes",
+      "todayTitle": "Aujourd'hui, {{date}}",
+      "tomorrowTitle": "Demain, {{date}}",
+      "emptyToday": "Aucune commande aujourd'hui.",
+      "emptyTomorrow": "Rien de prévu pour demain.",
+      "nextNamed": {
+        "in_preparation": "Passer {{number}} en préparation",
+        "ready_for_pickup": "Marquer {{number}} prête à retirer",
+        "out_for_delivery": "Marquer {{number}} en cours de livraison",
+        "completed": "Marquer {{number}} terminée"
+      },
+      "marking": "Enregistrement…",
+      "marked": "{{number}} : « {{status}} ».",
+      "undo": "Annuler",
+      "undoNamed": "Annuler : remettre {{number}} à « {{status}} »",
+      "undone": "{{number}} est revenue à « {{status}} ».",
+      "undoFailed": "Impossible d'annuler, la commande a changé.",
+      "changed": "{{number}} a changé entre-temps ; la liste est à jour.",
+      "loadFailed": "La page Aujourd'hui n'a pas pu être chargée.",
+      "retry": "Réessayer",
+      "loading": "Chargement des commandes du jour…"
     }
   },
   "email": {
