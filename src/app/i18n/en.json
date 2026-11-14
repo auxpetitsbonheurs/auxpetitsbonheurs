@@ -2079,7 +2079,9 @@
       "warning": {
         "blocked": "This date is blocked.",
         "closed": "The bakery is closed that day.",
-        "too_soon": "This date is sooner than the usual notice."
+        "too_soon": "This date is sooner than the usual notice.",
+        "past_date": "This date is in the past (recorded as a past sale).",
+        "sold_out": "A sold-out product was added anyway."
       },
       "editOrder": "Edit order"
     },
@@ -2186,6 +2188,55 @@
       "orderCount_other": "from {{count}} orders",
       "messagesLabel": "Messages",
       "statusesNote": "Approved orders onwards. Orders still waiting for approval, payment or a quote are not included."
+    },
+    "orderNew": {
+      "add": "+ Add order",
+      "title": "Add order",
+      "back": "Back to the orders",
+      "empty": "Add a product or a custom item to start.",
+      "save": "Save order",
+      "saving": "Saving the order…",
+      "failed": "The order was not saved. Your entries are kept: try again.",
+      "saved": "Order {{number}} saved.",
+      "savedEmailed": "Order {{number}} saved. The customer will get a confirmation email.",
+      "savedWarningsTitle": "Saved, with these notes",
+      "productUnavailable": "Not on the menu for this date: {{names}}. Remove it or use a free-text item.",
+      "warningsTitle": "You can still save",
+      "warning": {
+        "blocked": "This day is blocked.",
+        "closed": "This day is blocked: the bakery is closed that weekday.",
+        "too_soon_one": "Needs {{count}} day's notice, earliest is {{earliest}}.",
+        "too_soon_other": "Needs {{count}} days' notice, earliest is {{earliest}}.",
+        "past_date": "This date is in the past; the order will be recorded as a past sale.",
+        "sold_out": "Sold out: customers cannot order this, you are adding it anyway ({{names}})."
+      },
+      "problem": {
+        "dateTooFar": "Choose a date within a year.",
+        "tooMany": "20 items at most in one order."
+      },
+      "lookup": {
+        "searching": "Looking for this customer…",
+        "failed": "Could not search, you can still continue.",
+        "found_one": "Existing customer: {{name}}, {{count}} order. Use details?",
+        "found_other": "Existing customer: {{name}}, {{count}} orders. Use details?",
+        "conflict": "The email and the phone belong to different customers: the email's customer is used.",
+        "reused": "The order is saved for this customer; the details typed here stay on the order only.",
+        "use": "Use this customer",
+        "used": "Name filled in from the customer."
+      },
+      "extrasTitle": "Payment and notes",
+      "paid": "Paid",
+      "paidOn": "yes",
+      "paidOff": "no",
+      "paidHint": "Turn on when the customer already paid (cash or Juice). An unpaid order shows in Unpaid until you mark it paid.",
+      "language": "Confirmation language",
+      "languageHint": "For the confirmation email and the tracking page.",
+      "adminNote": "Private note (optional)",
+      "adminNoteHint": "Only admins see it. {{count}} of {{max}} characters.",
+      "trackingTitle": "Tracking link",
+      "trackingHint": "The customer follows the order here. Send it by WhatsApp if they gave no email.",
+      "copyTracking": "Copy the tracking link",
+      "trackingCopied": "Tracking link copied."
     }
   },
   "email": {

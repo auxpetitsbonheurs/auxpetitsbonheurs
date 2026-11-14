@@ -87,6 +87,10 @@ export default function AdminHome({ loaderData }: Route.ComponentProps) {
   return (
     <>
       <h1>{t("admin.home.title", { name: loaderData.name })}</h1>
+      {/* E-07 S-131: phone, WhatsApp and walk-in orders. */}
+      <a href="/admin/orders/new" className="mt-3 inline-flex min-h-11 items-center gap-1 rounded-md border-2 border-primary bg-primary px-3 font-semibold text-primary-foreground hover:opacity-90">
+        {t("admin.orderNew.add")}
+      </a>
       <TodayTiles counts={loaderData.counts} />
       <DayList id="today-heading" title={t("admin.today.todayTitle", { date: loaderData.today.label })} empty={t("admin.today.emptyToday")} orders={loaderData.today.orders} />
       <DayList id="tomorrow-heading" title={t("admin.today.tomorrowTitle", { date: loaderData.tomorrow.label })} empty={t("admin.today.emptyTomorrow")} orders={loaderData.tomorrow.orders} />

@@ -2079,7 +2079,9 @@
       "warning": {
         "blocked": "Cette date est bloquée.",
         "closed": "La pâtisserie est fermée ce jour-là.",
-        "too_soon": "Cette date est plus proche que le délai habituel."
+        "too_soon": "Cette date est plus proche que le délai habituel.",
+        "past_date": "Cette date est passée (enregistrée comme une vente passée).",
+        "sold_out": "Un produit épuisé a été ajouté quand même."
       },
       "editOrder": "Modifier la commande"
     },
@@ -2186,6 +2188,55 @@
       "orderCount_other": "de {{count}} commandes",
       "messagesLabel": "Messages",
       "statusesNote": "Commandes approuvées et suivantes. Les commandes en attente d’approbation, de paiement ou de devis n’y sont pas."
+    },
+    "orderNew": {
+      "add": "+ Ajouter une commande",
+      "title": "Ajouter une commande",
+      "back": "Retour aux commandes",
+      "empty": "Ajoutez un produit ou un article libre pour commencer.",
+      "save": "Enregistrer la commande",
+      "saving": "Enregistrement de la commande…",
+      "failed": "La commande n’a pas été enregistrée. Vos saisies sont gardées : réessayez.",
+      "saved": "Commande {{number}} enregistrée.",
+      "savedEmailed": "Commande {{number}} enregistrée. Le client recevra un e-mail de confirmation.",
+      "savedWarningsTitle": "Enregistrée, avec ces remarques",
+      "productUnavailable": "Pas au menu pour cette date : {{names}}. Retirez-le ou utilisez un article libre.",
+      "warningsTitle": "Vous pouvez quand même enregistrer",
+      "warning": {
+        "blocked": "Ce jour est bloqué.",
+        "closed": "Ce jour est bloqué : la pâtisserie est fermée ce jour de la semaine.",
+        "too_soon_one": "Il faut {{count}} jour de délai, au plus tôt le {{earliest}}.",
+        "too_soon_other": "Il faut {{count}} jours de délai, au plus tôt le {{earliest}}.",
+        "past_date": "Cette date est passée ; la commande sera enregistrée comme une vente passée.",
+        "sold_out": "Épuisé : les clients ne peuvent pas le commander, vous l’ajoutez quand même ({{names}})."
+      },
+      "problem": {
+        "dateTooFar": "Choisissez une date dans l’année.",
+        "tooMany": "20 articles au plus par commande."
+      },
+      "lookup": {
+        "searching": "Recherche de ce client…",
+        "failed": "Recherche impossible, vous pouvez continuer.",
+        "found_one": "Client existant : {{name}}, {{count}} commande. Utiliser ses coordonnées ?",
+        "found_other": "Client existant : {{name}}, {{count}} commandes. Utiliser ses coordonnées ?",
+        "conflict": "L’e-mail et le téléphone appartiennent à deux clients différents : le client de l’e-mail est utilisé.",
+        "reused": "La commande est enregistrée pour ce client ; les coordonnées saisies ici restent sur la commande seulement.",
+        "use": "Utiliser ce client",
+        "used": "Nom repris du client."
+      },
+      "extrasTitle": "Paiement et notes",
+      "paid": "Payée",
+      "paidOn": "oui",
+      "paidOff": "non",
+      "paidHint": "Activez si le client a déjà payé (espèces ou Juice). Une commande non payée apparaît dans Non payées jusqu’à ce que vous la marquiez payée.",
+      "language": "Langue de la confirmation",
+      "languageHint": "Pour l’e-mail de confirmation et la page de suivi.",
+      "adminNote": "Note privée (facultatif)",
+      "adminNoteHint": "Seuls les admins la voient. {{count}} sur {{max}} caractères.",
+      "trackingTitle": "Lien de suivi",
+      "trackingHint": "Le client suit sa commande ici. Envoyez-le par WhatsApp s’il n’a pas donné d’e-mail.",
+      "copyTracking": "Copier le lien de suivi",
+      "trackingCopied": "Lien de suivi copié."
     }
   },
   "email": {

@@ -3,6 +3,7 @@ import { OrderActionBar } from "~/components/admin/order/action-bar";
 import { ActivityLog } from "~/components/admin/order/activity-log";
 import { OrderConflict } from "~/components/admin/order/conflict";
 import { EDIT_WARNINGS, type EditWarning, EditedNotice } from "~/components/admin/order/edited-notice";
+import { TrackingLink } from "~/components/admin/order/tracking-link";
 import { OrderHeader } from "~/components/admin/order/header";
 import { PaymentSection } from "~/components/admin/order/payment-section";
 import { PrivateNote } from "~/components/admin/order/private-note";
@@ -63,9 +64,12 @@ export async function loader(args: Route.LoaderArgs) {
     request,
     today,
     // The edit's flash (S-123 AC8): only known warning words are read back.
-    edited: args.url.searchParams.get("updated") === "1"
-      ? { emailed: args.url.searchParams.get("emailed") === "1", warnings: (args.url.searchParams.get("warnings") ?? "").split(",").filter((w): w is EditWarning => (EDIT_WARNINGS as readonly string[]).includes(w)) }
+    // E-07 S-131: `created=1` after a manual order's save, with its warnings (S-134).
+    edited: args.url.searchParams.get("updated") === "1" || args.url.searchParams.get("created") === "1"
+      ? { created: args.url.searchParams.get("created") === "1", emailed: args.url.searchParams.get("emailed") === "1", warnings: (args.url.searchParams.get("warnings") ?? "").split(",").filter((w): w is EditWarning => (EDIT_WARNINGS as readonly string[]).includes(w)) }
       : null,
+    // E-07 S-135 AC2: the customer's tracking link, to share by WhatsApp when there is no email.
+    trackingUrl: `${args.url.origin}${order.locale === "fr" ? "/fr" : ""}/t/${order.trackingToken}`,
     title: translate("admin.order.metaTitle", me.locale, { number }),
     order: {
       ...rest,
@@ -165,10 +169,11 @@ export default function AdminOrder({ loaderData, actionData }: Route.ComponentPr
   return (
     <>
       <OrderHeader data={loaderData} />
-      <EditedNotice edited={loaderData.edited} />
+      <EditedNotice edited={loaderData.edited} number={loaderData.order.number} />
       <OrderConflict data={loaderData} actionData={actionData} />
       <PaymentSection data={loaderData} />
       <CustomerSection data={loaderData} />
+      <TrackingLink url={loaderData.trackingUrl} />
       <FulfilmentSection data={loaderData} />
       {/* A custom request has no items: its price is the quote in the request section (E-08). */}
       {!loaderData.request && <ItemsSection data={loaderData} />}

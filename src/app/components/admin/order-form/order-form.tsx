@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { Alert } from "~/components/ui/alert";
 import { SubmitButton } from "~/components/ui/submit-button";
 import type { TimeWindow } from "~/db/schema";
@@ -25,6 +25,10 @@ export interface OrderFormProps {
   onSubmit: () => void;
   /** The time the live prices are judged at (the menu's promotions). */
   nowMs: number;
+  /** Manual order (E-07): fields after the customer (match card, paid, language, private note). */
+  extra?: ReactNode;
+  /** Manual order (E-07 S-134 AC9): non-blocking warnings, just above the sticky Save bar. */
+  beforeBar?: ReactNode;
 }
 
 /** Every problem in one summary with links to the fields; focused when it appears (S-122 AC11). */
@@ -70,6 +74,7 @@ export function OrderForm(props: OrderFormProps) {
       <LinesEditor lines={state.lines} totals={totals} menu={menu} error={errors.lines} onChange={(lines) => onChange({ ...state, lines })} />
       <FulfilmentFields value={state.fulfilment} windows={props.windows} errors={errors} onChange={(fulfilment) => onChange({ ...state, fulfilment })} />
       <ContactFields value={state.contact} errors={errors} onChange={(contact) => onChange({ ...state, contact })} />
+      {props.extra}
       <TotalPanel
         itemsTotalRs={itemsTotalRs}
         deliveryFeeRs={fee}
@@ -79,6 +84,7 @@ export function OrderForm(props: OrderFormProps) {
         error={errors.overrideTotalRs}
         onOverride={props.allowOverride ? (overrideTotalRs) => onChange({ ...state, overrideTotalRs }) : undefined}
       />
+      {props.beforeBar}
       <form
         noValidate
         data-editor-bar=""

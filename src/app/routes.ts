@@ -62,6 +62,8 @@ const adminPages = [
   route("admin/invite/:token", "routes/admin/invite.tsx"),
   // Signed upload URLs as JSON (resource route, guarded like any admin module; S-047).
   route("admin/uploads", "routes/admin/uploads.tsx"),
+  // Add order customer lookup (E-07 S-133): JSON, so a failed search never leaves the form.
+  route("admin/customer-lookup", "routes/admin/customer-lookup.tsx"),
   // Sales summary CSV (E-09 S-178, S-179): a file download, outside the frame; guarded itself.
   route("admin/sales.csv", "routes/admin/sales-csv.tsx"),
   // Customer view of any product (S-051): outside the frame so it looks like the live page.
@@ -69,6 +71,8 @@ const adminPages = [
   route("admin", "routes/admin/layout.tsx", [
     index("routes/admin/home.tsx"),
     route("orders", "routes/admin/orders.tsx"),
+    // Add order (E-07 S-131..S-135): before :id so "new" is never read as an order id.
+    route("orders/new", "routes/admin/order-new.tsx"),
     route("orders/:id", "routes/admin/order.tsx"),
     // Edit an order (E-06 S-122, S-123); its form is shared with the manual order (E-07).
     route("orders/:id/edit", "routes/admin/order-edit.tsx"),

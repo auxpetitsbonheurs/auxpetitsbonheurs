@@ -40,12 +40,12 @@ export type EditOrderResult = { ok: true; order: { status: OrderStatus; version:
 type ItemRow = typeof orderItem.$inferSelect;
 type NewItem = Omit<typeof orderItem.$inferInsert, "orderId" | "sortOrder">;
 
-interface PricedEdit {
+export interface PricedEdit {
   items: NewItem[];
   noticeDays: (number | null | undefined)[];
 }
 
-class Refused extends Error {
+export class Refused extends Error {
   constructor(readonly result: EditRefusal) {
     super(result.code);
   }
@@ -94,7 +94,7 @@ function catalogueItems(lines: Extract<EditLine, { productId: string }>[], menu:
 }
 
 /** Every line priced, in the posted order. */
-function priceLines(lines: EditLine[], existing: Map<string, ItemRow>, menu: Menu, now: Date): PricedEdit {
+export function priceLines(lines: EditLine[], existing: Map<string, ItemRow>, menu: Menu, now: Date): PricedEdit {
   const catalogue = lines.filter((line): line is Extract<EditLine, { productId: string }> => "productId" in line);
   const pricedCatalogue = catalogueItems(catalogue, menu, now);
   const products = new Map(menu.products.map((p) => [p.id, p]));

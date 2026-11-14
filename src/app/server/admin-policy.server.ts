@@ -18,6 +18,9 @@ export const ADMIN_MODULE_POLICY = {
   home: "admin",
   orders: "admin",
   order: "admin",
+  // Add order and its customer lookup (E-07 S-131..S-135): Admins and Owners (FR-041).
+  "order-new": "admin",
+  "customer-lookup": "admin",
   "order-edit": "admin",
   "not-found": "admin",
   more: "admin",

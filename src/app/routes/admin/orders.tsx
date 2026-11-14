@@ -127,6 +127,10 @@ export default function AdminOrders({ loaderData }: Route.ComponentProps) {
   return (
     <>
       <h1>{t("admin.orders.listTitle")}</h1>
+      {/* E-07 S-131: phone, WhatsApp and walk-in orders. */}
+      <a href="/admin/orders/new" className="mt-3 inline-flex min-h-11 items-center gap-1 rounded-md border-2 border-primary bg-primary px-3 font-semibold text-primary-foreground hover:opacity-90">
+        {t("admin.orderNew.add")}
+      </a>
       <OrdersTabs tab={tab} counts={counts} />
       {paymentMissing && <PaymentMissing canEditSettings={canEditSettings} />}
       {payment ? (
