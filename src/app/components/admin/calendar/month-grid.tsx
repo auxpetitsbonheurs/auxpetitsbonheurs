@@ -92,7 +92,7 @@ function Cell({ day, data, focused, onFocus, name }: { day: Day; data: CalendarL
         className={cn(
           "flex min-h-14 w-full flex-col items-start gap-0.5 rounded-md border p-1 hover:bg-accent md:min-h-20",
           day.blocked || day.closedDay ? "border-border bg-muted text-muted-foreground" : "border-border bg-card",
-          !inMonth && "opacity-70",
+          !inMonth && "border-dashed",
           today && "ring-2 ring-primary ring-offset-1",
         )}
       >

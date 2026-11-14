@@ -31,7 +31,7 @@ export function WeekView({ data }: { data: CalendarLoaderData }) {
           <section key={day.date} aria-labelledby={id}>
             <div className="flex flex-wrap items-center gap-2">
               <h3 id={id} className="text-lg font-semibold first-letter:uppercase">
-                <a href={calendarHref("day", day.date)} className="link">
+                <a href={calendarHref("day", day.date)} className="link inline-flex min-h-11 items-center">
                   {day.longLabel}
                 </a>
               </h3>

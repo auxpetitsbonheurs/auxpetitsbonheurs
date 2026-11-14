@@ -117,8 +117,6 @@ function BlockForm({ day, data, orders, actions }: { day: Day; data: CalendarLoa
         optionalLabel={t("admin.calendar.optional")}
         hint={t("admin.calendar.reasonHint", { count: reason.length, max: data.reasonMax })}
         error={actions.refusal?.fields?.reason}
-        multiline
-        rows={2}
         maxLength={data.reasonMax}
         value={reason}
         onChange={(event) => setReason(event.target.value)}
