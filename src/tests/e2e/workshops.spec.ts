@@ -140,7 +140,8 @@ test.describe("E-15 workshops", () => {
     await page.getByRole("button", { name: "Register" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Thank you, we received your registration" })).toBeVisible();
 
-    const admin = await createE2eAdmin(db, { role: "owner" });
+    // The seeded Owner: a second Owner would break the one-Owner invariant other specs check.
+    const admin = E2E_ACCOUNTS.owner;
     const [event] = await db<{ id: string }[]>`select id from workshop_event where slug = ${slug}`;
     await signIn(page, admin, `/admin/workshops/${event!.id}`);
     await hydrated(page);
