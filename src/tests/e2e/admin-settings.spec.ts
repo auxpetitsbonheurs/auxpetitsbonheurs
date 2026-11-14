@@ -37,6 +37,9 @@ test.describe("S-058, S-059 Settings", () => {
       await expect(page.getByLabel("Delivery fee (Rs)")).toHaveAttribute("inputmode", "numeric");
       // E-10 (emails job): the live count replaces the placeholder.
       await expect(page.getByText(/^Email usage: \d+ of \d+ today$/)).toBeVisible();
+      // Shared row: what this test changes is put back as found (content-pages reads the email).
+      const email = await page.getByRole("textbox", { name: "Email (optional)" }).inputValue();
+      const about = await page.getByLabel("About text (English)").inputValue();
 
       await page.getByLabel("Delivery fee (Rs)").fill("lots");
       await page.getByRole("textbox", { name: "Email (optional)" }).fill("not-an-email");
@@ -48,7 +51,7 @@ test.describe("S-058, S-059 Settings", () => {
       await expect(page.getByLabel("Delivery fee (Rs)")).toHaveAttribute("aria-invalid", "true");
 
       await page.getByLabel("Delivery fee (Rs)").fill("200");
-      await page.getByRole("textbox", { name: "Email (optional)" }).fill("");
+      await page.getByRole("textbox", { name: "Email (optional)" }).fill(email);
       await page.getByLabel("About text (English)").fill("We bake in Beau Bassin.\n<b>Every</b> cake to order.");
       await save(page);
       await expect(page.getByRole("status").filter({ hasText: /^Saved$/ })).toBeVisible();
@@ -57,10 +60,14 @@ test.describe("S-058, S-059 Settings", () => {
 
       await page.reload();
       await expect(page.getByLabel("About text (English)")).toHaveValue("We bake in Beau Bassin.\n<b>Every</b> cake to order.");
-      await page.getByLabel("About text (English)").fill("");
+      await page.getByLabel("About text (English)").fill(about);
       await save(page);
       await expect(page.getByRole("status").filter({ hasText: /^Saved$/ })).toBeVisible();
+      await expect(page.getByRole("textbox", { name: "Email (optional)" })).toHaveValue(email);
     });
+    // After the lock (it holds this worker's only connection): the shared row is as found.
+    const [stored] = await db<{ contact_email: string | null }[]>`select contact_email from settings`;
+    expect(stored?.contact_email ?? "").toBe("hello@example.com");
   });
 
   test("S-058 AC7: a second Owner saving a stale page sees Someone changed this, Reload", async ({ page, browser, db }, testInfo) => {

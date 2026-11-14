@@ -1,6 +1,8 @@
 // The Settings row is one per site: specs that save Settings or Availability (S-056..S-059)
 // take this Postgres advisory lock so parallel workers never race on its `version`, and leave
-// the shared values (fee, windows, policies, prefix) as they found them.
+// the shared values (fee, windows, policies, prefix, contact email) as they found them. A spec
+// that asserts shared Settings values on a page (content-pages' Contact) takes it too, so it
+// never reads the row while another spec has it changed.
 import type postgres from "postgres";
 
 const SETTINGS_LOCK = 580_056;

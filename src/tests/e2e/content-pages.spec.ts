@@ -10,6 +10,7 @@ import {
   withZoom,
 } from "./support/a11y";
 import { type Page, expect, test } from "./support/fixtures";
+import { withSettingsLock } from "./support/settings-lock";
 
 const PAGES = [
   { path: "/contact", h1: { en: "Contact us", fr: "Contact" } },
@@ -45,19 +46,23 @@ test.describe("Contact us and Custom order at every width (S-251 AC8, S-252 AC6)
 });
 
 test.describe("Contact us (S-251)", () => {
-  test("AC1, AC2, AC4: WhatsApp with a greeting, the phone as text, the footer's email, Beau Bassin and hours; no form", async ({ page }) => {
-    await open(page, "/contact");
-    const main = page.getByRole("main");
+  test("AC1, AC2, AC4: WhatsApp with a greeting, the phone as text, the footer's email, Beau Bassin and hours; no form", async ({ page, db }) => {
+    // The values come from the shared Settings row: read them while no other spec is saving it
+    // (specs that save Settings hold this lock and put the row back as found).
+    await withSettingsLock(db, async () => {
+      await open(page, "/contact");
+      const main = page.getByRole("main");
 
-    const whatsapp = main.getByRole("link", { name: "Message us on WhatsApp" });
-    await expect(whatsapp).toHaveAttribute("href", "https://wa.me/23050000000?text=Hello%2C%20I%20have%20a%20question.");
-    await expect(main.getByRole("link", { name: "Call +230 5000 0001" })).toHaveAttribute("href", "tel:+23050000001");
-    await expect(main.getByText("Pickup in Beau Bassin")).toBeVisible();
-    await expect(main.getByRole("heading", { level: 2, name: "Opening hours" })).toBeVisible();
-    await expect(main.locator("form")).toHaveCount(0);
-    // AC4 amended (2026-11-13): the same Settings email as the footer, so the two never disagree.
-    await expect(main.getByRole("link", { name: "Email hello@example.com" })).toHaveAttribute("href", "mailto:hello@example.com");
-    await expect(page.getByRole("contentinfo").locator('a[href="mailto:hello@example.com"]')).toHaveCount(1);
+      const whatsapp = main.getByRole("link", { name: "Message us on WhatsApp" });
+      await expect(whatsapp).toHaveAttribute("href", "https://wa.me/23050000000?text=Hello%2C%20I%20have%20a%20question.");
+      await expect(main.getByRole("link", { name: "Call +230 5000 0001" })).toHaveAttribute("href", "tel:+23050000001");
+      await expect(main.getByText("Pickup in Beau Bassin")).toBeVisible();
+      await expect(main.getByRole("heading", { level: 2, name: "Opening hours" })).toBeVisible();
+      await expect(main.locator("form")).toHaveCount(0);
+      // AC4 amended (2026-11-13): the same Settings email as the footer, so the two never disagree.
+      await expect(main.getByRole("link", { name: "Email hello@example.com" })).toHaveAttribute("href", "mailto:hello@example.com");
+      await expect(page.getByRole("contentinfo").locator('a[href="mailto:hello@example.com"]')).toHaveCount(1);
+    });
   });
 
   test("AC3: no map link or embedded map when Settings has no map URL", async ({ page }) => {
