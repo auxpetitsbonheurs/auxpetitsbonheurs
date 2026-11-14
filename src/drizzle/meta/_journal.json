@@ -173,14 +173,14 @@
     {
       "idx": 26,
       "version": "7",
-      "when": 1794658082711,
+      "when": 1794660000001,
       "tag": "0026_workshops",
       "breakpoints": true
     },
     {
       "idx": 27,
       "version": "7",
-      "when": 1794659354105,
+      "when": 1794660000002,
       "tag": "0027_site_page_retire_next_workshop",
       "breakpoints": true
     }

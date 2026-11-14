@@ -36,6 +36,18 @@ describe("generated migration 0000 (AC2)", () => {
 
     expect(journal.entries[0]?.tag).toBe(generated[0]?.replace(/\.sql$/, ""));
   });
+
+  // The migrator applies only entries newer than the last applied one's `when`: an entry dated
+  // before its predecessor is silently skipped on a database that already has the predecessor
+  // (0026/0027 never reached staging this way, 2026-11-14). A fresh test database hides it.
+  test("journal timestamps strictly increase in index order, so no migration is skipped", () => {
+    const journal = JSON.parse(readFileSync(`${drizzleDir}meta/_journal.json`, "utf8")) as {
+      entries: { idx: number; when: number; tag: string }[];
+    };
+    const outOfOrder = journal.entries.filter((entry, i) => i > 0 && entry.when <= journal.entries[i - 1]!.when).map((e) => e.tag);
+
+    expect(outOfOrder).toEqual([]);
+  });
 });
 
 describe("migrations applied to an empty Postgres (AC3-AC5, AC7)", () => {
