@@ -2,6 +2,7 @@
 // every Owner decision still open is named rather than invented.
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
+import { retentionCutoff } from "~/jobs/anonymise-inactive";
 import { RETENTION_DAYS } from "~/jobs/purge-emails";
 import { RATE_LIMIT_RETENTION_MS } from "~/server/rate-limit.server";
 import { ORPHAN_UPLOAD_MS } from "./custom-request";
@@ -18,6 +19,16 @@ describe("retention stated = retention applied (AC6)", () => {
 
   test("unused request photos: the 24 h purge queue", () => {
     expect(RETENTION.unusedUploadHours * 60 * 60 * 1000).toBe(ORPHAN_UPLOAD_MS);
+  });
+
+  test("orders and contact details: the anonymise job's cutoff is RETENTION.orderYears before today (PRV-02)", () => {
+    const now = new Date("2026-11-01T00:10:00Z");
+    expect(retentionCutoff(now).getUTCFullYear()).toBe(2026 - RETENTION.orderYears);
+    expect(readFileSync(new URL("../jobs/anonymise-inactive.ts", import.meta.url), "utf8")).toContain("RETENTION.orderYears");
+  });
+
+  test("custom cake photos: purge-storage reads RETENTION.requestPhotoDays (PRV-03)", () => {
+    expect(readFileSync(new URL("../jobs/purge-storage.ts", import.meta.url), "utf8")).toContain("RETENTION.requestPhotoDays");
   });
 
   test("backups: the workflow keeps the latest 8", () => {

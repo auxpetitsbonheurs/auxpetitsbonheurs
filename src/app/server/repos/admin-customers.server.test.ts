@@ -1,7 +1,6 @@
 // Customers list, search and detail against real rows (S-174..S-177 on PGlite).
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
-import { DELETED_CUSTOMER_NAME } from "~/domain/customer-totals";
 import { insertTestCustomer, insertTestOrder } from "~/server/testing/sales";
 import { findAdminCustomer, listCustomers, saveCustomerNote } from "./admin-customers.server";
 
@@ -88,7 +87,7 @@ describe("search (S-175)", () => {
   });
 
   test("AC6: anonymised customers are never found, but stay in the plain list", async () => {
-    await insertTestCustomer(db(), { name: DELETED_CUSTOMER_NAME, phone: "+23057123456", email: null });
+    await insertTestCustomer(db(), { anonymised: true, phone: "+23057123456", email: null });
     expect((await page({ search: { text: "Deleted", digits: null } })).rows).toEqual([]);
     expect((await page({ search: { text: "57123456", digits: "57123456" } })).rows).toEqual([]);
     expect((await page()).rows).toHaveLength(1);

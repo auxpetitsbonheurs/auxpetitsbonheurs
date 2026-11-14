@@ -762,7 +762,22 @@
       "save": "Save note",
       "saving": "Saving…",
       "saved": "Saved",
-      "saveFailed": "The note was not saved. Your text is still here: try again."
+      "saveFailed": "The note was not saved. Your text is still here: try again.",
+      "anonymiseTitle": "Personal data",
+      "anonymiseHelp": "On request, or when you no longer need it, remove this customer's name, phone, email, saved addresses, notes, review and sign-in account for good. Their orders and amounts stay, so your sales do not change.",
+      "anonymiseOpen_one": "Finish or cancel their open order first, then come back here.",
+      "anonymiseOpen_other": "Finish or cancel their {{count}} open orders first, then come back here.",
+      "anonymiseButton": "Anonymise customer",
+      "anonymiseConfirmTitle": "Anonymise {{name}}?",
+      "anonymiseConfirmBody": "Their name, phone, email, saved addresses, notes, review and sign-in account are removed for good. Orders and amounts stay, shown as “Deleted customer”. This cannot be undone.",
+      "anonymiseCancel": "Keep the customer",
+      "anonymiseConfirm": "Anonymise for good",
+      "anonymising": "Anonymising…",
+      "anonymised": "Customer anonymised. Orders and totals are kept.",
+      "anonymisedOn": "Personal data removed on {{date}}.",
+      "anonymiseOpenOrders_one": "This customer has {{count}} open order. Finish or cancel it first.",
+      "anonymiseOpenOrders_other": "This customer has {{count}} open orders. Finish or cancel them first.",
+      "anonymiseAuthFailed": "The customer's sign-in account could not be removed, so nothing was changed. Try again in a minute."
     },
     "sales": {
       "metaTitle": "Sales summary",

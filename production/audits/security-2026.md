@@ -57,10 +57,11 @@ Roles: **anon** (visitor), **customer** (signed-in account, `requireCustomer`), 
 | `/admin/login`, `/forgot`, `/reset`, `/invite/:token`, `/sign-out`, `/manifest.webmanifest`, `/sw.js` | — | signIn, requestReset, setPassword, accept | public / token | RL-auth. Invite tokens are SHA-256 hashed, expire after 7 days, have their shape checked first and are not consumed on GET. |
 | `/admin` (Today), `orders`, `orders/:id`, `menu`, `menu/new`, `menu/:id`, `menu/:id/preview`, `promotions*`, `pages*`, `reviews`, `profile`, `more`, `uploads`, `calendar`, `customers`, `gallery`, `sales`, `*` | admin data | each module's actions | admin | The layout middleware and each loader and action call `requireAdmin`. A customer session posting gets 403 and no data. Profile reads only the session's own row. |
 | `/admin/availability`, `/admin/settings`, `/admin/team` | owner data | each module's actions | **owner** | An Admin gets 403 FORBIDDEN (FR-041). |
+| `/admin/customers/:id` action `anonymise` | — | anonymise (PRV-02) | **owner** | Inside an admin module: the action checks the role and an Admin gets 403 FORBIDDEN; the button is shown to Owners only. |
 | `/api/menu`, `/sitemap.xml`, `/robots.txt`, `/healthz` | public | — | anon | `/healthz` has no secrets. |
 | `/api/basket/reissue`, `/api/banner/dismiss` | — | cookie only | anon | No database writes of personal data. |
 | `POST /hooks/supabase/send-email` | — | sends an auth email | **signed** | See AC5. |
-| Cron `scheduled` | — | keepAlive, integrations, purgeRateLimits, purgeStorage, paymentDeadlines, expireQuotes, retryEmails, purgeEmails | Worker only | Each job is idempotent: status-guarded updates, outbox dedupe keys, `FOR UPDATE SKIP LOCKED` leases, version checks. A failing job does not stop the others. |
+| Cron `scheduled` | — | keepAlive, integrations, purgeRateLimits, anonymiseInactive, purgeStorage, paymentDeadlines, expireQuotes, retryEmails, purgeEmails, pendingAlerts, eveningReminder | Worker only | Each job is idempotent: status-guarded updates, outbox dedupe keys, `FOR UPDATE SKIP LOCKED` leases, version checks. A failing job does not stop the others. |
 
 ## Threat-model gaps (G items)
 | Gap | Status |

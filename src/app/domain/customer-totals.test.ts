@@ -31,8 +31,12 @@ describe("customerTotals", () => {
 });
 
 describe("isAnonymised (S-174 AC6, data-model retention)", () => {
-  test("the retention job's name marks a deleted customer", () => {
-    expect(isAnonymised({ name: DELETED_CUSTOMER_NAME })).toBe(true);
-    expect(isAnonymised({ name: "Anna" })).toBe(false);
+  test("the anonymised_at column marks a deleted customer (PRV-02), not the name", () => {
+    expect(isAnonymised({ anonymisedAt: new Date("2026-11-14T00:00:00Z") })).toBe(true);
+    expect(isAnonymised({ anonymisedAt: null })).toBe(false);
+  });
+
+  test("the placeholder the anonymise writes is 'Deleted customer'", () => {
+    expect(DELETED_CUSTOMER_NAME).toBe("Deleted customer");
   });
 });

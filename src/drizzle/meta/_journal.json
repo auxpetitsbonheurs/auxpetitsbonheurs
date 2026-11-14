@@ -141,6 +141,13 @@
       "when": 1794603780605,
       "tag": "0021_place_order_account",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1794621750820,
+      "tag": "0022_customer_anonymised",
+      "breakpoints": true
     }
   ]
 }

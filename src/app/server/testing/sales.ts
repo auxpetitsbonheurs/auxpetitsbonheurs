@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { customer, orderItem, orders } from "~/db/schema";
 import type { TestDatabase } from "~/db/testing/pglite";
+import { DELETED_CUSTOMER_NAME } from "~/domain/customer-totals";
 import type { OrderSource, OrderStatus } from "~/domain/status";
 
 type Db = TestDatabase["db"];
@@ -14,17 +15,20 @@ export interface TestCustomer {
   email?: string | null;
   locale?: "en" | "fr";
   adminNote?: string | null;
+  /** Already anonymised (PRV-02): the "Deleted customer" placeholders and `anonymised_at`. */
+  anonymised?: boolean;
 }
 
 export async function insertTestCustomer(db: Db, values: TestCustomer = {}): Promise<string> {
   const [row] = await db
     .insert(customer)
     .values({
-      name: values.name ?? "Anna Rault",
-      phone: values.phone ?? "+23057123456",
+      name: values.name ?? (values.anonymised ? DELETED_CUSTOMER_NAME : "Anna Rault"),
+      phone: values.phone ?? (values.anonymised ? DELETED_CUSTOMER_NAME : "+23057123456"),
       email: values.email === undefined ? `${randomUUID().slice(0, 8)}@example.com` : values.email,
       locale: values.locale ?? "en",
       adminNote: values.adminNote ?? null,
+      anonymisedAt: values.anonymised ? new Date("2026-01-01T00:00:00Z") : null,
     })
     .returning({ id: customer.id });
   return row!.id;

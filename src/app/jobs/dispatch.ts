@@ -4,6 +4,7 @@
 import { createRequestDb } from "~/server/db.server";
 import { getEnv } from "~/server/env.server";
 import { pushConfigFromEnv } from "~/server/push/push.server";
+import { anonymiseInactive } from "./anonymise-inactive";
 import { eveningReminder } from "./evening-reminder";
 import { pendingAlerts } from "./pending-alerts";
 import { expireQuotes } from "./expire-quotes";
@@ -27,6 +28,8 @@ export const JOBS: readonly Job[] = [
   { name: "keepAlive", run: keepAlive },
   { name: "integrations", run: integrationsCheck },
   { name: "purgeRateLimits", run: purgeRateLimits },
+  // PRV-02 retention (1st of the month): before purgeStorage, so photos it queues go the same tick.
+  { name: "anonymiseInactive", run: (context) => anonymiseInactive(context) },
   { name: "purgeStorage", run: (context) => purgeStorage(context) },
   // Juice payment (S-280): 12 h reminder, 24 h unpaid cancel.
   { name: "paymentDeadlines", run: paymentDeadlines },

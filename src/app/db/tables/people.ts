@@ -23,6 +23,11 @@ export const customer = pgTable(
     locale: localeEnum("locale").notNull().default("en"),
     authUserId: uuid("auth_user_id").references(() => authUsers.id, { onDelete: "set null" }),
     adminNote: text("admin_note"),
+    /**
+     * When the customer's personal data was removed (PRV-02, migration 0022): the Owner's
+     * "Anonymise customer" action or the retention job. Orders and their totals stay.
+     */
+    anonymisedAt: timestamp("anonymised_at", tz),
     createdAt: timestamp("created_at", tz).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", tz).notNull().defaultNow(),
   },

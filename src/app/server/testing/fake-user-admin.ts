@@ -14,6 +14,8 @@ export class FakeUserAdmin implements UserAdmin {
   readonly banCalls: { userId: string; banned: boolean }[] = [];
   /** `setBanned` answers `false` while this is true (Auth down or slower than 5 s). */
   banFails = false;
+  /** `deleteUser` answers `false` while this is true (Auth down or slower than 5 s; PRV-02). */
+  deleteFails = false;
   /** Next createUser answers this failure. */
   failWith: "failed" | "weak" | null = null;
   /**
@@ -47,6 +49,7 @@ export class FakeUserAdmin implements UserAdmin {
   }
 
   async deleteUser(userId: string): Promise<boolean> {
+    if (this.deleteFails) return false;
     await this.database.client.query("delete from auth.users where id = $1", [userId]);
     this.auth.removeUser(userId);
     this.deleted.push(userId);

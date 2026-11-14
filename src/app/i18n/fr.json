@@ -762,7 +762,22 @@
       "save": "Enregistrer la note",
       "saving": "Enregistrement…",
       "saved": "Enregistré",
-      "saveFailed": "La note n’a pas été enregistrée. Votre texte est toujours là : réessayez."
+      "saveFailed": "La note n’a pas été enregistrée. Votre texte est toujours là : réessayez.",
+      "anonymiseTitle": "Données personnelles",
+      "anonymiseHelp": "Sur demande, ou quand vous n’en avez plus besoin, supprimez définitivement le nom, le téléphone, l’e-mail, les adresses enregistrées, les notes, l’avis et le compte de ce client. Ses commandes et leurs montants restent : vos ventes ne changent pas.",
+      "anonymiseOpen_one": "Terminez ou annulez d’abord sa commande en cours, puis revenez ici.",
+      "anonymiseOpen_other": "Terminez ou annulez d’abord ses {{count}} commandes en cours, puis revenez ici.",
+      "anonymiseButton": "Anonymiser le client",
+      "anonymiseConfirmTitle": "Anonymiser {{name}} ?",
+      "anonymiseConfirmBody": "Son nom, son téléphone, son e-mail, ses adresses enregistrées, les notes, son avis et son compte sont supprimés définitivement. Les commandes et leurs montants restent, au nom de « Client supprimé ». C’est irréversible.",
+      "anonymiseCancel": "Garder le client",
+      "anonymiseConfirm": "Anonymiser définitivement",
+      "anonymising": "Anonymisation…",
+      "anonymised": "Client anonymisé. Les commandes et les totaux sont conservés.",
+      "anonymisedOn": "Données personnelles supprimées le {{date}}.",
+      "anonymiseOpenOrders_one": "Ce client a {{count}} commande en cours. Terminez-la ou annulez-la d’abord.",
+      "anonymiseOpenOrders_other": "Ce client a {{count}} commandes en cours. Terminez-les ou annulez-les d’abord.",
+      "anonymiseAuthFailed": "Le compte du client n’a pas pu être supprimé, donc rien n’a changé. Réessayez dans une minute."
     },
     "sales": {
       "metaTitle": "Résumé des ventes",

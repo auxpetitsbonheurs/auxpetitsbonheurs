@@ -18,12 +18,10 @@ export function customerTotals(orders: readonly { status: OrderStatus; totalRs: 
   return { orderCount, totalSpentRs };
 }
 
-/**
- * The name the retention job gives an anonymised customer (data-model.md "Retention"). There is
- * no flag column yet: the erasure spec that adds the job may add one, and this check follows it.
- */
+/** What the anonymise writes in place of the name, phone and address (PRV-02, data-model "Retention"). */
 export const DELETED_CUSTOMER_NAME = "Deleted customer";
 
-export function isAnonymised(customer: { name: string }): boolean {
-  return customer.name === DELETED_CUSTOMER_NAME;
+/** Anonymised by the Owner's action or the retention job: `customer.anonymised_at` (migration 0022). */
+export function isAnonymised(customer: { anonymisedAt: Date | string | null }): boolean {
+  return customer.anonymisedAt !== null;
 }

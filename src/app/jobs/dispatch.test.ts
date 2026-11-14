@@ -51,6 +51,6 @@ describe("dispatch (AC4)", () => {
   });
 
   test("keepAlive, the missing-integrations check, the purges, the unpaid-order deadlines (S-280), the quote expiry (E-08 S-160) the email sender and purge (E-10) and the admin pushes (E-10 S-200, S-198) run on every hourly tick", () => {
-    expect(JOBS.map((job) => job.name)).toEqual(["keepAlive", "integrations", "purgeRateLimits", "purgeStorage", "paymentDeadlines", "expireQuotes", "retryEmails", "purgeEmails", "pendingAlerts", "eveningReminder"]);
+    expect(JOBS.map((job) => job.name)).toEqual(["keepAlive", "integrations", "purgeRateLimits", "anonymiseInactive", "purgeStorage", "paymentDeadlines", "expireQuotes", "retryEmails", "purgeEmails", "pendingAlerts", "eveningReminder"]);
   });
 });

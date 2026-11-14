@@ -3,7 +3,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createRoutesStub } from "react-router";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
-import { DELETED_CUSTOMER_NAME } from "~/domain/customer-totals";
 import { messagesFor } from "~/i18n/catalog.server";
 import { I18nProvider } from "~/i18n/react";
 import { insertCustomerAccount } from "~/server/testing/admins";
@@ -59,7 +58,7 @@ describe("the list (S-174 AC1, AC2, AC6, AC8)", () => {
   });
 
   test("an anonymised customer shows Deleted customer and no phone", async () => {
-    await insertTestCustomer(database.db, { name: DELETED_CUSTOMER_NAME, phone: "+23057123456", email: null });
+    await insertTestCustomer(database.db, { anonymised: true, phone: "+23057123456", email: null });
     const { body } = await load("/admin/customers");
     expect(body.data[0]).toMatchObject({ name: "Deleted customer", phone: null, deleted: true });
     const html = await render("/admin/customers", "fr");

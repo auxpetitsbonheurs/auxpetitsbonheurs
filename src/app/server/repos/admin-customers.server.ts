@@ -1,10 +1,10 @@
 // Customers for the admin app (contracts.md `admin/customers`, `admin/customer`; FR-065).
 // Totals are aggregated from the orders on every read (never stored); the list pages with a
 // keyset cursor on the chosen sort key plus the id, so pages never repeat or skip a row.
-import { type SQL, desc, eq, sql } from "drizzle-orm";
+import { type SQL, and, desc, eq, isNull, sql } from "drizzle-orm";
 import { customer, orders, settings } from "~/db/schema";
 import { escapeLike } from "~/domain/customer-search";
-import { COUNTED_STATUSES, DELETED_CUSTOMER_NAME, SPENT_STATUSES, customerTotals } from "~/domain/customer-totals";
+import { COUNTED_STATUSES, SPENT_STATUSES, customerTotals } from "~/domain/customer-totals";
 import type { OrderStatus } from "~/domain/status";
 import type { Locale } from "~/lib/locale";
 import type { Executor } from "~/server/db.server";
@@ -17,6 +17,8 @@ export interface CustomerListRow {
   name: string;
   phone: string;
   email: string | null;
+  /** Set once anonymised (PRV-02): the row shows "Deleted customer" and no contact. */
+  anonymisedAt: Date | null;
   orderCount: number;
   totalSpentRs: number;
   /** Mauritius date of the latest order placed, any status; null without orders. */
@@ -66,7 +68,7 @@ function searchWhere(search: { text: string; digits: string | null }): SQL {
   if (search.text === "") return sql`true`;
   const pattern = `%${escapeLike(search.text)}%`;
   const byDigits = search.digits ? sql` or regexp_replace(${customer.phone}, '\\D', '', 'g') like ${`%${search.digits}%`}` : sql``;
-  return sql`${customer.name} <> ${DELETED_CUSTOMER_NAME} and (${customer.name} ilike ${pattern} escape '\\' or coalesce(${customer.email}, '') ilike ${pattern} escape '\\'${byDigits})`;
+  return sql`${customer.anonymisedAt} is null and (${customer.name} ilike ${pattern} escape '\\' or coalesce(${customer.email}, '') ilike ${pattern} escape '\\'${byDigits})`;
 }
 
 interface RawRow {
@@ -74,6 +76,7 @@ interface RawRow {
   name: string;
   phone: string;
   email: string | null;
+  anonymised_at: Date | string | null;
   order_count: number | string;
   spent: number | string;
   last_on: string | null;
@@ -92,7 +95,7 @@ export async function listCustomers(
   const order = dir === "desc" ? sql`${key} desc, id desc` : sql`${key} asc, id asc`;
   const { rows } = (await db.execute(sql`
     with t as (
-      select ${customer.id} as id, ${customer.name} as name, ${customer.phone} as phone, ${customer.email} as email,
+      select ${customer.id} as id, ${customer.name} as name, ${customer.phone} as phone, ${customer.email} as email, ${customer.anonymisedAt} as anonymised_at,
         (count(${orders.id}) filter (where ${orders.status} in (${inList(COUNTED_STATUSES)})))::int as order_count,
         (coalesce(sum(${orders.totalRs}) filter (where ${orders.status} in (${inList(SPENT_STATUSES)})), 0))::int as spent,
         to_char(max(${orders.createdAt}) at time zone 'Indian/Mauritius', 'YYYY-MM-DD') as last_on,
@@ -113,6 +116,7 @@ export async function listCustomers(
       name: row.name,
       phone: row.phone,
       email: row.email,
+      anonymisedAt: row.anonymised_at === null ? null : new Date(row.anonymised_at),
       orderCount: Number(row.order_count),
       totalSpentRs: Number(row.spent),
       lastOrderOn: row.last_on,
@@ -137,7 +141,7 @@ export interface AdminCustomerOrder {
 }
 
 export interface AdminCustomer {
-  customer: { id: string; name: string; phone: string; email: string | null; locale: Locale; hasAccount: boolean; adminNote: string | null };
+  customer: { id: string; name: string; phone: string; email: string | null; locale: Locale; hasAccount: boolean; adminNote: string | null; anonymisedAt: Date | null };
   orders: AdminCustomerOrder[];
   orderCount: number;
   totalSpentRs: number;
@@ -156,6 +160,7 @@ export async function findAdminCustomer(db: Executor, id: string): Promise<Admin
       locale: customer.locale,
       hasAccount: sql<boolean>`${customer.authUserId} is not null`,
       adminNote: customer.adminNote,
+      anonymisedAt: customer.anonymisedAt,
     })
     .from(customer)
     .where(eq(customer.id, id));
@@ -168,8 +173,8 @@ export async function findAdminCustomer(db: Executor, id: string): Promise<Admin
   return { customer: row, orders: list, ...customerTotals(list) };
 }
 
-/** Last write wins (accepted, no version: contracts.md `saveNote`); false when no such customer. */
+/** Last write wins (accepted, no version: contracts.md `saveNote`); false when no such customer, or an anonymised one (PRV-02). */
 export async function saveCustomerNote(db: Executor, id: string, note: string | null): Promise<boolean> {
-  const updated = await db.update(customer).set({ adminNote: note, updatedAt: new Date() }).where(eq(customer.id, id)).returning({ id: customer.id });
+  const updated = await db.update(customer).set({ adminNote: note, updatedAt: new Date() }).where(and(eq(customer.id, id), isNull(customer.anonymisedAt))).returning({ id: customer.id });
   return updated.length > 0;
 }
