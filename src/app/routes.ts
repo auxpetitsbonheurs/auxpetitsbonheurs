@@ -73,6 +73,8 @@ const adminPages = [
     route("orders/:id/edit", "routes/admin/order-edit.tsx"),
     // Bottom bar and More (S-033); "Not available yet" placeholders until later epics build them.
     route("calendar", "routes/admin/calendar.tsx"),
+    // Prep list of one Mauritius day (E-07 S-139, S-140); the 18:00 push deep-links here.
+    route("calendar/:date/prep", "routes/admin/calendar-prep.tsx"),
     route("menu", "routes/admin/menu.tsx"),
     route("menu/new", "routes/admin/product.tsx", { id: "admin-product-new" }),
     route("menu/:id", "routes/admin/product.tsx", { id: "admin-product" }),

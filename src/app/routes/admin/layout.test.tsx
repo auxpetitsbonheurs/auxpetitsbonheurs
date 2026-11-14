@@ -11,7 +11,6 @@ import { I18nProvider } from "~/i18n/react";
 import { signedInAdmin } from "~/server/testing/admin-session";
 import { placeTestOrder } from "~/server/testing/orders";
 import { routeArgs } from "~/server/testing/route-context";
-import * as calendar from "./calendar";
 import * as gallery from "./gallery";
 import * as layoutModule from "./layout";
 import { clientLoader as layoutClientLoader, loader as layoutLoader } from "./layout";
@@ -162,7 +161,6 @@ describe("More (AC3, AC4)", () => {
 
 describe("destinations not built yet (AC7)", () => {
   test.each([
-    ["calendar", calendar, "Calendar"],
     ["gallery", gallery, "Gallery"],
   ] as const)("/admin/%s loads its placeholder for an Admin, with its title", async (name, module, title) => {
     const args = await as("admin");
@@ -171,11 +169,11 @@ describe("destinations not built yet (AC7)", () => {
   });
 
   test("a placeholder renders Not available yet with a way back, not an error", async () => {
-    const props = { loaderData: { title: "Calendar" } } as unknown as Parameters<typeof calendar.default>[0];
-    const html = render(<calendar.default {...props} />);
+    const props = { loaderData: { title: "Gallery" } } as unknown as Parameters<typeof gallery.default>[0];
+    const html = render(<gallery.default {...props} />);
 
     expect(html).toContain("<h1");
-    expect(html).toContain("Calendar");
+    expect(html).toContain("Gallery");
     expect(html).toContain("Not available yet");
     expect(html).toContain('href="/admin"');
   });

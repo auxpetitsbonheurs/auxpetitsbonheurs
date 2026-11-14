@@ -39,6 +39,8 @@ export interface ModalProps {
   returnFocusTo?: () => string | null;
   children: ReactNode;
   className?: string;
+  /** `alertdialog` for a confirm that interrupts (S-138 AC12); focus still starts on the title (no button pre-chosen). */
+  role?: "alertdialog";
 }
 
 /**
@@ -48,7 +50,7 @@ export interface ModalProps {
  * admin bottom bar hides while it is open (`html[data-sheet-open]`). Tapping the backdrop
  * closes it.
  */
-export function Modal({ open, onClose, title, closeLabel, variant = "sheet", returnFocusTo, children, className }: ModalProps) {
+export function Modal({ open, onClose, title, closeLabel, variant = "sheet", returnFocusTo, children, className, role }: ModalProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const trigger = useRef<HTMLElement | null>(null);
@@ -96,6 +98,7 @@ export function Modal({ open, onClose, title, closeLabel, variant = "sheet", ret
   return (
     <dialog
       ref={ref}
+      role={role}
       aria-labelledby={titleId}
       onCancel={(event) => {
         event.preventDefault();

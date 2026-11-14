@@ -421,3 +421,38 @@ html:has(.checkout-form [data-sticky-bar]) {
     scroll-padding-bottom: 10rem;
   }
 }
+
+/*
+ * Prep list print (S-140 AC4): black on white on A4, no admin chrome (header, bottom bar, install
+ * banner, toasts), cards flattened, and no product group split across pages. Scoped to the page
+ * that carries `data-prep-sheet`, so no other admin screen changes in print.
+ */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+  html:has([data-prep-sheet]),
+  html:has([data-prep-sheet]) body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  [data-admin-frame]:has([data-prep-sheet]) > :not(main),
+  [data-admin-frame]:has([data-prep-sheet]) [role="status"] {
+    display: none !important;
+  }
+  [data-admin-frame]:has([data-prep-sheet]) main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  [data-prep-sheet] * {
+    color: #000 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  [data-prep-sheet] .prep-group {
+    border-color: #000 !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

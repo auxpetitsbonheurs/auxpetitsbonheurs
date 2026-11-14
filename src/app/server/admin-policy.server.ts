@@ -22,6 +22,8 @@ export const ADMIN_MODULE_POLICY = {
   "not-found": "admin",
   more: "admin",
   calendar: "admin",
+  // Prep list of one day (E-07 S-139, S-140): whoever sees the calendar.
+  "calendar-prep": "admin",
   menu: "admin",
   product: "admin",
   "product-preview": "admin",

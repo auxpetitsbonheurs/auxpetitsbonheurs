@@ -20,7 +20,22 @@ import { type OptionGroupInput, type OptionProblem, checkOptionGroups } from "~/
 import { DECLINE_REASON_MAX } from "~/domain/payment";
 import { type SeasonProblem, type SeasonWindow, checkSeason } from "~/domain/season";
 import { ADMIN_ROLES, PASSWORD_MAX, PASSWORD_MIN, PROFILE_NAME_MAX } from "~/domain/admin-account";
-import { Email, Uuid, Version } from "./shared";
+import { Email, MuDate, Uuid, Version } from "./shared";
+
+/** `admin/calendar` blockDay / unblockDay (S-138, FR-059): a Mauritius date and, to block, an optional private reason ≤ 200. */
+export const CalendarBlockInput = z.discriminatedUnion("intent", [
+  z.object({
+    intent: z.literal("blockDay"),
+    date: MuDate,
+    reason: z
+      .string()
+      .trim()
+      .max(200)
+      .optional()
+      .transform((value) => (value ? value : undefined)),
+  }),
+  z.object({ intent: z.literal("unblockDay"), date: MuDate }),
+]);
 
 /** `admin/login` signIn. Field problems are reported per field; the password is never echoed. */
 export const SignInInput = z.object({
