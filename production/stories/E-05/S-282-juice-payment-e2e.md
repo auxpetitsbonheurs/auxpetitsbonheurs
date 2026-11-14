@@ -15,3 +15,8 @@ As the team, we want the Juice payment journeys covered end to end at phone widt
 
 ## Tests
 - AC1..AC3 → src/tests/e2e/juice-payment.spec.ts; src/tests/e2e/skeleton-order.spec.ts (Payment received replaces Approve)
+
+## As built: approve, then pay (Owner decision 2026-11-14)
+- AC1 is now the whole journey: place → confirmation "What happens next", no Juice details → tracking "Waiting for our approval" → the Owner approves (status Awaiting payment, `payment_instructions` queued, "Send payment details on WhatsApp" with the resolved message) → tracking shows the payment guide (steps, copy buttons, proof link, deadline 24 h after approval) → Payment tab "22 h left" two hours after approval → Payment received → tracking Approved and paid, `order_confirmed` queued.
+- AC2: the unpaid cancel lands 24 h after the approval, not after placing.
+- Screenshots (375 px): `approvepay-confirmation.png`, `approvepay-admin-approve.png`, `approvepay-tracking-payment.png`.

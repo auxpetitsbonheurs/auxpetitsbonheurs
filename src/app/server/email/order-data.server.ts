@@ -4,24 +4,27 @@ import { count, eq, inArray } from "drizzle-orm";
 import { customRequest, customRequestPhoto, orderItem, orders, settings } from "~/db/schema";
 import { formatOrderNumber } from "~/domain/order-number";
 import type { Executor } from "~/server/db.server";
+import { findOrderWorkshops } from "~/server/repos/workshops.server";
 import type { OrderEmailData } from "./templates/order-emails";
 
-export type LoadedOrder = Pick<OrderEmailData, "order" | "items" | "request" | "shop">;
+export type LoadedOrder = Pick<OrderEmailData, "order" | "items" | "request" | "shop" | "workshop">;
 
 /** The order data for each id; ids that no longer exist are absent from the map. */
 export async function loadOrderEmailData(db: Executor, orderIds: readonly string[]): Promise<Map<string, LoadedOrder>> {
   const found = new Map<string, LoadedOrder>();
   if (orderIds.length === 0) return found;
   const ids = [...new Set(orderIds)];
-  const [rows, lines, requests, photos, [shop]] = await Promise.all([
+  const [rows, lines, requests, photos, [shop], workshops] = await Promise.all([
     db.select().from(orders).where(inArray(orders.id, ids)),
     db.select().from(orderItem).where(inArray(orderItem.orderId, ids)).orderBy(orderItem.sortOrder),
     db.select().from(customRequest).where(inArray(customRequest.orderId, ids)),
     db.select({ orderId: customRequestPhoto.orderId, n: count() }).from(customRequestPhoto).where(inArray(customRequestPhoto.orderId, ids)).groupBy(customRequestPhoto.orderId),
     db.select().from(settings).where(eq(settings.id, 1)).limit(1),
+    findOrderWorkshops(db, ids),
   ]);
   for (const order of rows) {
     const request = requests.find((candidate) => candidate.orderId === order.id);
+    const workshop = workshops.get(order.id);
     found.set(order.id, {
       order: {
         number: formatOrderNumber(order.numberPrefix ?? shop?.orderNumberPrefix ?? "APB-", order.number),
@@ -53,6 +56,16 @@ export async function loadOrderEmailData(db: Executor, orderIds: readonly string
             quoteAmountRs: request.quoteAmountRs,
             quoteNote: request.quoteNote,
             quoteExpiresOn: request.quoteExpiresOn,
+          }
+        : null,
+      workshop: workshop
+        ? {
+            title: order.locale === "fr" && workshop.titleFr ? workshop.titleFr : workshop.titleEn,
+            address: workshop.address,
+            mapUrl: workshop.mapUrl,
+            cakes: workshop.cakes,
+            peopleNames: workshop.peopleNames,
+            allergies: workshop.allergies,
           }
         : null,
       shop: {

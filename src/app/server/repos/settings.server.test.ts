@@ -22,6 +22,7 @@ describe("getFooterContacts (S-007, S-061 footer from Settings)", () => {
       email: null,
       pickupAddress: "Beau Bassin",
       instagramUrl: null,
+      facebookUrl: null,
       mapUrl: null,
     });
   });
@@ -37,8 +38,17 @@ describe("getFooterContacts (S-007, S-061 footer from Settings)", () => {
       email: "hello@example.com",
       pickupAddress: "Beau Bassin",
       instagramUrl: null,
+      facebookUrl: null,
       mapUrl: null,
     });
+  });
+
+  test("S-283 AC3: the Facebook page only when it is an https facebook.com or fb.com address", async () => {
+    await database.client.query(`update settings set facebook_url = 'https://www.facebook.com/apb'`);
+    expect(await getFooterContacts(database.db)).toMatchObject({ facebookUrl: "https://www.facebook.com/apb" });
+
+    await database.client.query(`update settings set facebook_url = 'https://evil.example/apb'`);
+    expect(await getFooterContacts(database.db)).toMatchObject({ facebookUrl: null });
   });
 
   test("S-061 AC1, AC6: Instagram and map links only when http or https", async () => {

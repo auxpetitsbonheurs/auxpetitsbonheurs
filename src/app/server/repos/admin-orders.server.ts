@@ -17,7 +17,7 @@ export interface AdminOrderRow {
   /** Prefix stored at placement (S-058 AC6); null only for a row the trigger never saw. */
   numberPrefix: string | null;
   status: OrderStatus;
-  source: "website" | "custom_request" | "manual";
+  source: "website" | "custom_request" | "manual" | "workshop";
   fulfilment: "delivery" | "pickup";
   fulfilOn: string;
   window: TimeWindow;
@@ -60,7 +60,7 @@ export async function countReviewOrders(db: Executor): Promise<number> {
   return Number(row?.n ?? 0);
 }
 
-/** A row of the Payment tab (S-279): when it was placed (the deadline runs from it) and any refund due. */
+/** A row of the Payment tab (S-279): when its payment clock started (approval; the deadline runs from it) and any refund due. */
 export interface PaymentOrderRow extends AdminOrderRow {
   createdAt: Date;
   refundDueRs: number | null;
@@ -87,7 +87,8 @@ const WEEK_MS = 7 * 24 * 3_600_000;
 
 /** The three lists of the Payment tab, each capped (a bakery has a handful at a time). */
 export async function listPaymentOrders(db: Executor, now: Date): Promise<PaymentLists> {
-  const awaiting = await db.select(paymentColumns).from(orders).where(eq(orders.status, "awaiting_payment")).orderBy(asc(orders.number)).limit(LIST_CAP);
+  // Nearest deadline first: since approve-then-pay the clock starts at approval, not in number order.
+  const awaiting = await db.select(paymentColumns).from(orders).where(eq(orders.status, "awaiting_payment")).orderBy(asc(paymentClock), asc(orders.number)).limit(LIST_CAP);
   const refunds = await db
     .select(paymentColumns)
     .from(orders)

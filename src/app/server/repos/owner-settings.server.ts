@@ -5,6 +5,7 @@ import { asc, eq } from "drizzle-orm";
 import { type FaqEntry, type LocalizedText, type TimeWindow, product, settings } from "~/db/schema";
 import type { Database } from "~/server/db.server";
 import type { WhatsappTemplates } from "~/db/tables/json-types";
+import type { OwnerInvoiceSettings } from "~/domain/invoice";
 import { DEFAULT_WHATSAPP_TEMPLATES, WHATSAPP_TEMPLATE_KEYS } from "~/domain/whatsapp";
 
 type Row = typeof settings.$inferSelect;
@@ -33,6 +34,7 @@ export interface OwnerSettings {
   juiceNumber: string | null;
   paymentWhatsapp: string | null;
   instagramUrl: string | null;
+  facebookUrl: string | null;
   quoteValidityDays: number;
   cakeMessageMax: number;
   eveningReminderAt: string;
@@ -47,6 +49,8 @@ export interface OwnerSettings {
   privacyNote: LocalizedText | null;
   /** S-202: every template, the Owner's text or the default (an empty French one stays empty). */
   whatsappTemplates: WhatsappTemplates;
+  /** S-127: the Invoice section (the Payment Juice number above is the one invoices print). */
+  invoice: OwnerInvoiceSettings;
 }
 
 /** The Settings row minus availability (contracts.md `admin/settings` loader). */
@@ -64,6 +68,7 @@ export async function readOwnerSettings(db: Database): Promise<OwnerSettings> {
     juiceNumber: r.juiceNumber,
     paymentWhatsapp: r.paymentWhatsapp,
     instagramUrl: r.instagramUrl,
+    facebookUrl: r.facebookUrl,
     quoteValidityDays: r.quoteValidityDays,
     cakeMessageMax: r.cakeMessageMax,
     eveningReminderAt: r.eveningReminderAt,
@@ -79,6 +84,18 @@ export async function readOwnerSettings(db: Database): Promise<OwnerSettings> {
     whatsappTemplates: Object.fromEntries(
       WHATSAPP_TEMPLATE_KEYS.map((key) => [key, r.whatsappTemplates?.[key]?.en ? r.whatsappTemplates[key] : DEFAULT_WHATSAPP_TEMPLATES[key]]),
     ) as WhatsappTemplates,
+    invoice: {
+      legalName: r.invoiceLegalName,
+      brn: r.invoiceBrn,
+      address: r.invoiceAddress,
+      phone: r.invoicePhone,
+      bankName: r.bankName,
+      bankAccountName: r.bankAccountName,
+      bankAccountNumber: r.bankAccountNumber,
+      paymentTerms: localizedOrNull(r.invoicePaymentTerms),
+      thankYou: localizedOrNull(r.invoiceThankYou),
+      nextNumber: r.nextInvoiceNumber,
+    },
   };
 }
 

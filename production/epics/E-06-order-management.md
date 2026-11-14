@@ -33,6 +33,7 @@ J4: Owner goes from alert to Approve to Completed and paid, each step logged. Tw
 | S-124 | Two admins on one order get "this order changed, reload" | done | 3 |
 | S-125 | Activity log on the order | done | 2 |
 | S-126 | One-handed admin layout and accessibility pass | done | 2 |
+| S-127 | Download an invoice PDF for any order, matching the client's template | done | 5 |
 
 Total: 47 pts. Files: `production/stories/E-06/`.
 

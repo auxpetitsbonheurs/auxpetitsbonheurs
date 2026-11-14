@@ -1,4 +1,5 @@
 import { Bike, ChevronRight, Store } from "lucide-react";
+import { WorkshopBadge } from "~/components/admin/orders/workshop-badge";
 import { PaidTag } from "~/components/admin/order/header";
 import { StatusBadge } from "~/components/order/status-badge";
 import { localized } from "~/i18n/localized";
@@ -31,6 +32,7 @@ export function OrderRow({ order }: { order: OrderRowView }) {
             <span className="text-lg font-semibold">{order.number}</span>
             <StatusBadge status={order.status} audience="admin" />
             <PaidTag paid={order.paid} />
+            {order.source === "workshop" && <WorkshopBadge />}
           </span>
           <span className="font-semibold wrap-anywhere">{order.contactName}</span>
           <span className="flex flex-wrap items-center gap-x-2">
@@ -38,7 +40,7 @@ export function OrderRow({ order }: { order: OrderRowView }) {
             <span>{windowText}</span>
             <span className="inline-flex items-center gap-1">
               <Mode aria-hidden="true" className="size-4" />
-              {order.fulfilment === "delivery" ? t("admin.order.delivery") : t("admin.order.pickup")}
+              {order.source === "workshop" ? t("admin.orders.sourceName.workshop") : order.fulfilment === "delivery" ? t("admin.order.delivery") : t("admin.order.pickup")}
             </span>
           </span>
           {order.itemsPreview.length > 0 && <span className="text-sm wrap-anywhere">{order.itemsPreview.join(", ")}</span>}

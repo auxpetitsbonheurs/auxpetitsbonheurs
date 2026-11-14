@@ -1,8 +1,10 @@
 import { eq, getTableColumns, sql } from "drizzle-orm";
 import { type LocalizedText, type TimeWindow, blockedDate, settings } from "~/db/schema";
 import type { AvailabilityRules, DateRange } from "~/domain/availability";
+import type { BusinessIdentity } from "~/domain/privacy-facts";
 import type { PaymentSettings } from "~/domain/payment";
 import { safeWebUrl } from "~/lib/contact";
+import { facebookPageUrl } from "~/domain/settings";
 import type { Database } from "~/server/db.server";
 import { SETTINGS_TTL_MS, createTtlCache } from "~/server/settings-cache.server";
 
@@ -13,6 +15,8 @@ export interface FooterContacts {
   pickupAddress: string | null;
   /** Only an http(s) link (S-061 AC1, AC6); anything else is dropped. */
   instagramUrl: string | null;
+  /** The Facebook page (S-283): https on facebook.com or fb.com only; anything else is dropped. */
+  facebookUrl: string | null;
   /** The pickup address's map link, http(s) only. */
   mapUrl: string | null;
 }
@@ -27,7 +31,7 @@ async function settingsRow(db: Database): Promise<SettingsRow> {
   return row;
 }
 
-type FooterRow = Pick<SettingsRow, "contactWhatsapp" | "contactPhone" | "contactEmail" | "pickupAddress" | "instagramUrl" | "pickupMapUrl">;
+type FooterRow = Pick<SettingsRow, "contactWhatsapp" | "contactPhone" | "contactEmail" | "pickupAddress" | "instagramUrl" | "facebookUrl" | "pickupMapUrl">;
 
 function footerFrom(row: FooterRow | undefined): FooterContacts {
   return {
@@ -36,6 +40,7 @@ function footerFrom(row: FooterRow | undefined): FooterContacts {
     email: present(row?.contactEmail),
     pickupAddress: present(row?.pickupAddress),
     instagramUrl: safeWebUrl(row?.instagramUrl),
+    facebookUrl: facebookPageUrl(row?.facebookUrl),
     mapUrl: safeWebUrl(row?.pickupMapUrl),
   };
 }
@@ -49,6 +54,7 @@ export async function getFooterContacts(db: Database): Promise<FooterContacts> {
       contactEmail: settings.contactEmail,
       pickupAddress: settings.pickupAddress,
       instagramUrl: settings.instagramUrl,
+      facebookUrl: settings.facebookUrl,
       pickupMapUrl: settings.pickupMapUrl,
     })
     .from(settings)
@@ -112,6 +118,11 @@ export interface SiteSettings {
   cakeMessageMax: number;
   /** Days a quote stands by default (FR-030; the send-quote sheet's expiry, E-08 S-156 AC2). */
   quoteValidityDays: number;
+  /**
+   * The business identity from Settings → Invoice (S-127), for the privacy note. Optional: absent
+   * from copies cached before; blank values are null.
+   */
+  business?: BusinessIdentity;
 }
 
 function homeFrom(row: SettingsRow): HomeSettings {
@@ -156,5 +167,6 @@ export async function readSiteSettings(db: Database): Promise<SiteSettings> {
     home: homeFrom(row),
     cakeMessageMax: row.cakeMessageMax,
     quoteValidityDays: row.quoteValidityDays,
+    business: { legalName: present(row.invoiceLegalName), brn: present(row.invoiceBrn), address: present(row.invoiceAddress) },
   };
 }

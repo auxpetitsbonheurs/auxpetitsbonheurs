@@ -1,4 +1,4 @@
-import { Ban, CircleCheck, CircleDashed, Pencil, Undo2, X } from "lucide-react";
+import { Ban, CircleCheck, CircleDashed, FileText, Pencil, Undo2, X } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { Alert } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
@@ -25,8 +25,9 @@ function SheetItem({ icon, children, onClick, destructive, disabled }: { icon: R
 }
 
 /**
- * More actions (S-119 AC9): Refuse, Back one step, Mark paid/unpaid and Cancel, each a button with
- * its own name, offered only when `allowed` says so. Refuse and Cancel ask first.
+ * More actions (S-119 AC9): Refuse, Back one step, Mark paid/unpaid, Edit, Download invoice (S-127)
+ * and Cancel, each a button with its own name, offered only when `allowed` says so (the invoice
+ * always). Refuse and Cancel ask first.
  */
 export function MoreActionsSheet(props: {
   open: boolean;
@@ -35,14 +36,14 @@ export function MoreActionsSheet(props: {
   busy: boolean;
   onSubmit: (intent: StatusIntent, extra?: Record<string, string>) => void;
   onAsk: (intent: ReasonIntent) => void;
+  /** Download invoice (S-127): any order, any status; never blocked by an action in flight. */
+  onInvoice: () => void;
 }) {
   const { t } = useI18n();
   const { order, allowed } = props.data;
   const canDecline = allowed.decline || allowed.declineRequest;
-  const nothing = !allowed.edit && !canDecline && !allowed.revert && !allowed.setPaid && !allowed.cancel;
   return (
     <Modal open={props.open} onClose={props.onClose} title={t("admin.order.moreTitle", { number: order.number })} closeLabel={t("admin.states.close")}>
-      {nothing && <p>{t("admin.order.noActions")}</p>}
       <ul className="grid gap-2">
         {canDecline && (
           <SheetItem icon={<X aria-hidden="true" />} onClick={() => props.onAsk("decline")} disabled={props.busy}>
@@ -71,6 +72,9 @@ export function MoreActionsSheet(props: {
             </a>
           </li>
         )}
+        <SheetItem icon={<FileText aria-hidden="true" />} onClick={props.onInvoice} disabled={false}>
+          {t("admin.invoice.download")}
+        </SheetItem>
         {allowed.cancel && (
           <SheetItem icon={<Ban aria-hidden="true" />} onClick={() => props.onAsk("cancel")} destructive disabled={props.busy}>
             {t("admin.order.cancel")}

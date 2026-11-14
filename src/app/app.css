@@ -77,6 +77,14 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  /* The printable invoice (S-127): paper colours after the client's template, the same in dark mode
+     (a printed page). The band is the template's grey-blue darkened so white text meets AA. */
+  --color-invoice-band: #5f7279;
+  --color-invoice-label: #4f6b7c;
+  --color-invoice-ink: #3b3b3b;
+  --color-invoice-rule: #c9d1d5;
+  --color-invoice-rule-strong: #8a9ba3;
+  --color-invoice-paid: #2e7d5b;
   --color-band: var(--band);
   --color-band-foreground: var(--band-fg);
   --color-band-muted-foreground: var(--band-muted-fg);
@@ -127,6 +135,34 @@
       transform: scaleX(0.9);
     }
   }
+
+  /*
+   * Page-change loader (S-284): the whisk rocks on its handle about once a second; the badge
+   * fades in. Both stop under reduced motion (the rule at the end of this file): a still badge.
+   * The whisk's group is drawn around its pivot, so the origin is its own 0 0.
+   */
+  --animate-whisk: whisk 0.55s ease-in-out infinite alternate;
+  --animate-loader-in: loader-in var(--motion-fast) var(--ease-enter) both;
+
+  @keyframes whisk {
+    from {
+      transform: rotate(-16deg);
+    }
+    to {
+      transform: rotate(10deg);
+    }
+  }
+
+  @keyframes loader-in {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+  }
+}
+
+[data-whisk] {
+  transform-origin: 0 0;
 }
 
 :root {

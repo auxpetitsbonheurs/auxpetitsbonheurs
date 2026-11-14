@@ -17,3 +17,6 @@ As the client, I want to refuse an order I cannot make even after it was paid, a
 ## Tests
 - AC1..AC3 → src/app/server/services/order-payment.server.test.ts
 - AC4 → src/app/routes/site/tracking.test.ts
+
+## As built: approve, then pay (Owner decision 2026-11-14)
+- Unchanged: Refuse is offered while pending approval, awaiting payment (no refund) and for paid approved / in preparation orders (refund due). The customer may cancel from tracking while pending approval or awaiting payment (unpaid).

@@ -44,6 +44,7 @@ describe("S-058 AC5: invalid business values", () => {
       juiceName: "x".repeat(61),
       paymentWhatsapp: "not a phone",
       instagramUrl: "instagram",
+      facebookUrl: "https://facebook.com.evil.example/apb",
       quoteValidityDays: "61",
       cakeMessageMax: "9",
       eveningReminderAt: "6pm",
@@ -54,7 +55,7 @@ describe("S-058 AC5: invalid business values", () => {
     expect(refused.init.status).toBe(400);
     expect(refused.data.error.code).toBe("VALIDATION_FAILED");
     expect(Object.keys(refused.data.error.fields ?? {}).sort()).toEqual(
-      ["cakeMessageMax", "contactEmail", "contactPhone", "contactWhatsapp", "deliveryFeeRs", "eveningReminderAt", "instagramUrl", "juiceName", "juiceNumber", "orderNumberPrefix", "paymentWhatsapp", "pickupMapUrl", "quoteValidityDays"].sort(),
+      ["cakeMessageMax", "contactEmail", "contactPhone", "contactWhatsapp", "deliveryFeeRs", "eveningReminderAt", "facebookUrl", "instagramUrl", "juiceName", "juiceNumber", "orderNumberPrefix", "paymentWhatsapp", "pickupMapUrl", "quoteValidityDays"].sort(),
     );
     expect(refused.data.error.fields?.orderNumberPrefix).toBe("Use 1 to 5 capital letters and an optional dash, for example APB-.");
     expect(await stored()).toEqual({ version: 1, delivery_fee_rs: 200 });
@@ -187,5 +188,24 @@ describe("S-059 AC6: hero and About images follow the product photo rules", () =
     expect(foreign.data.error).toMatchObject({ code: "UPLOAD_REJECTED", fields: { aboutImagePath: "The About photo could not be used. Choose it again." } });
     expect(fake.data.error).toMatchObject({ code: "UPLOAD_REJECTED", fields: { heroImagePath: "The homepage photo could not be used. Choose it again." } });
     expect(await stored()).toEqual({ version: 1, delivery_fee_rs: 200 });
+  });
+});
+
+describe("S-283 AC1, AC2: the Facebook page", () => {
+  const facebook = async () => (await database.client.query<{ facebook_url: string | null }>("select facebook_url from settings")).rows[0]?.facebook_url;
+
+  test("an https facebook.com page is saved, and an empty value clears it", async () => {
+    expect((await post({ facebookUrl: " https://www.facebook.com/auxpetitsbonheurs " })).result).toMatchObject({ ok: true });
+    expect(await facebook()).toBe("https://www.facebook.com/auxpetitsbonheurs");
+
+    expect((await post({ facebookUrl: "" })).result).toMatchObject({ ok: true });
+    expect(await facebook()).toBeNull();
+  });
+
+  test.each(["http://facebook.com/apb", "https://instagram.com/apb", "facebook"])("%s is refused with a friendly message and nothing is saved", async (value) => {
+    const refused = (await post({ facebookUrl: value })).result as Refusal;
+    expect(refused.init.status).toBe(400);
+    expect(refused.data.error.fields?.facebookUrl).toBe("Enter the Facebook page as a full address starting with https://, on facebook.com");
+    expect(await facebook()).toBeNull();
   });
 });

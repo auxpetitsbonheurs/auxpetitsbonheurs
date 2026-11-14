@@ -20,3 +20,7 @@ As the Owner, I want to enter the Juice account name, Juice number and the Whats
 - AC3 → src/app/routes/admin/settings.test.ts (existing)
 - AC4 → src/app/routes/hooks/menu.test.ts
 - AC5 → src/app/routes/admin/orders.test.ts, src/tests/e2e/juice-payment.spec.ts
+
+## As built: approve, then pay (Owner decision 2026-11-14)
+- Settings → WhatsApp messages gains a sixth template, **Payment details** (`payment_instructions`, EN/FR, editable, live preview), with two new placeholders `{juice_name}` and `{deadline}` (the pay-by time, 24 h after approval). The admin sends it in one tap after approving (S-279 as built).
+- Tests: `src/app/routes/admin/order.whatsapp.test.ts` (resolved message EN/FR), `src/tests/e2e/admin-settings-whatsapp.spec.ts` (six templates).

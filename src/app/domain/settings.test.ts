@@ -2,7 +2,7 @@
 // case-insensitive; French checked when it has text). Warning only.
 import { describe, expect, test } from "vitest";
 import { overlappingWindows, isCalendarDate, minutesOf, newWindowId } from "./availability";
-import { policiesMissingEntries, privacyNoteMissingReviews } from "./settings";
+import { facebookPageUrl, policiesMissingEntries, privacyNoteMissingReviews } from "./settings";
 
 describe("policiesMissingEntries (S-059 AC4)", () => {
   test.each([
@@ -54,3 +54,31 @@ describe("privacyNoteMissingReviews (E-14 S-268 AC4)", () => {
   });
 });
 
+
+describe("facebookPageUrl (S-283 AC2)", () => {
+  test.each([
+    ["https://facebook.com/auxpetitsbonheurs", "https://facebook.com/auxpetitsbonheurs"],
+    ["https://www.facebook.com/auxpetitsbonheurs", "https://www.facebook.com/auxpetitsbonheurs"],
+    ["https://m.facebook.com/profile.php?id=1000", "https://m.facebook.com/profile.php?id=1000"],
+    ["https://fb.com/apb", "https://fb.com/apb"],
+    ["  https://www.fb.com/apb ", "https://www.fb.com/apb"],
+    ["https://WWW.FACEBOOK.COM/Apb", "https://www.facebook.com/Apb"],
+  ])("%s is a Facebook page", (raw, href) => {
+    expect(facebookPageUrl(raw)).toBe(href);
+  });
+
+  test.each([
+    ["http://facebook.com/apb"],
+    ["facebook.com/apb"],
+    ["https://facebook.com.evil.example/apb"],
+    ["https://evilfacebook.com/apb"],
+    ["https://instagram.com/apb"],
+    ["javascript:alert(1)//facebook.com"],
+    ["https://user:pass@facebook.com/apb"],
+    [`https://facebook.com/${"a".repeat(500)}`],
+    [""],
+    [null],
+  ])("%s is refused", (raw) => {
+    expect(facebookPageUrl(raw)).toBeNull();
+  });
+});

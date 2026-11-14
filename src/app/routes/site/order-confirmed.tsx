@@ -8,7 +8,7 @@ import { buttonVariants } from "~/components/ui/button";
 import { formatOrderNumber } from "~/domain/order-number";
 import { t as translate } from "~/i18n/catalog.server";
 import { useI18n } from "~/i18n/react";
-import { type Locale, localeFromPathname, localePath } from "~/lib/locale";
+import { type Locale, formatRupees, localeFromPathname, localePath } from "~/lib/locale";
 import { clockContext } from "~/server/clock.server";
 import { hasSignedInHint } from "~/server/customer-auth.server";
 import { confirmationContext } from "~/server/confirmation-cookie.server";
@@ -18,6 +18,7 @@ import { requestDbContext } from "~/server/db.server";
 import { readLeftOut } from "~/server/left-out.server";
 import { type PaymentView, paymentView } from "~/server/payment-view.server";
 import { findOrderConfirmation } from "~/server/repos/orders.server";
+import { paymentStage } from "~/domain/approve-then-pay";
 import { isTrackingToken, orderLanguageRedirect, tokenPageHeaders } from "~/server/token-page.server";
 import type { Route } from "./+types/order-confirmed";
 
@@ -37,12 +38,11 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
   // cookie's path); anything that does not verify, has expired or is absent reads the database.
   const signer = context.get(confirmationContext);
   const fresh = signer ? await signer.read(request, params.token, context.get(clockContext).now()) : undefined;
-  // A cookie set before Juice payment carries no payment snapshot: read the database instead.
-  // Only website orders set the cookie: a custom request always reads the database.
-  if (fresh && fresh.locale === locale && fresh.payment) {
-    const { totalRs, placedAt, ...settings } = fresh.payment;
-    const payment = paymentView({ totalRs, reference: fresh.number, createdAt: new Date(placedAt), settings, locale });
-    return confirmation(url, params.token, fresh.locale, fresh.number, fresh.leftOut, payment, false, offerSaveDetails(request, false));
+  // Only website orders set the cookie (a custom request always reads the database), and a website
+  // order is placed Pending approval (approve-then-pay, 2026-11-14): no payment details yet. The
+  // cookie lives 10 minutes; the tracking page always reads the order's current state.
+  if (fresh && fresh.locale === locale) {
+    return confirmation(url, params.token, fresh.locale, fresh.number, fresh.leftOut, null, false, offerSaveDetails(request, false), true, fresh.payment?.totalRs ?? null, false);
   }
   // One query: the order, the number prefix and the left-out names (ADR-0003 amendment 3).
   // Left out (UX audit H1, AC41): product ids from the `apb_left_out` cookie the basket
@@ -59,11 +59,13 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
     const name = names.get(id);
     return name ? [localized(name, locale)] : [];
   });
-  // The instructions only while the order still waits for its payment (S-278 AC2, S-279 AC5).
-  const payment = found.status === "awaiting_payment"
+  // The instructions only once approved and while the order still waits for its payment
+  // (S-278 AC2, S-279 AC5; the clock runs from the approval, `createdAt` here is that instant).
+  const stage = paymentStage(found.status);
+  const payment = stage === "awaiting_payment"
     ? paymentView({ totalRs: found.totalRs, reference: number, createdAt: found.createdAt, settings: found.payment, locale })
     : null;
-  return confirmation(url, order.trackingToken, order.locale, number, leftOut, payment, found.isRequest, offerSaveDetails(request, found.isRequest));
+  return confirmation(url, order.trackingToken, order.locale, number, leftOut, payment, found.isRequest, offerSaveDetails(request, found.isRequest), stage === "awaiting_approval", found.totalRs, found.isWorkshop);
 }
 
 /**
@@ -77,9 +79,15 @@ function offerSaveDetails(request: Request, isRequest: boolean): boolean {
 }
 
 /** The page data, the same whether it came from the cookie or the database. */
-function confirmation(url: URL, token: string, orderLocale: Locale, number: string, leftOut: string[], payment: PaymentView | null, isRequest: boolean, saveDetails: boolean) {
+function confirmation(url: URL, token: string, orderLocale: Locale, number: string, leftOut: string[], payment: PaymentView | null, isRequest: boolean, saveDetails: boolean, awaitingApproval = false, totalRs: number | null = null, isWorkshop = false) {
   return {
-    title: translate(isRequest ? "customRequest.confirmed.metaTitle" : "order.confirmed.metaTitle", localeFromPathname(url.pathname)),
+    /** Pending approval: "we confirm it, then send you the payment details" (approve-then-pay). */
+    awaitingApproval,
+    /** A workshop registration (E-15 S-303 AC6): received, the bakery accepts it, then payment. */
+    isWorkshop,
+    /** The order total, shown with the next steps while it waits for approval (null when unknown). */
+    totalRs: awaitingApproval ? totalRs : null,
+    title: translate(isWorkshop ? "workshops.confirmed.metaTitle" : isRequest ? "customRequest.confirmed.metaTitle" : "order.confirmed.metaTitle", localeFromPathname(url.pathname)),
     /** A custom cake request (E-08 S-151 AC2): "Request received, we will send you a quote". */
     isRequest,
     number,
@@ -119,25 +127,50 @@ function NumberCard({ label, number, onCopy, copied }: { label: string; number: 
   );
 }
 
+/** "Received; we confirm it, then send the payment details" with the three next steps (approve-then-pay). */
+function NextSteps({ totalRs }: { totalRs: number | null }) {
+  const { t } = useI18n();
+  return (
+    <section aria-labelledby="next-heading" data-testid="next-steps" className="mt-6 rounded-card border border-border bg-card p-4 sm:p-5">
+      <p className="max-w-measure text-lg">{t("order.confirmed.receivedLead")}</p>
+      {totalRs !== null && <p className="mt-2 max-w-measure font-semibold tabular-nums">{t("order.confirmed.totalLater", { amount: formatRupees(totalRs) })}</p>}
+      <h2 id="next-heading" className="mt-4 text-xl">
+        {t("order.confirmed.nextTitle")}
+      </h2>
+      <ol className="mt-2 grid list-decimal gap-1 ps-6">
+        <li>{t("order.confirmed.nextStep1")}</li>
+        <li>{t("order.confirmed.nextStep2")}</li>
+        <li>{t("order.confirmed.nextStep3")}</li>
+      </ol>
+    </section>
+  );
+}
+
 export default function OrderConfirmed({ loaderData }: Route.ComponentProps) {
   const { t, locale } = useI18n();
   const heading = useFocusOnArrival();
   const hydrated = useHydrated();
   const { status, copy } = useCopyStatus();
-  const { number, trackingUrl, leftOut, payment, isRequest, offerSaveDetails: offerSave, saveDetailsUrl } = loaderData;
+  const { number, trackingUrl, leftOut, payment, isRequest, awaitingApproval, isWorkshop, offerSaveDetails: offerSave, saveDetailsUrl } = loaderData;
   const copiedNumber = t("order.confirmed.copiedNumber");
   const copiedLink = t("order.confirmed.copiedLink");
   return (
     <>
       <h1 ref={heading} tabIndex={-1} className="outline-none">
-        {t(isRequest ? "customRequest.confirmed.heading" : "order.confirmed.heading")}
+        {t(isWorkshop ? "workshops.confirmed.heading" : isRequest ? "customRequest.confirmed.heading" : "order.confirmed.heading")}
       </h1>
-      {/* Pay first (S-278 AC2): the order is confirmed once the client sees the Juice payment. */}
+      {/* Approve, then pay (2026-11-14): no Juice details until the bakery approves the order. */}
+      {awaitingApproval && !isWorkshop && <NextSteps totalRs={loaderData.totalRs} />}
       {payment && <PaymentInstructions view={payment} />}
-      <NumberCard label={t(isRequest ? "customRequest.confirmed.numberLabel" : "order.confirmed.numberLabel")} number={number} copied={status === copiedNumber} onCopy={hydrated ? () => copy(number, copiedNumber) : undefined} />
+      <NumberCard label={t(isWorkshop ? "workshops.confirmed.numberLabel" : isRequest ? "customRequest.confirmed.numberLabel" : "order.confirmed.numberLabel")} number={number} copied={status === copiedNumber} onCopy={hydrated ? () => copy(number, copiedNumber) : undefined} />
       {leftOut.length > 0 && (
         <Alert tone="warning" title={t("order.confirmed.leftOutTitle")} className="mt-6">
           <p>{t("order.confirmed.leftOutBody", { count: leftOut.length, names: nameList(leftOut, locale) })}</p>
+        </Alert>
+      )}
+      {isWorkshop && !payment && (
+        <Alert tone="info" title={t("workshops.confirmed.notice")} className="mt-6">
+          <p>{t("workshops.confirmed.body")}</p>
         </Alert>
       )}
       {isRequest && (

@@ -48,6 +48,29 @@ export const PRIVACY_FACTS: PrivacyFacts = {
   retentionConfirmed: false,
 };
 
+/** The business identity the Owner enters once, in Settings → Invoice (S-127); blank = not given. */
+export interface BusinessIdentity {
+  legalName: string | null;
+  brn: string | null;
+  address: string | null;
+}
+
+const given = (value: string | null | undefined) => (value && value.trim() !== "" ? value.trim() : null);
+
+/**
+ * The facts with the legal name, BRN and address from Settings (the same values the invoices
+ * print), each falling back to the fact above (still `[TO CONFIRM]`) when Settings leaves it empty.
+ * A multi-line address reads as one line ("1 Street, Town").
+ */
+export function privacyFactsWith(business: BusinessIdentity, facts: PrivacyFacts = PRIVACY_FACTS): PrivacyFacts {
+  const address = given(business.address)
+    ?.split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(", ");
+  return { ...facts, legalName: given(business.legalName) ?? facts.legalName, brn: given(business.brn) ?? facts.brn, address: address || facts.address };
+}
+
 /** The open `[TO CONFIRM]` items, by name (empty when the Owner has decided everything). */
 export function openPrivacyItems(facts: PrivacyFacts): string[] {
   const open: string[] = [];

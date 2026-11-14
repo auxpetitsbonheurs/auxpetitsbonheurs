@@ -199,44 +199,61 @@ describe("right after Place order, no database (spec AC48, contracts.md v0.31)",
   });
 });
 
-describe("Juice payment instructions (S-278 AC2-AC4)", () => {
+describe("approve, then pay (Owner decision 2026-11-14; S-278 AC2-AC4)", () => {
   const setPayment = (name: string | null, number: string | null, whatsapp: string | null) =>
     database.client.query("update settings set juice_name = $1, juice_number = $2, payment_whatsapp = $3", [name, number, whatsapp]);
+  /** The bakery approved it at 09:30Z, 1 h 30 after placing: the 24 h payment clock starts there. */
+  const approve = (token: string) =>
+    database.client.query("update orders set status = 'awaiting_payment', awaiting_payment_since = '2026-11-10T09:30:00Z' where tracking_token = $1", [token]);
 
-  test("amount, reference, the account, the deadline 24 h after placing and the prefilled proof link, from the database", async () => {
+  test("right after placing: received and waiting for approval, no Juice details even when they are set", async () => {
     await setPayment("A. Baker", "5000 0001", "5000 0002");
     const { path, token } = await placeOrder();
 
-    const data = (await load(path, token)) as { payment: unknown };
+    const data = (await load(path, token)) as { payment: unknown; awaitingApproval: boolean };
+    expect(data).toMatchObject({ payment: null, awaitingApproval: true, totalRs: 850 });
+    expect(JSON.stringify(data)).not.toMatch(/5000 0001|A\. Baker/);
+  });
+
+  test("right after placing, the signed cookie gives the same page without the database (AC48)", async () => {
+    await setPayment("A. Baker", "5000 0001", "5000 0002");
+    const { path, token, confirmationCookie } = await placeOrder();
+
+    const fromCookie = await load(path, token, { cookie: confirmationCookie }, { noDatabase: true });
+    expect(fromCookie).toMatchObject({ payment: null, awaitingApproval: true, totalRs: 850 });
+    expect(fromCookie).toEqual(await load(path, token));
+  });
+
+  test("once approved: amount, reference, the account, the deadline 24 h after the approval and the prefilled proof link", async () => {
+    await setPayment("A. Baker", "5000 0001", "5000 0002");
+    const { path, token } = await placeOrder();
+    await approve(token);
+
+    const data = (await load(path, token)) as { payment: unknown; awaitingApproval: boolean };
+    expect(data.awaitingApproval).toBe(false);
     expect(data.payment).toEqual({
       totalRs: 850,
       reference: "APB-0001",
-      deadline: "2026-11-11T08:00:00.000Z",
-      deadlineLabel: "Wed 11 Nov, 12:00",
+      deadline: "2026-11-11T09:30:00.000Z",
+      deadlineLabel: "Wed 11 Nov, 13:30",
       details: { juiceName: "A. Baker", juiceNumber: "5000 0001" },
       proofUrl: `https://wa.me/23050000002?text=${encodeURIComponent("Hello, here is my Juice payment proof for order APB-0001 (Rs 850).")}`,
     });
   });
 
-  test("right after placing, the signed cookie gives the same instructions without the database (AC48)", async () => {
-    await setPayment("A. Baker", "5000 0001", "5000 0002");
-    const { path, token, confirmationCookie } = await placeOrder();
-
-    const fromCookie = await load(path, token, { cookie: confirmationCookie }, { noDatabase: true });
-    expect(fromCookie).toEqual(await load(path, token));
-  });
-
   test("in French the proof message is French", async () => {
     await setPayment("A. Baker", "5000 0001", "5000 0002");
     const { path, token } = await placeOrder("/fr/basket");
+    await approve(token);
 
     const data = (await load(path, token)) as { payment: { proofUrl: string } };
     expect(decodeURIComponent(data.payment.proofUrl)).toContain("Bonjour, voici la preuve de mon paiement Juice pour la commande APB-0001 (Rs 850).");
   });
 
-  test("without the Juice name or number: no details and no proof link (calm fallback); the order is still placed", async () => {
+  test("without the Juice name or number: no details and no proof link (calm fallback)", async () => {
     await setPayment(null, "5000 0001", "5000 0002");
     const { path, token } = await placeOrder();
+    await approve(token);
 
     const data = (await load(path, token)) as { payment: { details: unknown; proofUrl: unknown } };
     expect(data.payment).toMatchObject({ details: null, proofUrl: null });
@@ -245,6 +262,7 @@ describe("Juice payment instructions (S-278 AC2-AC4)", () => {
   test("without the payment WhatsApp: the instructions show, without the proof link", async () => {
     await setPayment("A. Baker", "5000 0001", null);
     const { path, token } = await placeOrder();
+    await approve(token);
 
     const data = (await load(path, token)) as { payment: { details: unknown; proofUrl: unknown } };
     expect(data.payment).toMatchObject({ details: { juiceName: "A. Baker" }, proofUrl: null });

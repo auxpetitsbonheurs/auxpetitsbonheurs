@@ -74,7 +74,7 @@ describe("the file (S-178 AC1..AC4, AC8; S-179 AC1..AC3)", () => {
     ]);
     expect(csv.Summary![1]).toBe("2883,3,961,1,1650,2,1233");
     expect(csv["Top products"]).toEqual(["rank,product,units,revenue", "1,Chocolate cake,2,1500"]);
-    expect(csv["By source"]).toEqual(["source,revenue", "website,1650", "custom_request,333", "manual,900"]);
+    expect(csv["By source"]).toEqual(["source,revenue", "website,1650", "custom_request,333", "manual,900", "workshop,0"]);
     const orders = csv.Orders!;
     expect(orders[0]).toBe("number,date,source,fulfilment,items_rs,delivery_fee_rs,total_rs,paid");
     expect(orders).toHaveLength(1 + 3);
@@ -100,7 +100,7 @@ describe("the file (S-178 AC1..AC4, AC8; S-179 AC1..AC3)", () => {
     const csv = sections(await (await download("range=custom&from=2027-03-01&to=2027-03-31")).text());
     expect(csv.Summary![1]).toBe("0,0,0,0,0,0,0");
     expect(csv["Top products"]).toEqual(["rank,product,units,revenue"]);
-    expect(csv["By source"]).toEqual(["source,revenue", "website,0", "custom_request,0", "manual,0"]);
+    expect(csv["By source"]).toEqual(["source,revenue", "website,0", "custom_request,0", "manual,0", "workshop,0"]);
     expect(csv.Unpaid).toEqual(["number,customer,status,date,total", "total,,,,0"]);
     expect(csv.Orders).toEqual(["number,date,source,fulfilment,items_rs,delivery_fee_rs,total_rs,paid"]);
   });

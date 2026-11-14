@@ -33,6 +33,8 @@ export interface OrderConfirmation {
   leftOut: { id: string; name: Localized }[];
   /** A custom cake request (E-08): the page says a quote will follow, not an order to approve. */
   isRequest: boolean;
+  /** A workshop registration (E-15): "Registration received", the bakery accepts it, then payment. */
+  isWorkshop: boolean;
 }
 
 /**
@@ -44,7 +46,7 @@ export async function findOrderConfirmation(db: Executor, token: string, leftOut
   const { rows } = (await db.execute(sql`
     select o.id as "orderId", o.number, o.tracking_token as "trackingToken", o.locale, coalesce(o.number_prefix, s.order_number_prefix) as "orderNumberPrefix",
       o.status, o.total_rs as "totalRs", coalesce(o.awaiting_payment_since, o.created_at) as "createdAt", s.juice_name as "juiceName", s.juice_number as "juiceNumber", s.payment_whatsapp as "paymentWhatsapp",
-      o.source = 'custom_request' as "isRequest",
+      o.source = 'custom_request' as "isRequest", o.source::text = 'workshop' as "isWorkshop",
       coalesce((
         select json_agg(json_build_object('id', p.id, 'name', json_build_object('en', p.name_en, 'fr', p.name_fr)))
         from product p where p.id in (select value::uuid from json_array_elements_text(${JSON.stringify(leftOutIds)}::json))
@@ -53,12 +55,12 @@ export async function findOrderConfirmation(db: Executor, token: string, leftOut
     where o.tracking_token = ${token} and s.id = 1
     limit 1
   `)) as unknown as {
-    rows: (PlacedOrderRef & PaymentSettings & { orderNumberPrefix: string; isRequest: boolean; status: OrderStatus; totalRs: number; createdAt: Date | string; leftOut: OrderConfirmation["leftOut"] | string })[];
+    rows: (PlacedOrderRef & PaymentSettings & { orderNumberPrefix: string; isRequest: boolean; isWorkshop: boolean; status: OrderStatus; totalRs: number; createdAt: Date | string; leftOut: OrderConfirmation["leftOut"] | string })[];
   };
   const row = rows[0];
   if (!row) return undefined;
-  const { orderNumberPrefix, leftOut, isRequest, status, totalRs, createdAt, juiceName, juiceNumber, paymentWhatsapp, ...ref } = row;
-  return { ref, orderNumberPrefix, isRequest, status, totalRs, createdAt: new Date(createdAt), payment: { juiceName, juiceNumber, paymentWhatsapp }, leftOut: json(leftOut) };
+  const { orderNumberPrefix, leftOut, isRequest, isWorkshop, status, totalRs, createdAt, juiceName, juiceNumber, paymentWhatsapp, ...ref } = row;
+  return { ref, orderNumberPrefix, isRequest, isWorkshop, status, totalRs, createdAt: new Date(createdAt), payment: { juiceName, juiceNumber, paymentWhatsapp }, leftOut: json(leftOut) };
 }
 
 export interface TrackedItem {

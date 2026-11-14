@@ -93,7 +93,7 @@ describe("saveAdminNote (S-114 AC1, AC2)", () => {
     await transitionOrder(database.db, { orderId, action: "approve", version: 1, adminId, now: NOW });
 
     expect(await saveAdminNote(database.db, orderId, "Still fine")).toBe(true);
-    expect(await order()).toMatchObject({ status: "approved", admin_note: "Still fine", version: 2 });
+    expect(await order()).toMatchObject({ status: "awaiting_payment", admin_note: "Still fine", version: 2 });
   });
 
   test("a blank note is stored as null; an unknown order is false", async () => {

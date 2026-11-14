@@ -70,8 +70,11 @@ test("J5, S-155 AC2/AC8, S-156 AC1/AC8, S-158 AC1/AC2/AC9: request -> To review 
   await setClock(admin, baseURL!, NOW);
   const adminPage = await admin.newPage();
   await signIn(adminPage, ADMIN, "/admin/orders?tab=review");
-  // Oldest first, 30 a page: parallel tests may push this one to a later page, so open it by its link.
-  await expect(adminPage.getByRole("listitem").filter({ hasText: "Quote needed" }).first()).toBeVisible();
+  // Oldest first, 30 a page: parallel tests (and, since approve-then-pay, every new website order)
+  // push this one to a later page, so find it by its number (E-06 search) before opening it.
+  await adminPage.getByRole("searchbox", { name: "Search orders" }).fill(request.number);
+  await adminPage.getByRole("button", { name: "Search" }).click();
+  await expect(adminPage.getByRole("listitem").filter({ hasText: request.number }).filter({ hasText: "Quote needed" }).first()).toBeVisible();
   await adminPage.goto(`/admin/orders/${request.id}`);
   await hydrated(adminPage);
   await expect(adminPage.getByText("Quote needed").first()).toBeVisible();

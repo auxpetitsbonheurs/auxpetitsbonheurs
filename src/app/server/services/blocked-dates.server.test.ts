@@ -58,8 +58,8 @@ describe("S-057 AC2: a range over booked dates", () => {
     expect(answer).toMatchObject({
       ok: true,
       existingOrders: [
-        { number: "APB-0001", fulfilOn: "2026-11-12", status: "awaiting_payment", dateLabel: "Thu 12 Nov" },
-        { number: "APB-0002", fulfilOn: "2026-11-13", status: "awaiting_payment", dateLabel: "Fri 13 Nov" },
+        { number: "APB-0001", fulfilOn: "2026-11-12", status: "pending_approval", dateLabel: "Thu 12 Nov" },
+        { number: "APB-0002", fulfilOn: "2026-11-13", status: "pending_approval", dateLabel: "Fri 13 Nov" },
       ],
     });
     expect(await blockCount()).toBe(1);

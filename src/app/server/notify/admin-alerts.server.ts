@@ -22,7 +22,7 @@ import { type AlertOrder, type OrderAlert, orderAlertPayload } from "./push-text
 export type OrderRef = { orderId: string } | { trackingToken: string };
 
 interface AlertRow extends AlertOrder {
-  source: "website" | "custom_request" | "manual";
+  source: "website" | "custom_request" | "manual" | "workshop";
 }
 
 const NONE: PushReport = { sent: 0, gone: 0, failed: 0 };
@@ -43,7 +43,7 @@ async function alertOrder(db: Executor, ref: OrderRef): Promise<AlertRow | null>
  */
 export async function pushOrderAlert(db: Executor, pusher: Pusher, event: OrderAlert, ref: OrderRef, now: Date): Promise<PushReport> {
   const order = await alertOrder(db, ref);
-  if (!order || (event === "new_order" && order.source !== "website")) return NONE;
+  if (!order || (event === "new_order" && order.source !== "website") || (event === "new_workshop" && order.source !== "workshop")) return NONE;
   const recipients = await pushRecipients(db);
   const jobs = recipients.map(({ device, locale }) => ({ device, payload: orderAlertPayload(event, order, locale) }));
   return sendPushes(db, pusher, event, jobs, now);

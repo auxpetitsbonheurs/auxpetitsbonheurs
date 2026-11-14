@@ -36,7 +36,8 @@ export const discountKindEnum = pgEnum("discount_kind", ["percent", "sale_price"
 
 export const adminRoleEnum = pgEnum("admin_role", ["owner", "admin"]);
 
-export const orderSourceEnum = pgEnum("order_source", ["website", "custom_request", "manual"]);
+/** `workshop`: a workshop registration (E-15, ADR-0005); its event is in `workshop_registration`. */
+export const orderSourceEnum = pgEnum("order_source", ["website", "custom_request", "manual", "workshop"]);
 
 /** Order lifecycle (PRD Appendix B). Transitions are enforced in app/domain/status.ts. */
 export const orderStatusEnum = pgEnum("order_status", [

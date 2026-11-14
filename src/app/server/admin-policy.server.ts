@@ -22,6 +22,9 @@ export const ADMIN_MODULE_POLICY = {
   "order-new": "admin",
   "customer-lookup": "admin",
   "order-edit": "admin",
+  // Invoice of an order (S-127): JSON for the browser-built PDF and the printable page; whoever sees the order.
+  "invoice-data": "admin",
+  "order-invoice": "admin",
   "not-found": "admin",
   more: "admin",
   calendar: "admin",
@@ -33,6 +36,10 @@ export const ADMIN_MODULE_POLICY = {
   uploads: "admin",
   promotions: "admin",
   promotion: "admin",
+  // Workshop events (E-15 S-301, S-305, S-306): Admins and Owners, like promotions.
+  workshops: "admin",
+  workshop: "admin",
+  "workshop-list": "admin",
   gallery: "admin",
   customers: "admin",
   customer: "admin",

@@ -137,7 +137,7 @@ export interface CompletedOrderRow {
   number: number;
   numberPrefix: string | null;
   fulfilOn: string;
-  source: "website" | "custom_request" | "manual";
+  source: "website" | "custom_request" | "manual" | "workshop";
   fulfilment: "delivery" | "pickup";
   itemsTotalRs: number;
   deliveryFeeRs: number;

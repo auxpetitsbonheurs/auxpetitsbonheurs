@@ -18,6 +18,8 @@ const LENGTH = /^(\d+(\.\d+)?|\d+\/\d+|px|auto|full|screen|dvh|svh|lvh|min|max|f
 const NUMBER = /^(\d+(\.\d+)?|\[.+\]|\(.+\))$/;
 const RADIUS = /^(none|full|xs|sm|md|lg|xl|[2-4]xl|\[.+\])$/;
 const SHADOW = /^(2xs|xs|sm|md|lg|xl|2xl|none|inner)$/;
+/** An arbitrary value that is a colour (`border-[#8A9BA3]`), not a width. */
+const ARBITRARY_COLOR = /^\[(#|(rgb|hsl|oklch|oklab|color)\(|color:)/;
 const OUTLINE_STYLE = /^(solid|dashed|dotted|double|hidden|none)$/;
 
 const KEYWORDS = new Map<string, string>();
@@ -40,6 +42,8 @@ keywords("rounded", "rounded");
 keywords("border-w", "border");
 keywords("ring-w", "ring");
 keywords("shadow", "shadow");
+keywords("drop-shadow", "drop-shadow");
+keywords("font-style", "italic not-italic");
 keywords("transition", "transition");
 
 /** `group` when the value matches `pattern`, else not a known utility. */
@@ -71,6 +75,7 @@ const PREFIXES: [string, (value: string) => string | undefined][] = [
   ["border", (v) => {
     if (v === "collapse" || v === "separate") return "border-collapse";
     if (OUTLINE_STYLE.test(v)) return "border-style";
+    if (ARBITRARY_COLOR.test(v)) return "border-color";
     const side = /^([xytrblse])(-(.+))?$/.exec(v);
     if (side && (side[3] === undefined || NUMBER.test(side[3]))) return `border-w-${side[1]}`;
     return NUMBER.test(v) ? "border-w" : "border-color";
@@ -82,6 +87,13 @@ const PREFIXES: [string, (value: string) => string | undefined][] = [
     return RADIUS.test(v) ? "rounded" : undefined;
   }],
   ["shadow", (v) => (SHADOW.test(v) ? "shadow" : "shadow-color")],
+  // SVG paint (S-284 loader badge) and the drop shadow under it.
+  ["fill", when(ANY, "fill")],
+  ["stroke", (v) => (NUMBER.test(v) ? "stroke-w" : "stroke")],
+  ["drop-shadow", (v) => (SHADOW.test(v) ? "drop-shadow" : "drop-shadow-color")],
+  ["place-items", when(/^(start|end|center|baseline|stretch)$/, "place-items")],
+  ["scale", when(NUMBER, "scale")],
+  ["rotate", when(NUMBER, "rotate")],
   ["border-spacing", when(SPACING, "border-spacing")],
   ["ring-offset", (v) => (NUMBER.test(v) ? "ring-offset-w" : "ring-offset-color")],
   ["ring", (v) => (NUMBER.test(v) ? "ring-w" : "ring-color")],

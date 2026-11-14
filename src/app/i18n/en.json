@@ -15,6 +15,9 @@
       "copyright": "© {{year}} Aux petits bonheurs",
       "pickup": "Pickup in {{address}}",
       "instagram": "Instagram",
+      "instagramLink": "Aux petits bonheurs on Instagram",
+      "facebookLink": "Aux petits bonheurs on Facebook",
+      "social": "Follow us",
       "pickupHeading": "Pickup",
       "map": "See it on the map",
       "explore": "Explore",
@@ -168,7 +171,7 @@
       "whatsappText": "Hello, I would like to order but no dates are available on the website.",
       "contact": "Contact us"
     },
-    "paymentInfo": "Payment: the full amount by MCB Juice. You get the payment details as soon as you place your order.",
+    "paymentInfo": "Payment: the full amount by MCB Juice. We confirm your order first, then send you the payment details.",
     "savedAddresses": "Your saved addresses",
     "newAddress": "A new address",
     "saveAddress": "Save this address to my account"
@@ -204,7 +207,10 @@
       "CANCEL_NOT_ALLOWED": "This order can no longer be cancelled here. Message us on WhatsApp.",
       "BOT_CHECK_FAILED": "We could not verify you are human. Reload the page or message us on WhatsApp.",
       "QUOTE_EXPIRED": "This quote has expired. Send a new request or message us on WhatsApp.",
-      "REVIEW_CHANGED": "Someone already decided this review."
+      "REVIEW_CHANGED": "Someone already decided this review.",
+      "WORKSHOP_FULL": "Not enough places are left for this registration.",
+      "WORKSHOP_CLOSED": "Registration for this workshop has closed.",
+      "EVENT_CHANGED": "This workshop was changed by someone else. Reload to see it."
     }
   },
   "product": {
@@ -274,8 +280,8 @@
       "numberLabel": "Your order number",
       "copyNumber": "Copy order number",
       "copiedNumber": "Order number copied",
-      "notConfirmedTitle": "Not confirmed until we approve it",
-      "notConfirmedBody": "We check every order and email you as soon as we approve it.",
+      "notConfirmedTitle": "Waiting for our approval",
+      "notConfirmedBody": "We check every order. Once we approve it, we email you how to pay by Juice and the payment details appear here. Please do not pay before that.",
       "trackingTitle": "Your private tracking link",
       "trackingHint": "Keep this link to follow your order. Anyone with it can see your order, so share it only with people you trust.",
       "followOrder": "Follow my order",
@@ -289,7 +295,13 @@
       "leftOutBody_other": "{{names}} were no longer available when you ordered.",
       "saveDetailsTitle": "Save your details for next time",
       "saveDetailsBody": "One tap makes an account with this order's email, so your next order is quicker. You choose a password after confirming your email.",
-      "saveDetailsAction": "Save my details"
+      "saveDetailsAction": "Save my details",
+      "receivedLead": "Your order is received. We check it and confirm it with you, then send you the payment details. Please do not pay yet.",
+      "nextTitle": "What happens next",
+      "nextStep1": "We check your order and approve it.",
+      "nextStep2": "We email you how to pay by MCB Juice. The payment details also appear on your tracking page.",
+      "nextStep3": "You pay within 24 hours and send us the proof on WhatsApp. Your order is then confirmed.",
+      "totalLater": "Total {{amount}}, paid by Juice once we approve your order."
     },
     "notFound": {
       "metaTitle": "Order not found",
@@ -385,7 +397,7 @@
       "step2": "Write {{reference}} as the reference, so we find your payment.",
       "step3": "Send us the Juice confirmation screenshot on WhatsApp.",
       "step3NoWhatsapp": "Keep the Juice confirmation: we check every payment and confirm your order.",
-      "deadline": "Please pay by {{time}}. Orders not paid within 24 hours are cancelled.",
+      "deadline": "Please pay by {{time}}. Orders not paid within 24 hours of approval are cancelled.",
       "sendProof": "Send proof on WhatsApp",
       "opensWhatsapp": "(opens WhatsApp)",
       "proofText": "Hello, here is my Juice payment proof for order {{number}} ({{amount}}).",
@@ -452,7 +464,8 @@
       "sourceName": {
         "website": "Website",
         "custom_request": "Custom request",
-        "manual": "Manual"
+        "manual": "Manual",
+        "workshop": "Workshop"
       },
       "tabsLabel": "Order lists",
       "tabReview": "To review",
@@ -542,7 +555,7 @@
       },
       "approve": "Approve",
       "approving": "Approving the order…",
-      "approved": "Order {{number}} approved. The customer will get a confirmation email.",
+      "approved": "Order {{number}} approved. The customer gets the payment details by email.",
       "reload": "Reload the order",
       "noActions": "No action needed on this order now.",
       "actionsLabel": "Order actions",
@@ -645,10 +658,13 @@
         "ready": "Order ready",
         "on_the_way": "On the way",
         "payment_reminder": "Payment reminder",
-        "blank": "Blank message"
+        "blank": "Blank message",
+        "payment_instructions": "Payment details"
       },
       "whatsappMenuHint": "Choose a message. You can change it in WhatsApp before sending.",
-      "whatsappMenuLabel": "WhatsApp messages for {{name}}"
+      "whatsappMenuLabel": "WhatsApp messages for {{name}}",
+      "sendPaymentWhatsapp": "Send payment details on WhatsApp",
+      "paymentAfterApproval": "Not paid yet. Approving sends the customer the Juice payment details; they then have 24 hours to pay."
     },
     "log": {
       "title": "Activity",
@@ -707,7 +723,8 @@
       "toReview": "{{count}} to review",
       "pages": "Pages",
       "promotions": "Promotions",
-      "reviews": "Reviews"
+      "reviews": "Reviews",
+      "workshops": "Workshops"
     },
     "customers": {
       "metaTitle": "Customers",
@@ -819,7 +836,8 @@
       "source": {
         "website": "Website",
         "custom_request": "Custom request",
-        "manual": "Manual"
+        "manual": "Manual",
+        "workshop": "Workshops"
       },
       "unpaidTitle": "Unpaid orders",
       "unpaidHelp": "Confirmed orders in this period not marked paid yet.",
@@ -1344,6 +1362,8 @@
       "phoneHint": "For example 5712 3456 or +230 5712 3456.",
       "contactEmail": "Email",
       "instagram": "Instagram link",
+      "facebook": "Facebook page",
+      "facebookHint": "Your page's full address, starting with https:// (facebook.com or fb.com)",
       "paymentTitle": "Payment",
       "juice": "Juice number",
       "juiceHint": "The mobile number your Juice account uses, for example 5xxx xxxx.",
@@ -1446,6 +1466,9 @@
         "instagramUrl": {
           "invalid": "Enter the Instagram link as a full web address starting with https://"
         },
+        "facebookUrl": {
+          "invalid": "Enter the Facebook page as a full address starting with https://, on facebook.com"
+        },
         "quoteValidityDays": {
           "invalid": "Enter the quote validity as a whole number of days from 1 to 60."
         },
@@ -1501,6 +1524,39 @@
           "unknownPlaceholder": "{{template}} ({{language}}): use only the placeholders listed above.",
           "tooLong": "{{template}} ({{language}}): use 1000 characters or fewer.",
           "missingEn": "{{template}}: write the English text (French is optional)."
+        },
+        "invoiceLegalName": {
+          "invalid": "The legal name is too long (120 characters at most)."
+        },
+        "invoiceBrn": {
+          "invalid": "Enter the BRN as letters and digits only, for example C00000000."
+        },
+        "invoiceAddress": {
+          "invalid": "The invoice address is too long (300 characters at most)."
+        },
+        "invoicePhone": {
+          "invalid": "Enter a phone number, for example 5712 3456."
+        },
+        "bankName": {
+          "invalid": "The bank name is too long (120 characters at most)."
+        },
+        "bankAccountName": {
+          "invalid": "The account name is too long (120 characters at most)."
+        },
+        "bankAccountNumber": {
+          "invalid": "Enter the account number as digits, with single spaces if you like (6 to 30 characters)."
+        },
+        "invoicePaymentTerms": {
+          "tooLong": "The payment terms in {{language}} are too long (1,000 characters at most).",
+          "missingEn": "The payment terms: write the English text too (French alone cannot be saved)."
+        },
+        "invoiceThankYou": {
+          "tooLong": "The thank-you line in {{language}} is too long (200 characters at most).",
+          "missingEn": "The thank-you line: write the English text too (French alone cannot be saved)."
+        },
+        "invoiceNextNumber": {
+          "invalid": "Enter the next invoice number as a whole number from 1 to 99,999,999.",
+          "used": "That number is already used. Enter {{min}} or more."
         }
       },
       "paymentIntro": "Customers pay the full amount by MCB Juice when they order. These details are shown only to a customer who has placed an order, never on public pages.",
@@ -1516,7 +1572,23 @@
       "previewFr": "Preview in French",
       "previewUsesEn": "EN text will be used",
       "privacyReviewsWarningTitle": "Add a line about reviews",
-      "privacyReviewsWarning": "The privacy note does not mention reviews yet: say that a review shows the first name, last initial, date and words, that you approve each one, and that the customer can delete it at any time. Saved anyway."
+      "privacyReviewsWarning": "The privacy note does not mention reviews yet: say that a review shows the first name, last initial, date and words, that you approve each one, and that the customer can delete it at any time. Saved anyway.",
+      "invoiceTitle": "Invoice",
+      "invoiceIntro": "Printed on every invoice. The legal name, BRN and address also appear in the privacy note. The Juice number comes from Payment above.",
+      "invoiceLegalName": "Legal business name",
+      "invoiceBrn": "BRN (Business Registration Number)",
+      "invoiceBrnHint": "Letters and digits, for example C00000000.",
+      "invoiceAddress": "Address on invoices",
+      "invoicePhone": "Invoice phone",
+      "bankName": "Bank name",
+      "bankAccountName": "Account name",
+      "bankAccountNumber": "Account number",
+      "bankAccountNumberHint": "Digits, with spaces if you like, for example 000 000 000 000.",
+      "invoicePaymentTerms": "Payment terms",
+      "invoicePaymentTermsHint": "One term per line.",
+      "invoiceThankYou": "Thank-you line",
+      "invoiceNextNumber": "Next invoice number",
+      "invoiceNextNumberHint": "The number the next new invoice takes. An order keeps its number when its invoice is made again."
     },
     "availability": {
       "title": "Availability",
@@ -2011,6 +2083,11 @@
       "test": {
         "title": "Test push",
         "body": "Push alerts work on this device."
+      },
+      "new_workshop": {
+        "title": "New workshop registration {{number}}",
+        "body": "From {{name}}. Accept or refuse it.",
+        "bodyNoName": "Accept or refuse it."
       }
     },
     "orderForm": {
@@ -2252,6 +2329,181 @@
       "trackingHint": "The customer follows the order here. Send it by WhatsApp if they gave no email.",
       "copyTracking": "Copy the tracking link",
       "trackingCopied": "Tracking link copied."
+    },
+    "invoiceDoc": {
+      "invoiceNo": "INVOICE NO.",
+      "date": "DATE:",
+      "billTo": "BILL TO",
+      "eventDate": "EVENT DATE",
+      "instructions": "INSTRUCTIONS",
+      "quantity": "QUANTITY",
+      "description": "DESCRIPTION",
+      "unitPrice": "UNIT PRICE RS",
+      "total": "TOTAL RS",
+      "subtotal": "SUBTOTAL",
+      "adjustment": "ADJUSTMENT",
+      "downpayment": "DOWNPAYMENT",
+      "paid": "Paid",
+      "totalDue": "TOTAL DUE",
+      "paidStamp": "PAID",
+      "paymentDetails": "Payment Details:",
+      "bank": "Bank:",
+      "accountName": "Acc. Name:",
+      "accountNumber": "Acc. No:",
+      "juice": "Juice:",
+      "paymentTerms": "Payment Terms:",
+      "brn": "BRN:",
+      "phone": "Phone",
+      "delivery": "Delivery",
+      "pickup": "Pickup",
+      "discount": "Promotion: {{title}}",
+      "message": "Message: “{{text}}”",
+      "customCake": "Custom cake",
+      "order": "Order",
+      "servings_one": "{{count}} serving",
+      "servings_other": "{{count}} servings"
+    },
+    "invoice": {
+      "download": "Download invoice",
+      "title": "Invoice",
+      "preparing": "Preparing invoice…",
+      "ready": "{{file}} is ready.",
+      "readyHint": "If it did not download, tap Download again. Share sends it straight to WhatsApp or email.",
+      "share": "Share",
+      "downloadAgain": "Download again",
+      "printView": "Open printable invoice",
+      "failed": "The invoice could not be prepared. Check your connection and try again; the order is unchanged.",
+      "tryAgain": "Try again",
+      "shareFailed": "Sharing did not work on this phone. Use Download again instead.",
+      "print": "Print",
+      "back": "Back to the order",
+      "metaTitle": "Invoice {{number}}"
+    },
+    "workshops": {
+      "new": "New workshop",
+      "newTitle": "New workshop",
+      "empty": "No workshops yet. Create the first one with New workshop.",
+      "upcoming": "Upcoming",
+      "past": "Past",
+      "back": "All workshops",
+      "backToEvent": "Back to the workshop",
+      "held": "{{held}} of {{capacity}} places held",
+      "pending_one": "{{count}} to answer",
+      "pending_other": "{{count}} to answer",
+      "status": {
+        "draft": "Draft",
+        "published": "Published",
+        "cancelled": "Cancelled",
+        "completed": "Completed"
+      },
+      "statusLine": "Status: {{status}}",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "complete": "Mark completed",
+      "cancel": "Cancel workshop",
+      "printList": "Print or share list",
+      "viewOnSite": "See it on the site",
+      "cancelTitle": "Cancel this workshop?",
+      "cancelBody_one": "{{count}} place is held. Every registrant is told by email and their registration is cancelled; paid ones then need their refund.",
+      "cancelBody_other": "{{count}} places are held. Every registrant is told by email and their registration is cancelled; paid ones then need their refund.",
+      "cancelReason": "Reason shown to registrants",
+      "cancelConfirm": "Cancel the workshop",
+      "keep": "Keep it",
+      "cancelledBecause": "Reason: {{reason}}",
+      "cannot": {
+        "publish": "It can be published only as a draft whose date has not passed.",
+        "unpublish": "Only a published workshop can be unpublished.",
+        "complete": "It can be marked completed from its date, once published.",
+        "cancelEvent": "This workshop is already cancelled or completed."
+      },
+      "registrations_one": "{{count}} registration",
+      "registrations_other": "{{count}} registrations",
+      "placesLeft_one": "{{count}} place left",
+      "placesLeft_other": "{{count}} places left",
+      "totalsLabel": "Cakes per option",
+      "optionTotal_one": "{{name}}: {{count}} cake",
+      "optionTotal_other": "{{name}}: {{count}} cakes",
+      "noRegistrations": "No registrations yet.",
+      "openRegistration": "Registration {{number}} by {{name}}",
+      "cakesCount_one": "{{count}} cake",
+      "cakesCount_other": "{{count}} cakes",
+      "peopleLine": "Coming: {{names}}",
+      "messageLine": "Message: {{text}}",
+      "allergiesLabel": "Allergies or dietary needs",
+      "allergiesNone": "No allergies",
+      "tellOnWhatsapp": "Tell {{name}} on WhatsApp",
+      "waCancelled": "Hello, we are very sorry: we had to cancel the workshop {{title}}. We will be in touch about the next one.",
+      "waHello": "Hello, about your registration for the workshop {{title}}:",
+      "editSection": "Edit the workshop",
+      "newSection": "Workshop details",
+      "textSection": "Texts",
+      "titleEn": "Title (English)",
+      "titleFr": "Title (French)",
+      "descriptionEn": "Description (English)",
+      "descriptionFr": "Description (French)",
+      "photoSection": "Photo",
+      "photo": "Photo of the workshop",
+      "photoHint": "Optional. A photo of the cakes or a past workshop. It is shrunk on your phone before upload.",
+      "whenSection": "When and where",
+      "date": "Date",
+      "startsAt": "Start",
+      "endsAt": "End",
+      "address": "Address",
+      "addressHint": "Where people come, as you would write it to a customer.",
+      "mapUrl": "Map link",
+      "mapUrlHint": "Optional. A Google Maps link starting with https://.",
+      "when": "When",
+      "event": "Workshop",
+      "cakes": "Cakes",
+      "people": "People coming",
+      "placesSection": "Price and places",
+      "price": "Price per cake (Rs)",
+      "priceHint": "One cake is shared by up to 2 people.",
+      "capacity": "Number of cakes",
+      "capacityHint": "How many cakes or stations you prepare.",
+      "optionsSection": "Cake options",
+      "optionsHint": "What participants choose from for each cake, for example Chocolate or Red velvet.",
+      "optionEn": "Cake {{n}} (English)",
+      "optionFr": "Cake {{n}} (French)",
+      "addOption": "Add a cake option",
+      "removeOption": "Remove cake option {{n}}",
+      "save": "Save workshop",
+      "saved": "Workshop saved",
+      "errors": {
+        "field": "{{field}}: please check this.",
+        "endsAt": "End time: it must be after the start.",
+        "options": "Cake options: give at least one cake, each with an English name.",
+        "mapUrl": "Map link: it must start with https://.",
+        "capacityHeld_one": "{{count}} place is already held: the number of cakes cannot be lower.",
+        "capacityHeld_other": "{{count}} places are already held: the number of cakes cannot be lower."
+      },
+      "field": {
+        "titleEn": "Title in English",
+        "titleFr": "Title in French",
+        "descriptionEn": "Description in English",
+        "descriptionFr": "Description in French",
+        "photoPath": "Photo",
+        "eventOn": "Date",
+        "startsAt": "Start time",
+        "endsAt": "End time",
+        "address": "Address",
+        "mapUrl": "Map link",
+        "priceRs": "Price per cake",
+        "capacity": "Number of cakes",
+        "options": "Cake options",
+        "id": "Workshop",
+        "version": "Workshop",
+        "form": "Workshop"
+      },
+      "orderSection": "Workshop",
+      "acceptNamed": "Accept {{number}}",
+      "listTitle": "List: {{title}}",
+      "share": {
+        "cakes": "{{count}} of {{capacity}} cakes",
+        "allergies_one": "{{count}} registration with allergies: see the printed list.",
+        "allergies_other": "{{count}} registrations with allergies: see the printed list."
+      },
+      "shareNote": "Share sends only the cake counts, never names, phone numbers or allergies."
     }
   },
   "email": {
@@ -2329,7 +2581,7 @@
     "orderReceived": {
       "subject": "We received your order {{number}}",
       "heading": "Thank you, we received your order",
-      "intro": "Your order {{number}} is not confirmed yet. We check it and confirm it with you soon."
+      "intro": "Your order {{number}} is received but not confirmed yet. We check it and approve it, then email you how to pay by MCB Juice. Please do not pay before that."
     },
     "requestReceived": {
       "subject": "We received your request {{number}}",
@@ -2483,7 +2735,57 @@
       "customer_cancelled": {
         "line": "{{name}} cancelled this order.",
         "lineNoName": "The customer cancelled this order."
+      },
+      "new_workshop": {
+        "line": "{{name}} registered for a workshop. Accept or refuse it.",
+        "lineNoName": "A new workshop registration is waiting for your answer."
       }
+    },
+    "workshop": {
+      "where": "Address",
+      "event": "Workshop",
+      "cakes": "Cakes",
+      "cakesValue_one": "{{count}} cake (up to 2 people)",
+      "cakesValue_other": "{{count}} cakes (up to 2 people each)",
+      "people": "Coming",
+      "allergies": "Allergies or dietary needs",
+      "allergiesNone": "None",
+      "seeWorkshops": "See our workshops",
+      "received": {
+        "subject": "Workshop registration {{number}} received",
+        "heading": "We received your registration",
+        "intro": "Thank you! Registration {{number}} is waiting for our answer. Once we accept it, we email you how to pay by Juice. Your place is held meanwhile."
+      },
+      "accepted": {
+        "subject": "Workshop registration {{number}} accepted: please pay",
+        "heading": "Your registration is accepted",
+        "intro": "Good news: registration {{number}} is accepted. Pay {{amount}} by MCB Juice within 24 hours to keep your place."
+      },
+      "confirmed": {
+        "subject": "Your workshop place {{number}} is confirmed",
+        "heading": "See you at the workshop",
+        "intro": "Payment received, thank you: registration {{number}} is confirmed. Here is the summary."
+      },
+      "declined": {
+        "intro": "We are sorry: we cannot accept workshop registration {{number}}."
+      },
+      "reminder": {
+        "intro": "We have not received the payment for workshop registration {{number}} yet. Please pay soon to keep your place."
+      },
+      "unpaid": {
+        "intro": "We did not receive the payment for workshop registration {{number}} within 24 hours, so the place was freed.",
+        "again": "You can register again while places are left."
+      },
+      "cancelled": {
+        "subject": "Workshop cancelled: {{title}} ({{number}})",
+        "heading": "The workshop is cancelled",
+        "intro": "We are sorry: we had to cancel {{title}}. Your registration {{number}} is cancelled."
+      }
+    },
+    "paymentInstructions": {
+      "subject": "Order {{number}} approved: how to pay",
+      "heading": "Your order is approved, here is how to pay",
+      "intro": "Good news: we approved your order {{number}}. Pay {{amount}} by MCB Juice within 24 hours to confirm it."
     }
   },
   "nav": {
@@ -3069,7 +3371,8 @@
       "request": "When you ask for a custom cake: the same details, the occasion, your ideas and up to 5 photos. We use them to prepare a quote and the cake.",
       "account": "If you create an account: your name, email, phone and saved addresses, so you do not have to type them again and can see your orders. Your password is handled by our sign-in provider; we never see it.",
       "review": "If you write a review: your rating, comment and first name with the first letter of your last name, shown on the site once the bakery approves it.",
-      "technical": "To stop abuse: a scrambled (hashed) form of your internet address and email, kept one day. Our server logs contain no names, emails, phone numbers or order links."
+      "technical": "To stop abuse: a scrambled (hashed) form of your internet address and email, kept one day. Our server logs contain no names, emails, phone numbers or order links.",
+      "workshop": "When you register for a workshop: your name, phone, email, the cakes you choose, the names of the people coming, your message and, if you tell us, allergies or dietary needs. We use the allergies only to prepare your workshop; only the bakery team sees them, they are never sent in notifications to the team, and they are erased with your other details when you ask."
     },
     "see": {
       "heading": "Who sees your details",
@@ -3108,6 +3411,89 @@
       "heading": "The law",
       "body": "We follow the Mauritius Data Protection Act 2017 ({{status}}). If you are not happy with our answer you can contact the Data Protection Office of Mauritius.",
       "confirmed": "confirmed by the bakery"
+    }
+  },
+  "workshops": {
+    "upcomingTitle": "Upcoming workshops",
+    "perCake": "{{price}} per cake · up to 2 people per cake",
+    "placesLeft_one": "{{count}} place left",
+    "placesLeft_other": "{{count}} places left",
+    "full": "Full",
+    "see": "See the workshop and register",
+    "seeFull": "See the workshop",
+    "when": "When",
+    "where": "Where",
+    "price": "Price",
+    "places": "Places",
+    "map": "Open in maps",
+    "back": "All workshops",
+    "fullTitle": "This workshop is full",
+    "fullBody": "Message us and we will tell you if a place comes free, or about the next workshop.",
+    "cancelledTitle": "This workshop was cancelled",
+    "pastTitle": "This workshop has taken place",
+    "closedBody": "See the upcoming workshops, or message us to hear about the next one.",
+    "registerTitle": "Register",
+    "dateTime": "{{date}}, {{time}}",
+    "metaDescription": "{{title}} on {{date}} at Aux petits bonheurs: {{price}} per cake, up to 2 people per cake. Register online.",
+    "whatsappFull": "Hello, I'd like a place at the workshop {{title}} if one comes free.",
+    "confirmed": {
+      "metaTitle": "Registration received",
+      "heading": "Thank you, we received your registration",
+      "numberLabel": "Your registration number",
+      "notice": "Your place is held while we look at your registration",
+      "body": "We will confirm by email, usually within a day, and send you how to pay by Juice. Your place is confirmed once paid."
+    },
+    "tracking": {
+      "event": "Workshop"
+    }
+  },
+  "workshopForm": {
+    "intro": "One registration is one cake, shared by up to 2 people. We confirm by email, then you pay by Juice.",
+    "sections": {
+      "cakes": "Your cakes",
+      "people": "Who is coming",
+      "contact": "Your details",
+      "send": "Send your registration"
+    },
+    "cakes": "Number of cakes",
+    "cakesOption_one": "{{count}} cake",
+    "cakesOption_other": "{{count}} cakes",
+    "cakesHint_one": "Up to 2 people per cake. {{count}} place left.",
+    "cakesHint_other": "Up to 2 people per cake. {{count}} places left.",
+    "cake": "Cake {{n}}",
+    "cakeChoose": "Choose a cake",
+    "people": "Names of the people coming",
+    "peopleHint": "For example: Aisha and Ravi.",
+    "allergiesLegend": "Allergies or dietary needs",
+    "allergiesHint": "Please choose one. We use this only to prepare your workshop.",
+    "allergiesNone": "None",
+    "allergiesYes": "Yes, please describe",
+    "allergiesDescribe": "Describe the allergies or dietary needs",
+    "allergiesDescribeHint": "For example: nuts for one person, no gelatine.",
+    "message": "Message",
+    "optional": "optional",
+    "total": "Total: {{amount}}",
+    "notice": "Not confirmed until we accept your registration and you pay by Juice.",
+    "send": "Register",
+    "sending": "Sending your registration…",
+    "botFailed": "We could not check that you are not a robot. Reload the page, or message us on WhatsApp.",
+    "botLoading": "One moment: we are still checking that you are not a robot. Then press Register again.",
+    "rateLimited": "Too many registrations from this connection. Please try again in {{minutes}} minutes.",
+    "keyReused": "Please check your details and send your registration again.",
+    "full_one": "Only {{count}} place is left now. Please choose fewer cakes.",
+    "full_other": "Only {{count}} places are left now. Please choose fewer cakes.",
+    "fullNone": "Sorry, the last places have just been taken.",
+    "closed": "Registration for this workshop has closed.",
+    "errors": {
+      "contactName": "Enter your name.",
+      "contactPhone": "Enter a phone number, for example 5712 3456.",
+      "contactEmail": "Enter an email address, for example name@example.com.",
+      "cakes": "Choose how many cakes.",
+      "cake": "Choose the cake.",
+      "allergiesChoice": "Choose None, or Yes and describe them.",
+      "allergies": "Describe the allergies or dietary needs.",
+      "peopleNames": "Use 300 characters or fewer.",
+      "message": "Use 1000 characters or fewer."
     }
   }
 }

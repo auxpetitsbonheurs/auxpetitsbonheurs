@@ -111,7 +111,7 @@ describe("approve intent", () => {
   test("success returns the new status and version (S-017 AC3)", async () => {
     const id = await placed();
 
-    expect(await post(id, { intent: "approve", version: "1" })).toEqual({ ok: true, intent: "approve", order: { status: "approved", version: 2, paid: false } });
+    expect(await post(id, { intent: "approve", version: "1" })).toEqual({ ok: true, intent: "approve", order: { status: "awaiting_payment", version: 2, paid: false } });
   });
 
   test("a stale version is ORDER_CHANGED 409 \"This order changed. Reload\" (AC4)", async () => {

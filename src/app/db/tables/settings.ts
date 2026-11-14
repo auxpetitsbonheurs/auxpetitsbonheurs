@@ -43,6 +43,8 @@ export const settings = pgTable(
     juiceNumber: text("juice_number"),
     paymentWhatsapp: text("payment_whatsapp"),
     instagramUrl: text("instagram_url"),
+    /** The Facebook page (S-283): https on facebook.com or fb.com only (domain/settings facebookPageUrl). */
+    facebookUrl: text("facebook_url"),
     hero: jsonb("hero").$type<HeroContent>(),
     featuredProductIds: uuid("featured_product_ids").array().notNull().default(sql`'{}'::uuid[]`),
     about: jsonb("about").$type<LocalizedText>(),
@@ -58,6 +60,21 @@ export const settings = pgTable(
     cakeMessageMax: smallint("cake_message_max").notNull().default(40),
     eveningReminderAt: text("evening_reminder_at").notNull().default("18:00"),
     orderNumberPrefix: text("order_number_prefix").notNull().default("APB-"),
+    /**
+     * Invoice (S-127): the business and bank details printed on invoices, Owner-only. The legal
+     * name, BRN and address also fill the privacy note. Terms and thank-you line are `{ en, fr }`.
+     */
+    invoiceLegalName: text("invoice_legal_name"),
+    invoiceBrn: text("invoice_brn"),
+    invoiceAddress: text("invoice_address"),
+    invoicePhone: text("invoice_phone"),
+    bankName: text("bank_name"),
+    bankAccountName: text("bank_account_name"),
+    bankAccountNumber: text("bank_account_number"),
+    invoicePaymentTerms: jsonb("invoice_payment_terms").$type<LocalizedText>(),
+    invoiceThankYou: jsonb("invoice_thank_you").$type<LocalizedText>(),
+    /** The number the next first invoice takes (S-127); one statement takes and bumps it. Never bumps `version`. */
+    nextInvoiceNumber: integer("next_invoice_number").notNull().default(1108),
     version: integer("version").notNull().default(1),
     updatedAt: timestamp("updated_at", tz).notNull().defaultNow(),
     updatedBy: uuid("updated_by").references(() => admin.id, { onDelete: "set null" }),
@@ -69,6 +86,7 @@ export const settings = pgTable(
       sql`${t.defaultNoticeDays} >= 0 and ${t.deliveryFeeRs} >= 0
         and ${t.quoteValidityDays} >= 1 and ${t.cakeMessageMax} >= 1`,
     ),
+    check("settings_next_invoice_ck", sql`${t.nextInvoiceNumber} between 1 and 99999999`),
   ],
 ).enableRLS();
 

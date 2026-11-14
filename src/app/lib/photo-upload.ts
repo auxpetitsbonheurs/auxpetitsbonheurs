@@ -19,7 +19,7 @@ export interface IssuedUpload {
 
 /** One signed URL for a file of `type` and `size` bytes, under this editor session's prefix. */
 /** Where an upload goes: product photos, Settings images, or a brand page (`page:<key>`, E-13). */
-export type UploadScopeName = "products" | "site" | "promotions" | `page:${string}`;
+export type UploadScopeName = "products" | "site" | "promotions" | "workshops" | `page:${string}`;
 
 export async function requestUpload(uploadSessionId: string, type: string, size: number, signal?: AbortSignal, scope: UploadScopeName = "products"): Promise<IssuedUpload> {
   const body = new FormData();

@@ -91,13 +91,26 @@ describe("the WhatsApp menu (S-203)", () => {
 
     const { templates } = (await load(id)).whatsapp;
 
-    expect(templates?.map((item) => item.key)).toEqual(["approved", "ready", "on_the_way", "payment_reminder", "blank"]);
-    expect(templates?.map((item) => item.label)).toEqual(["Order confirmed", "Order ready", "On the way", "Payment reminder", "Blank message"]);
+    expect(templates?.map((item) => item.key)).toEqual(["approved", "ready", "on_the_way", "payment_instructions", "payment_reminder", "blank"]);
+    expect(templates?.map((item) => item.label)).toEqual(["Order confirmed", "Order ready", "On the way", "Payment details", "Payment reminder", "Blank message"]);
     for (const item of templates ?? []) {
       expect(new URL(item.url).host).toBe("wa.me");
       expect(text(item.url)).not.toMatch(/[{}]/);
     }
     expect(text(templates![0]!.url)).toContain("http://localhost/t/");
+  });
+
+  test("approve, then pay: once approved, the payment details message has the Juice account, amount, reference and the pay-by time 24 h after approval (EN, FR)", async () => {
+    const id = await placed({ ...DELIVERY_ORDER, displayedTotalRs: "1050" });
+    await database.client.query("update settings set juice_name = 'A. Baker', juice_number = '5000 0001'");
+    await database.client.query("update orders set status = 'awaiting_payment', awaiting_payment_since = '2026-11-20T06:00:00Z' where id = $1", [id]);
+    const message = async () => text((await load(id)).whatsapp.templates!.find((item) => item.key === "payment_instructions")!.url);
+
+    expect(await message()).toBe(
+      "Hello Zoé, your order APB-0001 for Thursday, 12 November 2026 is approved! To confirm it, please send Rs 1,050 by Juice to A. Baker (5000 0001) with the reference APB-0001, by Sat 21 Nov, 10:00. Then reply here with your payment screenshot. Thank you!",
+    );
+    await database.client.query("update orders set locale = 'fr' where id = $1", [id]);
+    expect(await message()).toMatch(/^Bonjour Zoé, votre commande APB-0001 .* est validée ! .*Rs 1[  ,.]?050 par Juice à A\. Baker \(5000 0001\) avec la référence APB-0001, avant le sam\. 21 nov\., 10:00\./);
   });
 
   test("AC2: no usable phone: no menu (the view disables the button with the reason)", async () => {

@@ -17,6 +17,7 @@ export type OrderEmailKey =
   | "request_received"
   | "quote"
   | "order_confirmed"
+  | "payment_instructions"
   | "order_updated"
   | "order_declined"
   | "request_declined"
@@ -28,13 +29,16 @@ export type OrderEmailKey =
   | "thank_you"
   | "payment_reminder"
   | "order_cancelled_unpaid"
-  | "order_refunded";
+  | "order_refunded"
+  | "workshop_received"
+  | "workshop_cancelled";
 
 export const ORDER_EMAIL_KEYS: readonly OrderEmailKey[] = [
   "order_received",
   "request_received",
   "quote",
   "order_confirmed",
+  "payment_instructions",
   "order_updated",
   "order_declined",
   "request_declined",
@@ -47,6 +51,8 @@ export const ORDER_EMAIL_KEYS: readonly OrderEmailKey[] = [
   "payment_reminder",
   "order_cancelled_unpaid",
   "order_refunded",
+  "workshop_received",
+  "workshop_cancelled",
 ];
 
 export const isOrderEmailKey = (value: string): value is OrderEmailKey => (ORDER_EMAIL_KEYS as readonly string[]).includes(value);
@@ -91,6 +97,12 @@ export interface OrderEmailData {
     paymentWhatsapp: string | null;
     instagramUrl: string | null;
   };
+  /**
+   * The event of a workshop registration (E-15), else null: emails then name the workshop, its
+   * date, times and address instead of a pickup. Allergies are the registrant's own data: their
+   * own emails may repeat them (S-307); admin alerts never load this.
+   */
+  workshop?: { title: string; address: string; mapUrl: string | null; cakes: number; peopleNames: string | null; allergies: string | null } | null;
   /** What the queueing statement stored next to the order id. */
   payload: { reason?: string; why?: string; previousDate?: string; previousTotalRs?: number };
 }
@@ -135,7 +147,9 @@ function whenWhere(data: OrderEmailData, only: ("date" | "time" | "where")[] = [
   if (only.includes("date")) rows.push({ label: t("email.common.date", locale), value: formatLongDate(order.fulfilOn, locale) });
   if (only.includes("time")) rows.push({ label: t("email.common.time", locale), value: windowLabel(data) });
   if (only.includes("where")) {
-    if (order.fulfilment === "pickup") {
+    if (data.workshop) {
+      rows.push({ label: t("email.workshop.where", locale), value: data.workshop.address });
+    } else if (order.fulfilment === "pickup") {
       rows.push({ label: t("email.common.pickupAddress", locale), value: shop.pickupAddress ?? t("email.common.pickup", locale) });
     } else {
       rows.push({ label: t("email.common.deliveryAddress", locale), value: [order.address, order.landmark].filter(Boolean).join(", ") });
@@ -165,6 +179,24 @@ function vars(data: OrderEmailData) {
   return { number: data.order.number };
 }
 
+/** "Valentine's cake workshop: 2 cakes" and, when given, the people and allergies (the registrant's own email only). */
+function workshopBlocks(data: OrderEmailData): Block[] {
+  const { locale, workshop } = data;
+  if (!workshop) return [];
+  const rows = [
+    { label: t("email.workshop.event", locale), value: workshop.title },
+    { label: t("email.workshop.cakes", locale), value: t("email.workshop.cakesValue", locale, { count: workshop.cakes }) },
+    ...(workshop.peopleNames ? [{ label: t("email.workshop.people", locale), value: workshop.peopleNames }] : []),
+    { label: t("email.workshop.allergies", locale), value: workshop.allergies ?? t("email.workshop.allergiesNone", locale) },
+  ];
+  return [{ kind: "facts", rows }];
+}
+
+const mapLink = (data: OrderEmailData): Block[] => (data.workshop?.mapUrl ? [{ kind: "link", label: t("email.common.map", data.locale), href: data.workshop.mapUrl }] : []);
+
+/** The workshop wording of a shared email: `email.workshop.<key>.<part>` when the order is a registration. */
+const wk = (data: OrderEmailData, key: string, part: string) => (data.workshop ? `email.workshop.${key}.${part}` : null);
+
 type Builder = (data: OrderEmailData) => { subject: string; heading: string; blocks: Block[] };
 
 const BUILDERS: Record<OrderEmailKey, Builder> = {
@@ -179,6 +211,25 @@ const BUILDERS: Record<OrderEmailKey, Builder> = {
         ...itemBlocks(data),
         whenWhere(data),
         ...(data.order.status === "awaiting_payment" ? paymentBlocks(data) : []),
+        trackBlock(data),
+        { kind: "p", text: t("email.common.policy", locale) },
+      ],
+    };
+  },
+  // Approve, then pay (2026-11-14): the bakery approved the order; how to pay by Juice, the
+  // deadline (24 h after the approval) and the proof button. Order confirmed follows the payment.
+  payment_instructions(data) {
+    const { locale } = data;
+    return {
+      subject: t(wk(data, "accepted", "subject") ?? "email.paymentInstructions.subject", locale, vars(data)),
+      heading: t(wk(data, "accepted", "heading") ?? "email.paymentInstructions.heading", locale),
+      blocks: [
+        hello(data),
+        { kind: "note", text: t(wk(data, "accepted", "intro") ?? "email.paymentInstructions.intro", locale, { ...vars(data), amount: formatRupees(data.order.totalRs) }) },
+        ...paymentBlocks(data),
+        ...workshopBlocks(data),
+        ...itemBlocks(data),
+        whenWhere(data),
         trackBlock(data),
         { kind: "p", text: t("email.common.policy", locale) },
       ],
@@ -240,13 +291,15 @@ const BUILDERS: Record<OrderEmailKey, Builder> = {
     const { locale, order } = data;
     const payment = order.paid ? t("email.orderConfirmed.paid", locale) : t("email.orderConfirmed.cash", locale);
     return {
-      subject: t("email.orderConfirmed.subject", locale, vars(data)),
-      heading: t("email.orderConfirmed.heading", locale),
+      subject: t(wk(data, "confirmed", "subject") ?? "email.orderConfirmed.subject", locale, vars(data)),
+      heading: t(wk(data, "confirmed", "heading") ?? "email.orderConfirmed.heading", locale),
       blocks: [
         hello(data),
-        { kind: "note", text: t("email.orderConfirmed.intro", locale, vars(data)) },
+        { kind: "note", text: t(wk(data, "confirmed", "intro") ?? "email.orderConfirmed.intro", locale, vars(data)) },
+        ...workshopBlocks(data),
         ...itemBlocks(data),
         whenWhere(data),
+        ...mapLink(data),
         ...(payment ? [{ kind: "p" as const, text: payment }] : []),
         trackBlock(data),
         { kind: "p", text: t("email.common.policy", locale) },
@@ -282,7 +335,7 @@ const BUILDERS: Record<OrderEmailKey, Builder> = {
       heading: t("email.orderDeclined.heading", locale),
       blocks: [
         hello(data),
-        { kind: "p", text: t("email.orderDeclined.intro", locale, vars(data)) },
+        { kind: "p", text: t(wk(data, "declined", "intro") ?? "email.orderDeclined.intro", locale, vars(data)) },
         ...(reason ? [{ kind: "note" as const, text: `${t("email.common.reason", locale)}: ${reason}` }] : []),
         ...(order.paid ? [{ kind: "p" as const, text: t("email.orderDeclined.refund", locale, { amount: formatRupees(order.refundDueRs ?? order.totalRs) }) }] : []),
         { kind: "button", label: t("email.common.menu", locale), href: sitePath(data, "/") },
@@ -371,7 +424,7 @@ const BUILDERS: Record<OrderEmailKey, Builder> = {
     return {
       subject: t("email.paymentReminder.subject", locale, vars(data)),
       heading: t("email.paymentReminder.heading", locale),
-      blocks: [hello(data), { kind: "note", text: t("email.paymentReminder.intro", locale, vars(data)) }, ...paymentBlocks(data), trackBlock(data)],
+      blocks: [hello(data), { kind: "note", text: t(wk(data, "reminder", "intro") ?? "email.paymentReminder.intro", locale, vars(data)) }, ...paymentBlocks(data), trackBlock(data)],
     };
   },
   order_cancelled_unpaid(data) {
@@ -381,9 +434,11 @@ const BUILDERS: Record<OrderEmailKey, Builder> = {
       heading: t("email.cancelledUnpaid.heading", locale),
       blocks: [
         hello(data),
-        { kind: "p", text: t("email.cancelledUnpaid.intro", locale, vars(data)) },
-        { kind: "p", text: t("email.cancelledUnpaid.again", locale) },
-        { kind: "button", label: t("email.common.menu", locale), href: sitePath(data, "/") },
+        { kind: "p", text: t(wk(data, "unpaid", "intro") ?? "email.cancelledUnpaid.intro", locale, vars(data)) },
+        { kind: "p", text: t(wk(data, "unpaid", "again") ?? "email.cancelledUnpaid.again", locale) },
+        data.workshop
+          ? { kind: "button", label: t("email.workshop.seeWorkshops", locale), href: sitePath(data, "/workshops") }
+          : { kind: "button", label: t("email.common.menu", locale), href: sitePath(data, "/") },
       ],
     };
   },
@@ -396,6 +451,40 @@ const BUILDERS: Record<OrderEmailKey, Builder> = {
         hello(data),
         { kind: "note", text: t("email.refunded.intro", locale, { ...vars(data), amount: formatRupees(order.refundDueRs ?? order.totalRs) }) },
         { kind: "button", label: t("email.common.menu", locale), href: sitePath(data, "/") },
+      ],
+    };
+  },
+  // E-15 S-307: the registration was received; the bakery answers before any payment (approve then pay).
+  workshop_received(data) {
+    const { locale } = data;
+    return {
+      subject: t("email.workshop.received.subject", locale, vars(data)),
+      heading: t("email.workshop.received.heading", locale),
+      blocks: [
+        hello(data),
+        { kind: "note", text: t("email.workshop.received.intro", locale, vars(data)) },
+        ...workshopBlocks(data),
+        ...itemBlocks(data),
+        whenWhere(data),
+        ...mapLink(data),
+        trackBlock(data),
+      ],
+    };
+  },
+  // The event was cancelled by the bakery: the reason, and the refund when it was paid.
+  workshop_cancelled(data) {
+    const { locale, order, payload } = data;
+    const due = order.paid ? (order.refundDueRs ?? order.totalRs) : 0;
+    const title = data.workshop?.title ?? "";
+    return {
+      subject: t("email.workshop.cancelled.subject", locale, { ...vars(data), title }),
+      heading: t("email.workshop.cancelled.heading", locale),
+      blocks: [
+        hello(data),
+        { kind: "p", text: t("email.workshop.cancelled.intro", locale, { ...vars(data), title }) },
+        ...(payload.reason ? [{ kind: "note" as const, text: `${t("email.common.reason", locale)}: ${payload.reason}` }] : []),
+        ...(due > 0 ? [{ kind: "note" as const, text: t("email.cancellation.refund", locale, { amount: formatRupees(due) }) }] : []),
+        { kind: "button", label: t("email.workshop.seeWorkshops", locale), href: sitePath(data, "/workshops") },
       ],
     };
   },

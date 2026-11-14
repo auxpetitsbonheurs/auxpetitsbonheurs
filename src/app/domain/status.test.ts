@@ -13,34 +13,41 @@ describe("status groups (contracts.md Conventions)", () => {
 });
 
 describe("customer progress (S-016 AC2, tracking spec)", () => {
-  test("a new order awaiting payment is step 1 of 5 on the paid path (S-278 AC5)", () => {
-    expect(customerProgress("awaiting_payment", "delivery")).toEqual({
-      steps: ["awaiting_payment", "approved", "in_preparation", "out_for_delivery", "completed"],
+  test("approve, then pay: a new website order is step 1 of 6, Pending approval then Awaiting payment", () => {
+    expect(customerProgress("pending_approval", "delivery")).toEqual({
+      steps: ["pending_approval", "awaiting_payment", "approved", "in_preparation", "out_for_delivery", "completed"],
       current: 0,
     });
   });
 
-  test("a pending delivery order (placed before Juice payment) keeps the approval path", () => {
-    expect(customerProgress("pending_approval", "delivery")).toEqual({
-      steps: ["pending_approval", "approved", "in_preparation", "out_for_delivery", "completed"],
-      current: 0,
+  test("once approved it waits for its payment: step 2 of 6 (an order placed straight into Awaiting payment shows the same)", () => {
+    expect(customerProgress("awaiting_payment", "delivery")).toEqual({
+      steps: ["pending_approval", "awaiting_payment", "approved", "in_preparation", "out_for_delivery", "completed"],
+      current: 1,
     });
   });
 
   test("the pickup path has Ready for pickup instead of Out for delivery", () => {
     expect(customerProgress("approved", "pickup")).toEqual({
-      steps: ["awaiting_payment", "approved", "in_preparation", "ready_for_pickup", "completed"],
-      current: 1,
+      steps: ["pending_approval", "awaiting_payment", "approved", "in_preparation", "ready_for_pickup", "completed"],
+      current: 2,
     });
   });
 
   test.each([
-    ["in_preparation", "delivery", 2],
-    ["out_for_delivery", "delivery", 3],
-    ["ready_for_pickup", "pickup", 3],
-    ["completed", "pickup", 4],
+    ["in_preparation", "delivery", 3],
+    ["out_for_delivery", "delivery", 4],
+    ["ready_for_pickup", "pickup", 4],
+    ["completed", "pickup", 5],
   ] as const)("%s (%s) is step index %i", (status, fulfilment, current) => {
     expect(customerProgress(status, fulfilment)?.current).toBe(current);
+  });
+
+  test("a manual order (E-07, entered approved) keeps its 5-step list without the approval and payment steps' order changing", () => {
+    expect(customerProgress("approved", "pickup", "manual")).toEqual({
+      steps: ["awaiting_payment", "approved", "in_preparation", "ready_for_pickup", "completed"],
+      current: 1,
+    });
   });
 
   test.each(["declined", "cancelled", "closed", "quote_needed", "quote_sent"] as const)(
@@ -68,9 +75,9 @@ describe("status tone (design-system Status badge)", () => {
 });
 
 describe("admin transitions (S-017 AC6; PRD Appendix B)", () => {
-  test("approve is allowed only from pending_approval, to approved", () => {
+  test("approve is allowed only from pending_approval, to awaiting payment (approve, then pay)", () => {
     for (const status of ORDER_STATUSES) {
-      expect(transitionTarget("approve", status)).toBe(status === "pending_approval" ? "approved" : null);
+      expect(transitionTarget("approve", status)).toBe(status === "pending_approval" ? "awaiting_payment" : null);
     }
   });
 

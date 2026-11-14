@@ -25,7 +25,7 @@ interface Props {
   /** The page's upload session (one per Settings page or editor view). */
   sessionId: () => string;
   /** Where the upload goes: Settings images (`site`, Owners) or promotion images (`promotions`, any admin). */
-  scope?: "site" | "promotions";
+  scope?: "site" | "promotions" | "workshops";
   onChange: (state: ImageState) => void;
 }
 

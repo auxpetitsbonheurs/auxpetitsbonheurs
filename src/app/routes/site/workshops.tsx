@@ -1,10 +1,10 @@
-import { Armchair, CalendarHeart, MessageCircle, PhoneCall } from "lucide-react";
+import { MessageCircle, PhoneCall } from "lucide-react";
 import { data, Link } from "react-router";
-import { PlainText } from "~/components/site/plain-text";
-import { PagePhoto, SitePageError, SitePageView, brandPageMeta, useSiteContacts } from "~/components/site/site-page-view";
+import { SitePageError, SitePageView, brandPageMeta, useSiteContacts } from "~/components/site/site-page-view";
 import { Button } from "~/components/ui/button";
-import { isUpcoming } from "~/domain/site-pages";
+import { EventCard, type EventView } from "~/components/workshops/event-card";
 import { formatLongDate, todayMU } from "~/domain/time";
+import { timeRange } from "~/domain/workshop";
 import { t as serverT } from "~/i18n/catalog.server";
 import { SEO_HANDLE } from "~/lib/seo";
 import { useI18n } from "~/i18n/react";
@@ -14,25 +14,35 @@ import { clockContext } from "~/server/clock.server";
 import { requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { timed } from "~/server/server-timing.server";
+import { listUpcomingEvents } from "~/server/repos/workshops.server";
 import { getSitePage } from "~/server/services/site-page.server";
 import type { Route } from "./+types/workshops";
 
 /**
- * `site/workshops` (`/workshops`, `/fr/workshops`; E-13 S-249, FR-078): what the occasional
- * event workshops are, the next one when the client has set it (until its date has passed,
- * Mauritius date), a calm empty state otherwise, and a WhatsApp call to action. No booking,
- * price or date picker (Owner decision: booking is a later epic).
+ * `site/workshops` (`/workshops`, `/fr/workshops`; E-13 S-249, E-15 S-302): the intro the client
+ * edits in admin Pages, then the upcoming published workshop events (soonest first) with their
+ * places left, or a calm empty state and the WhatsApp ask. A browsing page: server-rendered,
+ * deferred hydration, no JavaScript of its own (NFR-001).
  */
 export async function loader({ context, url }: Route.LoaderArgs) {
   const locale = localeFromPathname(url.pathname);
-  const read = await timed(context, "page", () => getSitePage(context.get(requestDbContext).db, "workshops", locale, context.get(publicConfigContext).supabaseUrl));
-  const seo = { title: serverT("sitePages.workshops.title", locale), description: serverT("sitePages.workshops.metaDescription", locale) };
-  if (!read.ok) return data({ ...seo, page: null, next: null, indexable: false }, { status: 503 });
-  const { event, ...page } = read.page;
+  const db = context.get(requestDbContext).db;
+  const { supabaseUrl } = context.get(publicConfigContext);
   const today = todayMU(context.get(clockContext).now());
-  // Shown until its day has passed (Mauritius date); then the calm "none planned" state.
-  const next = event && isUpcoming(event.title, event.date, today) ? { ...event, dateLabel: formatLongDate(event.date, locale) } : null;
-  return { ...seo, page, next, indexable: !page.isPlaceholder };
+  const [read, events] = await Promise.all([
+    timed(context, "page", () => getSitePage(db, "workshops", locale, supabaseUrl)),
+    timed(context, "events", () => listUpcomingEvents(db, today, locale, supabaseUrl)),
+  ]);
+  const seo = { title: serverT("sitePages.workshops.title", locale), description: serverT("sitePages.workshops.metaDescription", locale) };
+  if (!read.ok) return data({ ...seo, page: null, events: [] as EventView[], indexable: false }, { status: 503 });
+  const { event: _legacyNext, ...page } = read.page;
+  const views: EventView[] = events.map(({ options: _options, status: _status, id: _id, ...e }) => ({
+    ...e,
+    dateLabel: formatLongDate(e.eventOn, locale),
+    timeLabel: timeRange(e.startsAt, e.endsAt, locale),
+  }));
+  // Indexable once the intro was edited or a workshop is listed (FR-081).
+  return { ...seo, page, events: views, indexable: !page.isPlaceholder || views.length > 0 };
 }
 
 /** Its meta uses seoMeta (S-253): the site layout leaves the share image to it. */
@@ -42,11 +52,9 @@ export function meta(args: Route.MetaArgs) {
   return brandPageMeta(args, "/workshops");
 }
 
-type Next = NonNullable<Route.ComponentProps["loaderData"]["next"]>;
-
-function NextWorkshop({ next }: { next: Next | null }) {
+function UpcomingWorkshops({ events }: { events: EventView[] }) {
   const { t } = useI18n();
-  if (!next) {
+  if (events.length === 0) {
     return (
       <section aria-labelledby="next-workshop" className="rounded-card border border-border bg-card p-2 text-center min-[20rem]:p-4 sm:p-6">
         <h2 id="next-workshop" className="text-2xl">
@@ -57,25 +65,15 @@ function NextWorkshop({ next }: { next: Next | null }) {
     );
   }
   return (
-    <section aria-labelledby="next-workshop" className="grid gap-4 rounded-card border border-border bg-card p-2 min-[20rem]:p-4 sm:p-6">
-      <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t("sitePages.workshops.nextTitle")}</p>
-      <h2 id="next-workshop" className="-mt-2 text-2xl">
-        {next.title}
+    <section aria-labelledby="upcoming-workshops" className="grid gap-4">
+      <h2 id="upcoming-workshops" className="border-b border-gold pb-2 text-2xl">
+        {t("workshops.upcomingTitle")}
       </h2>
-      <ul className="grid gap-2">
-        <li className="flex items-center gap-2">
-          <CalendarHeart aria-hidden="true" className="size-5 shrink-0" strokeWidth={1.75} />
-          <time dateTime={next.date}>{next.dateLabel}</time>
-        </li>
-        {next.seats !== null && (
-          <li className="flex items-center gap-2">
-            <Armchair aria-hidden="true" className="size-5 shrink-0" strokeWidth={1.75} />
-            {t("sitePages.workshops.seats", { count: next.seats })}
-          </li>
-        )}
+      <ul className="grid gap-4 md:grid-cols-2">
+        {events.map((event, i) => (
+          <EventCard key={event.slug} event={event} index={i} />
+        ))}
       </ul>
-      {next.text && <PlainText text={next.text} />}
-      {next.photo && <PagePhoto photo={next.photo} />}
     </section>
   );
 }
@@ -114,11 +112,11 @@ function AskAboutWorkshops() {
 
 export default function Workshops({ loaderData }: Route.ComponentProps) {
   const { t } = useI18n();
-  const { page, next } = loaderData;
+  const { page, events } = loaderData;
   if (!page) return <SitePageError title={t("sitePages.workshops.title")} />;
   return (
     <SitePageView title={t("sitePages.workshops.title")} intro={page.text.intro} body={page.text.body} photos={page.photos}>
-      <NextWorkshop next={next} />
+      <UpcomingWorkshops events={events} />
       <p className="text-center">
         <AskAboutWorkshops />
       </p>

@@ -8,6 +8,7 @@
 //     bumped so an admin screen opened before cannot write the old values back;
 //   - edit history: contact and address values are removed from `edited` diffs;
 //   - custom cake requests: cake text and details cleared, uploaded photos queued for removal;
+//   - workshop registrations: allergies and the people's names cleared (E-15 S-308);
 //   - saved addresses and the review are deleted; outbox rows lose the address (pending ones die).
 // One round trip and one transaction (data-modifying CTEs): nothing is left half done.
 import { type SQL, eq, sql } from "drizzle-orm";
@@ -52,6 +53,9 @@ export async function anonymiseWhere(db: Executor, where: SQL, now: Date, limit:
     ), history as (
       update order_event e set details = jsonb_set(e.details, '{diff}', (e.details -> 'diff') - array[${list(PERSONAL_DIFF_KEYS)}]::text[])
       from ord where e.order_id = ord.id and jsonb_typeof(e.details -> 'diff') = 'object'
+    ), workshop as (
+      -- Workshop registrations (E-15 S-308): the allergies (health data) and the people's names go.
+      update workshop_registration w set allergies = null, people_names = null from ord where w.order_id = ord.id
     ), request as (
       update custom_request r set cake_text = null, details = null from ord where r.order_id = ord.id
     ), photos as (

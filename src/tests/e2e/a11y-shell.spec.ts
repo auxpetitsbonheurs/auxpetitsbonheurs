@@ -88,7 +88,8 @@ test.describe("page shell", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");
     await hydrated(page);
-    const status = page.getByRole("status");
+    // The basket count is the header's status; the page-change loader (S-284) is a second one while a page loads.
+    const status = page.getByRole("banner").getByRole("status");
     await expect(status).toHaveText("2 items in basket");
     await expect(status).toHaveAttribute("aria-live", "polite");
 
@@ -110,7 +111,7 @@ test.describe("page shell", () => {
     await setBasket(page, baseURL!, 3);
     await page.getByRole("banner").getByRole("link", { name: "Aux petits bonheurs" }).click();
 
-    await expect(page.getByRole("status")).toHaveText("3 items in basket");
+    await expect(page.getByRole("banner").getByRole("status")).toHaveText("3 items in basket");
     await expect(page.locator("[data-basket-badge]")).toHaveCSS("animation-name", "basket-bump");
   });
 });

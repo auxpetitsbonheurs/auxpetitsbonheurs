@@ -6,6 +6,7 @@ import { showToast } from "~/components/ui/toaster";
 import { useI18n } from "~/i18n/react";
 import { formatRupees } from "~/lib/locale";
 import type { OrderLoaderData } from "~/routes/admin/order";
+import { InvoiceDialog, preloadInvoicePdf } from "./invoice-dialog";
 import { MoreActionsSheet, ReasonDialog, type ReasonIntent } from "./more-actions";
 import { type OrderActionAnswer, type StatusIntent, useOrderAction } from "./use-order-action";
 
@@ -129,8 +130,9 @@ function PrimaryAction({ data: { order, allowed }, busy, onConfirmPaid }: { data
       </Button>
     );
   }
+  // A workshop registration is approved like an order (approve then pay, ADR-0005), named Accept (E-15 S-304).
   const primary = allowed.approve
-    ? { intent: "approve", label: t("admin.order.approveNamed", { number: order.number }) }
+    ? { intent: "approve", label: order.source === "workshop" ? t("admin.workshops.acceptNamed", { number: order.number }) : t("admin.order.approveNamed", { number: order.number }) }
     : allowed.advance
       ? { intent: "advance", label: t(`admin.order.next.${allowed.advance}`) }
       : null;
@@ -160,6 +162,7 @@ export function OrderActionBar({ data, actionData }: { data: OrderLoaderData; ac
   const setStep = (next: Step) => setOpened({ key: resetKey, step: next });
   const [sheetOpen, setSheetOpen] = useState(false);
   const [dialog, setDialog] = useState<ReasonIntent | null>(null);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
   const busy = pending !== null;
 
   const submit: Submit = (intent, extra = {}) => {
@@ -180,13 +183,14 @@ export function OrderActionBar({ data, actionData }: { data: OrderLoaderData; ac
         <fetcher.Form method="post" aria-label={t("admin.order.actionsLabel")} className="flex flex-wrap gap-2 px-1">
           <input type="hidden" name="version" value={order.version} />
           <PrimaryAction data={data} busy={busy} onConfirmPaid={() => setStep("confirmPaid")} />
-          <Button type="button" variant="outline" size="lg" className="h-auto min-h-12 grow-0 px-4 max-[22rem]:grow" onClick={() => setSheetOpen(true)} aria-haspopup="dialog">
+          <Button type="button" variant="outline" size="lg" className="h-auto min-h-12 grow-0 px-4 max-[22rem]:grow" onClick={() => (setSheetOpen(true), void preloadInvoicePdf())} aria-haspopup="dialog">
             <Ellipsis aria-hidden="true" />
             <span className="max-[22rem]:sr-only">{t("admin.order.moreActions")}</span>
           </Button>
         </fetcher.Form>
       )}
-      <MoreActionsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} data={data} busy={busy} onSubmit={submit} onAsk={(intent) => (setSheetOpen(false), setDialog(intent))} />
+      <MoreActionsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} data={data} busy={busy} onSubmit={submit} onAsk={(intent) => (setSheetOpen(false), setDialog(intent))} onInvoice={() => (setSheetOpen(false), setInvoiceOpen(true))} />
+      <InvoiceDialog orderId={order.id} open={invoiceOpen} onClose={() => setInvoiceOpen(false)} />
       <ReasonDialog intent={dialog} onClose={() => setDialog(null)} data={data} onConfirm={(intent, reason) => submit(intent === "decline" && allowed.declineRequest ? "declineRequest" : intent, reason ? { reason } : {})} />
     </div>
   );

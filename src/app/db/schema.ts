@@ -9,4 +9,5 @@ export * from "./tables/settings";
 export * from "./tables/system";
 export * from "./tables/content";
 export * from "./tables/reviews";
+export * from "./tables/workshops";
 export type * from "./tables/json-types";

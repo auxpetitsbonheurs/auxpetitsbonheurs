@@ -36,13 +36,19 @@ test.describe("S-227 AC1, AC3: customer pages, EN and FR, at 100% and 200% zoom"
 
   test("a basket with a line, tracking and confirmation pages (EN and FR)", async ({ page, db }) => {
     const order = await createOrder(db, "a11y audit");
-    for (const url of [`/t/${order.trackingToken}`, `/fr/t/${order.trackingToken}`, `/order/${order.trackingToken}/confirmed`, `/fr/order/${order.trackingToken}/confirmed`]) {
-      await test.step(url.replace(order.trackingToken, "<token>"), async () => {
-        await page.goto(url);
-        await settled(page);
-        await expectNoA11yViolations(page);
-        await expectNoA11yViolations(page, { zoom: 2 });
-      });
+    const pages = [`/t/${order.trackingToken}`, `/fr/t/${order.trackingToken}`, `/order/${order.trackingToken}/confirmed`, `/fr/order/${order.trackingToken}/confirmed`];
+    // Approve, then pay (2026-11-14): pending approval (the next steps), then approved and
+    // waiting for its payment (the payment guide, or its calm fallback without Juice Settings).
+    for (const state of ["pending approval", "awaiting payment"] as const) {
+      if (state === "awaiting payment") await db`update orders set status = 'awaiting_payment', awaiting_payment_since = now() where id = ${order.id}`;
+      for (const url of pages) {
+        await test.step(`${state}: ${url.replace(order.trackingToken, "<token>")}`, async () => {
+          await page.goto(url);
+          await settled(page);
+          await expectNoA11yViolations(page);
+          await expectNoA11yViolations(page, { zoom: 2 });
+        });
+      }
     }
     await page.goto(`/menu/${SAMPLE_PRODUCT.slug}`);
     await page.getByRole("button", { name: /add to basket|ajouter au panier/i }).click();

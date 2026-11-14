@@ -18,6 +18,8 @@ function customerPages(locale: "en" | "fr") {
     route("our-story", "routes/site/our-story.tsx", { id: `our-story-${locale}` }),
     route("about", "routes/site/about-redirect.ts", { id: `about-${locale}` }),
     route("workshops", "routes/site/workshops.tsx", { id: `workshops-${locale}` }),
+    // One workshop event and its registration form (E-15 S-303): hydrates at once (a form page).
+    route("workshops/:slug", "routes/site/workshop.tsx", { id: `workshop-${locale}` }),
     route("gallery", "routes/site/gallery.tsx", { id: `gallery-${locale}` }),
     route("contact", "routes/site/contact.tsx", { id: `contact-${locale}` }),
     // The short privacy note (S-225, NFR-004), linked from the footer and every form that asks for details.
@@ -68,6 +70,10 @@ const adminPages = [
   route("admin/sales.csv", "routes/admin/sales-csv.tsx"),
   // Customer view of any product (S-051): outside the frame so it looks like the live page.
   route("admin/menu/:id/preview", "routes/admin/product-preview.tsx"),
+  // Invoices (S-127): the document as JSON for the PDF the browser builds, and the printable page
+  // (outside the frame so it prints bare). Both guarded themselves.
+  route("admin/orders/:id/invoice.json", "routes/admin/invoice-data.tsx"),
+  route("admin/orders/:id/invoice", "routes/admin/order-invoice.tsx"),
   route("admin", "routes/admin/layout.tsx", [
     index("routes/admin/home.tsx"),
     route("orders", "routes/admin/orders.tsx"),
@@ -96,6 +102,11 @@ const adminPages = [
     // Brand pages text and photos (E-13 S-246, S-247): Admins and Owners.
     // Bakery reviews to approve, published and not published (E-14 S-263, S-265): Admins and Owners.
     route("reviews", "routes/admin/reviews.tsx"),
+    // Workshop events (E-15 S-301, S-305, S-306): Admins and Owners. "new" before :id.
+    route("workshops", "routes/admin/workshops.tsx"),
+    route("workshops/new", "routes/admin/workshop.tsx", { id: "admin-workshop-new" }),
+    route("workshops/:id", "routes/admin/workshop.tsx", { id: "admin-workshop" }),
+    route("workshops/:id/list", "routes/admin/workshop-list.tsx"),
     route("pages", "routes/admin/pages.tsx"),
     route("pages/:key", "routes/admin/page-editor.tsx"),
     // Owner-only (S-022); placeholders until E-02/E-03 build the screens.

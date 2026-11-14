@@ -68,7 +68,11 @@ export async function transitionOrder(db: Database, input: TransitionOrderInput)
     changed as (
       update orders o set status = r.to_status, version = o.version + 1, updated_at = ${at}::timestamptz,
         refund_due_rs = case when ${isCancel}::boolean and o.paid then o.total_rs else o.refund_due_rs end,
-        decline_reason = case when ${input.action === "declineRequest"}::boolean then ${reason}::text else o.decline_reason end
+        decline_reason = case when ${input.action === "declineRequest"}::boolean then ${reason}::text else o.decline_reason end,
+        -- Approve, then pay (2026-11-14): landing in Awaiting payment starts the Juice clock
+        -- (12 h reminder, 24 h unpaid cancel, paymentDeadlines) and re-arms its one reminder.
+        awaiting_payment_since = case when r.to_status = 'awaiting_payment' then ${at}::timestamptz else o.awaiting_payment_since end,
+        payment_reminder_sent_at = case when r.to_status = 'awaiting_payment' then null else o.payment_reminder_sent_at end
       from rule r
       where o.id = ${input.orderId}::uuid and o.version = ${input.version}::integer
         and o.status = r.from_status and (r.fulfilment is null or r.fulfilment = o.fulfilment)

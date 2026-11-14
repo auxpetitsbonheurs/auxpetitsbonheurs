@@ -10,9 +10,10 @@ const full: FooterContacts = {
   email: "hello@example.com",
   pickupAddress: "Beau Bassin",
   instagramUrl: "https://instagram.com/auxpetitsbonheurs",
+  facebookUrl: "https://www.facebook.com/auxpetitsbonheurs",
   mapUrl: "https://maps.example/beau-bassin",
 };
-const empty: FooterContacts = { whatsapp: null, phone: null, email: null, pickupAddress: null, instagramUrl: null, mapUrl: null };
+const empty: FooterContacts = { whatsapp: null, phone: null, email: null, pickupAddress: null, instagramUrl: null, facebookUrl: null, mapUrl: null };
 
 const render = (contacts: FooterContacts, path = "/") => renderInSite(<SiteFooter contacts={contacts} year="2026" />, path);
 
@@ -32,11 +33,35 @@ describe("SiteFooter", () => {
     for (const path of ["/our-story", "/menu", "/custom-cake", "/workshops", "/gallery", "/contact"]) expect(hrefs).toContain(path);
   });
 
-  test("AC1: Instagram opens in a new tab with a screen-reader cue and no opener", () => {
-    const instagram = links(render(full)).find((l) => l.href.startsWith("https://instagram.com"));
-    expect(instagram?.attrs).toContain('target="_blank"');
-    expect(instagram?.attrs).toContain('rel="noopener noreferrer"');
-    expect(instagram?.text).toMatch(/Instagram.*opens in a new tab/);
+  test("S-283 AC3, AC4: Instagram and Facebook are icon links with the bakery's name, in a new tab with no opener", () => {
+    const all = links(render(full));
+    for (const [href, name] of [
+      ["https://instagram.com/auxpetitsbonheurs", "Aux petits bonheurs on Instagram"],
+      ["https://www.facebook.com/auxpetitsbonheurs", "Aux petits bonheurs on Facebook"],
+    ]) {
+      const link = all.filter((l) => l.href === href);
+      expect(link).toHaveLength(1);
+      expect(link[0]?.attrs).toContain(`aria-label="${name}"`);
+      expect(link[0]?.attrs).toContain('target="_blank"');
+      expect(link[0]?.attrs).toContain('rel="noopener noreferrer"');
+      expect(link[0]?.attrs).toContain('aria-describedby="footer-new-tab"');
+    }
+    expect(render(full)).toMatch(/id="footer-new-tab"[^>]*>\(opens in a new tab\)</);
+  });
+
+  test("S-283 AC4: French names", () => {
+    const attrs = links(render(full, "/fr")).map((l) => l.attrs).join(" ");
+    expect(attrs).toContain('aria-label="Aux petits bonheurs sur Instagram"');
+    expect(attrs).toContain('aria-label="Aux petits bonheurs sur Facebook"');
+  });
+
+  test("S-283 AC3: only the icons whose link is set", () => {
+    const onlyFacebook = links(render({ ...empty, facebookUrl: "https://fb.com/apb" })).map((l) => l.href);
+    expect(onlyFacebook).toContain("https://fb.com/apb");
+    expect(onlyFacebook.some((h) => h.includes("instagram"))).toBe(false);
+    const none = render(empty);
+    expect(none).not.toContain("footer-social");
+    expect(none).not.toContain("footer-new-tab");
   });
 
   test("AC3: empty values leave no row, heading or empty link", () => {
@@ -69,7 +94,7 @@ describe("SiteFooter", () => {
   test("AC5: every link has a distinct visible name", () => {
     // An image link's name is its alt (the logo badge links home).
     const html = render(full);
-    const names = links(html).map((l) => l.text || (/<img [^>]*alt="([^"]*)"/.exec(html.slice(html.indexOf(l.attrs)))?.[1] ?? ""));
+    const names = links(html).map((l) => /aria-label="([^"]*)"/.exec(l.attrs)?.[1] ?? (l.text || (/<img [^>]*alt="([^"]*)"/.exec(html.slice(html.indexOf(l.attrs)))?.[1] ?? "")));
     expect(names.every((n) => n.length > 0)).toBe(true);
     expect(new Set(names).size).toBe(names.length);
   });

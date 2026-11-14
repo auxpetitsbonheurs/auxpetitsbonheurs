@@ -1,4 +1,4 @@
-# S-278: Orders start as Awaiting payment, with Juice instructions at once
+# S-278: Orders wait for approval, then show the Juice instructions (approve, then pay, 2026-11-14; was: at once)
 Status: review
 Epic: E-05-pricing-availability-checkout
 Spec: docs/specs/features/juice-payment.md
@@ -26,3 +26,12 @@ As a customer who just ordered, I want to see straight away how much to pay, to 
 - AC6 → src/app/routes/site/basket.test.ts
 - AC7 → src/tests/e2e/juice-payment.spec.ts
 - AC8 → src/app/server/email/templates.test.ts
+
+## As built: approve, then pay (Owner decision 2026-11-14)
+AC1, AC2, AC5, AC6 and AC8 changed with the decision; AC3, AC4 and AC7 hold for the payment guide, which now appears after the approval.
+- AC1 (changed): a website order is stored as `pending_approval` with a customer `created` event to that status (migration 0025 re-creates `place_order` from the 0021 body; only the initial status changes; `awaiting_payment_since` stays null). Orders already in `awaiting_payment` are left as they are.
+- AC2 (changed): the confirmation page (cookie or database) says the order is received, shows its total, and lists "What happens next" (we check and approve it; we email how to pay by Juice and the details appear on tracking; you pay within 24 hours and send the proof). No Juice name or number. Once approved, the same page (database) shows the payment card, with the deadline 24 h after the approval.
+- AC5 (changed): tracking shows "Waiting for our approval" while pending, then the payment guide (numbered steps, copy buttons, proof button, deadline) once approved; the progress list is Pending approval, Awaiting payment, Approved, In preparation, Ready / Out for delivery, Completed (6 steps; manual orders keep their 5).
+- AC6 (changed): the checkout line reads "Payment: the full amount by MCB Juice. We confirm your order first, then send you the payment details."
+- AC8 (changed): `order_received` of a pending order has no payment block and says not to pay yet; the new `payment_instructions` email (queued on approval) carries the payment block with the proof button.
+- Tests: `place-order.server.test.ts`, `order-confirmed.test.ts`, `tracking.test.ts`, `status.test.ts`, `email/templates/layout.test.ts`, `tests/e2e/juice-payment.spec.ts`, `checkout.spec.ts`, `tracking.spec.ts`, `a11y-audit.spec.ts`.

@@ -19,6 +19,9 @@ beforeEach(async () => {
   adminId = (await insertAdmin(database, new FakeAuth(), { name: "Sarah" })).id;
   const { token } = await placeTestOrder(database);
   orderId = (await database.client.query<{ id: string }>("select id from orders where tracking_token = $1", [token])).rows[0]!.id;
+  // Approve, then pay (2026-11-14): these actions start from an approved order awaiting its Juice
+  // payment (approve-order.server.test covers the approval itself); the version stays 1.
+  await database.client.query("update orders set status = 'awaiting_payment', awaiting_payment_since = $2 where id = $1", [orderId, "2026-11-13T08:00:00Z"]);
 }, 60_000);
 
 afterEach(async () => {

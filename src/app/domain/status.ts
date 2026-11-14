@@ -5,7 +5,8 @@
 import { anyTransition, customerRules } from "./order-transitions";
 
 export const ORDER_STATUSES = [
-  // A website order waits here until the client sees the Juice payment (juice-payment spec, 2026-11-13).
+  // Approve, then pay (2026-11-14): a website order waits for approval, then for its Juice payment.
+  // (The enum order is the database's: awaiting_payment was added first in 0013.)
   "awaiting_payment",
   "pending_approval",
   "quote_needed",
@@ -43,37 +44,47 @@ export interface Progress {
   current: number;
 }
 
-/**
- * Website orders since Juice payment start with Awaiting payment; an order still in Pending
- * approval (placed before 2026-11-13) keeps the approval step.
- */
-function websitePath(fulfilment: Fulfilment, first: "awaiting_payment" | "pending_approval"): OrderStatus[] {
+/** From the Juice payment on: Awaiting payment, Approved (paid), preparation, handover, completed. */
+function paidPath(fulfilment: Fulfilment): OrderStatus[] {
   const handover = fulfilment === "delivery" ? "out_for_delivery" : "ready_for_pickup";
-  return [first, "approved", "in_preparation", handover, "completed"];
+  return ["awaiting_payment", "approved", "in_preparation", handover, "completed"];
 }
 
-export type OrderSource = "website" | "custom_request" | "manual";
+/**
+ * Approve, then pay (2026-11-14): a website order waits for the bakery's approval, then for its
+ * Juice payment. An order placed between 2026-11-13 and the change (straight to Awaiting payment)
+ * shows the same list with the approval step done.
+ */
+function websitePath(fulfilment: Fulfilment): OrderStatus[] {
+  return ["pending_approval", ...paidPath(fulfilment)];
+}
+
+export type OrderSource = "website" | "custom_request" | "manual" | "workshop";
 
 /** A custom request starts with its quote: Quote needed, Quote sent, then the fulfilment path (S-095 AC1). */
 function quotePath(fulfilment: Fulfilment): OrderStatus[] {
-  // E-08: an accepted quote is paid by Juice like a website order (Awaiting payment first).
-  return ["quote_needed", "quote_sent", ...websitePath(fulfilment, "awaiting_payment")];
+  // E-08: accepting the quote is the approval; it is then paid by Juice like a website order.
+  return ["quote_needed", "quote_sent", ...paidPath(fulfilment)];
 }
 
 /**
  * The progress list for an order, or null when the status is not on its path (declined,
  * cancelled, closed get an Alert instead, S-095 AC2).
  */
+/** A workshop registration (E-15, ADR-0005): approve then pay, then the event itself. */
+const WORKSHOP_PATH: OrderStatus[] = ["pending_approval", "awaiting_payment", "approved", "completed"];
+
 export function customerProgress(status: OrderStatus, fulfilment: Fulfilment, source: OrderSource = "website"): Progress | null {
-  const steps = source === "custom_request" ? quotePath(fulfilment) : websitePath(fulfilment, status === "pending_approval" ? "pending_approval" : "awaiting_payment");
+  // A manual order (E-07) is entered approved and keeps its earlier list.
+  const steps = source === "workshop" ? WORKSHOP_PATH : source === "custom_request" ? quotePath(fulfilment) : source === "manual" ? paidPath(fulfilment) : websitePath(fulfilment);
   const current = steps.indexOf(status);
   return current === -1 ? null : { steps, current };
 }
 
 /**
  * Statuses a customer may cancel from the tracking page (FR-027; checkout spec "Tracking
- * actions"). Since Juice payment a new website order waits in Awaiting payment, the unpaid
- * pending state, so it is cancellable too (S-096 note).
+ * actions"). A website order is cancellable while it waits for approval and while it waits for
+ * its Juice payment (unpaid), approve-then-pay 2026-11-14 (S-096 note).
  */
 export const CUSTOMER_CANCELLABLE: ReadonlySet<OrderStatus> = new Set<OrderStatus>(customerRules("cancel").map((rule) => rule.from));
 

@@ -52,7 +52,8 @@ export async function loader(args: Route.LoaderArgs) {
     number: formatOrderNumber(numberPrefix ?? prefix, row.number),
     dateLabel: formatDayLabel(row.fulfilOn, me.locale),
     itemsPreview: itemsPreview(items.get(row.id), me.locale),
-    nextStatus: adminAllowed(row.status, row.fulfilment).advance,
+    // A workshop registration follows its event (E-15 S-306): no preparation steps from Today.
+    nextStatus: row.source === "workshop" ? null : adminAllowed(row.status, row.fulfilment).advance,
   });
   return {
     name: me.name,

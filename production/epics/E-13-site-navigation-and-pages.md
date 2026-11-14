@@ -50,8 +50,10 @@ A customer on a 375 px phone reaches any of the 7 pages in at most 2 taps from a
 | S-252 | Custom order page (interim, until the request form) | review | 2 |
 | S-253 | Titles, descriptions, hreflang, share previews and sitemap for the new pages | review | 3 |
 | S-254 | Navigation and pages accessibility, performance and journey sweep | ready | 3 |
+| S-283 | Instagram and Facebook icons in the footer (Owner, 2026-11-14) | done | 2 |
+| S-284 | Branded page-change loader: the whisk (Owner, 2026-11-14) | done | 3 |
 
-Total: 45 pts. Files: `production/stories/E-13/`. Story numbers S-242 to S-260 are reserved for this epic (S-255 to S-260 spare); next free number after the block: S-261.
+Total: 50 pts (45 + S-283, S-284 added 2026-11-14 at the Owner's request; numbered after S-282, the block S-255..S-260 stays spare). Files: `production/stories/E-13/`. Story numbers S-242 to S-260 are reserved for this epic (S-255 to S-260 spare); next free number after the block: S-261.
 
 Build order: S-245 → S-242 → S-243 → S-244 → S-246 → S-247 → S-248 → S-249 → S-251 → S-252 → S-250 → S-253 → S-254. S-242 and S-243 can start at once (no data); S-244 only needs the cached menu.
 

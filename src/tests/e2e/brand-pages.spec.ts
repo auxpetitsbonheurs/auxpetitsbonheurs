@@ -10,7 +10,6 @@ import {
   withZoom,
 } from "./support/a11y";
 import { type Page, expect, test } from "./support/fixtures";
-import { withSitePage } from "./support/site-page-lock";
 
 const PAGES = [
   { path: "/our-story", h1: "Our story", fr: "Notre histoire" },
@@ -88,22 +87,17 @@ test.describe("S-249 Workshops", () => {
     expect((await cta.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   });
 
-  test("Owner clarification: the next workshop shows with its date and seats, and goes when cleared", async ({ page, db }, testInfo) => {
-    test.skip(testInfo.project.name !== "phone-375", "changes a shared page: one project is enough");
-    test.slow(); // waits out the 60 s page cache of the serving isolate
-    await withSitePage(db, "workshops", async (sql) => {
-      await page.goto("/workshops");
-      await expect(page.getByRole("heading", { level: 2, name: "No workshop planned right now" })).toBeVisible();
-
-      await sql`update site_page set event = ${sql.json({ title: { en: "Valentine's cake workshop" }, date: "2099-02-14", seats: 10, text: { en: "Ten couples decorate a cake together." } })} where key = 'workshops'`;
-      // The page read is cached for up to 60 s per isolate: wait for it rather than sleep.
-      await expect(async () => {
-        await page.goto("/workshops");
-        await expect(page.getByRole("heading", { level: 2, name: "Valentine's cake workshop" })).toBeVisible({ timeout: 1000 });
-      }).toPass({ timeout: 75_000 });
-      await expect(page.getByText(/Saturday,? 14 February 2099/)).toBeVisible();
-      await expect(page.getByText("10 seats")).toBeVisible();
-    });
+  // The Owner's "next workshop" (S-249 clarification) is now the events list of E-15 S-302: a
+  // published workshop shows with its date and places left (the full journey is workshops.spec).
+  test("Owner clarification, now E-15 S-302: a published workshop shows with its date and places left", async ({ page, db }) => {
+    const slug = `brand-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    const title = `Valentine's cake workshop ${slug}`;
+    await db`insert into workshop_event (slug, title_en, event_on, starts_at, ends_at, address, price_rs, capacity, cake_options, status)
+      values (${slug}, ${title}, '2099-02-14', '14:00', '16:00', 'Beau Bassin', 1500, 10, ${db.json([{ id: "choc", name: { en: "Chocolate" } }])}, 'published')`;
+    await page.goto("/workshops");
+    const card = page.getByRole("listitem").filter({ hasText: title });
+    await expect(card.getByText(/Saturday,? 14 February 2099/)).toBeVisible();
+    await expect(card.getByText("10 places left")).toBeVisible();
   });
 });
 

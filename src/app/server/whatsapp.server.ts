@@ -11,20 +11,23 @@ import { localized } from "~/i18n/localized";
 import { type Locale, formatRupees, localePath } from "~/lib/locale";
 import type { Executor } from "~/server/db.server";
 import { firstName } from "~/server/notify/push-text.server";
+import { paymentDeadline } from "~/domain/payment";
+import { deadlineLabel } from "~/server/payment-view.server";
 
 export interface WhatsappSettings {
   templates: Partial<WhatsappTemplates> | null;
+  juiceName?: string | null;
   juiceNumber: string | null;
   pickupAddress: string | null;
 }
 
 export async function readWhatsappSettings(db: Executor): Promise<WhatsappSettings> {
   const [row] = await db
-    .select({ templates: settings.whatsappTemplates, juiceNumber: settings.juiceNumber, pickupAddress: settings.pickupAddress })
+    .select({ templates: settings.whatsappTemplates, juiceName: settings.juiceName, juiceNumber: settings.juiceNumber, pickupAddress: settings.pickupAddress })
     .from(settings)
     .where(eq(settings.id, 1))
     .limit(1);
-  return { templates: row?.templates ?? null, juiceNumber: row?.juiceNumber ?? null, pickupAddress: row?.pickupAddress ?? null };
+  return { templates: row?.templates ?? null, juiceName: row?.juiceName ?? null, juiceNumber: row?.juiceNumber ?? null, pickupAddress: row?.pickupAddress ?? null };
 }
 
 export interface WhatsappOrder {
@@ -38,12 +41,24 @@ export interface WhatsappOrder {
   window: TimeWindow;
   totalRs: number;
   trackingToken: string;
+  /** Only an order awaiting payment has a pay-by time (`deadline`); null or absent otherwise. */
+  status?: string;
+  /** When its payment clock started (the approval; `coalesce(awaiting_payment_since, created_at)`). */
+  paymentFrom?: Date | null;
+}
+
+/** "Sat 21 Nov, 10:00", or null when the order is not awaiting its payment. */
+function payBy(order: WhatsappOrder): string | null {
+  if (order.status !== "awaiting_payment" || !order.paymentFrom) return null;
+  return deadlineLabel(paymentDeadline(order.paymentFrom), order.locale);
 }
 
 /** The placeholder values for one order, in the order's language (spec placeholder list). */
 export function whatsappValues(order: WhatsappOrder, shop: WhatsappSettings, origin: string): WhatsappValues {
   const { locale } = order;
   return {
+    juice_name: shop.juiceName ?? null,
+    deadline: payBy(order),
     name: firstName(order.contactName),
     order_number: order.number,
     date: formatLongDate(order.fulfilOn, locale),
@@ -69,7 +84,7 @@ export interface WhatsappMenuItem {
 
 /** Sample values for the Settings preview (S-202 AC1): a pickup order of Rs 1,250 three days from now. */
 export function whatsappPreviewSample(
-  shop: { juiceNumber: string | null; pickupAddress: string | null; orderNumberPrefix: string },
+  shop: { juiceName?: string | null; juiceNumber: string | null; pickupAddress: string | null; orderNumberPrefix: string },
   origin: string,
   now: Date,
 ): Record<Locale, WhatsappValues> {
@@ -83,8 +98,11 @@ export function whatsappPreviewSample(
     window: { id: "morning", label: { en: "Morning", fr: "Matin" }, start: "09:00", end: "12:00" },
     totalRs: 1250,
     trackingToken: "sample",
+    // Approved just now, so `{deadline}` previews as 24 hours from now.
+    status: "awaiting_payment",
+    paymentFrom: now,
   });
-  const sample: WhatsappSettings = { templates: null, juiceNumber: shop.juiceNumber ?? "5712 0000", pickupAddress: shop.pickupAddress };
+  const sample: WhatsappSettings = { templates: null, juiceName: shop.juiceName ?? "Aux petits bonheurs", juiceNumber: shop.juiceNumber ?? "5712 0000", pickupAddress: shop.pickupAddress };
   return { en: whatsappValues(order("en"), sample, origin), fr: whatsappValues(order("fr"), sample, origin) };
 }
 

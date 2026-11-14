@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Outlet, redirect, useLocation, useMatches, useRouteLoaderData } from "react-router";
 import { LanguageSwitch } from "~/components/shell/language-switch";
 import { NavProgress } from "~/components/shell/nav-progress";
+import { PageLoader } from "~/components/shell/page-loader";
 import { PromoBanner } from "~/components/shell/promo-banner";
 import { SiteFooter } from "~/components/shell/site-footer";
 import { SiteHeader } from "~/components/shell/site-header";
@@ -144,7 +145,8 @@ export default function SiteLayout({ loaderData }: Route.ComponentProps) {
       {/* Hoisted to the top of <head> by React: the photo host's connection opens while the page parses (S-276 AC7). */}
       {loaderData.photoOrigin && <link rel="preconnect" href={loaderData.photoOrigin} />}
       <BrandShareImage />
-      <NavProgress />
+      <NavProgress submissionsOnly />
+      <PageLoader />
       <SkipLink />
       <PromoBanner banner={loaderData.banner} />
       <SiteHeader

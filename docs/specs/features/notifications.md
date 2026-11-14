@@ -44,7 +44,8 @@ All subjects, bodies, push texts and button labels exist in EN and FR (`copywrit
 Language = `orders.locale` for order emails; `customer.locale` / `user_metadata.locale` for account emails; `admin.locale` for admin emails. Trigger = PRD Appendix B.
 | Key | Sent when | To | Must include |
 |---|---|---|---|
-| `order_received` | Website order placed | Customer | Number, items with options, date, window, delivery/pickup, total, "not confirmed yet", tracking link |
+| `order_received` | Website order placed | Customer | Number, items with options, date, window, delivery/pickup, total, "not confirmed yet", "we confirm it, then email you how to pay; please do not pay yet" (no Juice details while pending approval), tracking link |
+| `payment_instructions` | Admin approves a website order (approve, then pay, 2026-11-14) | Customer | Juice name and number, amount, reference, pay-by time (24 h after approval), numbered steps, WhatsApp proof button, items, date, tracking link |
 | `request_received` | Custom request sent | Customer | Request summary (occasion, date, servings, photos count), "we will send a quote", tracking link |
 | `quote` | Quote sent or re-sent | Customer | Amount, note, expiry date (valid through that day), Accept and Decline buttons (open tracking page) |
 | `order_confirmed` | Approved (admin approve, accepted quote, manual order with email) | Customer | Full summary, payment reminder (Juice number plus total, or cash on delivery/pickup), pickup address or delivery details, tracking link, 48-hour cancellation line |
@@ -97,7 +98,7 @@ No new routes. Contract of record `docs/architecture/api/contracts.md`.
 - `expireQuotes`: pushes after the status update succeeds; see `custom-requests-quotes.md`.
 
 ## WhatsApp templates
-- Keys: `approved`, `ready`, `on_the_way`, `payment_reminder`, `blank` in `settings.whatsapp_templates`, each `{en, fr}`; the order's `locale` chooses the language, falling back to EN if FR is empty.
+- Keys: `approved`, `ready`, `on_the_way`, `payment_instructions` (approve, then pay, 2026-11-14: Juice name and number, total, reference, pay-by time), `payment_reminder`, `blank` in `settings.whatsapp_templates`, each `{en, fr}`; the order's `locale` chooses the language, falling back to EN if FR is empty.
 - Placeholders: `{name}` (first name), `{order_number}`, `{date}` (long, MU), `{window}` (label e.g. "Morning 9:00-12:00"), `{total}` ("Rs 1,250"), `{juice_number}`, `{pickup_address}`, `{tracking_link}`.
 - Resolution is server-side in `domain/whatsapp.ts`: unknown placeholders are rejected when Owner saves Settings; known placeholders with no value (e.g. `{pickup_address}` on a delivery order) resolve to an empty string and a double space is collapsed.
 - `payment_reminder` default text includes `{juice_number}` and `{total}`.

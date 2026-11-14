@@ -392,8 +392,8 @@ test.describe("S-013 place an order as a guest", () => {
     const token = TOKEN_URL.exec(page.url())![1]!;
     const [order] = await db<{ status: string; total_rs: number; delivery_fee_rs: number; locale: string; contact_phone: string }[]>`
       select status, total_rs, delivery_fee_rs, locale, contact_phone from orders where tracking_token = ${token}`;
-    // Since 2026-11-13 an order waits for its Juice payment first (S-278 AC1).
-    expect(order).toEqual({ status: "awaiting_payment", total_rs: 1050, delivery_fee_rs: 200, locale: "en", contact_phone: "+23057123456" });
+    // Approve, then pay (2026-11-14): a new order waits for the bakery's approval first.
+    expect(order).toEqual({ status: "pending_approval", total_rs: 1050, delivery_fee_rs: 200, locale: "en", contact_phone: "+23057123456" });
     await expect(page.getByRole("link", { name: "Basket, 0 items" })).toBeVisible();
   });
 
@@ -534,7 +534,7 @@ test.describe("S-013 place an order as a guest", () => {
     await expect(summary.getByText("Total", { exact: true }).locator("visible=true")).toHaveCount(1);
     await expect(summary.getByText("Rs 1,050")).toBeVisible();
     // Full payment by Juice; the account is shown only after placing (S-278 AC6, S-277 AC4).
-    await expect(summary.getByText("Payment: the full amount by MCB Juice. You get the payment details as soon as you place your order.")).toBeVisible();
+    await expect(summary.getByText("Payment: the full amount by MCB Juice. We confirm your order first, then send you the payment details.")).toBeVisible();
     await expect(summary.getByText(/5000 0000/)).toHaveCount(0);
 
     await expect(page.getByText(E2E_POLICIES.en)).toBeHidden();
@@ -722,8 +722,9 @@ test.describe("S-015 order confirmation", () => {
 
     await expect(page.getByRole("heading", { level: 1, name: "Thank you, we have your order" })).toBeFocused();
     await expect(page.getByText(number, { exact: true })).toBeVisible();
-    // The Juice instructions, or their calm fallback while Settings has no Juice name (another spec may set it).
-    await expect(page.getByTestId("payment-instructions").or(page.getByTestId("payment-fallback"))).toBeVisible();
+    // Approve, then pay (2026-11-14): what happens next, and no Juice details before the approval.
+    await expect(page.getByRole("heading", { level: 2, name: "What happens next" })).toBeVisible();
+    await expect(page.getByTestId("payment-instructions").or(page.getByTestId("payment-fallback"))).toHaveCount(0);
     const trackingUrl = `${baseURL}/t/${token}`;
     await expect(page.getByText(trackingUrl, { exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Follow my order" })).toHaveAttribute("href", trackingUrl);
@@ -773,13 +774,19 @@ test.describe("S-015 order confirmation", () => {
 
   test("AC5: a French order's confirmation is in French", async ({ page, db }) => {
     const order = await createOrder(db, "S-015 fr");
-    // A new order waits for its Juice payment (S-278): the page leads with the payment block.
-    await db`update orders set status = 'awaiting_payment' where id = ${order.id}`;
+    // A new order waits for the bakery's approval (approve, then pay): the next steps, in French.
     await page.goto(`/fr/order/${order.trackingToken}/confirmed`);
 
     await expect(page.locator("html")).toHaveAttribute("lang", "fr");
     await expect(page.getByRole("heading", { level: 1, name: "Merci, nous avons bien reçu votre commande" })).toBeVisible();
-    // The French payment instructions, or their French fallback while Settings has no Juice name.
+    await expect(page.getByRole("heading", { level: 2, name: "Et maintenant ?" })).toBeVisible();
+    await expect(page.getByText("Nous vérifions votre commande et la validons.")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Payez maintenant pour confirmer votre commande" })).toHaveCount(0);
+
+    // Once approved, the same page leads with the French payment instructions (or their French
+    // fallback while Settings has no Juice name).
+    await db`update orders set status = 'awaiting_payment', awaiting_payment_since = now() where id = ${order.id}`;
+    await page.reload();
     await expect(page.getByRole("region", { name: "Payez maintenant pour confirmer votre commande" }).or(page.getByText("Nous vous enverrons les informations de paiement sur WhatsApp"))).toBeVisible();
   });
 
@@ -887,7 +894,7 @@ test.describe("S-098 journeys on a phone", () => {
     await expect(page).toHaveURL(TOKEN_URL);
     const token = TOKEN_URL.exec(page.url())![1]!;
     const [order] = await db<{ number: number; total_rs: number; status: string }[]>`select number, total_rs, status from orders where tracking_token = ${token}`;
-    expect(order).toMatchObject({ total_rs: 1900, status: "awaiting_payment" });
+    expect(order).toMatchObject({ total_rs: 1900, status: "pending_approval" });
     const number = `APB-${String(order!.number).padStart(4, "0")}`;
     await expect(page.getByText(number, { exact: true })).toBeVisible();
     await expect(page.getByText("Rs 1,900").first()).toBeVisible();
