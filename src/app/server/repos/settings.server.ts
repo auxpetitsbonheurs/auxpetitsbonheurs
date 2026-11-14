@@ -1,6 +1,7 @@
 import { eq, getTableColumns, sql } from "drizzle-orm";
 import { type LocalizedText, type TimeWindow, blockedDate, settings } from "~/db/schema";
 import type { AvailabilityRules, DateRange } from "~/domain/availability";
+import type { BusinessIdentity } from "~/domain/privacy-facts";
 import type { PaymentSettings } from "~/domain/payment";
 import { safeWebUrl } from "~/lib/contact";
 import type { Database } from "~/server/db.server";
@@ -112,6 +113,11 @@ export interface SiteSettings {
   cakeMessageMax: number;
   /** Days a quote stands by default (FR-030; the send-quote sheet's expiry, E-08 S-156 AC2). */
   quoteValidityDays: number;
+  /**
+   * The business identity from Settings → Invoice (S-127), for the privacy note. Optional: absent
+   * from copies cached before; blank values are null.
+   */
+  business?: BusinessIdentity;
 }
 
 function homeFrom(row: SettingsRow): HomeSettings {
@@ -156,5 +162,6 @@ export async function readSiteSettings(db: Database): Promise<SiteSettings> {
     home: homeFrom(row),
     cakeMessageMax: row.cakeMessageMax,
     quoteValidityDays: row.quoteValidityDays,
+    business: { legalName: present(row.invoiceLegalName), brn: present(row.invoiceBrn), address: present(row.invoiceAddress) },
   };
 }

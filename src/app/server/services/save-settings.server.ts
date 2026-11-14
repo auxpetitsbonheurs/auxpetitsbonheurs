@@ -5,13 +5,13 @@
 // to this Owner for this page session under `site/`, stored, image bytes, ≤ 1 MB); a replaced
 // image's file is removed after commit (or queued). Money paths read Settings fresh, so a new
 // fee applies to the next order; stored orders keep their own fee and number prefix.
-import { eq, inArray } from "drizzle-orm";
-import { type LocalizedText, product, settings } from "~/db/schema";
+import { eq, inArray, max } from "drizzle-orm";
+import { type LocalizedText, orders, product, settings } from "~/db/schema";
 import { PHOTO_MAX_EDGE, isIssuedSitePath } from "~/domain/upload";
 import { policiesMissingEntries, privacyNoteMissingReviews } from "~/domain/settings";
 import type { AfterResponse } from "~/server/after-response.server";
-import type { SettingsInput } from "~/server/contracts/settings";
-import type { Database } from "~/server/db.server";
+import type { InvoiceSettingsInput, SettingsInput } from "~/server/contracts/settings";
+import type { Database, Executor } from "~/server/db.server";
 import { siteSettingsCache } from "~/server/repos/settings.server";
 import type { StorageGateway, UploadGateway } from "~/server/storage.server";
 import { checkNewPhoto } from "./product-photos.server";
@@ -100,9 +100,36 @@ function columns(input: SettingsInput, context: SaveSettingsContext) {
     privacyNote: localizedOrNull(rest.privacyNote),
     // S-202: only when the form posted them; otherwise the stored templates stay.
     ...(rest.whatsappTemplates ? { whatsappTemplates: rest.whatsappTemplates } : {}),
+    ...invoiceColumns(rest.invoice ?? null),
     updatedAt: context.now,
     updatedBy: context.adminId,
   };
+}
+
+/**
+ * S-127: the invoice details when the form posted them; the counter only when the Owner changed
+ * it (an invoice made since the page loaded has moved it on: a stale value must not go back).
+ */
+function invoiceColumns(invoice: InvoiceSettingsInput | null) {
+  if (!invoice) return {};
+  return {
+    invoiceLegalName: invoice.legalName,
+    invoiceBrn: invoice.brn,
+    invoiceAddress: invoice.address,
+    invoicePhone: invoice.phone,
+    bankName: invoice.bankName,
+    bankAccountName: invoice.bankAccountName,
+    bankAccountNumber: invoice.bankAccountNumber,
+    invoicePaymentTerms: invoice.paymentTerms,
+    invoiceThankYou: invoice.thankYou,
+    ...(invoice.nextNumber !== invoice.nextNumberWas ? { nextInvoiceNumber: invoice.nextNumber } : {}),
+  };
+}
+
+/** The lowest next invoice number allowed: one more than the highest already given to an order. */
+async function lowestFreeInvoiceNumber(tx: Executor): Promise<number> {
+  const [row] = await tx.select({ max: max(orders.invoiceNumber) }).from(orders);
+  return (row?.max ?? 0) + 1;
 }
 
 /** Names of the columns whose value changes (logged; never the values: contact data). */
@@ -120,10 +147,15 @@ export async function saveSettings(db: Database, version: number, input: Setting
   const saved = await db.transaction(async (tx) => {
     const [row] = await tx.select().from(settings).where(eq(settings.id, 1)).for("update");
     if (!row || row.version !== version) return null;
+    // S-127: Settings is locked, so no invoice can take a number while this is checked.
+    const counter = input.invoice && input.invoice.nextNumber !== input.invoice.nextNumberWas ? input.invoice.nextNumber : null;
+    const lowest = counter === null ? 0 : await lowestFreeInvoiceNumber(tx);
+    if (counter !== null && counter < lowest) return { usedBelow: lowest };
     await tx.update(settings).set({ ...values, version: row.version + 1 }).where(eq(settings.id, 1));
     return { before: row, version: row.version + 1 };
   });
   if (!saved) return { ok: false, code: "SETTINGS_CHANGED" };
+  if ("usedBelow" in saved) return { ok: false, code: "VALIDATION_FAILED", fields: { invoiceNextNumber: `used:${saved.usedBelow}` } };
   siteSettingsCache.clear();
   console.log(JSON.stringify({ level: "info", event: "settings_saved", actorRole: "owner", changed: changedKeys(saved.before, values) }));
   const replaced = (["heroImagePath", "aboutImagePath"] as const)

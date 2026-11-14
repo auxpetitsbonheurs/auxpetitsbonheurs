@@ -19,6 +19,15 @@ import {
   overlappingWindows,
 } from "~/domain/availability";
 import { JUICE_NAME_MAX } from "~/domain/payment";
+import {
+  BANK_ACCOUNT_PATTERN,
+  BRN_PATTERN,
+  INVOICE_ADDRESS_MAX,
+  INVOICE_NUMBER_MAX,
+  INVOICE_TERMS_MAX,
+  INVOICE_TEXT_MAX,
+  INVOICE_THANKS_MAX,
+} from "~/domain/invoice";
 import { normalizePhone } from "~/domain/phone";
 import { WHATSAPP_TEMPLATE_KEYS, WHATSAPP_TEMPLATE_MAX, unknownPlaceholders } from "~/domain/whatsapp";
 import type { WhatsappTemplates } from "~/db/tables/json-types";
@@ -95,6 +104,24 @@ export interface SettingsInput {
   privacyNote: LocalizedValue | null;
   /** S-202; null = not posted, keep the stored templates. */
   whatsappTemplates?: WhatsappTemplates | null;
+  /** S-127; null or absent = not posted, keep the stored invoice details. */
+  invoice?: InvoiceSettingsInput | null;
+}
+
+/** The Invoice section (S-127). The Juice number is Payment's, never typed twice. */
+export interface InvoiceSettingsInput {
+  legalName: string | null;
+  brn: string | null;
+  address: string | null;
+  phone: string | null;
+  bankName: string | null;
+  bankAccountName: string | null;
+  bankAccountNumber: string | null;
+  paymentTerms: LocalizedValue | null;
+  thankYou: LocalizedValue | null;
+  nextNumber: number;
+  /** The value the form was loaded with: the counter is written only when the Owner changed it. */
+  nextNumberWas: number | null;
 }
 
 export type SettingsForm =
@@ -195,11 +222,33 @@ function whatsappTemplatesField(form: FormData, problems: Problems): WhatsappTem
   return out;
 }
 
+/**
+ * Invoice details (S-127): `invoiceLegalName` … `invoiceNextNumber` (+ `invoiceNextNumberWas`).
+ * Absent from the form = keep what is stored (null). Account number: digits and single spaces.
+ */
+function invoiceFields(form: FormData, problems: Problems): InvoiceSettingsInput | null {
+  if (!form.has("invoiceNextNumber")) return null;
+  const short = (v: string) => v.length <= INVOICE_TEXT_MAX;
+  return {
+    legalName: optionalChecked(form, "invoiceLegalName", problems, short),
+    brn: optionalChecked(form, "invoiceBrn", problems, (v) => BRN_PATTERN.test(v))?.toUpperCase() ?? null,
+    address: optionalChecked(form, "invoiceAddress", problems, (v) => v.length <= INVOICE_ADDRESS_MAX),
+    phone: optionalChecked(form, "invoicePhone", problems, (v) => v.length <= 20 && normalizePhone(v) !== null),
+    bankName: optionalChecked(form, "bankName", problems, short),
+    bankAccountName: optionalChecked(form, "bankAccountName", problems, short),
+    bankAccountNumber: optionalChecked(form, "bankAccountNumber", problems, (v) => BANK_ACCOUNT_PATTERN.test(v)),
+    paymentTerms: localizedText(form, "invoicePaymentTerms", INVOICE_TERMS_MAX, problems),
+    thankYou: localizedText(form, "invoiceThankYou", INVOICE_THANKS_MAX, problems),
+    nextNumber: requiredNumber(form, "invoiceNextNumber", 1, INVOICE_NUMBER_MAX, problems),
+    nextNumberWas: wholeNumber(text(form, "invoiceNextNumberWas"), 1, INVOICE_NUMBER_MAX),
+  };
+}
+
 /** Parses the Settings form (`save`). Every field is posted: unchanged ones as loaded. */
 export function parseSettingsForm(form: FormData): SettingsForm {
   const problems: Problems = {};
   const version = versionOf(form, problems);
-  const input: SettingsInput = { ...businessFields(form, problems), ...contentFields(form, problems), whatsappTemplates: whatsappTemplatesField(form, problems) };
+  const input: SettingsInput = { ...businessFields(form, problems), ...contentFields(form, problems), whatsappTemplates: whatsappTemplatesField(form, problems), invoice: invoiceFields(form, problems) };
   const session = Uuid.safeParse(form.get("uploadSessionId"));
   if (Object.keys(problems).length > 0) return { ok: false, problems };
   return { ok: true, version, input, uploadSessionId: session.success ? session.data.toLowerCase() : null };

@@ -68,6 +68,10 @@ const adminPages = [
   route("admin/sales.csv", "routes/admin/sales-csv.tsx"),
   // Customer view of any product (S-051): outside the frame so it looks like the live page.
   route("admin/menu/:id/preview", "routes/admin/product-preview.tsx"),
+  // Invoices (S-127): the document as JSON for the PDF the browser builds, and the printable page
+  // (outside the frame so it prints bare). Both guarded themselves.
+  route("admin/orders/:id/invoice.json", "routes/admin/invoice-data.tsx"),
+  route("admin/orders/:id/invoice", "routes/admin/order-invoice.tsx"),
   route("admin", "routes/admin/layout.tsx", [
     index("routes/admin/home.tsx"),
     route("orders", "routes/admin/orders.tsx"),

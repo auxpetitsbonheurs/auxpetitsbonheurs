@@ -22,6 +22,9 @@ export const ADMIN_MODULE_POLICY = {
   "order-new": "admin",
   "customer-lookup": "admin",
   "order-edit": "admin",
+  // Invoice of an order (S-127): JSON for the browser-built PDF and the printable page; whoever sees the order.
+  "invoice-data": "admin",
+  "order-invoice": "admin",
   "not-found": "admin",
   more: "admin",
   calendar: "admin",

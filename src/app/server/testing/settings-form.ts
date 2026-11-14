@@ -33,6 +33,18 @@ export async function loadedSettingsForm(database: TestDatabase, overrides: Reco
     ...pair("faq", s.faq),
     ...pair("policies", s.policies),
     ...pair("privacyNote", s.privacyNote),
+    // S-127 Invoice section.
+    invoiceLegalName: text(s.invoice.legalName),
+    invoiceBrn: text(s.invoice.brn),
+    invoiceAddress: text(s.invoice.address),
+    invoicePhone: text(s.invoice.phone),
+    bankName: text(s.invoice.bankName),
+    bankAccountName: text(s.invoice.bankAccountName),
+    bankAccountNumber: text(s.invoice.bankAccountNumber),
+    ...pair("invoicePaymentTerms", s.invoice.paymentTerms),
+    ...pair("invoiceThankYou", s.invoice.thankYou),
+    invoiceNextNumber: String(s.invoice.nextNumber),
+    invoiceNextNumberWas: String(s.invoice.nextNumber),
     ...overrides,
   };
 }

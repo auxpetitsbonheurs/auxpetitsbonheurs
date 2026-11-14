@@ -1501,6 +1501,39 @@
           "unknownPlaceholder": "{{template}} ({{language}}) : utilisez uniquement les repères listés plus haut.",
           "tooLong": "{{template}} ({{language}}) : 1000 caractères au maximum.",
           "missingEn": "{{template}} : écrivez le texte anglais (le français est facultatif)."
+        },
+        "invoiceLegalName": {
+          "invalid": "La raison sociale est trop longue (120 caractères au plus)."
+        },
+        "invoiceBrn": {
+          "invalid": "Saisissez le BRN en lettres et chiffres seulement, par exemple C00000000."
+        },
+        "invoiceAddress": {
+          "invalid": "L’adresse de facturation est trop longue (300 caractères au plus)."
+        },
+        "invoicePhone": {
+          "invalid": "Saisissez un numéro de téléphone, par exemple 5712 3456."
+        },
+        "bankName": {
+          "invalid": "Le nom de la banque est trop long (120 caractères au plus)."
+        },
+        "bankAccountName": {
+          "invalid": "Le titulaire du compte est trop long (120 caractères au plus)."
+        },
+        "bankAccountNumber": {
+          "invalid": "Saisissez le numéro de compte en chiffres, avec des espaces simples si vous voulez (6 à 30 caractères)."
+        },
+        "invoicePaymentTerms": {
+          "tooLong": "Les conditions de paiement en {{language}} sont trop longues (1 000 caractères au plus).",
+          "missingEn": "Conditions de paiement : écrivez aussi le texte anglais (le français seul ne peut pas être enregistré)."
+        },
+        "invoiceThankYou": {
+          "tooLong": "La phrase de remerciement en {{language}} est trop longue (200 caractères au plus).",
+          "missingEn": "Phrase de remerciement : écrivez aussi le texte anglais (le français seul ne peut pas être enregistré)."
+        },
+        "invoiceNextNumber": {
+          "invalid": "Saisissez le prochain numéro de facture, un nombre entier de 1 à 99 999 999.",
+          "used": "Ce numéro est déjà utilisé. Saisissez {{min}} ou plus."
         }
       },
       "paymentIntro": "Les clients paient la totalité par MCB Juice en commandant. Ces informations ne sont montrées qu'à un client qui a passé commande, jamais sur les pages publiques.",
@@ -1516,7 +1549,23 @@
       "previewFr": "Aperçu en français",
       "previewUsesEn": "Le texte anglais sera utilisé",
       "privacyReviewsWarningTitle": "Ajoutez une ligne sur les avis",
-      "privacyReviewsWarning": "La note de confidentialité ne parle pas encore des avis : indiquez qu’un avis affiche le prénom, l’initiale du nom, la date et les mots, que vous validez chaque avis et que le client peut le supprimer à tout moment. Enregistré quand même."
+      "privacyReviewsWarning": "La note de confidentialité ne parle pas encore des avis : indiquez qu’un avis affiche le prénom, l’initiale du nom, la date et les mots, que vous validez chaque avis et que le client peut le supprimer à tout moment. Enregistré quand même.",
+      "invoiceTitle": "Facture",
+      "invoiceIntro": "Imprimé sur chaque facture. La raison sociale, le BRN et l’adresse figurent aussi dans la note de confidentialité. Le numéro Juice vient de Paiement ci-dessus.",
+      "invoiceLegalName": "Raison sociale",
+      "invoiceBrn": "BRN (numéro d’enregistrement)",
+      "invoiceBrnHint": "Lettres et chiffres, par exemple C00000000.",
+      "invoiceAddress": "Adresse sur les factures",
+      "invoicePhone": "Téléphone de facturation",
+      "bankName": "Banque",
+      "bankAccountName": "Titulaire du compte",
+      "bankAccountNumber": "Numéro de compte",
+      "bankAccountNumberHint": "Des chiffres, avec des espaces si vous voulez, par exemple 000 000 000 000.",
+      "invoicePaymentTerms": "Conditions de paiement",
+      "invoicePaymentTermsHint": "Une condition par ligne.",
+      "invoiceThankYou": "Phrase de remerciement",
+      "invoiceNextNumber": "Prochain numéro de facture",
+      "invoiceNextNumberHint": "Le numéro que prendra la prochaine nouvelle facture. Une commande garde son numéro quand sa facture est refaite."
     },
     "availability": {
       "title": "Disponibilités",
@@ -2252,6 +2301,55 @@
       "trackingHint": "Le client suit sa commande ici. Envoyez-le par WhatsApp s’il n’a pas donné d’e-mail.",
       "copyTracking": "Copier le lien de suivi",
       "trackingCopied": "Lien de suivi copié."
+    },
+    "invoiceDoc": {
+      "invoiceNo": "FACTURE N°",
+      "date": "DATE :",
+      "billTo": "FACTURER À",
+      "eventDate": "DATE DE L’ÉVÉNEMENT",
+      "instructions": "INSTRUCTIONS",
+      "quantity": "QUANTITÉ",
+      "description": "DÉSIGNATION",
+      "unitPrice": "PRIX UNITAIRE RS",
+      "total": "TOTAL RS",
+      "subtotal": "SOUS-TOTAL",
+      "adjustment": "AJUSTEMENT",
+      "downpayment": "ACOMPTE",
+      "paid": "Payé",
+      "totalDue": "RESTE À PAYER",
+      "paidStamp": "PAYÉ",
+      "paymentDetails": "Coordonnées de paiement :",
+      "bank": "Banque :",
+      "accountName": "Titulaire :",
+      "accountNumber": "N° de compte :",
+      "juice": "Juice :",
+      "paymentTerms": "Conditions de paiement :",
+      "brn": "BRN :",
+      "phone": "Tél.",
+      "delivery": "Livraison",
+      "pickup": "Retrait",
+      "discount": "Promotion : {{title}}",
+      "message": "Message : « {{text}} »",
+      "customCake": "Gâteau sur mesure",
+      "order": "Commande",
+      "servings_one": "{{count}} part",
+      "servings_other": "{{count}} parts"
+    },
+    "invoice": {
+      "download": "Télécharger la facture",
+      "title": "Facture",
+      "preparing": "Préparation de la facture…",
+      "ready": "{{file}} est prête.",
+      "readyHint": "Si elle ne s’est pas téléchargée, touchez Télécharger à nouveau. Partager l’envoie directement par WhatsApp ou e-mail.",
+      "share": "Partager",
+      "downloadAgain": "Télécharger à nouveau",
+      "printView": "Ouvrir la facture imprimable",
+      "failed": "La facture n’a pas pu être préparée. Vérifiez votre connexion et réessayez ; la commande n’a pas changé.",
+      "tryAgain": "Réessayer",
+      "shareFailed": "Le partage n’a pas fonctionné sur ce téléphone. Utilisez Télécharger à nouveau.",
+      "print": "Imprimer",
+      "back": "Retour à la commande",
+      "metaTitle": "Facture {{number}}"
     }
   },
   "email": {

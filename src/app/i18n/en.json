@@ -1501,6 +1501,39 @@
           "unknownPlaceholder": "{{template}} ({{language}}): use only the placeholders listed above.",
           "tooLong": "{{template}} ({{language}}): use 1000 characters or fewer.",
           "missingEn": "{{template}}: write the English text (French is optional)."
+        },
+        "invoiceLegalName": {
+          "invalid": "The legal name is too long (120 characters at most)."
+        },
+        "invoiceBrn": {
+          "invalid": "Enter the BRN as letters and digits only, for example C00000000."
+        },
+        "invoiceAddress": {
+          "invalid": "The invoice address is too long (300 characters at most)."
+        },
+        "invoicePhone": {
+          "invalid": "Enter a phone number, for example 5712 3456."
+        },
+        "bankName": {
+          "invalid": "The bank name is too long (120 characters at most)."
+        },
+        "bankAccountName": {
+          "invalid": "The account name is too long (120 characters at most)."
+        },
+        "bankAccountNumber": {
+          "invalid": "Enter the account number as digits, with single spaces if you like (6 to 30 characters)."
+        },
+        "invoicePaymentTerms": {
+          "tooLong": "The payment terms in {{language}} are too long (1,000 characters at most).",
+          "missingEn": "The payment terms: write the English text too (French alone cannot be saved)."
+        },
+        "invoiceThankYou": {
+          "tooLong": "The thank-you line in {{language}} is too long (200 characters at most).",
+          "missingEn": "The thank-you line: write the English text too (French alone cannot be saved)."
+        },
+        "invoiceNextNumber": {
+          "invalid": "Enter the next invoice number as a whole number from 1 to 99,999,999.",
+          "used": "That number is already used. Enter {{min}} or more."
         }
       },
       "paymentIntro": "Customers pay the full amount by MCB Juice when they order. These details are shown only to a customer who has placed an order, never on public pages.",
@@ -1516,7 +1549,23 @@
       "previewFr": "Preview in French",
       "previewUsesEn": "EN text will be used",
       "privacyReviewsWarningTitle": "Add a line about reviews",
-      "privacyReviewsWarning": "The privacy note does not mention reviews yet: say that a review shows the first name, last initial, date and words, that you approve each one, and that the customer can delete it at any time. Saved anyway."
+      "privacyReviewsWarning": "The privacy note does not mention reviews yet: say that a review shows the first name, last initial, date and words, that you approve each one, and that the customer can delete it at any time. Saved anyway.",
+      "invoiceTitle": "Invoice",
+      "invoiceIntro": "Printed on every invoice. The legal name, BRN and address also appear in the privacy note. The Juice number comes from Payment above.",
+      "invoiceLegalName": "Legal business name",
+      "invoiceBrn": "BRN (Business Registration Number)",
+      "invoiceBrnHint": "Letters and digits, for example C00000000.",
+      "invoiceAddress": "Address on invoices",
+      "invoicePhone": "Invoice phone",
+      "bankName": "Bank name",
+      "bankAccountName": "Account name",
+      "bankAccountNumber": "Account number",
+      "bankAccountNumberHint": "Digits, with spaces if you like, for example 000 000 000 000.",
+      "invoicePaymentTerms": "Payment terms",
+      "invoicePaymentTermsHint": "One term per line.",
+      "invoiceThankYou": "Thank-you line",
+      "invoiceNextNumber": "Next invoice number",
+      "invoiceNextNumberHint": "The number the next new invoice takes. An order keeps its number when its invoice is made again."
     },
     "availability": {
       "title": "Availability",
@@ -2252,6 +2301,55 @@
       "trackingHint": "The customer follows the order here. Send it by WhatsApp if they gave no email.",
       "copyTracking": "Copy the tracking link",
       "trackingCopied": "Tracking link copied."
+    },
+    "invoiceDoc": {
+      "invoiceNo": "INVOICE NO.",
+      "date": "DATE:",
+      "billTo": "BILL TO",
+      "eventDate": "EVENT DATE",
+      "instructions": "INSTRUCTIONS",
+      "quantity": "QUANTITY",
+      "description": "DESCRIPTION",
+      "unitPrice": "UNIT PRICE RS",
+      "total": "TOTAL RS",
+      "subtotal": "SUBTOTAL",
+      "adjustment": "ADJUSTMENT",
+      "downpayment": "DOWNPAYMENT",
+      "paid": "Paid",
+      "totalDue": "TOTAL DUE",
+      "paidStamp": "PAID",
+      "paymentDetails": "Payment Details:",
+      "bank": "Bank:",
+      "accountName": "Acc. Name:",
+      "accountNumber": "Acc. No:",
+      "juice": "Juice:",
+      "paymentTerms": "Payment Terms:",
+      "brn": "BRN:",
+      "phone": "Phone",
+      "delivery": "Delivery",
+      "pickup": "Pickup",
+      "discount": "Promotion: {{title}}",
+      "message": "Message: “{{text}}”",
+      "customCake": "Custom cake",
+      "order": "Order",
+      "servings_one": "{{count}} serving",
+      "servings_other": "{{count}} servings"
+    },
+    "invoice": {
+      "download": "Download invoice",
+      "title": "Invoice",
+      "preparing": "Preparing invoice…",
+      "ready": "{{file}} is ready.",
+      "readyHint": "If it did not download, tap Download again. Share sends it straight to WhatsApp or email.",
+      "share": "Share",
+      "downloadAgain": "Download again",
+      "printView": "Open printable invoice",
+      "failed": "The invoice could not be prepared. Check your connection and try again; the order is unchanged.",
+      "tryAgain": "Try again",
+      "shareFailed": "Sharing did not work on this phone. Use Download again instead.",
+      "print": "Print",
+      "back": "Back to the order",
+      "metaTitle": "Invoice {{number}}"
     }
   },
   "email": {

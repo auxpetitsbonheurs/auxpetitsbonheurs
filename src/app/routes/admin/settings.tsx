@@ -1,6 +1,7 @@
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { useFetcher } from "react-router";
 import { AdminErrorBoundary } from "~/components/admin/admin-states";
+import { INVOICE_ANCHORS, InvoiceSettingsSection } from "~/components/admin/invoice-settings";
 import { BilingualField, SettingsSection } from "~/components/admin/settings-fields";
 import { type ImageState, SiteImageField } from "~/components/admin/site-image-field";
 import { LeaveDialog, keepAboveSaveBar, useUnsavedGuard } from "~/components/admin/unsaved-guard";
@@ -114,6 +115,7 @@ const ANCHORS: Record<string, string> = {
   featuredProductIds: "featured",
   version: "settings-title",
   ...WHATSAPP_ANCHORS,
+  ...INVOICE_ANCHORS,
   ...Object.fromEntries(
     [
       ["heroTagline", "hero-tagline"],
@@ -150,6 +152,7 @@ function BusinessSections({ settings, errors }: { settings: Settings; errors: Er
         <TextField id="juice" name="juiceNumber" type="tel" inputMode="tel" label={t("admin.settings.juice")} optionalLabel={optional} hint={t("admin.settings.juiceHint")} maxLength={JUICE_NUMBER_MAX} autoComplete="off" defaultValue={settings.juiceNumber ?? ""} error={errors.juiceNumber} className="max-w-sm" />
         <TextField id="payment-whatsapp" name="paymentWhatsapp" type="tel" inputMode="tel" label={t("admin.settings.paymentWhatsapp")} optionalLabel={optional} hint={t("admin.settings.paymentWhatsappHint")} maxLength={20} autoComplete="off" defaultValue={settings.paymentWhatsapp ?? ""} error={errors.paymentWhatsapp} className="max-w-sm" />
       </SettingsSection>
+      <InvoiceSettingsSection invoice={settings.invoice} errors={errors} />
       <SettingsSection id="orders" title={t("admin.settings.ordersTitle")}>
         <TextField id="quote-validity" name="quoteValidityDays" label={t("admin.settings.quoteValidity")} hint={t("admin.settings.rangeHint", { min: QUOTE_VALIDITY_MIN, max: QUOTE_VALIDITY_MAX })} inputMode="numeric" pattern="[0-9]*" autoComplete="off" defaultValue={settings.quoteValidityDays} error={errors.quoteValidityDays} className="max-w-sm" />
         <TextField id="cake-message-max" name="cakeMessageMax" label={t("admin.settings.cakeMessageMax")} hint={t("admin.settings.rangeHint", { min: CAKE_MESSAGE_MIN, max: CAKE_MESSAGE_MAX })} inputMode="numeric" pattern="[0-9]*" autoComplete="off" defaultValue={settings.cakeMessageMax} error={errors.cakeMessageMax} className="max-w-sm" />

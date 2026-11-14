@@ -23,7 +23,10 @@ export function fieldMessages(problems: Problems, locale: Locale, area: "setting
         values.window = translate(`admin.availability.windowName.${row[1]}`, locale, { n: Number(row[2]) + 1 });
         base = `window.${row[3]}`;
       }
-      return [field, translate(`admin.${area}.errors.${base}.${problem}`, locale, values)];
+      // `used:1109` (S-127 next invoice number): the code and the lowest number allowed.
+      const [code = problem, min] = problem.split(":");
+      if (min !== undefined) values.min = min;
+      return [field, translate(`admin.${area}.errors.${base}.${code}`, locale, values)];
     }),
   );
 }

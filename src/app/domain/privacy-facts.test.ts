@@ -6,7 +6,7 @@ import { retentionCutoff } from "~/jobs/anonymise-inactive";
 import { RETENTION_DAYS } from "~/jobs/purge-emails";
 import { RATE_LIMIT_RETENTION_MS } from "~/server/rate-limit.server";
 import { ORPHAN_UPLOAD_MS } from "./custom-request";
-import { PRIVACY_FACTS, RETENTION, openPrivacyItems } from "./privacy-facts";
+import { PRIVACY_FACTS, RETENTION, openPrivacyItems, privacyFactsWith } from "./privacy-facts";
 
 describe("retention stated = retention applied (AC6)", () => {
   test("email contents: the purge-emails job's 90 days", () => {
@@ -48,5 +48,21 @@ describe("open [TO CONFIRM] items (AC7)", () => {
 
   test("today the business facts and retention are still the Owner's to confirm (not invented)", () => {
     expect(openPrivacyItems(PRIVACY_FACTS)).toEqual(["legalName", "address", "brn", "databaseRegion", "regime", "retention"]);
+  });
+});
+
+describe("business facts from Settings → Invoice (S-127)", () => {
+  test("the legal name, BRN and address typed once in Settings fill the note; the address reads as one line", () => {
+    const facts = privacyFactsWith({ legalName: "Example Bakery Ltd", brn: "C00000000", address: "1 Example Street\n Example Town \n" });
+
+    expect(facts).toMatchObject({ legalName: "Example Bakery Ltd", brn: "C00000000", address: "1 Example Street, Example Town" });
+    expect(openPrivacyItems(facts)).toEqual(["databaseRegion", "regime", "retention"]);
+  });
+
+  test("an empty or blank Setting falls back to the to-be-confirmed placeholder", () => {
+    const facts = privacyFactsWith({ legalName: "  ", brn: null, address: "" });
+
+    expect(facts).toEqual(PRIVACY_FACTS);
+    expect(openPrivacyItems(facts)).toContain("legalName");
   });
 });

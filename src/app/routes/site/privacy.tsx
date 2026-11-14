@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { namespaceMessages, t as serverT } from "~/i18n/catalog.server";
 import { ExtraMessages, useI18n } from "~/i18n/react";
-import { PRIVACY_FACTS, RETENTION, openPrivacyItems } from "~/domain/privacy-facts";
+import { RETENTION, openPrivacyItems, privacyFactsWith } from "~/domain/privacy-facts";
 import { formatLongDate } from "~/domain/time";
 import { mailHref, whatsappHref } from "~/lib/contact";
 import { localeFromPathname } from "~/lib/locale";
@@ -15,20 +15,23 @@ export const handle = SEO_HANDLE;
 
 /**
  * `site/privacy` (S-225, NFR-004): the short privacy note in EN and FR. Its facts and periods come
- * from domain/privacy-facts (the Owner's decisions; the periods match the purge jobs); an open
+ * from domain/privacy-facts (the Owner's decisions; the periods match the purge jobs), the legal name,
+ * BRN and address from Settings → Invoice (S-127, falling back to the placeholder); an open
  * `[TO CONFIRM]` item shows "to be confirmed" and keeps the page out of search results. The
  * contact for erase requests is the Settings WhatsApp and email (Owner only, S-058).
  */
 export async function loader({ url, context }: Route.LoaderArgs) {
   const locale = localeFromPathname(url.pathname);
   const settings = await timed(context, "settings", () => getSiteSettings(context.get(requestDbContext).db));
+  // S-127: the legal name, BRN and address the Owner enters once in Settings → Invoice.
+  const facts = privacyFactsWith(settings.business ?? { legalName: null, brn: null, address: null });
   return {
     messages: namespaceMessages(locale, "privacy"),
     title: serverT("privacy.title", locale),
     description: serverT("privacy.metaDescription", locale),
-    facts: PRIVACY_FACTS,
-    updatedLabel: formatLongDate(PRIVACY_FACTS.updatedOn, locale),
-    open: openPrivacyItems(PRIVACY_FACTS).length > 0,
+    facts,
+    updatedLabel: formatLongDate(facts.updatedOn, locale),
+    open: openPrivacyItems(facts).length > 0,
     whatsapp: settings.footer.whatsapp,
     email: settings.footer.email,
   };

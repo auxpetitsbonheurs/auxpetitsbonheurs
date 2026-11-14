@@ -16,6 +16,11 @@ export function formatRupees(amount: number, _locale?: Locale): string {
   return `Rs ${RUPEE_FORMAT.format(Math.round(amount))}`;
 }
 
+/** The amount alone, "1,250": invoice columns already say "Rs" (S-127). Same grouping as formatRupees. */
+export function formatRupeeAmount(amount: number): string {
+  return RUPEE_FORMAT.format(Math.round(amount));
+}
+
 /** Customer URLs: English unprefixed, French under /fr (architecture: i18n & locale). */
 export function localeFromPathname(pathname: string): Locale {
   return pathname === "/fr" || pathname.startsWith("/fr/") ? "fr" : "en";

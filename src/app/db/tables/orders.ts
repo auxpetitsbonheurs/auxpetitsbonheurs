@@ -88,11 +88,18 @@ export const orders = pgTable(
     refundDueRs: integer("refund_due_rs"),
     refundedAt: timestamp("refunded_at", tz),
     refundedBy: uuid("refunded_by").references(() => admin.id, { onDelete: "restrict" }),
+    /**
+     * Invoice (S-127): the number taken from `settings.next_invoice_number` the first time an
+     * invoice is generated, and that day in Mauritius. Kept on regeneration; never bumps `version`.
+     */
+    invoiceNumber: integer("invoice_number").unique("orders_invoice_number_key"),
+    invoiceDate: date("invoice_date"),
     version: integer("version").notNull().default(1),
     createdAt: timestamp("created_at", tz).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", tz).notNull().defaultNow(),
   },
   (t) => [
+    check("orders_invoice_ck", sql`(${t.invoiceNumber} is null) = (${t.invoiceDate} is null)`),
     index("orders_status_date_idx").on(t.status, t.fulfilOn),
     index("orders_calendar_idx")
       .on(t.fulfilOn)
