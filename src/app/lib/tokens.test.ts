@@ -90,6 +90,26 @@ describe.each(["light", "dark"] as const)("%s contrast table ratios are the reco
   });
 });
 
+/** Tidy job: the printable invoice's paper colours (S-127) live in app.css `@theme` and in tokens.json `invoice`. */
+describe("invoice colours: tokens.json matches app.css, and the text pairs meet AA on white", () => {
+  type InvoiceToken = { $value: string; $extensions: { css: string; contrast?: { fg?: string; bg?: string; ratio: number; pass: boolean } } };
+  const invoice = (JSON.parse(read("../../../docs/design/tokens.json")) as { invoice: Record<string, InvoiceToken | string> }).invoice;
+  const entries = Object.entries(invoice).filter((entry): entry is [string, InvoiceToken] => typeof entry[1] === "object");
+  const theme = new Map([...css.matchAll(/(--color-invoice-[\w-]+)\s*:\s*([^;]+);/g)].map((m) => [m[1]!, m[2]!.trim().toLowerCase()]));
+
+  test("every --color-invoice-* in app.css has its token, with the same value, and no other", () => {
+    expect(entries.map(([, token]) => token.$extensions.css).sort()).toEqual([...theme.keys()].sort());
+    for (const [, token] of entries) expect(theme.get(token.$extensions.css)).toBe(token.$value.toLowerCase());
+  });
+
+  test.each(entries.filter(([, token]) => token.$extensions.contrast))("%s: the stated ratio is right and at least 4.5:1", (_name, token) => {
+    const pair = token.$extensions.contrast!;
+    const ratio = contrastRatio(pair.fg ?? token.$value, pair.bg ?? token.$value);
+    expect(Math.abs(ratio - pair.ratio)).toBeLessThan(0.1);
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
 describe("contrastRatio", () => {
   test("black on white is 21:1 and a colour on itself is 1:1", () => {
     expect(contrastRatio("#000000", "#FFFFFF")).toBeCloseTo(21, 5);
