@@ -91,7 +91,7 @@ describe("cn", () => {
       }
     }
     expect(mismatches.slice(0, 40)).toEqual([]);
-  });
+  }, 20_000); // ~3 s on CI; pairs grow with the classes in app/, and a loaded runner must not time it out
 
   test("keeps classes under different variants apart, like the reference", () => {
     const samples = byVariants(known).map((bucket) => bucket[0] as string);
