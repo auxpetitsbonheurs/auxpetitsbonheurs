@@ -17,7 +17,7 @@ export interface AdminOrderRow {
   /** Prefix stored at placement (S-058 AC6); null only for a row the trigger never saw. */
   numberPrefix: string | null;
   status: OrderStatus;
-  source: "website" | "custom_request" | "manual";
+  source: "website" | "custom_request" | "manual" | "workshop";
   fulfilment: "delivery" | "pickup";
   fulfilOn: string;
   window: TimeWindow;

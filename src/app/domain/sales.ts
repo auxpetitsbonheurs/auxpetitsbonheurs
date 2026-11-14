@@ -27,7 +27,7 @@ export type SalesRange = (typeof SALES_RANGES)[number];
 /** A custom range covers at most this many days, both ends included (S-171 AC6). */
 export const CUSTOM_RANGE_MAX_DAYS = 366;
 
-export const ORDER_SOURCES = ["website", "custom_request", "manual"] as const satisfies readonly OrderSource[];
+export const ORDER_SOURCES = ["website", "custom_request", "manual", "workshop"] as const satisfies readonly OrderSource[];
 
 /** Average order in whole rupees, half up; no orders gives 0 (S-171 AC3, AC4). */
 export function averageRs(revenueRs: number, orderCount: number): number {
@@ -55,7 +55,7 @@ export interface SalesSummary {
 }
 
 export function summarise(groups: readonly SalesGroup[]): SalesSummary {
-  const bySource: Record<OrderSource, number> = { website: 0, custom_request: 0, manual: 0 };
+  const bySource: Record<OrderSource, number> = { website: 0, custom_request: 0, manual: 0, workshop: 0 };
   const count = { delivery: 0, pickup: 0 };
   const revenue = { delivery: 0, pickup: 0 };
   for (const group of groups) {

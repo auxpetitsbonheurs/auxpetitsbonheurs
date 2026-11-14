@@ -36,6 +36,10 @@ export const ADMIN_MODULE_POLICY = {
   uploads: "admin",
   promotions: "admin",
   promotion: "admin",
+  // Workshop events (E-15 S-301, S-305, S-306): Admins and Owners, like promotions.
+  workshops: "admin",
+  workshop: "admin",
+  "workshop-list": "admin",
   gallery: "admin",
   customers: "admin",
   customer: "admin",

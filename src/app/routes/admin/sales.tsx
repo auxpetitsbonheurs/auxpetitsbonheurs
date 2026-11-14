@@ -1,4 +1,4 @@
-import { Bike, Globe, PencilLine, ShoppingBag, Sparkles } from "lucide-react";
+import { Bike, Globe, Palette, PencilLine, ShoppingBag, Sparkles } from "lucide-react";
 import { type KeyboardEvent, useRef } from "react";
 import { Form, Link, data, useNavigation } from "react-router";
 import { AdminErrorBoundary } from "~/components/admin/admin-states";
@@ -202,7 +202,7 @@ function IconLine({ Icon, label, children }: { Icon: typeof Bike; label: string;
 function Breakdowns({ report }: { report: Report }) {
   const { t } = useI18n();
   const empty = <p className="mt-3">{t("admin.sales.empty")}</p>;
-  const sourceIcon = { website: Globe, custom_request: Sparkles, manual: PencilLine } as const;
+  const sourceIcon = { website: Globe, custom_request: Sparkles, manual: PencilLine, workshop: Palette } as const;
   return (
     <>
       <Section id="sales-fulfilment" title={t("admin.sales.fulfilmentTitle")}>

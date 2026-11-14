@@ -15,6 +15,7 @@ import {
   type UploadScope,
   isIssuedPhotoPath,
   isIssuedPromotionPath,
+  isIssuedWorkshopPath,
   isIssuedSitePath,
   isPhotoVariantWidth,
   isUploadType,
@@ -47,7 +48,7 @@ export function parseUploadRequest(form: FormData): UploadRequest | null {
   const sizes = form.getAll("size").map((s) => (/^\d{1,9}$/.test(String(s)) ? Number(s) : Number.NaN));
   const raw = form.get("scope") ?? "products";
   const pageKey = typeof raw === "string" && raw.startsWith("page:") ? raw.slice(5) : null;
-  const scope = raw === "products" || raw === "site" || raw === "promotions" ? raw : isSitePageKey(pageKey) ? { page: pageKey } : null;
+  const scope = raw === "products" || raw === "site" || raw === "promotions" || raw === "workshops" ? raw : isSitePageKey(pageKey) ? { page: pageKey } : null;
   if (!session.success || types.length !== sizes.length || types.length === 0 || !scope) return null;
   const request: UploadRequest = { uploadSessionId: session.data.toLowerCase(), scope, files: types.map((type, i) => ({ type, size: sizes[i]! })) };
   const variantOf = form.get("variantOf");
@@ -61,6 +62,7 @@ export function parseUploadRequest(form: FormData): UploadRequest | null {
 function isIssuedFor(scope: UploadRequest["scope"], path: string, adminId: string, uploadSessionId: string): boolean {
   if (typeof scope === "object") return isIssuedPagePhotoPath(path, scope.page, adminId, uploadSessionId);
   if (scope === "promotions") return isIssuedPromotionPath(path, adminId, uploadSessionId);
+  if (scope === "workshops") return isIssuedWorkshopPath(path, adminId, uploadSessionId);
   return scope === "site" ? isIssuedSitePath(path, adminId, uploadSessionId) : isIssuedPhotoPath(path, adminId, uploadSessionId);
 }
 

@@ -18,6 +18,7 @@ Source: docs/product/prd.md (section 4 Scope, section 11 Release plan). Gate con
 | E-12 | Polish, test, launch, handover | 6-7 | none (NFR verification) | 0 |
 | E-13 | Site navigation and brand pages (added 2026-11-12) | 3 | 076-081 | 6 |
 | E-14 | Bakery reviews (added 2026-11-12, Should; after E-11) | 5 | 082-086 | 5 |
+| E-15 | Workshop events and registration (added 2026-11-14) | post-MVP | 087-094 | 8 |
 | | | | Total | 86 |
 
 ## Traceability (FR to epic)
@@ -51,6 +52,7 @@ Source: docs/product/prd.md (section 4 Scope, section 11 Release plan). Gate con
 | 025 | E-05 | 050 | E-06 | 075 | E-10 |
 
 Added 2026-11-12 (PRD section 5.10, v0.4): FR-076 to FR-081 are in E-13 (S-242 to S-254); FR-082 to FR-086 are in E-14 (S-261 to S-269).
+Added 2026-11-14 (PRD section 5.11, v0.5): FR-087 to FR-094 are in E-15 (S-300 to S-308).
 
 ## Cuttable Should items
 

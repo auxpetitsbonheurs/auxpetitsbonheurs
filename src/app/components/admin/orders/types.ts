@@ -6,7 +6,7 @@ export interface OrderRowView {
   id: string;
   number: string;
   status: OrderStatus;
-  source: "website" | "custom_request" | "manual";
+  source: "website" | "custom_request" | "manual" | "workshop";
   fulfilment: "delivery" | "pickup";
   fulfilOn: string;
   window: TimeWindow;

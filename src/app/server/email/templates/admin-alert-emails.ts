@@ -13,6 +13,8 @@ export const ADMIN_ALERT_EVENTS = {
   admin_alert_quote_accepted: "quote_accepted",
   admin_alert_quote_declined: "quote_declined",
   admin_alert_customer_cancelled: "customer_cancelled",
+  // E-15 S-307: number and first name only, never the allergies, the people's names or the message.
+  admin_alert_new_workshop: "new_workshop",
 } as const;
 
 export type AdminAlertKey = keyof typeof ADMIN_ALERT_EVENTS;

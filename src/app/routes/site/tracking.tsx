@@ -32,6 +32,7 @@ import { acceptQuote, declineQuote } from "~/server/services/quotes.server";
 import { alertAdmins } from "~/server/notify/admin-alerts.server";
 import { cancelOrderByCustomer } from "~/server/services/cancel-order.server";
 import { isTrackingToken, orderLanguageRedirect, tokenPageHeaders } from "~/server/token-page.server";
+import { findOrderWorkshops } from "~/server/repos/workshops.server";
 import type { Route } from "./+types/tracking";
 
 /** no-store, noindex, no-referrer on every response of this route (NFR-004, threat-model G-07). */
@@ -68,8 +69,12 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
   const { id: _id, locale: _orderLocale, number, orderNumberPrefix, payment: settings, createdAt, refundDueRs, refundedAt, contactWhatsapp, source, ...shown } = order;
   const reference = formatOrderNumber(orderNumberPrefix, number);
   const isRequest = source === "custom_request";
+  // A workshop registration (E-15): the event's title and address instead of a pickup. Never the
+  // allergies or the people's names on this token page (it may be shared).
+  const registration = source === "workshop" ? (await findOrderWorkshops(db, [order.id])).get(order.id) : undefined;
   return {
     isRequest,
+    workshop: registration ? { title: locale === "fr" && registration.titleFr ? registration.titleFr : registration.titleEn, address: registration.address, mapUrl: registration.mapUrl } : null,
     /** This page, for the "Reload" link after a refused answer. */
     selfPath: url.pathname,
     // A custom request's quote (E-08 S-158): the server's amount, note and expiry; Accept and
@@ -172,21 +177,38 @@ function Fact({ term, children }: { term: string; children: React.ReactNode }) {
   );
 }
 
-function OrderFacts({ order }: { order: TrackedView }) {
+type TrackedWorkshop = { title: string; address: string; mapUrl: string | null } | null;
+
+function OrderFacts({ order, workshop }: { order: TrackedView; workshop: TrackedWorkshop }) {
   const { t, locale } = useI18n();
   const windowText = t("checkout.windowLabel", { label: localized(order.window.label, locale), start: order.window.start, end: order.window.end });
   return (
     <dl className="mt-4 grid gap-3">
+      {workshop && <Fact term={t("workshops.tracking.event")}>{workshop.title}</Fact>}
       <Fact term={t("order.tracking.date")}>{order.dateLabel}</Fact>
       <Fact term={t("order.tracking.time")}>{windowText}</Fact>
-      <Fact term={t("order.tracking.fulfilment")}>{order.fulfilment === "delivery" ? t("order.tracking.delivery") : t("order.tracking.pickup")}</Fact>
+      {workshop ? (
+        <Fact term={t("workshops.where")}>
+          {workshop.address}
+          {workshop.mapUrl && (
+            <>
+              {" "}
+              <a href={workshop.mapUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center font-semibold link">
+                {t("workshops.map")}
+              </a>
+            </>
+          )}
+        </Fact>
+      ) : (
+        <Fact term={t("order.tracking.fulfilment")}>{order.fulfilment === "delivery" ? t("order.tracking.delivery") : t("order.tracking.pickup")}</Fact>
+      )}
       {order.address && <Fact term={t("order.tracking.address")}>{order.address}</Fact>}
       {order.landmark && <Fact term={t("order.tracking.landmark")}>{order.landmark}</Fact>}
     </dl>
   );
 }
 
-function ItemsAndTotal({ order }: { order: TrackedView }) {
+function ItemsAndTotal({ order, workshop }: { order: TrackedView; workshop: TrackedWorkshop }) {
   const { t, locale } = useI18n();
   return (
     <div className="mt-6 grid gap-2 rounded-lg bg-muted p-5">
@@ -207,7 +229,7 @@ function ItemsAndTotal({ order }: { order: TrackedView }) {
           <span>{t("checkout.feeLine")}</span>
           {money(order.deliveryFeeRs)}
         </p>
-      ) : (
+      ) : workshop ? null : (
         <p>{t("checkout.pickupFree")}</p>
       )}
       <p className={`${row} border-t border-input pt-2 text-lg font-semibold`}>
@@ -371,9 +393,9 @@ export default function Tracking({ loaderData, actionData }: Route.ComponentProp
         <h2 id="details-heading" className="section-title-start text-h2">
           {t("order.tracking.detailsTitle")}
         </h2>
-        <OrderFacts order={order} />
+        <OrderFacts order={order} workshop={loaderData.workshop} />
         {/* A custom request has no items: its price is the quote above (E-08). */}
-        {!loaderData.isRequest && <ItemsAndTotal order={order} />}
+        {!loaderData.isRequest && <ItemsAndTotal order={order} workshop={loaderData.workshop} />}
       </section>
       <ChangeSection data={loaderData} refusal={refusal} />
     </>

@@ -80,7 +80,10 @@ const SITE_PHOTO_PATH = new RegExp(`^site/(${UUID})/(${UUID})/${UUID}\\.(webp|jp
 /** Promotion images (S-053 AC8): `promotions/<adminId>/<uploadSessionId>/<uuid>.<ext>`, Admins and Owners. */
 const PROMOTION_PHOTO_PATH = new RegExp(`^promotions/(${UUID})/(${UUID})/${UUID}\\.(webp|jpg|png)$`);
 
-export type UploadScope = "products" | "site" | "promotions";
+/** Workshop event photos (E-15 S-301): `workshops/<adminId>/<uploadSessionId>/<uuid>.<ext>`, Admins and Owners. */
+const WORKSHOP_PHOTO_PATH = new RegExp(`^workshops/(${UUID})/(${UUID})/${UUID}\\.(webp|jpg|png)$`);
+
+export type UploadScope = "products" | "site" | "promotions" | "workshops";
 
 export function uploadPrefix(scope: UploadScope, adminId: string, uploadSessionId: string): string {
   return `${scope}/${adminId}/${uploadSessionId}/`;
@@ -152,4 +155,10 @@ export function withVariantPaths(paths: readonly string[]): string[] {
 export function cleanVariantWidths(widths: readonly number[] | null | undefined, width: number): PhotoVariantWidth[] {
   const set = new Set(widths ?? []);
   return variantWidthsFor(width).filter((w) => set.has(w));
+}
+
+/** True when `path` is exactly a workshop photo path issued to this admin for this editor session. */
+export function isIssuedWorkshopPath(path: string, adminId: string, uploadSessionId: string): boolean {
+  const match = WORKSHOP_PHOTO_PATH.exec(path);
+  return match !== null && match[1] === adminId.toLowerCase() && match[2] === uploadSessionId.toLowerCase();
 }

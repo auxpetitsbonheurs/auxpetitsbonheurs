@@ -64,7 +64,7 @@ describe("breakdowns (S-172)", () => {
     for (let i = 0; i < 4; i += 1) await order({ fulfilment: "pickup", totalRs: 500 });
     const report = await salesReport(database.db, NOV, "en");
     expect(report).toMatchObject({ delivery: 6, pickup: 4, deliveryRevenueRs: 6000, pickupRevenueRs: 2000, revenueRs: 8000 });
-    expect(report.bySource).toEqual({ website: 6000, custom_request: 0, manual: 2000 });
+    expect(report.bySource).toEqual({ website: 6000, custom_request: 0, manual: 2000, workshop: 0 });
   });
 
   test("AC2, AC3: top 5 by units from completed orders only, French names, free-text items excluded but in revenue", async () => {

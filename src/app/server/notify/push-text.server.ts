@@ -6,7 +6,7 @@ import type { Locale } from "~/lib/locale";
 import type { PushPayload } from "~/server/push/push.server";
 
 /** The order events that alert admins (push for all; email too for the first five, S-195). */
-export const ORDER_ALERTS = ["new_order", "new_request", "quote_accepted", "quote_declined", "customer_cancelled", "quote_expired", "pending_24h"] as const;
+export const ORDER_ALERTS = ["new_order", "new_request", "quote_accepted", "quote_declined", "customer_cancelled", "quote_expired", "pending_24h", "new_workshop"] as const;
 export type OrderAlert = (typeof ORDER_ALERTS)[number];
 
 export interface AlertOrder {

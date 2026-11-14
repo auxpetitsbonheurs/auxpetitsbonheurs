@@ -86,7 +86,7 @@ function PrivacyNote({ data }: { data: Data }) {
       </Section>
 
       <Section id="privacy-collect" heading={t("privacy.collect.heading")}>
-        <List items={["order", "request", "account", "review", "technical"].map((key) => t(`privacy.collect.${key}`))} />
+        <List items={["order", "request", "workshop", "account", "review", "technical"].map((key) => t(`privacy.collect.${key}`))} />
       </Section>
 
       <Section id="privacy-see" heading={t("privacy.see.heading")}>

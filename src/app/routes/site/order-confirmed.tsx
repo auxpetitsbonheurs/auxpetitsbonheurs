@@ -42,7 +42,7 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
   // order is placed Pending approval (approve-then-pay, 2026-11-14): no payment details yet. The
   // cookie lives 10 minutes; the tracking page always reads the order's current state.
   if (fresh && fresh.locale === locale) {
-    return confirmation(url, params.token, fresh.locale, fresh.number, fresh.leftOut, null, false, offerSaveDetails(request, false), true, fresh.payment?.totalRs ?? null);
+    return confirmation(url, params.token, fresh.locale, fresh.number, fresh.leftOut, null, false, offerSaveDetails(request, false), true, fresh.payment?.totalRs ?? null, false);
   }
   // One query: the order, the number prefix and the left-out names (ADR-0003 amendment 3).
   // Left out (UX audit H1, AC41): product ids from the `apb_left_out` cookie the basket
@@ -65,7 +65,7 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
   const payment = stage === "awaiting_payment"
     ? paymentView({ totalRs: found.totalRs, reference: number, createdAt: found.createdAt, settings: found.payment, locale })
     : null;
-  return confirmation(url, order.trackingToken, order.locale, number, leftOut, payment, found.isRequest, offerSaveDetails(request, found.isRequest), stage === "awaiting_approval", found.totalRs);
+  return confirmation(url, order.trackingToken, order.locale, number, leftOut, payment, found.isRequest, offerSaveDetails(request, found.isRequest), stage === "awaiting_approval", found.totalRs, found.isWorkshop);
 }
 
 /**
@@ -79,13 +79,15 @@ function offerSaveDetails(request: Request, isRequest: boolean): boolean {
 }
 
 /** The page data, the same whether it came from the cookie or the database. */
-function confirmation(url: URL, token: string, orderLocale: Locale, number: string, leftOut: string[], payment: PaymentView | null, isRequest: boolean, saveDetails: boolean, awaitingApproval = false, totalRs: number | null = null) {
+function confirmation(url: URL, token: string, orderLocale: Locale, number: string, leftOut: string[], payment: PaymentView | null, isRequest: boolean, saveDetails: boolean, awaitingApproval = false, totalRs: number | null = null, isWorkshop = false) {
   return {
     /** Pending approval: "we confirm it, then send you the payment details" (approve-then-pay). */
     awaitingApproval,
+    /** A workshop registration (E-15 S-303 AC6): received, the bakery accepts it, then payment. */
+    isWorkshop,
     /** The order total, shown with the next steps while it waits for approval (null when unknown). */
     totalRs: awaitingApproval ? totalRs : null,
-    title: translate(isRequest ? "customRequest.confirmed.metaTitle" : "order.confirmed.metaTitle", localeFromPathname(url.pathname)),
+    title: translate(isWorkshop ? "workshops.confirmed.metaTitle" : isRequest ? "customRequest.confirmed.metaTitle" : "order.confirmed.metaTitle", localeFromPathname(url.pathname)),
     /** A custom cake request (E-08 S-151 AC2): "Request received, we will send you a quote". */
     isRequest,
     number,
@@ -149,21 +151,26 @@ export default function OrderConfirmed({ loaderData }: Route.ComponentProps) {
   const heading = useFocusOnArrival();
   const hydrated = useHydrated();
   const { status, copy } = useCopyStatus();
-  const { number, trackingUrl, leftOut, payment, isRequest, awaitingApproval, offerSaveDetails: offerSave, saveDetailsUrl } = loaderData;
+  const { number, trackingUrl, leftOut, payment, isRequest, awaitingApproval, isWorkshop, offerSaveDetails: offerSave, saveDetailsUrl } = loaderData;
   const copiedNumber = t("order.confirmed.copiedNumber");
   const copiedLink = t("order.confirmed.copiedLink");
   return (
     <>
       <h1 ref={heading} tabIndex={-1} className="outline-none">
-        {t(isRequest ? "customRequest.confirmed.heading" : "order.confirmed.heading")}
+        {t(isWorkshop ? "workshops.confirmed.heading" : isRequest ? "customRequest.confirmed.heading" : "order.confirmed.heading")}
       </h1>
       {/* Approve, then pay (2026-11-14): no Juice details until the bakery approves the order. */}
-      {awaitingApproval && <NextSteps totalRs={loaderData.totalRs} />}
+      {awaitingApproval && !isWorkshop && <NextSteps totalRs={loaderData.totalRs} />}
       {payment && <PaymentInstructions view={payment} />}
-      <NumberCard label={t(isRequest ? "customRequest.confirmed.numberLabel" : "order.confirmed.numberLabel")} number={number} copied={status === copiedNumber} onCopy={hydrated ? () => copy(number, copiedNumber) : undefined} />
+      <NumberCard label={t(isWorkshop ? "workshops.confirmed.numberLabel" : isRequest ? "customRequest.confirmed.numberLabel" : "order.confirmed.numberLabel")} number={number} copied={status === copiedNumber} onCopy={hydrated ? () => copy(number, copiedNumber) : undefined} />
       {leftOut.length > 0 && (
         <Alert tone="warning" title={t("order.confirmed.leftOutTitle")} className="mt-6">
           <p>{t("order.confirmed.leftOutBody", { count: leftOut.length, names: nameList(leftOut, locale) })}</p>
+        </Alert>
+      )}
+      {isWorkshop && !payment && (
+        <Alert tone="info" title={t("workshops.confirmed.notice")} className="mt-6">
+          <p>{t("workshops.confirmed.body")}</p>
         </Alert>
       )}
       {isRequest && (

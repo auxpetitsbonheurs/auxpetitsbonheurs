@@ -11,6 +11,7 @@ import { insertCustomerAccount } from "~/server/testing/admins";
 import { FakeAuth } from "~/server/testing/fake-auth";
 import { FakeUserAdmin } from "~/server/testing/fake-user-admin";
 import { insertTestCustomer, insertTestOrder } from "~/server/testing/sales";
+import { insertWorkshopEvent, registerTest } from "~/server/testing/workshops";
 import { anonymiseCustomer } from "./anonymise-customer.server";
 
 let database: TestDatabase;
@@ -132,5 +133,21 @@ describe("anonymiseCustomer (PRV-02, S-229 AC6)", () => {
     expect(found.rows).toEqual([]);
     const { rows: [salesAfter] } = await database.client.query("select coalesce(sum(total_rs), 0)::int as total from orders where status = 'completed'");
     expect(salesAfter).toEqual(salesBefore);
+  });
+});
+
+describe("workshop registrations (E-15 S-308 AC1)", () => {
+  test("anonymising clears the allergies (health data) and the people's names of every registration", async () => {
+    // The other tests' orders take their numbers directly; the procedure counts from the counter.
+    await database.client.query("update counter set value = (select coalesce(max(number), 0) from orders) where name = 'order_number'");
+    const eventId = await insertWorkshopEvent(database);
+    const email = `wk-${crypto.randomUUID().slice(0, 8)}@example.com`;
+    const placed = await registerTest(database, eventId, { "contact.email": email, allergiesChoice: "yes", allergies: "Peanuts", peopleNames: "Aisha and Ravi" });
+    await database.client.query("update orders set status = 'completed' where id = $1", [placed.orderId]);
+    const { id } = await one<{ id: string }>("select customer_id as id from orders where id = $1", [placed.orderId]);
+
+    expect(await run(id)).toEqual({ ok: true, outcome: "anonymised" });
+
+    expect(await one("select allergies, people_names, cakes from workshop_registration where order_id = $1", [placed.orderId])).toEqual({ allergies: null, people_names: null, cakes: 1 });
   });
 });

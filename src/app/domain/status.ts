@@ -59,7 +59,7 @@ function websitePath(fulfilment: Fulfilment): OrderStatus[] {
   return ["pending_approval", ...paidPath(fulfilment)];
 }
 
-export type OrderSource = "website" | "custom_request" | "manual";
+export type OrderSource = "website" | "custom_request" | "manual" | "workshop";
 
 /** A custom request starts with its quote: Quote needed, Quote sent, then the fulfilment path (S-095 AC1). */
 function quotePath(fulfilment: Fulfilment): OrderStatus[] {
@@ -71,9 +71,12 @@ function quotePath(fulfilment: Fulfilment): OrderStatus[] {
  * The progress list for an order, or null when the status is not on its path (declined,
  * cancelled, closed get an Alert instead, S-095 AC2).
  */
+/** A workshop registration (E-15, ADR-0005): approve then pay, then the event itself. */
+const WORKSHOP_PATH: OrderStatus[] = ["pending_approval", "awaiting_payment", "approved", "completed"];
+
 export function customerProgress(status: OrderStatus, fulfilment: Fulfilment, source: OrderSource = "website"): Progress | null {
   // A manual order (E-07) is entered approved and keeps its earlier list.
-  const steps = source === "custom_request" ? quotePath(fulfilment) : source === "manual" ? paidPath(fulfilment) : websitePath(fulfilment);
+  const steps = source === "workshop" ? WORKSHOP_PATH : source === "custom_request" ? quotePath(fulfilment) : source === "manual" ? paidPath(fulfilment) : websitePath(fulfilment);
   const current = steps.indexOf(status);
   return current === -1 ? null : { steps, current };
 }

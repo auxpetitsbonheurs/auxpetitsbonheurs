@@ -8,6 +8,9 @@ import { OrderHeader } from "~/components/admin/order/header";
 import { PaymentSection } from "~/components/admin/order/payment-section";
 import { PrivateNote } from "~/components/admin/order/private-note";
 import { CustomerSection, FulfilmentSection, ItemsSection, ReasonSection, RequestSection } from "~/components/admin/order/sections";
+import { WorkshopSection } from "~/components/admin/order/workshop-section";
+import { timeRange } from "~/domain/workshop";
+import { findOrderWorkshops } from "~/server/repos/workshops.server";
 import { QuoteSheet, type QuoteResult, RequestPhotos } from "~/components/admin/request-panel";
 import { NotFoundContent } from "~/components/shell/not-found-content";
 import { adminAllowed } from "~/domain/order-transitions";
@@ -48,7 +51,7 @@ export async function loader(args: Route.LoaderArgs) {
   const id = OrderId.safeParse(args.params.id);
   if (!id.success) throw data(null, { status: 404 });
   const db = args.context.get(requestDbContext).db;
-  const [order, events, shop] = await Promise.all([findAdminOrder(db, id.data), listOrderEvents(db, id.data), readWhatsappSettings(db)]);
+  const [order, events, shop, workshops] = await Promise.all([findAdminOrder(db, id.data), listOrderEvents(db, id.data), readWhatsappSettings(db), findOrderWorkshops(db, [id.data])]);
   if (!order) throw data(null, { status: 404 });
   // The prefix stored at placement (S-058 AC6); the Settings one only for a row without it.
   const number = formatOrderNumber(order.numberPrefix ?? (await getSiteSettings(db)).checkout.orderNumberPrefix, order.number);
@@ -60,8 +63,14 @@ export async function loader(args: Route.LoaderArgs) {
   const request = order.source === "custom_request"
     ? await adminRequestView(db, order.id, { photos: args.context.get(requestPhotosContext), supabaseUrl: args.context.get(publicConfigContext).supabaseUrl, today, quoteValidityDays: (await getSiteSettings(db)).quoteValidityDays })
     : null;
+  const registration = workshops.get(order.id);
+  const allowed = adminAllowed(order.status, order.fulfilment, { refundPending: order.refundDueRs !== null && refundedAt === null });
   return {
     request,
+    // E-15 S-305: the event, people's names and allergies of a workshop registration.
+    workshop: registration
+      ? { eventId: registration.eventId, title: registration.titleEn, address: registration.address, cakes: registration.cakes, peopleNames: registration.peopleNames, allergies: registration.allergies, timeLabel: timeRange(order.window.start, order.window.end, me.locale) }
+      : null,
     today,
     // The edit's flash (S-123 AC8): only known warning words are read back.
     // E-07 S-131: `created=1` after a manual order's save, with its warnings (S-134).
@@ -85,7 +94,8 @@ export async function loader(args: Route.LoaderArgs) {
     whatsapp: { templates: whatsappMenu({ ...order, number }, shop, args.url.origin, me.locale) },
     payment: paymentFacts(order, now, me.locale),
     adminNote: adminNote ?? "",
-    allowed: adminAllowed(order.status, order.fulfilment, { refundPending: order.refundDueRs !== null && refundedAt === null }),
+    // A registration follows its event (S-306): no preparation steps and no line edits.
+    allowed: registration ? { ...allowed, advance: null, revert: null, edit: false } : allowed,
     events: events.map((event) => eventLine(event, me.locale)),
   };
 }
@@ -177,7 +187,7 @@ export default function AdminOrder({ loaderData, actionData }: Route.ComponentPr
         <OrderConflict data={loaderData} actionData={actionData} />
         <PaymentSection data={loaderData} />
         <CustomerSection data={loaderData} />
-        <FulfilmentSection data={loaderData} />
+        {loaderData.workshop ? <WorkshopSection workshop={loaderData.workshop} dateLabel={loaderData.order.dateLabel} timeLabel={loaderData.workshop.timeLabel} /> : <FulfilmentSection data={loaderData} />}
         {/* A custom request has no items: its price is the quote in the request section (E-08). */}
         {!loaderData.request && <ItemsSection data={loaderData} />}
         <RequestSection data={loaderData} />

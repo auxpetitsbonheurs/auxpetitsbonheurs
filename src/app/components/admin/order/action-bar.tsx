@@ -130,8 +130,9 @@ function PrimaryAction({ data: { order, allowed }, busy, onConfirmPaid }: { data
       </Button>
     );
   }
+  // A workshop registration is approved like an order (approve then pay, ADR-0005), named Accept (E-15 S-304).
   const primary = allowed.approve
-    ? { intent: "approve", label: t("admin.order.approveNamed", { number: order.number }) }
+    ? { intent: "approve", label: order.source === "workshop" ? t("admin.workshops.acceptNamed", { number: order.number }) : t("admin.order.approveNamed", { number: order.number }) }
     : allowed.advance
       ? { intent: "advance", label: t(`admin.order.next.${allowed.advance}`) }
       : null;

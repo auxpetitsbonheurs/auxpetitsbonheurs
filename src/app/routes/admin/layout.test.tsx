@@ -120,6 +120,7 @@ describe("More (AC3, AC4)", () => {
     // E-14 S-263: Reviews (Admins and Owners), first so the count is seen at once.
     { key: "reviews", href: "/admin/reviews", label: "Reviews" },
     { key: "pages", href: "/admin/pages", label: "Pages" },
+    { key: "workshops", href: "/admin/workshops", label: "Workshops" },
     { key: "promotions", href: "/admin/promotions", label: "Promotions" },
     { key: "gallery", href: "/admin/gallery", label: "Gallery" },
     { key: "customers", href: "/admin/customers", label: "Customers" },
@@ -154,7 +155,7 @@ describe("More (AC3, AC4)", () => {
 
     const data = await moreLoader(args("/admin/more"));
 
-    expect(data.items.map((i) => i.label)).toEqual(["Avis", "Pages", "Promotions", "Galerie", "Clients", "Résumé des ventes", "Mon profil"]);
+    expect(data.items.map((i) => i.label)).toEqual(["Avis", "Pages", "Ateliers", "Promotions", "Galerie", "Clients", "Résumé des ventes", "Mon profil"]);
     expect(data.title).toBe("Plus");
   });
 });

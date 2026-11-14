@@ -207,7 +207,10 @@
       "CANCEL_NOT_ALLOWED": "Cette commande ne peut plus être annulée ici. Écrivez-nous sur WhatsApp.",
       "BOT_CHECK_FAILED": "Nous n'avons pas pu vérifier que vous êtes une personne. Rechargez la page ou écrivez-nous sur WhatsApp.",
       "QUOTE_EXPIRED": "Ce devis a expiré. Envoyez une nouvelle demande ou écrivez-nous sur WhatsApp.",
-      "REVIEW_CHANGED": "Quelqu’un a déjà décidé pour cet avis."
+      "REVIEW_CHANGED": "Quelqu’un a déjà décidé pour cet avis.",
+      "WORKSHOP_FULL": "Il ne reste pas assez de places pour cette inscription.",
+      "WORKSHOP_CLOSED": "Les inscriptions à cet atelier sont closes.",
+      "EVENT_CHANGED": "Cet atelier a été modifié par quelqu'un d'autre. Rechargez la page."
     }
   },
   "product": {
@@ -461,7 +464,8 @@
       "sourceName": {
         "website": "Site web",
         "custom_request": "Demande sur mesure",
-        "manual": "Saisie manuelle"
+        "manual": "Saisie manuelle",
+        "workshop": "Atelier"
       },
       "tabsLabel": "Listes de commandes",
       "tabReview": "À valider",
@@ -719,7 +723,8 @@
       "toReview": "{{count}} à valider",
       "pages": "Pages",
       "promotions": "Promotions",
-      "reviews": "Avis"
+      "reviews": "Avis",
+      "workshops": "Ateliers"
     },
     "customers": {
       "metaTitle": "Clients",
@@ -831,7 +836,8 @@
       "source": {
         "website": "Site web",
         "custom_request": "Demande sur mesure",
-        "manual": "Manuelle"
+        "manual": "Manuelle",
+        "workshop": "Ateliers"
       },
       "unpaidTitle": "Commandes non payées",
       "unpaidHelp": "Commandes confirmées de cette période pas encore marquées payées.",
@@ -2077,6 +2083,11 @@
       "test": {
         "title": "Test de notification",
         "body": "Les alertes push fonctionnent sur cet appareil."
+      },
+      "new_workshop": {
+        "title": "Nouvelle inscription à un atelier {{number}}",
+        "body": "De {{name}}. Acceptez ou refusez-la.",
+        "bodyNoName": "Acceptez ou refusez-la."
       }
     },
     "orderForm": {
@@ -2367,6 +2378,132 @@
       "print": "Imprimer",
       "back": "Retour à la commande",
       "metaTitle": "Facture {{number}}"
+    },
+    "workshops": {
+      "new": "Nouvel atelier",
+      "newTitle": "Nouvel atelier",
+      "empty": "Aucun atelier pour l'instant. Créez le premier avec Nouvel atelier.",
+      "upcoming": "À venir",
+      "past": "Passés",
+      "back": "Tous les ateliers",
+      "backToEvent": "Retour à l'atelier",
+      "held": "{{held}} places réservées sur {{capacity}}",
+      "pending_one": "{{count}} à traiter",
+      "pending_other": "{{count}} à traiter",
+      "status": {
+        "draft": "Brouillon",
+        "published": "Publié",
+        "cancelled": "Annulé",
+        "completed": "Terminé"
+      },
+      "statusLine": "Statut : {{status}}",
+      "publish": "Publier",
+      "unpublish": "Retirer du site",
+      "complete": "Marquer comme terminé",
+      "cancel": "Annuler l'atelier",
+      "printList": "Imprimer ou partager la liste",
+      "viewOnSite": "Voir sur le site",
+      "cancelTitle": "Annuler cet atelier ?",
+      "cancelBody_one": "{{count}} place est réservée. Chaque inscrit est prévenu par e-mail et son inscription est annulée ; les inscriptions payées devront être remboursées.",
+      "cancelBody_other": "{{count}} places sont réservées. Chaque inscrit est prévenu par e-mail et son inscription est annulée ; les inscriptions payées devront être remboursées.",
+      "cancelReason": "Raison affichée aux inscrits",
+      "cancelConfirm": "Annuler l'atelier",
+      "keep": "Le garder",
+      "cancelledBecause": "Raison : {{reason}}",
+      "cannot": {
+        "publish": "Seul un brouillon dont la date n'est pas passée peut être publié.",
+        "unpublish": "Seul un atelier publié peut être retiré du site.",
+        "complete": "Il peut être marqué terminé à partir de sa date, une fois publié.",
+        "cancelEvent": "Cet atelier est déjà annulé ou terminé."
+      },
+      "registrations_one": "{{count}} inscription",
+      "registrations_other": "{{count}} inscriptions",
+      "placesLeft_one": "{{count}} place restante",
+      "placesLeft_other": "{{count}} places restantes",
+      "totalsLabel": "Gâteaux par choix",
+      "optionTotal_one": "{{name}} : {{count}} gâteau",
+      "optionTotal_other": "{{name}} : {{count}} gâteaux",
+      "noRegistrations": "Aucune inscription pour l'instant.",
+      "openRegistration": "Inscription {{number}} de {{name}}",
+      "cakesCount_one": "{{count}} gâteau",
+      "cakesCount_other": "{{count}} gâteaux",
+      "peopleLine": "Participants : {{names}}",
+      "messageLine": "Message : {{text}}",
+      "allergiesLabel": "Allergies ou régime alimentaire",
+      "allergiesNone": "Aucune allergie",
+      "tellOnWhatsapp": "Prévenir {{name}} sur WhatsApp",
+      "waCancelled": "Bonjour, nous sommes vraiment désolés : nous avons dû annuler l'atelier {{title}}. Nous vous tiendrons au courant du prochain.",
+      "waHello": "Bonjour, au sujet de votre inscription à l'atelier {{title}} :",
+      "editSection": "Modifier l'atelier",
+      "newSection": "Détails de l'atelier",
+      "textSection": "Textes",
+      "titleEn": "Titre (anglais)",
+      "titleFr": "Titre (français)",
+      "descriptionEn": "Description (anglais)",
+      "descriptionFr": "Description (français)",
+      "photoSection": "Photo",
+      "photo": "Photo de l'atelier",
+      "photoHint": "Facultatif. Une photo des gâteaux ou d'un atelier passé. Elle est réduite sur votre téléphone avant l'envoi.",
+      "whenSection": "Quand et où",
+      "date": "Date",
+      "startsAt": "Début",
+      "endsAt": "Fin",
+      "address": "Adresse",
+      "addressHint": "Où les participants viennent, comme vous l'écririez à un client.",
+      "mapUrl": "Lien de carte",
+      "mapUrlHint": "Facultatif. Un lien Google Maps commençant par https://.",
+      "when": "Quand",
+      "event": "Atelier",
+      "cakes": "Gâteaux",
+      "people": "Participants",
+      "placesSection": "Prix et places",
+      "price": "Prix par gâteau (Rs)",
+      "priceHint": "Un gâteau est partagé par 2 personnes au plus.",
+      "capacity": "Nombre de gâteaux",
+      "capacityHint": "Combien de gâteaux ou de postes vous préparez.",
+      "optionsSection": "Choix de gâteaux",
+      "optionsHint": "Ce que les participants choisissent pour chaque gâteau, par exemple Chocolat ou Red velvet.",
+      "optionEn": "Gâteau {{n}} (anglais)",
+      "optionFr": "Gâteau {{n}} (français)",
+      "addOption": "Ajouter un choix de gâteau",
+      "removeOption": "Supprimer le choix de gâteau {{n}}",
+      "save": "Enregistrer l'atelier",
+      "saved": "Atelier enregistré",
+      "errors": {
+        "field": "{{field}} : à vérifier.",
+        "endsAt": "Heure de fin : elle doit être après le début.",
+        "options": "Choix de gâteaux : indiquez au moins un gâteau, chacun avec un nom en anglais.",
+        "mapUrl": "Lien de carte : il doit commencer par https://.",
+        "capacityHeld_one": "{{count}} place est déjà réservée : le nombre de gâteaux ne peut pas être plus bas.",
+        "capacityHeld_other": "{{count}} places sont déjà réservées : le nombre de gâteaux ne peut pas être plus bas."
+      },
+      "field": {
+        "titleEn": "Titre en anglais",
+        "titleFr": "Titre en français",
+        "descriptionEn": "Description en anglais",
+        "descriptionFr": "Description en français",
+        "photoPath": "Photo",
+        "eventOn": "Date",
+        "startsAt": "Heure de début",
+        "endsAt": "Heure de fin",
+        "address": "Adresse",
+        "mapUrl": "Lien de carte",
+        "priceRs": "Prix par gâteau",
+        "capacity": "Nombre de gâteaux",
+        "options": "Choix de gâteaux",
+        "id": "Atelier",
+        "version": "Atelier",
+        "form": "Atelier"
+      },
+      "orderSection": "Atelier",
+      "acceptNamed": "Accepter {{number}}",
+      "listTitle": "Liste : {{title}}",
+      "share": {
+        "cakes": "{{count}} gâteaux sur {{capacity}}",
+        "allergies_one": "{{count}} inscription avec allergies : voir la liste imprimée.",
+        "allergies_other": "{{count}} inscriptions avec allergies : voir la liste imprimée."
+      },
+      "shareNote": "Partager n'envoie que le nombre de gâteaux, jamais les noms, numéros ou allergies."
     }
   },
   "email": {
@@ -2598,6 +2735,51 @@
       "customer_cancelled": {
         "line": "{{name}} a annulé cette commande.",
         "lineNoName": "Le client a annulé cette commande."
+      },
+      "new_workshop": {
+        "line": "{{name}} s'est inscrit(e) à un atelier. Acceptez ou refusez l'inscription.",
+        "lineNoName": "Une nouvelle inscription à un atelier attend votre réponse."
+      }
+    },
+    "workshop": {
+      "where": "Adresse",
+      "event": "Atelier",
+      "cakes": "Gâteaux",
+      "cakesValue_one": "{{count}} gâteau (2 personnes au plus)",
+      "cakesValue_other": "{{count}} gâteaux (2 personnes au plus chacun)",
+      "people": "Participants",
+      "allergies": "Allergies ou régime alimentaire",
+      "allergiesNone": "Aucune",
+      "seeWorkshops": "Voir nos ateliers",
+      "received": {
+        "subject": "Inscription à l'atelier {{number}} reçue",
+        "heading": "Nous avons reçu votre inscription",
+        "intro": "Merci ! L'inscription {{number}} attend notre réponse. Dès que nous l'acceptons, nous vous écrivons comment payer par Juice. Votre place est réservée en attendant."
+      },
+      "accepted": {
+        "subject": "Inscription {{number}} acceptée : merci de payer",
+        "heading": "Votre inscription est acceptée",
+        "intro": "Bonne nouvelle : l'inscription {{number}} est acceptée. Payez {{amount}} par MCB Juice sous 24 heures pour garder votre place."
+      },
+      "confirmed": {
+        "subject": "Votre place à l'atelier {{number}} est confirmée",
+        "heading": "À bientôt à l'atelier",
+        "intro": "Paiement reçu, merci : l'inscription {{number}} est confirmée. Voici le récapitulatif."
+      },
+      "declined": {
+        "intro": "Nous sommes désolés : nous ne pouvons pas accepter l'inscription {{number}} à l'atelier."
+      },
+      "reminder": {
+        "intro": "Nous n'avons pas encore reçu le paiement de l'inscription {{number}} à l'atelier. Merci de payer bientôt pour garder votre place."
+      },
+      "unpaid": {
+        "intro": "Nous n'avons pas reçu le paiement de l'inscription {{number}} sous 24 heures : la place a été libérée.",
+        "again": "Vous pouvez vous inscrire à nouveau tant qu'il reste des places."
+      },
+      "cancelled": {
+        "subject": "Atelier annulé : {{title}} ({{number}})",
+        "heading": "L'atelier est annulé",
+        "intro": "Nous sommes désolés : nous avons dû annuler {{title}}. Votre inscription {{number}} est annulée."
       }
     },
     "paymentInstructions": {
@@ -3189,7 +3371,8 @@
       "request": "Quand vous demandez un gâteau sur mesure : les mêmes informations, l'occasion, vos idées et jusqu'à 5 photos. Elles nous servent à préparer un devis et le gâteau.",
       "account": "Si vous créez un compte : votre nom, e-mail, téléphone et adresses enregistrées, pour ne pas les retaper et voir vos commandes. Votre mot de passe est géré par notre service de connexion ; nous ne le voyons jamais.",
       "review": "Si vous laissez un avis : votre note, votre commentaire et votre prénom avec l'initiale du nom, affichés sur le site une fois l'avis approuvé par la pâtisserie.",
-      "technical": "Pour éviter les abus : une forme brouillée (hachée) de votre adresse internet et de votre e-mail, gardée un jour. Nos journaux serveur ne contiennent ni nom, ni e-mail, ni téléphone, ni lien de commande."
+      "technical": "Pour éviter les abus : une forme brouillée (hachée) de votre adresse internet et de votre e-mail, gardée un jour. Nos journaux serveur ne contiennent ni nom, ni e-mail, ni téléphone, ni lien de commande.",
+      "workshop": "Quand vous vous inscrivez à un atelier : votre nom, téléphone, e-mail, les gâteaux choisis, les noms des participants, votre message et, si vous nous les indiquez, vos allergies ou votre régime. Nous utilisons les allergies uniquement pour préparer votre atelier ; seule l'équipe de la pâtisserie les voit, elles ne figurent jamais dans les notifications envoyées à l'équipe, et elles sont effacées avec vos autres données sur demande."
     },
     "see": {
       "heading": "Qui voit vos informations",
@@ -3228,6 +3411,89 @@
       "heading": "La loi",
       "body": "Nous suivons la loi mauricienne de 2017 sur la protection des données (Data Protection Act 2017, {{status}}). Si notre réponse ne vous convient pas, vous pouvez contacter le Data Protection Office de Maurice.",
       "confirmed": "confirmé par la pâtisserie"
+    }
+  },
+  "workshops": {
+    "upcomingTitle": "Prochains ateliers",
+    "perCake": "{{price}} par gâteau · jusqu'à 2 personnes par gâteau",
+    "placesLeft_one": "{{count}} place restante",
+    "placesLeft_other": "{{count}} places restantes",
+    "full": "Complet",
+    "see": "Voir l'atelier et s'inscrire",
+    "seeFull": "Voir l'atelier",
+    "when": "Quand",
+    "where": "Où",
+    "price": "Prix",
+    "places": "Places",
+    "map": "Ouvrir dans Maps",
+    "back": "Tous les ateliers",
+    "fullTitle": "Cet atelier est complet",
+    "fullBody": "Écrivez-nous et nous vous dirons si une place se libère, ou quand aura lieu le prochain atelier.",
+    "cancelledTitle": "Cet atelier a été annulé",
+    "pastTitle": "Cet atelier a eu lieu",
+    "closedBody": "Découvrez les prochains ateliers, ou écrivez-nous pour connaître le suivant.",
+    "registerTitle": "S'inscrire",
+    "dateTime": "{{date}}, {{time}}",
+    "metaDescription": "{{title}} le {{date}} chez Aux petits bonheurs : {{price}} par gâteau, jusqu'à 2 personnes par gâteau. Inscription en ligne.",
+    "whatsappFull": "Bonjour, je souhaite une place à l'atelier {{title}} si une place se libère.",
+    "confirmed": {
+      "metaTitle": "Inscription reçue",
+      "heading": "Merci, nous avons reçu votre inscription",
+      "numberLabel": "Votre numéro d'inscription",
+      "notice": "Votre place est réservée pendant que nous examinons votre inscription",
+      "body": "Nous confirmons par e-mail, en général sous un jour, avec les informations pour payer par Juice. Votre place est confirmée une fois le paiement reçu."
+    },
+    "tracking": {
+      "event": "Atelier"
+    }
+  },
+  "workshopForm": {
+    "intro": "Une inscription correspond à un gâteau, pour 2 personnes au plus. Nous confirmons par e-mail, puis vous payez par Juice.",
+    "sections": {
+      "cakes": "Vos gâteaux",
+      "people": "Qui vient",
+      "contact": "Vos coordonnées",
+      "send": "Envoyer votre inscription"
+    },
+    "cakes": "Nombre de gâteaux",
+    "cakesOption_one": "{{count}} gâteau",
+    "cakesOption_other": "{{count}} gâteaux",
+    "cakesHint_one": "Jusqu'à 2 personnes par gâteau. {{count}} place restante.",
+    "cakesHint_other": "Jusqu'à 2 personnes par gâteau. {{count}} places restantes.",
+    "cake": "Gâteau {{n}}",
+    "cakeChoose": "Choisissez un gâteau",
+    "people": "Noms des personnes qui viennent",
+    "peopleHint": "Par exemple : Aisha et Ravi.",
+    "allergiesLegend": "Allergies ou régime alimentaire",
+    "allergiesHint": "Merci de choisir une réponse. Nous l'utilisons uniquement pour préparer votre atelier.",
+    "allergiesNone": "Aucune",
+    "allergiesYes": "Oui, merci de préciser",
+    "allergiesDescribe": "Précisez les allergies ou le régime",
+    "allergiesDescribeHint": "Par exemple : fruits à coque pour une personne, sans gélatine.",
+    "message": "Message",
+    "optional": "facultatif",
+    "total": "Total : {{amount}}",
+    "notice": "Votre inscription est confirmée quand nous l'acceptons et que vous avez payé par Juice.",
+    "send": "S'inscrire",
+    "sending": "Envoi de votre inscription…",
+    "botFailed": "Nous n'avons pas pu vérifier que vous n'êtes pas un robot. Rechargez la page, ou écrivez-nous sur WhatsApp.",
+    "botLoading": "Un instant : nous vérifions encore que vous n'êtes pas un robot. Appuyez ensuite à nouveau sur S'inscrire.",
+    "rateLimited": "Trop d'inscriptions depuis cette connexion. Réessayez dans {{minutes}} minutes.",
+    "keyReused": "Vérifiez vos coordonnées et envoyez à nouveau votre inscription.",
+    "full_one": "Il ne reste plus que {{count}} place. Choisissez moins de gâteaux.",
+    "full_other": "Il ne reste plus que {{count}} places. Choisissez moins de gâteaux.",
+    "fullNone": "Désolés, les dernières places viennent d'être prises.",
+    "closed": "Les inscriptions à cet atelier sont closes.",
+    "errors": {
+      "contactName": "Indiquez votre nom.",
+      "contactPhone": "Indiquez un numéro de téléphone, par exemple 5712 3456.",
+      "contactEmail": "Indiquez une adresse e-mail, par exemple nom@exemple.com.",
+      "cakes": "Choisissez le nombre de gâteaux.",
+      "cake": "Choisissez le gâteau.",
+      "allergiesChoice": "Choisissez Aucune, ou Oui et précisez.",
+      "allergies": "Précisez les allergies ou le régime.",
+      "peopleNames": "300 caractères au maximum.",
+      "message": "1000 caractères au maximum."
     }
   }
 }
