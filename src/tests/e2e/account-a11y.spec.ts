@@ -39,7 +39,7 @@ const SIGNED_IN = ["/account", "/account/orders", "/account/addresses"];
 test.describe("S-218 account screens sweep", () => {
   for (const prefix of ["", "/fr"]) {
     test(`AC1, AC3, AC4, AC5 (${prefix || "en"}): signed-out screens`, async ({ page }) => {
-      test.setTimeout(120_000);
+      test.slow();
       for (const path of SIGNED_OUT) {
         await open(page, `${prefix}${path}`);
         await sweep(page);
@@ -47,7 +47,7 @@ test.describe("S-218 account screens sweep", () => {
     });
 
     test(`AC1, AC3, AC4, AC5 (${prefix || "en"}): signed-in screens and Save my details`, async ({ page, db }) => {
-      test.setTimeout(120_000);
+      test.slow();
       const customer = await createE2eCustomer(db);
       const order = await createOrderFor(db, `sweep-${Date.now()}@e2e.test`);
       // Sign in first, on the English page (the French pages below remember French afterwards).

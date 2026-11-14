@@ -82,6 +82,8 @@ const PREFIXES: [string, (value: string) => string | undefined][] = [
     return RADIUS.test(v) ? "rounded" : undefined;
   }],
   ["shadow", (v) => (SHADOW.test(v) ? "shadow" : "shadow-color")],
+  ["border-spacing", when(SPACING, "border-spacing")],
+  ["ring-offset", (v) => (NUMBER.test(v) ? "ring-offset-w" : "ring-offset-color")],
   ["ring", (v) => (NUMBER.test(v) ? "ring-w" : "ring-color")],
   ["outline-offset", when(NUMBER, "outline-offset")],
   ["outline", (v) => (NUMBER.test(v) ? "outline-w" : OUTLINE_STYLE.test(v) ? "outline-style" : "outline-color")],

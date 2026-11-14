@@ -150,7 +150,6 @@ export default function SignUp({ loaderData, actionData }: Route.ComponentProps)
         </Link>
       </p>
       <p className="mt-2 text-sm text-muted-foreground">{t("account.common.guestNote")}</p>
-      <PrivacyNoteLink className="mt-2" />
     </AuthCard>
   );
 }

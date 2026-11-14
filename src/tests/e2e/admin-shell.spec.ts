@@ -117,20 +117,20 @@ test.describe("S-033 admin frame", () => {
     await expect(page.getByRole("banner")).toContainText("Admin");
   });
 
-  test("AC7: Calendar and Gallery show Not available yet inside the frame; Today links to orders to review", async ({ page }) => {
+  test("AC7: Gallery shows Not available yet inside the frame (Calendar is built); Today links to orders to review", async ({ page }) => {
     await signIn(page, E2E_ACCOUNTS.owner, "/admin");
     await expect(page.getByRole("main").getByRole("link", { name: /^To review: \d+ orders?$/ })).toHaveAttribute("href", "/admin/orders?tab=review");
-    for (const [path, title] of [
-      ["/admin/calendar", "Calendar"],
-      ["/admin/gallery", "Gallery"],
-    ] as const) {
-      const response = await page.goto(path);
-      expect(response!.status(), path).toBe(200);
-      await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
-      await expect(page.getByText("Not available yet")).toBeVisible();
-      await expect(page.getByRole("link", { name: "Back to Today" })).toBeVisible();
-      await expect(bar(page)).toBeVisible();
-    }
+    const gallery = await page.goto("/admin/gallery");
+    expect(gallery!.status(), "/admin/gallery").toBe(200);
+    await expect(page.getByRole("heading", { level: 1, name: "Gallery" })).toBeVisible();
+    await expect(page.getByText("Not available yet")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Back to Today" })).toBeVisible();
+    await expect(bar(page)).toBeVisible();
+    // The Calendar is built (E-07): its own page inside the frame, not the placeholder.
+    expect((await page.goto("/admin/calendar"))!.status()).toBe(200);
+    await expect(page.getByRole("banner").getByText("Calendar", { exact: true })).toBeVisible();
+    await expect(page.getByText("Not available yet")).toHaveCount(0);
+    await expect(bar(page)).toBeVisible();
     // Customers and the Sales summary are built (E-09): their own pages inside the frame, not the placeholder.
     expect((await page.goto("/admin/customers"))!.status()).toBe(200);
     await expect(page.getByRole("heading", { level: 1, name: "Customers" })).toBeVisible();
