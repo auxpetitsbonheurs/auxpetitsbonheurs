@@ -32,3 +32,6 @@ As a customer sharing a cake on WhatsApp or Instagram, I want the link to show t
 
 ## Launchprep notes (2026-11-14)
 - Product pages get full seoMeta (EN/FR title, description, canonical, OG/Twitter, photo ≤ 1200 px or the brand PNG); home's SVG hero no longer becomes og:image; sitemap lists product pages (visible, in season, current slug); robots.txt disallows basket, order, tracking and account in both languages. Tests: product-meta.test.ts, home-meta.test.ts, sitemap.test.ts. AC2: previews rendered from the real tags (production/audits/seo-2026.md); the Owner pastes a product link into WhatsApp once staging redeploys. AC3: staging fails only is-crawlable (noindex on purpose); re-run Lighthouse SEO on the live site. Domain switch needs no code: docs/runbooks/custom-domain.md.
+
+## Tidy notes (2026-11-14)
+- The sitemap now lists the workshop pages `/workshops/:slug` in EN and FR with the same hreflang alternates as products, while published and upcoming (today included, Mauritius date: the page's own `isOpen` rule, so a listed page is never noindex). Past, draft and cancelled events stay out. `/workshops` itself joins once an event is listed (it is indexable then, FR-081). Tests: `src/app/routes/hooks/sitemap.test.ts`, `src/tests/e2e/workshops.spec.ts` ("tidy (S-224)").

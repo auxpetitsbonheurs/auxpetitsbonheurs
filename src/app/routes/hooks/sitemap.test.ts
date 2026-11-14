@@ -6,6 +6,7 @@ import { sitemapXml } from "~/lib/sitemap";
 import { indexablePaths } from "~/server/seo-pages.server";
 import { clearSitePageCache } from "~/server/services/site-page.server";
 import { routeArgs } from "~/server/testing/route-context";
+import { insertWorkshopEvent } from "~/server/testing/workshops";
 import { loader as robots } from "./robots";
 import { loader } from "./sitemap";
 
@@ -83,6 +84,36 @@ describe("/sitemap.xml (S-253)", () => {
       "http://localhost/menu/lemon-tart", "http://localhost/fr/menu/lemon-tart",
     ]));
     for (const gone of ["secret-cake", "yule-log", "old-chocolate"]) expect(xml).not.toContain(gone);
+  });
+
+  test("tidy (E-15): published upcoming workshop pages in EN and FR with hreflang; past, draft and cancelled ones stay out", async () => {
+    // routeArgs' clock: 2026-11-10 (Mauritius). Today's event is still open; yesterday's is past.
+    await insertWorkshopEvent(database, { slug: "valentines-cakes", eventOn: "2027-02-14", status: "published" });
+    await insertWorkshopEvent(database, { slug: "today-cupcakes", eventOn: "2026-11-10", status: "published" });
+    await insertWorkshopEvent(database, { slug: "yesterday-cupcakes", eventOn: "2026-11-09", status: "published" });
+    await insertWorkshopEvent(database, { slug: "draft-cakes", eventOn: "2027-03-01", status: "draft" });
+    await insertWorkshopEvent(database, { slug: "cancelled-cakes", eventOn: "2027-03-02", status: "cancelled" });
+
+    const { xml } = await fetchSitemap();
+
+    expect(locs(xml)).toEqual(expect.arrayContaining([
+      "http://localhost/workshops/valentines-cakes", "http://localhost/fr/workshops/valentines-cakes",
+      "http://localhost/workshops/today-cupcakes", "http://localhost/fr/workshops/today-cupcakes",
+      "http://localhost/workshops", "http://localhost/fr/workshops",
+    ]));
+    const entry = xml.split("<url>").find((part) => part.includes("<loc>http://localhost/fr/workshops/valentines-cakes</loc>"))!;
+    expect(entry).toContain('hreflang="en" href="http://localhost/workshops/valentines-cakes"');
+    expect(entry).toContain('hreflang="fr" href="http://localhost/fr/workshops/valentines-cakes"');
+    expect(entry).toContain('hreflang="x-default" href="http://localhost/workshops/valentines-cakes"');
+    for (const gone of ["yesterday-cupcakes", "draft-cakes", "cancelled-cakes"]) expect(xml).not.toContain(gone);
+  });
+
+  test("tidy (E-15): with no upcoming workshop, the placeholder /workshops page stays out", async () => {
+    await insertWorkshopEvent(database, { slug: "draft-cakes", eventOn: "2027-03-01", status: "draft" });
+
+    const { xml } = await fetchSitemap();
+
+    expect(xml).not.toContain("/workshops");
   });
 
   test("values are XML-escaped", () => {

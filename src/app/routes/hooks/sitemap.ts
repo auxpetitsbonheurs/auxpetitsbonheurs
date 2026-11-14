@@ -1,7 +1,8 @@
 // GET /sitemap.xml (S-253 AC4..AC6, FR-081; S-224 adds the product pages): the indexable
 // customer pages in English and French with hreflang alternates. Content pages that still hold
 // placeholder text stay out (server/seo-pages.server.ts); product pages are listed under their
-// current slug while a customer can open them (not hidden, in season today, Mauritius time).
+// current slug while a customer can open them (not hidden, in season today, Mauritius time);
+// workshop pages while published and upcoming (E-15, tidy job).
 // Never lists admin, basket, order, tracking, account or the no-JavaScript menu page.
 import { todayMU } from "~/domain/time";
 import { sitemapXml } from "~/lib/sitemap";

@@ -161,6 +161,19 @@ test.describe("E-15 workshops", () => {
     await shot(page, "admin-event-changed");
   });
 
+  test("tidy (S-224): a published upcoming workshop is in the sitemap in both languages; a draft is not", async ({ request, db }) => {
+    const { slug } = await publishedWorkshop(db);
+    const draft = `ws-draft-${randomInt(1e9)}`;
+    await db`insert into workshop_event (slug, title_en, event_on, starts_at, ends_at, address, price_rs, capacity, cake_options, status)
+      values (${draft}, 'Draft', ${ownDay()}, '14:00', '16:30', '12 Rue Example', 1500, 4, ${db.json([{ id: "choc", name: { en: "Chocolate" } }])}, 'draft')`;
+
+    const xml = await (await request.get("/sitemap.xml")).text();
+
+    expect(xml).toMatch(new RegExp(`<loc>http[^<]+/workshops/${slug}</loc>`));
+    expect(xml).toMatch(new RegExp(`<loc>http[^<]+/fr/workshops/${slug}</loc>`));
+    expect(xml).not.toContain(draft);
+  });
+
   test("the French page, the explicit allergies choice, and a full workshop", async ({ page, db }) => {
     const { slug, title } = await publishedWorkshop(db, 1);
     await page.goto(`/fr/workshops/${slug}`);

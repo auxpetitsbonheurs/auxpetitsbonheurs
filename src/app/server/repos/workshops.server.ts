@@ -101,6 +101,18 @@ export async function listUpcomingEvents(db: Executor, today: string, locale: Lo
   return rows.map((row) => toPublic(normalise(row), locale, supabaseUrl));
 }
 
+/**
+ * /sitemap.xml (S-224, tidy job): slugs of the workshop pages open today, the `isOpen` rule
+ * (published, date not passed, Mauritius date), so a listed page is never noindex. Full ones
+ * stay listed: their page is indexable too.
+ */
+export async function listWorkshopPageSlugs(db: Executor, today: string): Promise<string[]> {
+  const { rows } = (await db.execute(sql`
+    select slug from workshop_event where status = 'published' and event_on >= ${today}::date order by event_on, starts_at, slug
+  `)) as unknown as { rows: { slug: string }[] };
+  return rows.map((r) => r.slug);
+}
+
 /** /workshops/:slug (S-303): any event but drafts (the page decides open, full, cancelled or past). */
 export async function findPublicEvent(db: Executor, slug: string, locale: Locale, supabaseUrl: string): Promise<PublicEvent | null> {
   const { rows } = (await db.execute(sql`select ${EVENT_COLUMNS} from workshop_event e where e.slug = ${slug} and e.status <> 'draft' limit 1`)) as unknown as { rows: EventRow[] };

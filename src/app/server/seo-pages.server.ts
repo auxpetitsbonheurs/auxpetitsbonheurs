@@ -11,6 +11,7 @@ import { todayMU } from "~/domain/time";
 import type { Database } from "~/server/db.server";
 import { listProductPageSlugs } from "~/server/repos/catalogue.server";
 import { reviewSummary } from "~/server/repos/reviews.server";
+import { listWorkshopPageSlugs } from "~/server/repos/workshops.server";
 import { getPagePlaceholders } from "~/server/services/site-page.server";
 
 /** The S-245 page keys and their unprefixed paths (docs/content/sitemap.md slugs). */
@@ -63,8 +64,12 @@ async function hasApprovedReviews(db: Database): Promise<boolean> {
 
 /** Unprefixed paths for /sitemap.xml. */
 export async function sitemapPaths(db: Database, today: string = todayMU(new Date())): Promise<string[]> {
-  const [flags, reviews, products] = await Promise.all([contentPagePlaceholders(db), hasApprovedReviews(db), listProductPageSlugs(db)]);
+  const [flags, reviews, products, workshops] = await Promise.all([contentPagePlaceholders(db), hasApprovedReviews(db), listProductPageSlugs(db), listWorkshopPageSlugs(db, today)]);
   // S-224 AC4, AC5: product pages a customer can open today (not hidden, in season), current slug only.
   const productPaths = products.filter((p) => isInSeason(p.season, today)).map((p) => `/menu/${encodeURIComponent(p.slug)}`);
-  return [...indexablePaths(flags), ...(reviews ? [REVIEWS_PATH] : []), ...productPaths];
+  // Published upcoming workshop pages (E-15); /workshops is indexable once one is listed (FR-081), even with sample text.
+  const workshopPaths = workshops.map((slug) => `/workshops/${encodeURIComponent(slug)}`);
+  const base = indexablePaths(flags);
+  const listPage = workshopPaths.length > 0 && !base.includes(CONTENT_PAGE_PATHS.workshops) ? [CONTENT_PAGE_PATHS.workshops] : [];
+  return [...base, ...listPage, ...(reviews ? [REVIEWS_PATH] : []), ...productPaths, ...workshopPaths];
 }
