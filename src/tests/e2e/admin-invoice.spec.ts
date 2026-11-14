@@ -4,7 +4,7 @@
 // settings pass axe. Placeholder values only: the repository is public.
 import { readFile } from "node:fs/promises";
 import { pdfText } from "../../app/server/testing/pdf-text";
-import { expectNoA11yViolations, expectNoHorizontalScroll, expectTapTargets } from "./support/a11y";
+import { expectNoA11yViolations, expectNoHorizontalScroll, expectTapTargets, withZoom } from "./support/a11y";
 import { signIn } from "./support/admin";
 import { E2E_ACCOUNTS, type TestOrder, createOrder } from "./support/database";
 import { type Page, expect, test } from "./support/fixtures";
@@ -30,7 +30,8 @@ async function openOrder(page: Page, order: TestOrder) {
 
 async function openInvoiceDialog(page: Page) {
   await page.getByRole("button", { name: "More actions" }).click();
-  await page.getByRole("button", { name: "Download invoice" }).click();
+  // The More actions sheet's entry (the Payment section has its own, tidy job).
+  await page.getByRole("dialog").getByRole("button", { name: "Download invoice" }).click();
 }
 
 async function invoiceNumberOf(db: Db, order: TestOrder): Promise<number | null> {
@@ -81,6 +82,30 @@ test.describe("S-127 Download invoice", () => {
     expect((await again).suggestedFilename()).toBe(`Invoice-${number}.pdf`);
     expect(await invoiceNumberOf(db, order)).toBe(number);
     await expect(page.getByTestId("order-content")).toBeVisible();
+  });
+
+  test("tidy: while a refund is due, Download invoice is in the Payment section; the refund bar stays as compact as before", async ({ page, db }) => {
+    const order = await cakeOrder(db, "Invoice Refund Due");
+    await db`update orders set status = 'cancelled', paid = true, refund_due_rs = 1350 where id = ${order.id}`;
+    await openOrder(page, order);
+    const bar = page.locator("[data-sticky-bar]");
+    await expect(bar.getByTestId("refund-step")).toContainText("Refund Rs 1,350 to the customer by Juice");
+    await expect(bar.getByRole("button", { name: "More actions" })).toHaveCount(0);
+    const invoice = page.getByRole("region", { name: "Payment" }).getByRole("button", { name: "Download invoice" });
+    await expect(invoice).toBeVisible();
+    await expectTapTargets(page);
+    await withZoom(page, 2, async () => {
+      await expectNoHorizontalScroll(page);
+      await invoice.scrollIntoViewIfNeeded();
+      await expect(invoice).toBeInViewport();
+    });
+    await invoice.scrollIntoViewIfNeeded();
+    if (test.info().project.name === "phone-375") await page.screenshot({ path: `${SHOTS}/tidy-refund-invoice-in-payment-375.png` });
+
+    const downloading = page.waitForEvent("download");
+    await invoice.click();
+    expect((await downloading).suggestedFilename()).toMatch(/^Invoice-\d+\.pdf$/);
+    await expectNoA11yViolations(page);
   });
 
   test("a paid French order: FACTURE N°, the downpayment is Payé, the balance Rs 0 and PAYÉ is stamped", async ({ page, db }) => {

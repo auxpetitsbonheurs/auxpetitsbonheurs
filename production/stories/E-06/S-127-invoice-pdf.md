@@ -36,3 +36,7 @@ As the Owner on my phone, I want one tap on an order to give me a PDF invoice in
 - A custom-cake quote has no lines: it prints one "Custom cake" line at the quote less any delivery fee. A total set by hand prints an ADJUSTMENT line so the rows still add up.
 - Workshop registrations: if they are `orders` rows, they work unchanged.
 - 2026-11-14 (logo job): the Owner's official badges replace the redrawn SVGs. The PDF embeds the cream badge as a 300 px PNG (pdf-lib `embedPng`, transparent corners; `/brand/badge-cream-300.png`, fetched with the invoice data; without it the invoice is still made, badge left out), and the print view shows the same badge. `logo-badge-pink.svg` and `lib/invoice-badge.ts` are gone; app/lib/invoice-pdf.test.ts checks the embedded 300 px image and the badge-less fallback.
+
+## Tidy notes (2026-11-14)
+- Download invoice was unreachable while an order showed its refund step (the step replaces More actions). It is now also in the order's Payment section, in every state (same dialog; the PDF code preloads on hover or focus). Chosen over keeping More actions beside Refunded: in the refused and cancelled states the sheet holds little else, and the extra button made the refund bar about 300 px tall on a 375 px phone at 200% zoom; the bar stays as it was. 48 px button, icon hidden below 22 rem.
+- Tests: `src/tests/e2e/admin-invoice.spec.ts` ("tidy: while a refund is due …": 320/375/1280, 200% zoom, tap targets, axe, real download); the S-127 tests open the sheet's entry.

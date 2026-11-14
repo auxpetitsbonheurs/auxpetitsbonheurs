@@ -1,8 +1,10 @@
-import { MessageCircle } from "lucide-react";
-import { buttonVariants } from "~/components/ui/button";
+import { FileText, MessageCircle } from "lucide-react";
+import { useState } from "react";
+import { Button, buttonVariants } from "~/components/ui/button";
 import { useI18n } from "~/i18n/react";
 import { formatRupees } from "~/lib/locale";
 import type { OrderLoaderData } from "~/routes/admin/order";
+import { InvoiceDialog, preloadInvoicePdf } from "./invoice-dialog";
 import { Section } from "./sections";
 
 /** The resolved "Payment details" WhatsApp message of this order (S-201 menu, approve-then-pay), or null. */
@@ -33,6 +35,33 @@ export function SendPaymentWhatsapp({ data, className }: { data: OrderLoaderData
   );
 }
 
+/**
+ * Download invoice in the Payment section (tidy job): reachable in every state, also while the
+ * action bar shows the refund step instead of More actions. Same dialog as More actions (S-127).
+ */
+function InvoiceButton({ orderId }: { orderId: string }) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        size="lg"
+        className="mt-2 h-auto min-h-12 max-w-full justify-self-start whitespace-normal max-[22rem]:px-2"
+        onPointerEnter={() => void preloadInvoicePdf()}
+        onFocus={() => void preloadInvoicePdf()}
+        onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
+      >
+        <FileText aria-hidden="true" className="max-[22rem]:hidden" />
+        {t("admin.invoice.download")}
+      </Button>
+      <InvoiceDialog orderId={orderId} open={open} onClose={() => setOpen(false)} />
+    </>
+  );
+}
+
 /** Juice payment state (S-279, S-281): pending approval, awaiting with the deadline, paid, refund due or sent. */
 export function PaymentSection({ data }: { data: OrderLoaderData }) {
   const { order, payment } = data;
@@ -56,6 +85,7 @@ export function PaymentSection({ data }: { data: OrderLoaderData }) {
         )}
         {order.status === "declined" && payment.declineReason && <p className="wrap-anywhere">{t("admin.order.declineReasonShown", { reason: payment.declineReason })}</p>}
         {payment.refund?.refundedLabel && <p className="font-semibold">{t("admin.order.refundedAt", { amount: formatRupees(payment.refund.amountRs), time: payment.refund.refundedLabel })}</p>}
+        <InvoiceButton orderId={order.id} />
       </div>
     </Section>
   );
