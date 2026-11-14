@@ -245,7 +245,7 @@ Regime: Mauritius DPA 2017 (`privacy.regions: [mu]`, **to confirm with owner, PR
 |---|---|---|---|
 | Customer personal | customer.name/phone/email, addresses, order contact snapshot, address | Orders kept 5 years after fulfil date (accounting) `[TO CONFIRM]`; then anonymised | Annual cron: null contact/address fields, replace name with "Deleted customer"; delete customer if no remaining orders |
 | Customer on request | any of the above | Erase on request within 30 days | Owner-triggered anonymise action (same as above) |
-| Reference photos | request-photos bucket | 90 days after the order reaches a final status `[TO CONFIRM]` | Cron deletes objects + rows |
+| Reference photos | request-photos bucket | 90 days after the request reaches a final status (completed, declined, cancelled, closed = expired) `[TO CONFIRM]`; `RETENTION.requestPhotoDays` | Hourly `jobs/purge-storage`: the uploaded photos' `custom_request_photo` rows are deleted and their paths queued in `storage_purge` (due now) in one statement; gallery photos the customer picked stay (PRV-03) |
 | Admin | name, email, last sign-in | While active + kept on events (legitimate interest) | Deactivate; never hard-deleted |
 | Email outbox payloads and recipients | address, order ids, reasons | 90 days (finished rows; pending rows wait until sent or dead) | Daily cron (`jobs/purge-emails`): payload emptied, `to_email` cleared; the row stays so its dedupe key still blocks a resend (PRV-01) |
 | Rate-limit keys | hashed IP/email | 1 day | Cron hard delete |
