@@ -34,8 +34,13 @@ describe("wrangler.jsonc environments (S-002 AC1)", () => {
     expect(production.placement).toEqual({ mode: "targeted", region: "aws:eu-central-1" });
   });
 
+  test("staging sends email from the bakery domain and links to its own address", () => {
+    expect(staging.vars?.EMAIL_FROM).toBe("Aux petits bonheurs <orders@mail.auxpetitsbonheursmu.com>");
+    expect(staging.vars?.SITE_URL).toBe("https://auxpetitsbonheurs-staging.kshana-auxpetitsbonheurs.workers.dev");
+  });
+
   test("holds no secret and no account id", () => {
-    const plainVars = new Set(["APP_ENV", "APP_TIME_ZONE"]);
+    const plainVars = new Set(["APP_ENV", "APP_TIME_ZONE", "EMAIL_FROM", "SITE_URL"]);
     for (const env of [staging, production]) {
       const secretsInVars = Object.keys(env.vars ?? {}).filter((name) => ENV_KEYS.includes(name) && !plainVars.has(name));
       expect(secretsInVars).toEqual([]);

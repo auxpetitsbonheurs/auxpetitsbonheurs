@@ -39,7 +39,11 @@
 			"placement": { "mode": "targeted", "region": "aws:ap-northeast-2" },
 			"vars": {
 				"APP_ENV": "staging",
-				"APP_TIME_ZONE": "Indian/Mauritius"
+				"APP_TIME_ZONE": "Indian/Mauritius",
+				// Not secrets: kept here because `wrangler deploy` replaces dashboard text variables.
+				// RESEND_API_KEY stays a dashboard Secret (deploy-keys.md section 3b).
+				"EMAIL_FROM": "Aux petits bonheurs <orders@mail.auxpetitsbonheursmu.com>",
+				"SITE_URL": "https://auxpetitsbonheurs-staging.kshana-auxpetitsbonheurs.workers.dev"
 			},
 			// One hourly trigger per environment (free plan allows few cron triggers per account).
 			// The scheduled handler dispatches jobs by Mauritius local time.
