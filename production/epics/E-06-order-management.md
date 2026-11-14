@@ -32,7 +32,7 @@ J4: Owner goes from alert to Approve to Completed and paid, each step logged. Tw
 | S-123 | Edit warnings and the "Your order was updated" email trigger | ready | 3 |
 | S-124 | Two admins on one order get "this order changed, reload" | done | 3 |
 | S-125 | Activity log on the order | done | 2 |
-| S-126 | One-handed admin layout and accessibility pass | ready | 2 |
+| S-126 | One-handed admin layout and accessibility pass | in-progress | 2 |
 
 Total: 47 pts. Files: `production/stories/E-06/`.
 
