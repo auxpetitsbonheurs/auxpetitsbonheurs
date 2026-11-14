@@ -15,8 +15,9 @@ import { E2E_ACCOUNTS, type TestOrder, createOrder } from "./support/database";
 import { type Page, expect, test } from "./support/fixtures";
 
 const orderNumber = (n: number) => `APB-${String(n).padStart(4, "0")}`;
-const DAY: Record<string, string> = { "phone-320": "2026-11-17", "phone-375": "2026-11-18", "desktop-1280": "2026-11-19" };
-const today = () => DAY[test.info().project.name] ?? "2026-11-16";
+// Within the 30-day admin session age, away from the dates other specs book.
+const DAY: Record<string, string> = { "phone-320": "2026-12-08", "phone-375": "2026-12-09", "desktop-1280": "2026-12-10" };
+const today = () => DAY[test.info().project.name] ?? "2026-12-07";
 
 type Db = Parameters<typeof createOrder>[0];
 
