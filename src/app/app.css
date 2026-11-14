@@ -127,6 +127,34 @@
       transform: scaleX(0.9);
     }
   }
+
+  /*
+   * Page-change loader (S-284): the whisk rocks on its handle about once a second; the badge
+   * fades in. Both stop under reduced motion (the rule at the end of this file): a still badge.
+   * The whisk's group is drawn around its pivot, so the origin is its own 0 0.
+   */
+  --animate-whisk: whisk 0.55s ease-in-out infinite alternate;
+  --animate-loader-in: loader-in var(--motion-fast) var(--ease-enter) both;
+
+  @keyframes whisk {
+    from {
+      transform: rotate(-16deg);
+    }
+    to {
+      transform: rotate(10deg);
+    }
+  }
+
+  @keyframes loader-in {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+  }
+}
+
+[data-whisk] {
+  transform-origin: 0 0;
 }
 
 :root {
