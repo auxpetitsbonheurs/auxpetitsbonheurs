@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { insertProduct } from "~/db/testing/catalogue";
 import { type TestDatabase, createTestDatabase } from "~/db/testing/pglite";
 import { insertTestCustomer, insertTestOrder } from "~/server/testing/sales";
+import { insertWorkshopEvent } from "~/server/testing/workshops";
 import { completedOrdersPage, countAwaitingPayment, salesReport } from "./sales.server";
 
 let database: TestDatabase;
@@ -131,8 +132,56 @@ describe("completed orders for the CSV (S-178 AC3)", () => {
     await order({ status: "approved" });
     const first = await completedOrdersPage(database.db, NOV, null, 3);
     expect(first.map((row) => row.number)).toEqual([1, 2, 3]);
-    expect(first[0]).toEqual({ number: 1, numberPrefix: "APB-", fulfilOn: "2026-11-12", source: "website", fulfilment: "pickup", itemsTotalRs: 100, deliveryFeeRs: 0, totalRs: 100, paid: true });
+    expect(first[0]).toEqual({ number: 1, numberPrefix: "APB-", fulfilOn: "2026-11-12", source: "website", fulfilment: "pickup", itemsTotalRs: 100, deliveryFeeRs: 0, totalRs: 100, paid: true, costRs: null });
     const second = await completedOrdersPage(database.db, NOV, 3, 3);
     expect(second.map((row) => row.number)).toEqual([4, 5]);
+  });
+});
+
+describe("amount earned, spent and profit (S-318)", () => {
+  test("AC5: earned = completed orders, spent = their costs plus workshop costs in the period, profit the difference", async () => {
+    await order({ totalRs: 3000, costRs: 1200 });
+    await order({ totalRs: 2000, costRs: 500, paid: true });
+    await insertWorkshopEvent(database, { eventOn: "2026-11-20", status: "completed", costRs: 900 });
+    await insertWorkshopEvent(database, { eventOn: "2026-12-05", status: "completed", costRs: 5000 });
+    const { profit, revenueRs } = await salesReport(database.db, NOV, "en");
+    expect(profit).toMatchObject({ earnedRs: 5000, ordersCostRs: 1700, workshopsCostRs: 900, spentRs: 2600, profitRs: 2400, ordersMissingCost: 0, workshopsMissingCost: 0 });
+    expect(profit.earnedRs).toBe(revenueRs);
+  });
+
+  test("AC5: refunded, cancelled, declined and unfinished orders are left out of earned and spent", async () => {
+    await order({ status: "cancelled", totalRs: 4000, costRs: 1000, paid: true, refundDueRs: 4000 });
+    await order({ status: "declined", totalRs: 1500, costRs: 300, paid: true, refundDueRs: 1500 });
+    await order({ status: "approved", totalRs: 900 });
+    await order({ totalRs: 1000, costRs: 400 });
+    expect((await salesReport(database.db, NOV, "en")).profit).toMatchObject({ earnedRs: 1000, spentRs: 400, profitRs: 600, ordersMissingCost: 0 });
+  });
+
+  test("AC6: orders with no cost count as Rs 0 and are listed (workshop registrations are not)", async () => {
+    await order({ totalRs: 1000, costRs: 0 });
+    const a = await order({ totalRs: 1500, fulfilOn: "2026-11-03", contactName: "Bea" });
+    await order({ totalRs: 800, source: "workshop" });
+    const { profit } = await salesReport(database.db, NOV, "en");
+    expect(profit).toMatchObject({ earnedRs: 3300, spentRs: 0, profitRs: 3300, ordersMissingCost: 1 });
+    expect(profit.missingOrders).toEqual([{ id: a.id, number: `APB-${String(a.number).padStart(4, "0")}`, contactName: "Bea", fulfilOn: "2026-11-03", totalRs: 1500 }]);
+  });
+
+  test("AC7: a published or completed workshop with no cost is reported missing; draft and cancelled ones only count with a cost", async () => {
+    await insertWorkshopEvent(database, { eventOn: "2026-11-07", status: "published", costRs: null });
+    await insertWorkshopEvent(database, { eventOn: "2026-11-08", status: "draft", costRs: null });
+    await insertWorkshopEvent(database, { eventOn: "2026-11-09", status: "cancelled", costRs: 650, titleFr: null });
+    const { profit } = await salesReport(database.db, NOV, "fr");
+    expect(profit).toMatchObject({ workshopsCostRs: 650, workshopsMissingCost: 1, profitRs: -650 });
+    expect(profit.workshops.map((w) => [w.eventOn, w.status, w.costRs])).toEqual([
+      ["2026-11-07", "published", null],
+      ["2026-11-09", "cancelled", 650],
+    ]);
+    expect(profit.workshops[1]!.title).toBe("Valentine's cake workshop");
+  });
+
+  test("the CSV order rows carry the cost", async () => {
+    await order({ totalRs: 1000, costRs: 250 });
+    await order({ totalRs: 1000 });
+    expect((await completedOrdersPage(database.db, NOV, null, 10)).map((row) => row.costRs)).toEqual([250, null]);
   });
 });

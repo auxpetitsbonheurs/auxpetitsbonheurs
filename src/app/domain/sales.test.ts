@@ -5,6 +5,8 @@ import {
   UNPAID_STATUSES,
   averageRs,
   formatRangeLabel,
+  orderCostMissing,
+  profitSummary,
   resolveSalesRange,
   summarise,
   topProducts,
@@ -129,5 +131,40 @@ describe("formatRangeLabel (S-171 AC5, AC11)", () => {
     expect(formatRangeLabel("2026-10-26", "2026-11-01", "en")).toBe("26 Oct – 1 Nov 2026");
     expect(formatRangeLabel("2026-12-28", "2027-01-03", "en")).toBe("28 Dec 2026 – 3 Jan 2027");
     expect(formatRangeLabel("2026-11-05", "2026-11-05", "fr")).toBe("5 novembre 2026");
+  });
+});
+
+describe("profitSummary (S-318)", () => {
+  const group = (source: "website" | "manual" | "workshop" | "custom_request", revenueRs: number, costRs: number, missingCost: number) => ({ fulfilment: "pickup" as const, source, orderCount: 1 + missingCost, revenueRs, costRs, missingCost });
+
+  test("earned is the revenue, spent is order costs plus workshop costs, profit is the difference", () => {
+    const summary = profitSummary([group("website", 10_000, 4000, 0), group("manual", 2000, 500, 0)], [{ status: "completed", costRs: 1500 }]);
+    expect(summary).toEqual({ earnedRs: 12_000, ordersCostRs: 4500, workshopsCostRs: 1500, spentRs: 6000, profitRs: 6000, ordersMissingCost: 0, workshopsMissingCost: 0 });
+  });
+
+  test("an order with no cost counts as Rs 0 and is reported missing, never silently", () => {
+    const summary = profitSummary([group("website", 3000, 800, 2), group("custom_request", 2000, 0, 1)], []);
+    expect(summary).toMatchObject({ spentRs: 800, profitRs: 4200, ordersMissingCost: 3 });
+  });
+
+  test("a workshop registration is never missing a cost: its event carries it", () => {
+    expect(orderCostMissing("workshop")).toBe(false);
+    expect(orderCostMissing("website")).toBe(true);
+    expect(profitSummary([group("workshop", 3000, 0, 2)], []).ordersMissingCost).toBe(0);
+  });
+
+  test("events: a cost counts whatever the status; a published or completed event without one is missing, a draft or cancelled one is not", () => {
+    const summary = profitSummary([], [
+      { status: "cancelled", costRs: 700 },
+      { status: "draft", costRs: null },
+      { status: "cancelled", costRs: null },
+      { status: "published", costRs: null },
+      { status: "completed", costRs: null },
+    ]);
+    expect(summary).toMatchObject({ workshopsCostRs: 700, spentRs: 700, profitRs: -700, workshopsMissingCost: 2 });
+  });
+
+  test("no orders and no events give zeros", () => {
+    expect(profitSummary([], [])).toEqual({ earnedRs: 0, ordersCostRs: 0, workshopsCostRs: 0, spentRs: 0, profitRs: 0, ordersMissingCost: 0, workshopsMissingCost: 0 });
   });
 });

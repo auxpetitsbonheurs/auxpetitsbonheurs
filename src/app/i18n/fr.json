@@ -695,7 +695,8 @@
         "edited": "Modifiée par {{actor}}, {{time}}",
         "email_failed": "Un e-mail au client n'a pas pu être remis, {{time}}",
         "pending_alert_sent": "Rappel envoyé à l'équipe, {{time}}",
-        "workshop_changed": "Date, horaire ou lieu de l'atelier modifié par {{actor}}, {{time}}"
+        "workshop_changed": "Date, horaire ou lieu de l'atelier modifié par {{actor}}, {{time}}",
+        "cost_changed": "Coût de fabrication modifié par {{actor}}, {{time}}"
       },
       "reason": "Motif : {{reason}}",
       "paidRefund": "La commande était payée : remboursement hors site.",
@@ -706,7 +707,8 @@
         "other": "L'e-mail n'a pas pu être préparé.",
         "recipientCap": "Non envoyé : cette adresse a déjà reçu {{max}} e-mails de commande ou de demande en 24 heures (limite anti-spam)."
       },
-      "emailFailedHint": "Envoyez plutôt le lien de suivi par WhatsApp."
+      "emailFailedHint": "Envoyez plutôt le lien de suivi par WhatsApp.",
+      "cost": "Coût : {{from}} → {{to}}"
     },
     "nav": {
       "today": "Aujourd'hui",
@@ -854,7 +856,28 @@
       "export": "Exporter en CSV",
       "exporting": "Préparation du CSV…",
       "exportFailed": "L’export a échoué, réessayez",
-      "exported": "CSV téléchargé."
+      "exported": "CSV téléchargé.",
+      "profit": {
+        "title": "Bénéfice",
+        "tilesLabel": "Bénéfice de la période",
+        "earned": "Montant gagné",
+        "spent": "Montant dépensé",
+        "profit": "Bénéfice",
+        "ordersCost": "Coût des commandes",
+        "workshopsCost": "Coût des ateliers",
+        "footnote": "Le montant gagné compte les mêmes commandes terminées que le chiffre d’affaires (les commandes remboursées ne comptent jamais). Le montant dépensé additionne leurs coûts et le coût des ateliers de la période.",
+        "missingOrders_one": "{{count}} commande comptée ici n’a pas encore de coût : le bénéfice peut paraître plus élevé qu’il ne l’est.",
+        "missingOrders_other": "{{count}} commandes comptées ici n’ont pas encore de coût : le bénéfice peut paraître plus élevé qu’il ne l’est.",
+        "missingWorkshops_one": "{{count}} atelier de la période n’a pas encore de coût.",
+        "missingWorkshops_other": "{{count}} ateliers de la période n’ont pas encore de coût.",
+        "showOrders_one": "Voir la commande",
+        "showOrders_other": "Voir les {{count}} commandes",
+        "capped": "Les {{shown}} premières sont affichées.",
+        "missingRow": "{{number}}, {{name}}, {{amount}}",
+        "workshopsTitle": "Ateliers de la période",
+        "noCost": "Pas encore de coût",
+        "allSet": "Chaque commande et chaque atelier de la période a un coût."
+      }
     },
     "states": {
       "ownerOnlyTitle": "Réservé aux propriétaires",
@@ -2492,6 +2515,23 @@
         "allergies_other": "{{count}} inscriptions avec allergies : voir la liste imprimée."
       },
       "shareNote": "Partager n'envoie que le nombre de gâteaux, jamais les noms, numéros ou allergies."
+    },
+    "cost": {
+      "orderTitle": "Coût de fabrication",
+      "orderHint": "Ce que cette commande vous a coûté (ingrédients, boîtes…), en roupies entières. Visible seulement par les admins. Laissez vide si vous ne savez pas encore.",
+      "workshopOrderHint": "Le coût d’un atelier se saisit sur l’événement (Coût de l’atelier). N’ajoutez un coût ici que si cette inscription a coûté en plus.",
+      "runTitle": "Coût de l’atelier",
+      "runHint": "Ce que tout l’événement a coûté (ingrédients, gâteaux, salle…), en roupies entières : un seul montant pour l’événement, pas par inscription. Visible seulement par les admins.",
+      "label": "Coût en roupies",
+      "save": "Enregistrer le coût",
+      "saving": "Enregistrement…",
+      "saved": "Enregistré",
+      "cleared": "Coût effacé",
+      "invalid": "Saisissez des roupies entières de 0 à 1 000 000, ou laissez vide.",
+      "failed": "Non enregistré. Vérifiez votre connexion et réessayez.",
+      "none": "aucun",
+      "orderProfit": "Bénéfice sur cette commande : {{amount}}",
+      "notSet": "Pas encore de coût"
     }
   },
   "email": {

@@ -26,6 +26,13 @@ Sabera and Sarah find a customer, see their orders and totals and keep a private
 - **Unpaid list** = orders with `paid = false` and status approved, in_preparation, ready_for_pickup, out_for_delivery or completed, whose `fulfil_on` is in range; each with number, customer name, status, date, total. Total unpaid amount shown. (Includes not-yet-completed approved orders so overdue payments are visible.)
 - **Customer order count** = orders not declined/cancelled/closed; **Total spent** = sum of `total_rs` of that customer's completed orders. Both labelled so in the UI.
 
+## Costs and profit (S-318, Owner decision 2026-11-14)
+- **Cost to make** (`orders.cost_rs`): optional whole rupees 0..1,000,000 on every admin order page, any status, any admin (Owner and helpers). Inline field, saved on Save, Enter or leaving the field; "Saving…" then "Saved"; never takes or bumps `version`, so it never blocks or conflicts with the order flow. Empty clears it. A change logs `cost_changed` in Activity ("Cost: Rs 500 → Rs 650").
+- **Cost to run** (`workshop_event.cost_rs`): one optional total per workshop event (not per registration), on the event page in admin → Workshops, any status.
+- **Amount earned** = Revenue (the completed-orders rule above; refunds are only ever owed on declined or cancelled orders, which never count). **Amount spent** = the costs of those orders + the costs of workshop events whose `event_on` is in the range (any status: money spent on a cancelled event was still spent). **Profit** = earned − spent (may be negative, shown "-Rs 200").
+- **Missing costs are never silent.** A counted order without a cost counts as Rs 0 and the page says "N orders counted here have no cost yet, so the profit may look higher than it is", with a disclosure listing them (≤ 50) linking to each order's cost field. A workshop registration (source `workshop`) is never reported missing: its cost is its event's. **A workshop without a cost** counts as Rs 0; a published or completed event in the range without one is reported ("N workshops in this period have no cost yet") and listed with "No cost yet"; a draft or cancelled event without a cost is left out (nothing ran).
+- All admins see the figures. CSV: Summary adds `earned, orders_cost, workshops_cost, spent, profit, orders_missing_cost, workshops_missing_cost`; Orders adds `cost_rs, profit_rs`; new last section `Workshops` (`date, title, status, cost_rs`).
+
 ## UX
 ### Screens & states
 | Screen | Route | Loading | Empty | Error | Success |

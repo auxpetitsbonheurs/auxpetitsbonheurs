@@ -18,6 +18,7 @@ import {
 } from "~/domain/product";
 import { type OptionGroupInput, type OptionProblem, checkOptionGroups } from "~/domain/options";
 import { DECLINE_REASON_MAX } from "~/domain/payment";
+import { parseCostRs } from "~/domain/cost";
 import { type SeasonProblem, type SeasonWindow, checkSeason } from "~/domain/season";
 import { ADMIN_ROLES, PASSWORD_MAX, PASSWORD_MIN, PROFILE_NAME_MAX } from "~/domain/admin-account";
 import { Email, MuDate, Uuid, Version } from "./shared";
@@ -142,6 +143,19 @@ const Reason = z
   .transform((value) => (value ? value : null));
 
 /**
+ * "Cost to make" / "Cost to run" (S-318, contracts.md "Costs and profit"): whole rupees
+ * 0..1,000,000 as typed ("1,500" allowed), "" clears it to null.
+ */
+export const CostRs = z.string().max(40).transform((text, ctx) => {
+  const parsed = parseCostRs(text);
+  if (!parsed.ok) {
+    ctx.addIssue({ code: "custom", message: "whole rupees 0..1,000,000" });
+    return z.NEVER;
+  }
+  return parsed.costRs;
+});
+
+/**
  * `admin/order` actions (contracts.md v0.40 + v0.42): approve (approval path), the Juice payment
  * intents markPaid, undoPaid, decline and markRefunded (juice-payment spec), and E-06's advance,
  * revert, cancel, setPaid and saveNote. Every status and paid action carries the version the page
@@ -159,6 +173,8 @@ export const OrderActionInput = z.discriminatedUnion("intent", [
   z.object({ intent: z.literal("cancel"), version: Version, reason: Reason }),
   z.object({ intent: z.literal("setPaid"), version: Version, paid: z.enum(["true", "false"]).transform((v) => v === "true") }),
   z.object({ intent: z.literal("saveNote"), adminNote: z.string().max(ADMIN_NOTE_MAX) }),
+  // S-318: no version (last write wins, like the note), any status.
+  z.object({ intent: z.literal("saveCost"), costRs: CostRs }),
 ]);
 
 export type OrderAction = z.infer<typeof OrderActionInput>;

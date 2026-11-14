@@ -11,7 +11,7 @@ The Owner and admins see who orders and how the bakery is doing.
 Sales totals match the underlying orders for every range; each customer's total spent equals their Completed orders.
 
 ## Scope
-- In: Sales summary (FR-068, Must); Customers list, notes, totals (FR-065, Should); CSV export matching the screen (FR-069, Should). A11y acceptance criteria on tables.
+- In: Sales summary (FR-068, Must) with costs and profit (S-318); Customers list, notes, totals (FR-065, Should); CSV export matching the screen (FR-069, Should). A11y acceptance criteria on tables.
 - Out: customer account features (E-11).
 
 ## Stories
@@ -26,8 +26,9 @@ Sales totals match the underlying orders for every range; each customer's total 
 | S-177 | Private note on a customer (cuttable #2) | done | 2 |
 | S-178 | Export the sales summary as CSV (cuttable #1) | done | 3 |
 | S-179 | CSV safety, Excel encoding and access control (cuttable #1) | done | 2 |
+| S-318 | Cost to make, Cost to run and profit in Sales (Owner 2026-11-14) | done | 5 |
 
-Total: 26 pts. Files: `production/stories/E-09/`.
+Total: 31 pts. Files: `production/stories/E-09/`.
 
 ## Dependencies
 - E-06, E-07.

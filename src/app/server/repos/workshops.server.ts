@@ -142,11 +142,15 @@ export async function listAdminEvents(db: Executor, today: string): Promise<Admi
   return rows.map(normalise).map((r) => ({ id: r.id, title: r.titleEn, eventOn: r.eventOn, startsAt: r.startsAt, endsAt: r.endsAt, status: r.status, capacity: r.capacity, held: r.held, pending: r.pending }));
 }
 
-export type AdminEvent = Omit<EventRow, "photoVariants"> & { photoVariants: number[] };
+/** The admin event adds its "Cost to run" (S-318: admins only, never on the public pages). */
+export type AdminEvent = Omit<EventRow, "photoVariants"> & { photoVariants: number[]; costRs: number | null };
 
 export async function findAdminEvent(db: Executor, id: string): Promise<AdminEvent | null> {
-  const { rows } = (await db.execute(sql`select ${EVENT_COLUMNS} from workshop_event e where e.id = ${id}::uuid limit 1`)) as unknown as { rows: EventRow[] };
-  return rows[0] ? normalise(rows[0]) : null;
+  const { rows } = (await db.execute(sql`select ${EVENT_COLUMNS}, e.cost_rs as "costRs" from workshop_event e where e.id = ${id}::uuid limit 1`)) as unknown as {
+    rows: (EventRow & { costRs: number | null })[];
+  };
+  const row = rows[0];
+  return row ? { ...normalise(row), costRs: row.costRs === null ? null : Number(row.costRs) } : null;
 }
 
 /** One registration on the event screen and the printable list (S-305). */

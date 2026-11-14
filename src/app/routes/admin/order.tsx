@@ -7,6 +7,7 @@ import { TrackingLink } from "~/components/admin/order/tracking-link";
 import { OrderHeader } from "~/components/admin/order/header";
 import { PaymentSection } from "~/components/admin/order/payment-section";
 import { PrivateNote } from "~/components/admin/order/private-note";
+import { OrderCost } from "~/components/admin/order/order-cost";
 import { CustomerSection, FulfilmentSection, ItemsSection, ReasonSection, RequestSection } from "~/components/admin/order/sections";
 import { WorkshopSection } from "~/components/admin/order/workshop-section";
 import { timeRange } from "~/domain/workshop";
@@ -104,6 +105,7 @@ export async function loader(args: Route.LoaderArgs) {
 function fieldMessage(field: unknown, locale: "en" | "fr"): Record<string, string> | undefined {
   if (field === "reason") return { reason: translate("admin.order.reasonTooLong", locale) };
   if (field === "adminNote") return { adminNote: translate("admin.order.noteTooLong", locale, { max: 2000 }) };
+  if (field === "costRs") return { costRs: translate("admin.cost.invalid", locale) };
   return undefined;
 }
 
@@ -148,6 +150,10 @@ export async function action(args: Route.ActionArgs) {
   const db = args.context.get(requestDbContext).db;
   const result = await runOrderAction(db, input.data, { orderId: id.data, adminId: me.id, now: args.context.get(clockContext).now() });
   if (!result.ok) return actionError(result.code, me.locale, { extra: { intent } });
+  if ("costRs" in result) {
+    console.log(JSON.stringify({ level: "info", event: "order_cost_saved", orderId: id.data, actorRole: me.role, cleared: result.costRs === null }));
+    return { ok: true as const, intent: "saveCost" as const, costRs: result.costRs };
+  }
   return "order" in result ? { ok: true as const, intent: input.data.intent, order: result.order } : { ok: true as const, intent: input.data.intent };
 }
 
@@ -196,6 +202,7 @@ export default function AdminOrder({ loaderData, actionData }: Route.ComponentPr
           <QuoteSheet request={loaderData.request} version={loaderData.order.version} fulfilOn={loaderData.order.fulfilOn} today={loaderData.today} result={actionData as QuoteResult | undefined} pending={false} />
         )}
         <ReasonSection data={loaderData} />
+        <OrderCost orderId={loaderData.order.id} costRs={loaderData.order.costRs} totalRs={loaderData.order.totalRs} isWorkshop={loaderData.workshop !== null} />
         <PrivateNote orderId={loaderData.order.id} initial={loaderData.adminNote} />
         <ActivityLog events={loaderData.events} />
         <TrackingLink url={loaderData.trackingUrl} />

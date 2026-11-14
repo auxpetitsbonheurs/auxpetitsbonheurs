@@ -31,7 +31,9 @@ import { requestDbContext } from "~/server/db.server";
 import { publicConfigContext } from "~/server/public-config.server";
 import { type AdminEvent, findAdminEvent, listEventRegistrations } from "~/server/repos/workshops.server";
 import { storageContext, uploadContext } from "~/server/storage.server";
-import { type EventActionResult, cancelEvent, completeEvent, publishEvent, saveWorkshopEvent, unpublishEvent } from "~/server/services/workshop-events.server";
+import { type EventActionResult, cancelEvent, completeEvent, publishEvent, saveEventCost, saveWorkshopEvent, unpublishEvent } from "~/server/services/workshop-events.server";
+import { CostField } from "~/components/admin/cost-field";
+import { CostRs } from "~/server/contracts/admin";
 import type { Route } from "./+types/workshop";
 
 /** `admin/workshop` (E-15 S-301, S-305, S-306): one event: status actions, registrations, editor. Owner and Admin. */
@@ -100,6 +102,7 @@ export async function loader(args: Route.LoaderArgs) {
           canPublish: event.status === "draft" && event.eventOn >= today,
           canComplete: event.status === "published" && event.eventOn <= today,
           cancelReason: event.cancelReason,
+          costRs: event.costRs,
         }
       : null,
     registrations,
@@ -141,7 +144,17 @@ async function saveAction(args: Route.ActionArgs, form: ReturnType<typeof flatFo
   return actionError(result.code, me.locale, { extra: { intent: "save" } });
 }
 
-/** Intents: save (create or edit), publish, unpublish, cancelEvent (optional reason), complete. */
+/** `saveCost` (S-318): the event's "Cost to run", any status, no version. */
+async function saveCostAction(args: Route.ActionArgs, form: ReturnType<typeof flatForm>, me: Awaited<ReturnType<typeof requireAdmin>>, eventId: string) {
+  const input = CostRs.safeParse(typeof form.costRs === "string" ? form.costRs : undefined);
+  if (!input.success) return actionError("VALIDATION_FAILED", me.locale, { fields: { costRs: translate("admin.cost.invalid", me.locale) }, extra: { intent: "saveCost" } });
+  const found = await saveEventCost(args.context.get(requestDbContext).db, { eventId, costRs: input.data });
+  if (!found) return actionError("NOT_FOUND", me.locale, { extra: { intent: "saveCost" } });
+  console.log(JSON.stringify({ level: "info", event: "workshop_cost_saved", id: eventId, actorRole: me.role, cleared: input.data === null }));
+  return { ok: true as const, intent: "saveCost" as const, costRs: input.data };
+}
+
+/** Intents: save (create or edit), publish, unpublish, cancelEvent (optional reason), complete, saveCost. */
 export async function action(args: Route.ActionArgs) {
   const me = await requireAdmin(args);
   const form = flatForm(await args.request.formData());
@@ -149,6 +162,7 @@ export async function action(args: Route.ActionArgs) {
   if (intent === "save") return saveAction(args, form, me);
   const id = Uuid.safeParse(args.params.id);
   if (!id.success) return actionError("NOT_FOUND", me.locale, { extra: { intent } });
+  if (intent === "saveCost") return saveCostAction(args, form, me, id.data);
   const db = args.context.get(requestDbContext).db;
   const now = args.context.get(clockContext).now();
   const today = todayMU(now);
@@ -334,6 +348,14 @@ export default function AdminWorkshop({ loaderData, actionData }: Route.Componen
       </Link>
       <h1 className="mt-2 wrap-anywhere">{loaderData.title}</h1>
       {event && <StatusActions key={event.version} event={event} answer={answer} />}
+      {event && (
+        <section aria-labelledby="ws-cost" className="mt-6 rounded-card border border-border bg-card p-4">
+          <h2 id="ws-cost" className="text-lg">
+            {t("admin.cost.runTitle")}
+          </h2>
+          <CostField key={event.id} id="event-cost" label={t("admin.cost.label")} hint={t("admin.cost.runHint")} costRs={event.costRs} />
+        </section>
+      )}
       {event && (
         <section aria-labelledby="ws-regs" className="mt-8">
           <h2 id="ws-regs" className="text-xl">

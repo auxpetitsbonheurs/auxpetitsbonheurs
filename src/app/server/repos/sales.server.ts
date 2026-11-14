@@ -2,16 +2,19 @@
 // Postgres on `orders (status, fulfil_on)` and `order_item (order_id)`; the rules that turn the
 // groups into figures live in `domain/sales` so the page and the CSV always agree. Nothing is
 // stored: figures follow the orders on every load.
-import { and, asc, between, count, eq, gt, inArray, isNotNull, sql, sum } from "drizzle-orm";
-import { orderItem, orders, product, settings } from "~/db/schema";
+import { and, asc, between, count, eq, gt, inArray, isNotNull, isNull, ne, or, sql, sum } from "drizzle-orm";
+import { orderItem, orders, product, settings, workshopEvent } from "~/db/schema";
 import {
+  COSTED_EVENT_STATUSES,
   type ProductSales,
+  type ProfitSummary,
   REVENUE_STATUSES,
   type SalesGroup,
   type SalesSummary,
   type TopProduct,
   UNPAID_LIST_CAP,
   UNPAID_STATUSES,
+  profitSummary,
   summarise,
   topProducts,
 } from "~/domain/sales";
@@ -35,11 +38,24 @@ const shownNumber = sql<string>`coalesce(${orders.numberPrefix}, (select ${setti
 
 async function salesGroups(db: Executor, range: DateRange): Promise<SalesGroup[]> {
   const rows = await db
-    .select({ fulfilment: orders.fulfilment, source: orders.source, orderCount: count(), revenueRs: sum(orders.totalRs) })
+    .select({
+      fulfilment: orders.fulfilment,
+      source: orders.source,
+      orderCount: count(),
+      revenueRs: sum(orders.totalRs),
+      costRs: sum(orders.costRs),
+      missingCost: sql<number>`count(*) filter (where ${orders.costRs} is null)`,
+    })
     .from(orders)
     .where(inRevenue(range))
     .groupBy(orders.fulfilment, orders.source);
-  return rows.map((row) => ({ ...row, orderCount: Number(row.orderCount), revenueRs: Number(row.revenueRs ?? 0) }));
+  return rows.map((row) => ({
+    ...row,
+    orderCount: Number(row.orderCount),
+    revenueRs: Number(row.revenueRs ?? 0),
+    costRs: Number(row.costRs ?? 0),
+    missingCost: Number(row.missingCost),
+  }));
 }
 
 async function productSales(db: Executor, range: DateRange, locale: Locale): Promise<ProductSales[]> {
@@ -117,20 +133,75 @@ export async function countAwaitingPayment(db: Executor): Promise<number> {
   return Number(row?.n ?? 0);
 }
 
+/** The profit section lists at most this many orders or events missing a cost; the counts cover them all (S-318). */
+export const PROFIT_LIST_CAP = 50;
+
+export interface MissingCostOrder {
+  id: string;
+  number: string;
+  contactName: string;
+  fulfilOn: string;
+  totalRs: number;
+}
+
+/** Counted orders with no cost (workshop registrations excluded: the event carries their cost), oldest date first. */
+async function missingCostOrders(db: Executor, range: DateRange): Promise<MissingCostOrder[]> {
+  return db
+    .select({ id: orders.id, number: shownNumber, contactName: orders.contactName, fulfilOn: orders.fulfilOn, totalRs: orders.totalRs })
+    .from(orders)
+    .where(and(inRevenue(range), isNull(orders.costRs), ne(orders.source, "workshop")))
+    .orderBy(asc(orders.fulfilOn), asc(orders.number))
+    .limit(PROFIT_LIST_CAP);
+}
+
+export interface WorkshopCostRow {
+  id: string;
+  title: string;
+  eventOn: string;
+  status: string;
+  costRs: number | null;
+}
+
+/**
+ * Events dated in range (S-318): every one with a cost (counted whatever its status) and every
+ * published or completed one without (reported missing), by date.
+ */
+export async function workshopCosts(db: Executor, range: DateRange, locale: Locale): Promise<WorkshopCostRow[]> {
+  const rows = await db
+    .select({ id: workshopEvent.id, titleEn: workshopEvent.titleEn, titleFr: workshopEvent.titleFr, eventOn: workshopEvent.eventOn, status: workshopEvent.status, costRs: workshopEvent.costRs })
+    .from(workshopEvent)
+    .where(and(between(workshopEvent.eventOn, range.from, range.to), or(isNotNull(workshopEvent.costRs), inArray(workshopEvent.status, [...COSTED_EVENT_STATUSES]))))
+    .orderBy(asc(workshopEvent.eventOn), asc(workshopEvent.startsAt));
+  return rows.map(({ titleEn, titleFr, ...row }) => ({ ...row, title: localized({ en: titleEn, fr: titleFr }, locale) }));
+}
+
+export interface ProfitReport extends ProfitSummary {
+  missingOrders: MissingCostOrder[];
+  workshops: WorkshopCostRow[];
+}
+
 export interface SalesReport extends SalesSummary {
   top5: TopProduct[];
   unpaid: UnpaidOrder[];
   /** All unpaid rows in range, also those past the 200 shown. */
   unpaidCount: number;
   unpaidTotalRs: number;
+  /** Amount earned, spent and profit (S-318). */
+  profit: ProfitReport;
 }
 
 /** Every figure of the Sales summary for `range` (MU dates, both included), product names in `locale`. */
 export async function salesReport(db: Executor, range: DateRange, locale: Locale): Promise<SalesReport> {
-  const summary = summarise(await salesGroups(db, range));
+  const groups = await salesGroups(db, range);
+  const summary = summarise(groups);
   const top5 = topProducts(await productSales(db, range, locale));
   const unpaid = await unpaidOrders(db, range);
-  return { ...summary, top5, unpaid: unpaid.rows, unpaidCount: unpaid.count, unpaidTotalRs: unpaid.totalRs };
+  // Every event in range (a handful a month): drafts and cancelled events without a cost, left out, change nothing.
+  const events = await workshopCosts(db, range, locale);
+  const totals = profitSummary(groups, events);
+  const missingOrders = totals.ordersMissingCost > 0 ? await missingCostOrders(db, range) : [];
+  const profit = { ...totals, missingOrders, workshops: events.slice(0, PROFIT_LIST_CAP) };
+  return { ...summary, top5, unpaid: unpaid.rows, unpaidCount: unpaid.count, unpaidTotalRs: unpaid.totalRs, profit };
 }
 
 export interface CompletedOrderRow {
@@ -143,6 +214,7 @@ export interface CompletedOrderRow {
   deliveryFeeRs: number;
   totalRs: number;
   paid: boolean;
+  costRs: number | null;
 }
 
 /** One page of the CSV Orders section: completed orders in range by number, after `after` (exclusive). */
@@ -158,6 +230,7 @@ export function completedOrdersPage(db: Executor, range: DateRange, after: numbe
       deliveryFeeRs: orders.deliveryFeeRs,
       totalRs: orders.totalRs,
       paid: orders.paid,
+      costRs: orders.costRs,
     })
     .from(orders)
     .where(after === null ? inRevenue(range) : and(inRevenue(range), gt(orders.number, after)))

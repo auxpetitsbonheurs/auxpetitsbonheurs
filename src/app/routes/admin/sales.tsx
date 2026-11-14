@@ -1,4 +1,5 @@
 import { Bike, Globe, Palette, PencilLine, ShoppingBag, Sparkles } from "lucide-react";
+import { signedRupees } from "~/components/admin/order/order-cost";
 import { type KeyboardEvent, useRef } from "react";
 import { Form, Link, data, useNavigation } from "react-router";
 import { AdminErrorBoundary } from "~/components/admin/admin-states";
@@ -53,7 +54,15 @@ export async function loader(args: Route.LoaderArgs) {
     ...common,
     label: formatRangeLabel(resolved.from, resolved.to, me.locale),
     invalid: null,
-    report: { ...report, unpaid: report.unpaid.map((row) => ({ ...row, dateLabel: formatDayLabel(row.fulfilOn, me.locale) })) },
+    report: {
+      ...report,
+      unpaid: report.unpaid.map((row) => ({ ...row, dateLabel: formatDayLabel(row.fulfilOn, me.locale) })),
+      profit: {
+        ...report.profit,
+        missingOrders: report.profit.missingOrders.map((row) => ({ ...row, dateLabel: formatDayLabel(row.fulfilOn, me.locale) })),
+        workshops: report.profit.workshops.map((row) => ({ ...row, dateLabel: formatDayLabel(row.eventOn, me.locale) })),
+      },
+    },
     awaitingPayment,
     query: rangeQuery(resolved.range, resolved.from, resolved.to),
   };
@@ -172,6 +181,104 @@ function Tiles({ report }: { report: Report }) {
       <p className="mt-2 text-sm text-muted-foreground">{t("admin.sales.footnote")}</p>
       {report.orderCount === 0 && <p className="mt-3 text-lg">{t("admin.sales.empty")}</p>}
     </>
+  );
+}
+
+type Profit = Report["profit"];
+
+/** The orders counted with no cost yet, behind a native disclosure (no JS), each linking to its order. */
+function MissingOrders({ profit }: { profit: Profit }) {
+  const { t } = useI18n();
+  return (
+    <details className="mt-1">
+      <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold link">{t("admin.sales.profit.showOrders", { count: profit.ordersMissingCost })}</summary>
+      <ul className="mt-1 grid gap-1">
+        {profit.missingOrders.map((row) => (
+          <li key={row.id}>
+            <Link to={`/admin/orders/${row.id}#cost-heading`} className={cn(linkClass, "wrap-anywhere")}>
+              {t("admin.sales.profit.missingRow", { number: row.number, name: row.contactName, amount: formatRupees(row.totalRs) })}
+            </Link>
+            <span className="ml-2 text-sm text-muted-foreground">{row.dateLabel}</span>
+          </li>
+        ))}
+      </ul>
+      {profit.ordersMissingCost > profit.missingOrders.length && <p className="mt-1 text-sm">{t("admin.sales.profit.capped", { shown: profit.missingOrders.length })}</p>}
+    </details>
+  );
+}
+
+/** What is still missing, said calmly: the figures are never silently wrong (S-318 AC6, AC7). */
+function MissingCosts({ profit }: { profit: Profit }) {
+  const { t } = useI18n();
+  if (profit.ordersMissingCost === 0 && profit.workshopsMissingCost === 0) {
+    return profit.earnedRs > 0 || profit.workshops.length > 0 ? <p className="mt-3 text-sm">{t("admin.sales.profit.allSet")}</p> : null;
+  }
+  return (
+    <Alert tone="info" className="mt-4" data-testid="profit-missing">
+      {profit.ordersMissingCost > 0 && (
+        <>
+          <p>{t("admin.sales.profit.missingOrders", { count: profit.ordersMissingCost })}</p>
+          <MissingOrders profit={profit} />
+        </>
+      )}
+      {profit.workshopsMissingCost > 0 && <p className="mt-1">{t("admin.sales.profit.missingWorkshops", { count: profit.workshopsMissingCost })}</p>}
+    </Alert>
+  );
+}
+
+function WorkshopCosts({ profit }: { profit: Profit }) {
+  const { t } = useI18n();
+  if (profit.workshops.length === 0) return null;
+  return (
+    <>
+      <h3 id="sales-workshop-costs" className="mt-4 text-lg font-semibold">
+        {t("admin.sales.profit.workshopsTitle")}
+      </h3>
+      <ul className="mt-1" aria-labelledby="sales-workshop-costs">
+        {profit.workshops.map((row) => (
+          <li key={row.id} className="flex flex-wrap items-center justify-between gap-x-4 border-b border-border py-2 last:border-b-0">
+            <Link to={`/admin/workshops/${row.id}`} className={cn(linkClass, "wrap-anywhere")}>
+              {row.title}
+            </Link>
+            <span className="text-sm text-muted-foreground">
+              {row.dateLabel} · {t(`admin.workshops.status.${row.status}`)}
+            </span>
+            <span className="w-full tabular-nums sm:w-auto">{row.costRs === null ? <strong>{t("admin.sales.profit.noCost")}</strong> : formatRupees(row.costRs)}</span>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+/** Amount earned, amount spent and profit for the period (S-318), seen by every admin. */
+function ProfitSection({ profit }: { profit: Profit }) {
+  const { t } = useI18n();
+  const tile = (label: string, value: string, wide = false) => (
+    <div className={cn("min-w-0 rounded-card border border-border bg-card p-3 min-[20rem]:p-4", wide && "col-span-2 sm:col-span-1")}>
+      <dt className="font-semibold">{label}</dt>
+      <dd className="mt-1 text-2xl font-semibold tabular-nums wrap-anywhere">{value}</dd>
+    </div>
+  );
+  return (
+    <Section id="sales-profit" title={t("admin.sales.profit.title")}>
+      <dl aria-label={t("admin.sales.profit.tilesLabel")} className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {tile(t("admin.sales.profit.earned"), formatRupees(profit.earnedRs))}
+        {tile(t("admin.sales.profit.spent"), formatRupees(profit.spentRs))}
+        {tile(t("admin.sales.profit.profit"), signedRupees(profit.profitRs), true)}
+      </dl>
+      <ul className="mt-2">
+        <IconLine Icon={ShoppingBag} label={t("admin.sales.profit.ordersCost")}>
+          {formatRupees(profit.ordersCostRs)}
+        </IconLine>
+        <IconLine Icon={Palette} label={t("admin.sales.profit.workshopsCost")}>
+          {formatRupees(profit.workshopsCostRs)}
+        </IconLine>
+      </ul>
+      <p className="mt-2 text-sm text-muted-foreground">{t("admin.sales.profit.footnote")}</p>
+      <MissingCosts profit={profit} />
+      <WorkshopCosts profit={profit} />
+    </Section>
   );
 }
 
@@ -326,6 +433,7 @@ export default function AdminSales({ loaderData }: Route.ComponentProps) {
         {report && (
           <>
             <Tiles report={report} />
+            <ProfitSection profit={report.profit} />
             <Breakdowns report={report} />
             <Unpaid report={report} awaitingPayment={awaitingPayment} query={query} />
           </>

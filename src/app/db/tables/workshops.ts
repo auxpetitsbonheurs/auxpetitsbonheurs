@@ -39,6 +39,11 @@ export const workshopEvent = pgTable(
     priceRs: integer("price_rs").notNull(),
     /** Number of cakes (stations). */
     capacity: smallint("capacity").notNull(),
+    /**
+     * What the whole event cost to run, in whole rupees (S-318, migration 0028): one figure per
+     * event, not per registration. Optional, editable in any status; never bumps `version`.
+     */
+    costRs: integer("cost_rs"),
     cakeOptions: jsonb("cake_options").$type<WorkshopCakeOption[]>().notNull(),
     /** draft (not shown), published, cancelled (registrants told), completed (it happened). */
     status: text("status").notNull().default("draft"),
@@ -56,6 +61,7 @@ export const workshopEvent = pgTable(
     check("workshop_event_status_ck", sql`${t.status} in ('draft', 'published', 'cancelled', 'completed')`),
     check("workshop_event_time_ck", sql`${t.startsAt} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' and ${t.endsAt} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' and ${t.endsAt} > ${t.startsAt}`),
     check("workshop_event_money_ck", sql`${t.priceRs} >= 0`),
+    check("workshop_event_cost_ck", sql`${t.costRs} is null or ${t.costRs} between 0 and 1000000`),
     check("workshop_event_capacity_ck", sql`${t.capacity} between 1 and 200`),
     check("workshop_event_options_ck", sql`jsonb_typeof(${t.cakeOptions}) = 'array' and jsonb_array_length(${t.cakeOptions}) between 1 and 10`),
     check("workshop_event_version_ck", sql`${t.version} >= 1`),

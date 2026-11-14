@@ -9,7 +9,8 @@ import { requireAdmin } from "~/server/auth.server";
 import { clockContext } from "~/server/clock.server";
 import { MuDate } from "~/server/contracts/shared";
 import { type Executor, requestDbContext } from "~/server/db.server";
-import { type DateRange, type SalesReport, completedOrdersPage, salesReport, unpaidOrdersPage } from "~/server/repos/sales.server";
+import { type DateRange, type SalesReport, completedOrdersPage, salesReport, unpaidOrdersPage, workshopCosts } from "~/server/repos/sales.server";
+import type { Locale } from "~/lib/locale";
 import type { Route } from "./+types/sales-csv";
 
 /**
@@ -34,12 +35,26 @@ function validationFailed(message: string): Response {
   return Response.json({ ok: false, error: { code: "VALIDATION_FAILED", message } }, { status: 400, headers: { "Cache-Control": "private, no-store" } });
 }
 
+/** S-318: earned, costs, spent, profit and how many costs are missing, as on the screen. */
+function profitCells({ profit }: SalesReport): number[] {
+  return [profit.earnedRs, profit.ordersCostRs, profit.workshopsCostRs, profit.spentRs, profit.profitRs, profit.ordersMissingCost, profit.workshopsMissingCost];
+}
+
 /** The fixed sections, built from the same report as the screen (S-178 AC2). */
 function headSections(report: SalesReport): string {
   return [
     csvRow(["Summary"]),
-    csvRow(["revenue", "orders", "average", "delivery_count", "delivery_revenue", "pickup_count", "pickup_revenue"]),
-    csvRow([report.revenueRs, report.orderCount, report.averageRs, report.delivery, report.deliveryRevenueRs, report.pickup, report.pickupRevenueRs]),
+    csvRow(["revenue", "orders", "average", "delivery_count", "delivery_revenue", "pickup_count", "pickup_revenue", "earned", "orders_cost", "workshops_cost", "spent", "profit", "orders_missing_cost", "workshops_missing_cost"]),
+    csvRow([
+      report.revenueRs,
+      report.orderCount,
+      report.averageRs,
+      report.delivery,
+      report.deliveryRevenueRs,
+      report.pickup,
+      report.pickupRevenueRs,
+      ...profitCells(report),
+    ]),
     "\r\n",
     csvRow(["Top products"]),
     csvRow(["rank", "product", "units", "revenue"]),
@@ -65,18 +80,34 @@ async function* pages<T>(fetch: (after: number | null) => Promise<T[]>, key: (ro
   }
 }
 
-async function* csvChunks(db: Executor, range: DateRange, report: SalesReport): AsyncGenerator<string> {
+async function* csvChunks(db: Executor, range: DateRange, report: SalesReport, locale: Locale): AsyncGenerator<string> {
   yield CSV_BOM + headSections(report);
   for await (const rows of pages((after) => unpaidOrdersPage(db, range, after, PAGE), (row) => row.sequence)) {
     yield rows.map((row) => csvRow([row.number, row.contactName, row.status, row.fulfilOn, row.totalRs])).join("");
   }
   yield csvRow(["total", null, null, null, report.unpaidTotalRs]) + "\r\n" + csvRow(["Orders"]);
-  yield csvRow(["number", "date", "source", "fulfilment", "items_rs", "delivery_fee_rs", "total_rs", "paid"]);
+  yield csvRow(["number", "date", "source", "fulfilment", "items_rs", "delivery_fee_rs", "total_rs", "paid", "cost_rs", "profit_rs"]);
   for await (const rows of pages((after) => completedOrdersPage(db, range, after, PAGE), (row) => row.number)) {
     yield rows
-      .map((row) => csvRow([formatOrderNumber(row.numberPrefix ?? "", row.number), row.fulfilOn, row.source, row.fulfilment, row.itemsTotalRs, row.deliveryFeeRs, row.totalRs, row.paid]))
+      .map((row) =>
+        csvRow([
+          formatOrderNumber(row.numberPrefix ?? "", row.number),
+          row.fulfilOn,
+          row.source,
+          row.fulfilment,
+          row.itemsTotalRs,
+          row.deliveryFeeRs,
+          row.totalRs,
+          row.paid,
+          row.costRs,
+          row.costRs === null ? null : row.totalRs - row.costRs,
+        ]),
+      )
       .join("");
   }
+  // S-318: every workshop of the period that has a cost or ran (uncapped; the screen lists 50).
+  yield "\r\n" + csvRow(["Workshops"]) + csvRow(["date", "title", "status", "cost_rs"]);
+  yield (await workshopCosts(db, range, locale)).map((row) => csvRow([row.eventOn, row.title, row.status, row.costRs])).join("");
 }
 
 function stream(chunks: AsyncGenerator<string>): ReadableStream<Uint8Array> {
@@ -106,7 +137,7 @@ export async function loader(args: Route.LoaderArgs) {
   const db = args.context.get(requestDbContext).db;
   const report = await salesReport(db, resolved, me.locale);
   console.log(JSON.stringify({ level: "info", event: "sales_exported", range: resolved.range, rows: report.orderCount }));
-  return new Response(stream(csvChunks(db, resolved, report)), {
+  return new Response(stream(csvChunks(db, resolved, report, me.locale)), {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
       "Content-Disposition": `attachment; filename="apb-sales-${resolved.from}_${resolved.to}.csv"`,

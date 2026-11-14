@@ -40,6 +40,10 @@ export interface SalesGroup {
   source: OrderSource;
   orderCount: number;
   revenueRs: number;
+  /** Sum of the entered costs (S-318); 0 when none. */
+  costRs: number;
+  /** Orders in the group with no cost entered (S-318). */
+  missingCost: number;
 }
 
 export interface SalesSummary {
@@ -54,7 +58,7 @@ export interface SalesSummary {
   bySource: Record<OrderSource, number>;
 }
 
-export function summarise(groups: readonly SalesGroup[]): SalesSummary {
+export function summarise(groups: readonly Omit<SalesGroup, "costRs" | "missingCost">[]): SalesSummary {
   const bySource: Record<OrderSource, number> = { website: 0, custom_request: 0, manual: 0, workshop: 0 };
   const count = { delivery: 0, pickup: 0 };
   const revenue = { delivery: 0, pickup: 0 };
@@ -172,4 +176,57 @@ export function formatRangeLabel(from: string, to: string, locale: Locale): stri
   if (a.year !== b.year) return `${a.day} ${a.monthName} ${a.year} – ${end}`;
   if (a.month !== b.month) return `${a.day} ${a.monthName} – ${end}`;
   return `${a.day}–${end}`;
+}
+
+/**
+ * A workshop registration's cost is its event's "Cost to run" (one figure per event, S-318), so
+ * a registration without its own cost is never reported missing; any other order is.
+ */
+export function orderCostMissing(source: OrderSource): boolean {
+  return source !== "workshop";
+}
+
+/** Events whose missing cost is reported (S-318): they ran or will run. Drafts and cancelled events without one are left out. */
+export const COSTED_EVENT_STATUSES: ReadonlySet<string> = new Set(["published", "completed"]);
+
+export interface EventCost {
+  status: string;
+  costRs: number | null;
+}
+
+export interface ProfitSummary {
+  earnedRs: number;
+  ordersCostRs: number;
+  workshopsCostRs: number;
+  spentRs: number;
+  /** Earned minus spent; negative when costs were higher. */
+  profitRs: number;
+  ordersMissingCost: number;
+  workshopsMissingCost: number;
+}
+
+/**
+ * Amount earned, spent and profit for a period (S-318; contracts.md "Costs and profit").
+ * Earned is the revenue rule (completed orders: refunds are only ever owed on declined or
+ * cancelled orders, which never count). Spent = the costs of those orders plus the cost of every
+ * event dated in the period that has one, whatever its status (money spent on a cancelled event
+ * was still spent). A missing cost counts as Rs 0 and is always reported, never silent.
+ */
+export function profitSummary(groups: readonly SalesGroup[], events: readonly EventCost[]): ProfitSummary {
+  let earnedRs = 0;
+  let ordersCostRs = 0;
+  let ordersMissingCost = 0;
+  for (const group of groups) {
+    earnedRs += group.revenueRs;
+    ordersCostRs += group.costRs;
+    if (orderCostMissing(group.source)) ordersMissingCost += group.missingCost;
+  }
+  let workshopsCostRs = 0;
+  let workshopsMissingCost = 0;
+  for (const event of events) {
+    if (event.costRs !== null) workshopsCostRs += event.costRs;
+    else if (COSTED_EVENT_STATUSES.has(event.status)) workshopsMissingCost += 1;
+  }
+  const spentRs = ordersCostRs + workshopsCostRs;
+  return { earnedRs, ordersCostRs, workshopsCostRs, spentRs, profitRs: earnedRs - spentRs, ordersMissingCost, workshopsMissingCost };
 }

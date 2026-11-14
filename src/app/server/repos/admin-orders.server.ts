@@ -172,6 +172,8 @@ export interface AdminOrder extends AdminOrderRow {
   totalOverridden: boolean;
   /** Private note (S-114): admins only, never on the tracking page or in an email. */
   adminNote: string | null;
+  /** "Cost to make" (S-318); null = not entered. */
+  costRs: number | null;
   /** The request fields of a custom request (S-113 AC8), else null. */
   customRequest: AdminCustomRequest | null;
 }
@@ -227,6 +229,7 @@ export async function findAdminOrder(db: Executor, id: string): Promise<AdminOrd
       refundedAt: orders.refundedAt,
       totalOverridden: orders.totalOverridden,
       adminNote: orders.adminNote,
+      costRs: orders.costRs,
       items: itemsJson,
       customRequest: requestJson,
     })

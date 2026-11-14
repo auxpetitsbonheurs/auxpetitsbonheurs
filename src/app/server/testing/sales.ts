@@ -53,6 +53,9 @@ export interface TestSaleOrder {
   contactName?: string;
   items?: TestItem[];
   createdAt?: Date;
+  /** "Cost to make" (S-318); null/absent = not entered. */
+  costRs?: number | null;
+  refundDueRs?: number | null;
 }
 
 const WINDOW = { id: "morning", start: "09:00", end: "12:00", label: { en: "Morning", fr: "Matin" } };
@@ -85,6 +88,8 @@ export async function insertTestOrder(db: Db, values: TestSaleOrder): Promise<{ 
       paidAt: values.paid ? new Date("2026-11-10T08:00:00Z") : null,
       locale: "en",
       trackingToken: randomUUID(),
+      costRs: values.costRs ?? null,
+      refundDueRs: values.refundDueRs ?? null,
       ...(values.createdAt ? { createdAt: values.createdAt } : {}),
     })
     .returning({ id: orders.id, number: orders.number });

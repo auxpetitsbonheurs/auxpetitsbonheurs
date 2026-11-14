@@ -695,7 +695,8 @@
         "edited": "Edited by {{actor}}, {{time}}",
         "email_failed": "An email to the customer could not be delivered, {{time}}",
         "pending_alert_sent": "Reminder sent to the team, {{time}}",
-        "workshop_changed": "Workshop date, time or place changed by {{actor}}, {{time}}"
+        "workshop_changed": "Workshop date, time or place changed by {{actor}}, {{time}}",
+        "cost_changed": "Cost to make changed by {{actor}}, {{time}}"
       },
       "reason": "Reason: {{reason}}",
       "paidRefund": "The order was paid: refund outside the site.",
@@ -706,7 +707,8 @@
         "other": "The email could not be prepared.",
         "recipientCap": "Not sent: this address already got {{max}} order or request emails in 24 hours (anti-spam limit)."
       },
-      "emailFailedHint": "Send the tracking link by WhatsApp instead."
+      "emailFailedHint": "Send the tracking link by WhatsApp instead.",
+      "cost": "Cost: {{from}} → {{to}}"
     },
     "nav": {
       "today": "Today",
@@ -854,7 +856,28 @@
       "export": "Export CSV",
       "exporting": "Preparing the CSV…",
       "exportFailed": "Export failed, try again",
-      "exported": "CSV downloaded."
+      "exported": "CSV downloaded.",
+      "profit": {
+        "title": "Profit",
+        "tilesLabel": "Profit for this period",
+        "earned": "Amount earned",
+        "spent": "Amount spent",
+        "profit": "Profit",
+        "ordersCost": "Cost of orders",
+        "workshopsCost": "Cost of workshops",
+        "footnote": "Earned counts the same Completed orders as Revenue (refunded orders never count). Spent adds their costs and the cost of the workshops held in this period.",
+        "missingOrders_one": "{{count}} order counted here has no cost yet, so the profit may look higher than it is.",
+        "missingOrders_other": "{{count}} orders counted here have no cost yet, so the profit may look higher than it is.",
+        "missingWorkshops_one": "{{count}} workshop in this period has no cost yet.",
+        "missingWorkshops_other": "{{count}} workshops in this period have no cost yet.",
+        "showOrders_one": "Show the order",
+        "showOrders_other": "Show the {{count}} orders",
+        "capped": "Showing the first {{shown}}.",
+        "missingRow": "{{number}}, {{name}}, {{amount}}",
+        "workshopsTitle": "Workshops in this period",
+        "noCost": "No cost yet",
+        "allSet": "Every order and workshop in this period has a cost."
+      }
     },
     "states": {
       "ownerOnlyTitle": "Owner only",
@@ -2492,6 +2515,23 @@
         "allergies_other": "{{count}} registrations with allergies: see the printed list."
       },
       "shareNote": "Share sends only the cake counts, never names, phone numbers or allergies."
+    },
+    "cost": {
+      "orderTitle": "Cost to make",
+      "orderHint": "What this order cost you (ingredients, boxes…), in whole rupees. Only admins see it. Leave it empty if you don't know yet.",
+      "workshopOrderHint": "A workshop's cost goes on the event (Cost to run). Add one here only if this registration cost extra.",
+      "runTitle": "Cost to run",
+      "runHint": "What the whole event cost (ingredients, cakes, room…), in whole rupees: one figure for the event, not per registration. Only admins see it.",
+      "label": "Cost in rupees",
+      "save": "Save cost",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "cleared": "Cost cleared",
+      "invalid": "Enter whole rupees from 0 to 1,000,000, or leave it empty.",
+      "failed": "Not saved. Check your connection and try again.",
+      "none": "none",
+      "orderProfit": "Profit on this order: {{amount}}",
+      "notSet": "No cost yet"
     }
   },
   "email": {

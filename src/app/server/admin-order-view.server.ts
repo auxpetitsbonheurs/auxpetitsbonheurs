@@ -32,6 +32,8 @@ const KNOWN_EVENTS = new Set([
   "payment_undone",
   "payment_reminder_sent",
   "refunded",
+  // S-318: the "Cost to make" was entered, changed or cleared.
+  "cost_changed",
 ]);
 
 export interface EventLine {
@@ -55,9 +57,19 @@ function emailFailedNotes(details: Record<string, unknown>, locale: Locale): str
   return [translate(`admin.log.emailFailedReason.${kind}`, locale), translate("admin.log.emailFailedHint", locale)];
 }
 
+/** "Cost: Rs 500 → Rs 650", "Cost: none → Rs 650" (S-318). */
+function costNote(details: Record<string, unknown>, locale: Locale): string {
+  const shown = (value: unknown) => {
+    const amount = rupees(value);
+    return amount === null ? translate("admin.cost.none", locale) : formatRupees(amount);
+  };
+  return translate("admin.log.cost", locale, { from: shown(details.fromRs), to: shown(details.toRs) });
+}
+
 function eventNotes(event: OrderEventView, locale: Locale): string[] {
   const details = event.details ?? {};
   if (event.type === "email_failed") return emailFailedNotes(details, locale);
+  if (event.type === "cost_changed") return [costNote(details, locale)];
   const notes: string[] = [];
   const reason = text(details.reason);
   if (reason) notes.push(translate("admin.log.reason", locale, { reason }));

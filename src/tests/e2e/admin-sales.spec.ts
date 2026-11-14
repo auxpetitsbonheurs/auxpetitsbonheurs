@@ -149,7 +149,8 @@ test.describe("accessibility (S-171 AC12, AC13; S-172 AC7, AC8; S-173 AC8; S-178
     await pin.evaluate((style) => (style as Element).remove());
     const indexes = stops.map((s) => s.index);
     expect(indexes).toEqual([...indexes].sort((a, b) => a - b));
-    expect(total - stops.length).toBe(3);
+    // Unselected tabs, and the links of a closed "Show the orders" disclosure (S-318), are not Tab stops.
+    expect(total - stops.length).toBe(3 + (await page.locator("details:not([open]) a").count()));
     for (const name of ["This week", "This month", "Last month"]) expect(stops.map((s) => s.name)).not.toContain(name);
     expect(stops.filter((s) => !s.visibleFocus).map((s) => s.name)).toEqual([]);
     await expectNoA11yViolations(page, { zoom: 2 });

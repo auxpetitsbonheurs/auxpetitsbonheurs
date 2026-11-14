@@ -64,3 +64,34 @@ export async function saveAdminNote(db: Database, orderId: string, note: string)
   const rows = await db.update(orders).set({ adminNote: value }).where(eq(orders.id, orderId)).returning({ id: orders.id });
   return rows.length === 1;
 }
+
+export interface SaveCostInput {
+  orderId: string;
+  costRs: number | null;
+  adminId: string;
+  now: Date;
+}
+
+/**
+ * "Cost to make" (S-318): last write wins in any status, never takes or bumps `version`, so it
+ * never conflicts with or blocks the order flow. A changed value logs one `cost_changed` event
+ * (`fromRs`, `toRs`) in the same statement; the same value again writes nothing. False when the
+ * order does not exist.
+ */
+export async function saveOrderCost(db: Database, input: SaveCostInput): Promise<boolean> {
+  const at = input.now.toISOString();
+  const result = (await db.execute(sql`
+    with prev as (
+      select id, cost_rs from orders where id = ${input.orderId}::uuid for update
+    ), changed as (
+      update orders o set cost_rs = ${input.costRs}::integer from prev
+      where o.id = prev.id and prev.cost_rs is distinct from ${input.costRs}::integer
+      returning o.id, prev.cost_rs as from_rs
+    ), logged as (
+      insert into order_event (order_id, actor_type, actor_admin_id, type, details, created_at)
+      select id, 'admin', ${input.adminId}::uuid, 'cost_changed', jsonb_build_object('fromRs', from_rs, 'toRs', ${input.costRs}::integer), ${at}::timestamptz from changed
+    )
+    select count(*)::int as found from prev
+  `)) as unknown as { rows: { found: number }[] };
+  return Number(result.rows[0]?.found ?? 0) === 1;
+}

@@ -5,7 +5,7 @@
 import type { OrderAction } from "~/server/contracts/admin";
 import type { Database } from "~/server/db.server";
 import { declineOrder, markPaid, markRefunded, undoPaid } from "./order-payment.server";
-import { saveAdminNote, setPaid } from "./order-flags.server";
+import { saveAdminNote, saveOrderCost, setPaid } from "./order-flags.server";
 import { transitionOrder } from "./transition-order.server";
 
 export interface OrderActionContext {
@@ -19,6 +19,7 @@ type Refusal = "NOT_FOUND" | "ORDER_CHANGED" | "INVALID_TRANSITION";
 export type OrderActionResult =
   | { ok: true; order: { status: string; version: number; paid?: boolean } }
   | { ok: true; note: true }
+  | { ok: true; costRs: number | null }
   | { ok: false; code: Refusal };
 
 export interface OrderLogLine {
@@ -32,7 +33,7 @@ export interface OrderLogLine {
 
 /** The log line of a status or paid action, or null for a note (not logged, like its event). */
 export function orderLogLine(input: OrderAction, context: OrderActionContext, result: OrderActionResult): OrderLogLine | null {
-  if (input.intent === "saveNote") return null;
+  if (input.intent === "saveNote" || input.intent === "saveCost") return null;
   const base = { action: input.intent, orderId: context.orderId, adminId: context.adminId };
   if (result.ok) return "order" in result ? { level: "info", event: "order_action", ...base, to: result.order.status } : null;
   if (result.code === "ORDER_CHANGED") return { level: "warn", event: "order_conflict", ...base };
@@ -43,6 +44,10 @@ export function orderLogLine(input: OrderAction, context: OrderActionContext, re
 async function dispatch(db: Database, input: OrderAction, context: OrderActionContext): Promise<OrderActionResult> {
   if (input.intent === "saveNote") {
     return (await saveAdminNote(db, context.orderId, input.adminNote)) ? { ok: true, note: true } : { ok: false, code: "NOT_FOUND" };
+  }
+  if (input.intent === "saveCost") {
+    const found = await saveOrderCost(db, { orderId: context.orderId, costRs: input.costRs, adminId: context.adminId, now: context.now });
+    return found ? { ok: true, costRs: input.costRs } : { ok: false, code: "NOT_FOUND" };
   }
   const base = { ...context, version: input.version };
   switch (input.intent) {

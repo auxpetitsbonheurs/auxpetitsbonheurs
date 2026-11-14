@@ -265,3 +265,13 @@ export function completeEvent(db: Database, input: EventActionInput & { today: s
     )`,
   );
 }
+
+/**
+ * "Cost to run" (S-318): one figure for the whole event, in any status; last write wins and the
+ * event's `version` is left alone, so it never conflicts with the editor or a status action.
+ * False when the event does not exist.
+ */
+export async function saveEventCost(db: Database, input: { eventId: string; costRs: number | null }): Promise<boolean> {
+  const rows = await db.update(workshopEvent).set({ costRs: input.costRs }).where(eq(workshopEvent.id, input.eventId)).returning({ id: workshopEvent.id });
+  return rows.length === 1;
+}
