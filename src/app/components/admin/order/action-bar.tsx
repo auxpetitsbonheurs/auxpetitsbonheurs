@@ -170,7 +170,7 @@ export function OrderActionBar({ data, actionData }: { data: OrderLoaderData; ac
   };
 
   return (
-    <div data-sticky-bar data-editor-bar="" className="sticky bottom-0 z-30 -mx-4 mt-8 border-t border-border bg-card px-4 py-2 shadow-md min-[20rem]:bottom-[calc(3.5rem+env(safe-area-inset-bottom))] md:-mx-6 md:px-6">
+    <div data-sticky-bar data-editor-bar="" className="sticky bottom-0 z-30 -mx-4 mt-8 border-t border-border bg-card px-4 py-2 shadow-md min-[20rem]:bottom-[calc(3.5rem+env(safe-area-inset-bottom))] md:top-6 md:bottom-auto md:mx-0 md:mt-6 md:rounded-card md:border md:p-4 md:shadow-none">
       <ResultLine answer={answer} number={order.number} fetcher={fetcher} busy={busy} />
       {allowed.markRefunded ? (
         <RefundStep data={data} step={step} setStep={setStep} fetcher={fetcher} busy={busy} />

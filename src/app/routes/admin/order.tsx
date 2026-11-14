@@ -166,27 +166,32 @@ export function meta({ loaderData }: Route.MetaArgs) {
 export type OrderLoaderData = Route.ComponentProps["loaderData"];
 
 export default function AdminOrder({ loaderData, actionData }: Route.ComponentProps) {
+  // Phones: one column, the actions stick to the bottom (thumb reach, S-126 AC1). From md up the
+  // actions get their own column beside the order and stick near the top, so they never cover
+  // a link or button of the order (axe target-size, S-126 AC2-AC5).
   return (
-    <>
-      <OrderHeader data={loaderData} />
-      <EditedNotice edited={loaderData.edited} number={loaderData.order.number} />
-      <OrderConflict data={loaderData} actionData={actionData} />
-      <PaymentSection data={loaderData} />
-      <CustomerSection data={loaderData} />
-      <FulfilmentSection data={loaderData} />
-      {/* A custom request has no items: its price is the quote in the request section (E-08). */}
-      {!loaderData.request && <ItemsSection data={loaderData} />}
-      <RequestSection data={loaderData} />
-      {loaderData.request && <RequestPhotos photos={loaderData.request.photos} />}
-      {loaderData.request && loaderData.allowed.sendQuote && (
-        <QuoteSheet request={loaderData.request} version={loaderData.order.version} fulfilOn={loaderData.order.fulfilOn} today={loaderData.today} result={actionData as QuoteResult | undefined} pending={false} />
-      )}
-      <ReasonSection data={loaderData} />
-      <PrivateNote orderId={loaderData.order.id} initial={loaderData.adminNote} />
-      <ActivityLog events={loaderData.events} />
-      <TrackingLink url={loaderData.trackingUrl} />
+    <div className="md:grid md:grid-cols-[minmax(0,1fr)_18rem] md:items-start md:gap-x-8">
+      <div className="min-w-0" data-testid="order-content">
+        <OrderHeader data={loaderData} />
+        <EditedNotice edited={loaderData.edited} number={loaderData.order.number} />
+        <OrderConflict data={loaderData} actionData={actionData} />
+        <PaymentSection data={loaderData} />
+        <CustomerSection data={loaderData} />
+        <FulfilmentSection data={loaderData} />
+        {/* A custom request has no items: its price is the quote in the request section (E-08). */}
+        {!loaderData.request && <ItemsSection data={loaderData} />}
+        <RequestSection data={loaderData} />
+        {loaderData.request && <RequestPhotos photos={loaderData.request.photos} />}
+        {loaderData.request && loaderData.allowed.sendQuote && (
+          <QuoteSheet request={loaderData.request} version={loaderData.order.version} fulfilOn={loaderData.order.fulfilOn} today={loaderData.today} result={actionData as QuoteResult | undefined} pending={false} />
+        )}
+        <ReasonSection data={loaderData} />
+        <PrivateNote orderId={loaderData.order.id} initial={loaderData.adminNote} />
+        <ActivityLog events={loaderData.events} />
+        <TrackingLink url={loaderData.trackingUrl} />
+      </div>
       <OrderActionBar data={loaderData} actionData={actionData} />
-    </>
+    </div>
   );
 }
 

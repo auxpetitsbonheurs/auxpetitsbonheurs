@@ -10,6 +10,7 @@ import {
   withZoom,
 } from "./support/a11y";
 import { signIn } from "./support/admin";
+import { expectActionInReach } from "./support/order-actions";
 import { E2E_ACCOUNTS, type TestOrder, createOrder } from "./support/database";
 import { type Page, expect, test } from "./support/fixtures";
 
@@ -59,10 +60,8 @@ test.describe("S-117 move forward and back", () => {
     const release = await holdPost(page, order);
 
     const next = page.getByRole("button", { name: "Mark in preparation" });
-    const viewport = page.viewportSize()!;
-    const box = (await next.boundingBox())!;
-    expect(box.y).toBeGreaterThan(viewport.height / 2);
-    expect(box.height).toBeGreaterThanOrEqual(44);
+    await expectActionInReach(page, next);
+    expect((await next.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await next.click();
     await expect(next).toHaveAttribute("aria-busy", "true");
     await expect(page.getByTestId("order-status")).toHaveText("In preparation");

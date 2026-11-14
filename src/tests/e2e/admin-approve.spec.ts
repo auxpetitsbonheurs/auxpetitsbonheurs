@@ -9,6 +9,7 @@ import {
   withZoom,
 } from "./support/a11y";
 import { signIn } from "./support/admin";
+import { expectActionInReach } from "./support/order-actions";
 import { E2E_ACCOUNTS, type TestOrder, createOrder } from "./support/database";
 import { type Page, expect, test } from "./support/fixtures";
 
@@ -165,10 +166,7 @@ test.describe("S-017 orders to review and Approve", () => {
 
     await page.goto(`/admin/orders/${order.id}`);
     await accessibleLayout(page);
-    const viewport = page.viewportSize()!;
-    const box = (await page.getByRole("button", { name: "Approve" }).boundingBox())!;
-    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
-    expect(box.y).toBeGreaterThan(viewport.height / 2);
+    await expectActionInReach(page, page.getByRole("button", { name: /^Approve/ }));
   });
 
   for (const colorScheme of ["light", "dark"] as const) {
