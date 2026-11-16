@@ -45,6 +45,8 @@ export const settings = pgTable(
     instagramUrl: text("instagram_url"),
     /** The Facebook page (S-283): https on facebook.com or fb.com only (domain/settings facebookPageUrl). */
     facebookUrl: text("facebook_url"),
+    /** The TikTok account (S-319): https on tiktok.com or www.tiktok.com only (domain/settings tiktokAccountUrl). */
+    tiktokUrl: text("tiktok_url"),
     hero: jsonb("hero").$type<HeroContent>(),
     featuredProductIds: uuid("featured_product_ids").array().notNull().default(sql`'{}'::uuid[]`),
     about: jsonb("about").$type<LocalizedText>(),

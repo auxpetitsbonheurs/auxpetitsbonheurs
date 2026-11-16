@@ -34,6 +34,21 @@ export function facebookPageUrl(value: string | null | undefined): string | null
   return FACEBOOK_HOST.test(url.hostname) ? url.href : null;
 }
 
+/** Hosts a TikTok account may live on (S-319): tiktok.com and www.tiktok.com only. */
+const TIKTOK_HOSTS: ReadonlySet<string> = new Set(["tiktok.com", "www.tiktok.com"]);
+
+/**
+ * The TikTok account link (S-319 AC2, AC3): https only, on tiktok.com or www.tiktok.com, no user
+ * info or port, at most URL_MAX characters. Returns the normalised href, or null when it is not one.
+ */
+export function tiktokAccountUrl(value: string | null | undefined): string | null {
+  const raw = value?.trim() ?? "";
+  if (raw === "" || raw.length > URL_MAX || !URL.canParse(raw)) return null;
+  const url = new URL(raw);
+  if (url.protocol !== "https:" || url.username !== "" || url.password !== "" || url.port !== "") return null;
+  return TIKTOK_HOSTS.has(url.hostname) ? url.href : null;
+}
+
 /** Text in English and (optionally) French; blank French falls back to English on French pages. */
 export interface LocalizedValue {
   en: string;

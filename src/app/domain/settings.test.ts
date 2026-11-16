@@ -2,7 +2,7 @@
 // case-insensitive; French checked when it has text). Warning only.
 import { describe, expect, test } from "vitest";
 import { overlappingWindows, isCalendarDate, minutesOf, newWindowId } from "./availability";
-import { facebookPageUrl, policiesMissingEntries, privacyNoteMissingReviews } from "./settings";
+import { facebookPageUrl, tiktokAccountUrl, policiesMissingEntries, privacyNoteMissingReviews } from "./settings";
 
 describe("policiesMissingEntries (S-059 AC4)", () => {
   test.each([
@@ -80,5 +80,34 @@ describe("facebookPageUrl (S-283 AC2)", () => {
     [null],
   ])("%s is refused", (raw) => {
     expect(facebookPageUrl(raw)).toBeNull();
+  });
+});
+
+describe("tiktokAccountUrl (S-319 AC2)", () => {
+  test.each([
+    ["https://tiktok.com/@auxpetitsbonheurs", "https://tiktok.com/@auxpetitsbonheurs"],
+    ["https://www.tiktok.com/@auxpetitsbonheurs", "https://www.tiktok.com/@auxpetitsbonheurs"],
+    ["  https://www.tiktok.com/@apb?lang=fr ", "https://www.tiktok.com/@apb?lang=fr"],
+    ["https://WWW.TIKTOK.COM/@Apb", "https://www.tiktok.com/@Apb"],
+  ])("%s is a TikTok account", (raw, href) => {
+    expect(tiktokAccountUrl(raw)).toBe(href);
+  });
+
+  test.each([
+    ["http://tiktok.com/@apb"],
+    ["tiktok.com/@apb"],
+    ["https://m.tiktok.com/@apb"],
+    ["https://vm.tiktok.com/ZMabc/"],
+    ["https://tiktok.com.evil.example/@apb"],
+    ["https://eviltiktok.com/@apb"],
+    ["https://www.facebook.com/apb"],
+    ["javascript:alert(1)//tiktok.com"],
+    ["https://user:pass@tiktok.com/@apb"],
+    ["https://tiktok.com:8443/@apb"],
+    [`https://tiktok.com/${"a".repeat(500)}`],
+    [""],
+    [null],
+  ])("%s is refused", (raw) => {
+    expect(tiktokAccountUrl(raw)).toBeNull();
   });
 });

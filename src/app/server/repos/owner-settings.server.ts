@@ -35,6 +35,7 @@ export interface OwnerSettings {
   paymentWhatsapp: string | null;
   instagramUrl: string | null;
   facebookUrl: string | null;
+  tiktokUrl: string | null;
   quoteValidityDays: number;
   cakeMessageMax: number;
   eveningReminderAt: string;
@@ -69,6 +70,7 @@ export async function readOwnerSettings(db: Database): Promise<OwnerSettings> {
     paymentWhatsapp: r.paymentWhatsapp,
     instagramUrl: r.instagramUrl,
     facebookUrl: r.facebookUrl,
+    tiktokUrl: r.tiktokUrl,
     quoteValidityDays: r.quoteValidityDays,
     cakeMessageMax: r.cakeMessageMax,
     eveningReminderAt: r.eveningReminderAt,

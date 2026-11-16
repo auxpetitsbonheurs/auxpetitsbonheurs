@@ -18,6 +18,7 @@
       "instagram": "Instagram",
       "instagramLink": "Aux petits bonheurs sur Instagram",
       "facebookLink": "Aux petits bonheurs sur Facebook",
+      "tiktokLink": "Aux petits bonheurs sur TikTok",
       "social": "Suivez-nous",
       "pickupHeading": "Retrait",
       "map": "Voir sur la carte",
@@ -1389,6 +1390,8 @@
       "instagram": "Lien Instagram",
       "facebook": "Page Facebook",
       "facebookHint": "L'adresse complète de votre page, commençant par https:// (facebook.com ou fb.com)",
+      "tiktok": "Lien TikTok",
+      "tiktokHint": "L'adresse complète de votre compte, commençant par https:// (tiktok.com)",
       "paymentTitle": "Paiement",
       "juice": "Numéro Juice",
       "juiceHint": "Le numéro de mobile de votre compte Juice, par exemple 5xxx xxxx.",
@@ -1493,6 +1496,9 @@
         },
         "facebookUrl": {
           "invalid": "Saisissez la page Facebook en adresse complète commençant par https://, sur facebook.com"
+        },
+        "tiktokUrl": {
+          "invalid": "Saisissez le compte TikTok en adresse complète commençant par https://, sur tiktok.com"
         },
         "quoteValidityDays": {
           "invalid": "Saisissez une validité de devis en jours entiers, de 1 à 60."

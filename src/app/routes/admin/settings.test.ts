@@ -57,6 +57,7 @@ describe("S-058 AC1: the Owner sees every business value", () => {
       paymentWhatsapp: null,
       instagramUrl: null,
       facebookUrl: null,
+      tiktokUrl: null,
       quoteValidityDays: 5,
       cakeMessageMax: 40,
       eveningReminderAt: "18:00",

@@ -45,6 +45,7 @@ describe("S-058 AC5: invalid business values", () => {
       paymentWhatsapp: "not a phone",
       instagramUrl: "instagram",
       facebookUrl: "https://facebook.com.evil.example/apb",
+      tiktokUrl: "https://tiktok.com.evil.example/@apb",
       quoteValidityDays: "61",
       cakeMessageMax: "9",
       eveningReminderAt: "6pm",
@@ -55,7 +56,7 @@ describe("S-058 AC5: invalid business values", () => {
     expect(refused.init.status).toBe(400);
     expect(refused.data.error.code).toBe("VALIDATION_FAILED");
     expect(Object.keys(refused.data.error.fields ?? {}).sort()).toEqual(
-      ["cakeMessageMax", "contactEmail", "contactPhone", "contactWhatsapp", "deliveryFeeRs", "eveningReminderAt", "facebookUrl", "instagramUrl", "juiceName", "juiceNumber", "orderNumberPrefix", "paymentWhatsapp", "pickupMapUrl", "quoteValidityDays"].sort(),
+      ["cakeMessageMax", "contactEmail", "contactPhone", "contactWhatsapp", "deliveryFeeRs", "eveningReminderAt", "facebookUrl", "instagramUrl", "juiceName", "juiceNumber", "orderNumberPrefix", "paymentWhatsapp", "pickupMapUrl", "quoteValidityDays", "tiktokUrl"].sort(),
     );
     expect(refused.data.error.fields?.orderNumberPrefix).toBe("Use 1 to 5 capital letters and an optional dash, for example APB-.");
     expect(await stored()).toEqual({ version: 1, delivery_fee_rs: 200 });
@@ -207,5 +208,24 @@ describe("S-283 AC1, AC2: the Facebook page", () => {
     expect(refused.init.status).toBe(400);
     expect(refused.data.error.fields?.facebookUrl).toBe("Enter the Facebook page as a full address starting with https://, on facebook.com");
     expect(await facebook()).toBeNull();
+  });
+});
+
+describe("S-319 AC1, AC2: the TikTok account", () => {
+  const tiktok = async () => (await database.client.query<{ tiktok_url: string | null }>("select tiktok_url from settings")).rows[0]?.tiktok_url;
+
+  test("an https tiktok.com account is saved, and an empty value clears it", async () => {
+    expect((await post({ tiktokUrl: " https://www.tiktok.com/@auxpetitsbonheurs " })).result).toMatchObject({ ok: true });
+    expect(await tiktok()).toBe("https://www.tiktok.com/@auxpetitsbonheurs");
+
+    expect((await post({ tiktokUrl: "" })).result).toMatchObject({ ok: true });
+    expect(await tiktok()).toBeNull();
+  });
+
+  test.each(["http://tiktok.com/@apb", "https://www.facebook.com/apb", "https://vm.tiktok.com/ZMabc/", "tiktok"])("%s is refused with a friendly message and nothing is saved", async (value) => {
+    const refused = (await post({ tiktokUrl: value })).result as Refusal;
+    expect(refused.init.status).toBe(400);
+    expect(refused.data.error.fields?.tiktokUrl).toBe("Enter the TikTok account as a full address starting with https://, on tiktok.com");
+    expect(await tiktok()).toBeNull();
   });
 });

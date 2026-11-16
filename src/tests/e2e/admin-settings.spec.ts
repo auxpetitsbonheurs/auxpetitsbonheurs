@@ -144,6 +144,23 @@ test.describe("S-058, S-059 Settings", () => {
     expect(stored?.facebook_url).toBeNull();
   });
 
+  test("S-319 AC1, AC2: a TikTok link that is not https on tiktok.com is refused and nothing is saved", async ({ page, db }, testInfo) => {
+    test.skip(testInfo.project.name !== "phone-375", "posts to the shared Settings row: one project is enough");
+    test.slow(); // may wait for the Settings lock behind the footer spec's saves
+    await signIn(page, E2E_ACCOUNTS.owner, "/admin/settings");
+    await expect(page.locator("html")).toHaveAttribute("data-hydrated", "true");
+    await withSettingsLock(db, async () => {
+      const field = page.getByRole("textbox", { name: /^TikTok link/ });
+      await expect(field).toHaveValue("");
+      await field.fill("https://tiktok.example/@apb");
+      await save(page);
+      await expect(page.getByText("Enter the TikTok account as a full address starting with https://, on tiktok.com").first()).toBeVisible();
+    });
+    // After the lock: it holds this worker's only connection.
+    const [stored] = await db<{ tiktok_url: string | null }[]>`select tiktok_url from settings`;
+    expect(stored?.tiktok_url).toBeNull();
+  });
+
   test("S-058 AC8: an Admin gets Owner only and no Settings data", async ({ page, db }) => {
     const helper = await createE2eAdmin(db, { role: "admin" });
     await signIn(page, helper, "/admin/settings");

@@ -4,7 +4,7 @@ import type { AvailabilityRules, DateRange } from "~/domain/availability";
 import type { BusinessIdentity } from "~/domain/privacy-facts";
 import type { PaymentSettings } from "~/domain/payment";
 import { safeWebUrl } from "~/lib/contact";
-import { facebookPageUrl } from "~/domain/settings";
+import { facebookPageUrl, tiktokAccountUrl } from "~/domain/settings";
 import type { Database } from "~/server/db.server";
 import { SETTINGS_TTL_MS, createTtlCache } from "~/server/settings-cache.server";
 
@@ -17,6 +17,8 @@ export interface FooterContacts {
   instagramUrl: string | null;
   /** The Facebook page (S-283): https on facebook.com or fb.com only; anything else is dropped. */
   facebookUrl: string | null;
+  /** The TikTok account (S-319): https on tiktok.com or www.tiktok.com only; anything else is dropped. */
+  tiktokUrl: string | null;
   /** The pickup address's map link, http(s) only. */
   mapUrl: string | null;
 }
@@ -31,7 +33,7 @@ async function settingsRow(db: Database): Promise<SettingsRow> {
   return row;
 }
 
-type FooterRow = Pick<SettingsRow, "contactWhatsapp" | "contactPhone" | "contactEmail" | "pickupAddress" | "instagramUrl" | "facebookUrl" | "pickupMapUrl">;
+type FooterRow = Pick<SettingsRow, "contactWhatsapp" | "contactPhone" | "contactEmail" | "pickupAddress" | "instagramUrl" | "facebookUrl" | "tiktokUrl" | "pickupMapUrl">;
 
 function footerFrom(row: FooterRow | undefined): FooterContacts {
   return {
@@ -41,6 +43,7 @@ function footerFrom(row: FooterRow | undefined): FooterContacts {
     pickupAddress: present(row?.pickupAddress),
     instagramUrl: safeWebUrl(row?.instagramUrl),
     facebookUrl: facebookPageUrl(row?.facebookUrl),
+    tiktokUrl: tiktokAccountUrl(row?.tiktokUrl),
     mapUrl: safeWebUrl(row?.pickupMapUrl),
   };
 }
@@ -55,6 +58,7 @@ export async function getFooterContacts(db: Database): Promise<FooterContacts> {
       pickupAddress: settings.pickupAddress,
       instagramUrl: settings.instagramUrl,
       facebookUrl: settings.facebookUrl,
+      tiktokUrl: settings.tiktokUrl,
       pickupMapUrl: settings.pickupMapUrl,
     })
     .from(settings)

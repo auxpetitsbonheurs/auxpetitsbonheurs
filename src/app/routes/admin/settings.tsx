@@ -105,6 +105,7 @@ const ANCHORS: Record<string, string> = {
   contactEmail: "contact-email",
   instagramUrl: "instagram",
   facebookUrl: "facebook",
+  tiktokUrl: "tiktok",
   juiceName: "juice-name",
   juiceNumber: "juice",
   paymentWhatsapp: "payment-whatsapp",
@@ -148,6 +149,7 @@ function BusinessSections({ settings, errors }: { settings: Settings; errors: Er
         <TextField id="contact-email" name="contactEmail" type="email" inputMode="email" label={t("admin.settings.contactEmail")} optionalLabel={optional} autoComplete="off" autoCapitalize="none" spellCheck={false} defaultValue={settings.contactEmail ?? ""} error={errors.contactEmail} />
         <TextField id="instagram" name="instagramUrl" type="url" inputMode="url" label={t("admin.settings.instagram")} optionalLabel={optional} hint={t("admin.settings.urlHint")} autoComplete="off" autoCapitalize="none" spellCheck={false} defaultValue={settings.instagramUrl ?? ""} error={errors.instagramUrl} />
         <TextField id="facebook" name="facebookUrl" type="url" inputMode="url" label={t("admin.settings.facebook")} optionalLabel={optional} hint={t("admin.settings.facebookHint")} maxLength={URL_MAX} autoComplete="off" autoCapitalize="none" spellCheck={false} defaultValue={settings.facebookUrl ?? ""} error={errors.facebookUrl} />
+        <TextField id="tiktok" name="tiktokUrl" type="url" inputMode="url" label={t("admin.settings.tiktok")} optionalLabel={optional} hint={t("admin.settings.tiktokHint")} maxLength={URL_MAX} autoComplete="off" autoCapitalize="none" spellCheck={false} defaultValue={settings.tiktokUrl ?? ""} error={errors.tiktokUrl} />
       </SettingsSection>
       {/* Juice payment (S-277): shown only on an order's own pages, never on public ones. */}
       <SettingsSection id="payment" title={t("admin.settings.paymentTitle")} intro={t("admin.settings.paymentIntro")}>

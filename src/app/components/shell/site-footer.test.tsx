@@ -11,9 +11,10 @@ const full: FooterContacts = {
   pickupAddress: "Beau Bassin",
   instagramUrl: "https://instagram.com/auxpetitsbonheurs",
   facebookUrl: "https://www.facebook.com/auxpetitsbonheurs",
+  tiktokUrl: "https://www.tiktok.com/@auxpetitsbonheurs",
   mapUrl: "https://maps.example/beau-bassin",
 };
-const empty: FooterContacts = { whatsapp: null, phone: null, email: null, pickupAddress: null, instagramUrl: null, facebookUrl: null, mapUrl: null };
+const empty: FooterContacts = { whatsapp: null, phone: null, email: null, pickupAddress: null, instagramUrl: null, facebookUrl: null, tiktokUrl: null, mapUrl: null };
 
 const render = (contacts: FooterContacts, path = "/") => renderInSite(<SiteFooter contacts={contacts} year="2026" />, path);
 
@@ -38,6 +39,7 @@ describe("SiteFooter", () => {
     for (const [href, name] of [
       ["https://instagram.com/auxpetitsbonheurs", "Aux petits bonheurs on Instagram"],
       ["https://www.facebook.com/auxpetitsbonheurs", "Aux petits bonheurs on Facebook"],
+      ["https://www.tiktok.com/@auxpetitsbonheurs", "Aux petits bonheurs on TikTok"],
     ]) {
       const link = all.filter((l) => l.href === href);
       expect(link).toHaveLength(1);
@@ -49,16 +51,29 @@ describe("SiteFooter", () => {
     expect(render(full)).toMatch(/id="footer-new-tab"[^>]*>\(opens in a new tab\)</);
   });
 
+  test("S-319 AC3: TikTok comes last, after Instagram and Facebook, with an inline mark (no image)", () => {
+    const social = render(full).match(/<ul id="footer-social"[\s\S]*?<\/ul>/)?.[0] ?? "";
+    const order = [...social.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+    expect(order).toEqual(["https://instagram.com/auxpetitsbonheurs", "https://www.facebook.com/auxpetitsbonheurs", "https://www.tiktok.com/@auxpetitsbonheurs"]);
+    expect(social).not.toContain("<img");
+    expect(social.match(/<svg/g)).toHaveLength(3);
+  });
+
   test("S-283 AC4: French names", () => {
     const attrs = links(render(full, "/fr")).map((l) => l.attrs).join(" ");
     expect(attrs).toContain('aria-label="Aux petits bonheurs sur Instagram"');
     expect(attrs).toContain('aria-label="Aux petits bonheurs sur Facebook"');
+    expect(attrs).toContain('aria-label="Aux petits bonheurs sur TikTok"');
   });
 
   test("S-283 AC3: only the icons whose link is set", () => {
     const onlyFacebook = links(render({ ...empty, facebookUrl: "https://fb.com/apb" })).map((l) => l.href);
     expect(onlyFacebook).toContain("https://fb.com/apb");
     expect(onlyFacebook.some((h) => h.includes("instagram"))).toBe(false);
+    const onlyTiktok = links(render({ ...empty, tiktokUrl: "https://tiktok.com/@apb" })).map((l) => l.href);
+    expect(onlyTiktok).toEqual(expect.arrayContaining(["https://tiktok.com/@apb"]));
+    expect(onlyTiktok.some((h) => /instagram|facebook/.test(h))).toBe(false);
+    expect(render({ ...empty, tiktokUrl: "https://tiktok.com/@apb" })).toContain("footer-social");
     const none = render(empty);
     expect(none).not.toContain("footer-social");
     expect(none).not.toContain("footer-new-tab");

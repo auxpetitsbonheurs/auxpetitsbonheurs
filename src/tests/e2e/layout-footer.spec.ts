@@ -43,37 +43,46 @@ test.describe("footer from Settings (S-061)", () => {
     await expectNoA11yViolations(page);
   });
 
-  test("AC2, AC3, AC6 + S-283: an Owner's Instagram and Facebook show as icons on the next request; empty values leave no item", async ({ page, db }, testInfo) => {
+  test("AC2, AC3, AC6 + S-283, S-319: an Owner's Instagram, Facebook and TikTok show as icons on the next request; empty values leave no item", async ({ page, db }, testInfo) => {
     test.skip(testInfo.project.name !== "phone-375", "saves the shared Settings row: one project is enough");
     test.slow(); // two Settings saves and axe at three widths
     await signIn(page, E2E_ACCOUNTS.owner, "/admin/settings");
     await withSettingsLock(db, async () => {
-      const setSocial = async (instagram: string, facebook: string) => {
+      const setSocial = async (instagram: string, facebook: string, tiktok: string) => {
         await page.goto("/admin/settings");
         await expect(page.locator("html")).toHaveAttribute("data-hydrated", "true");
         await page.getByRole("textbox", { name: /^Instagram link/ }).fill(instagram);
         await page.getByRole("textbox", { name: /^Facebook page/ }).fill(facebook);
+        await page.getByRole("textbox", { name: /^TikTok link/ }).fill(tiktok);
         await page.getByRole("button", { name: "Save settings" }).click();
         await expect(page.getByRole("status").filter({ hasText: /^Saved$/ })).toBeVisible();
       };
       try {
-        await setSocial("https://instagram.com/apb-e2e", "https://www.facebook.com/apb-e2e");
+        await setSocial("https://instagram.com/apb-e2e", "https://www.facebook.com/apb-e2e", "https://www.tiktok.com/@apb-e2e");
         await open(page, "/");
         const instagram = footer(page).getByRole("link", { name: "Aux petits bonheurs on Instagram" });
         const facebook = footer(page).getByRole("link", { name: "Aux petits bonheurs on Facebook" });
         await expect(instagram).toHaveAttribute("href", "https://instagram.com/apb-e2e");
+        const tiktok = footer(page).getByRole("link", { name: "Aux petits bonheurs on TikTok" });
         await expect(facebook).toHaveAttribute("href", "https://www.facebook.com/apb-e2e");
-        for (const link of [instagram, facebook]) {
+        await expect(tiktok).toHaveAttribute("href", "https://www.tiktok.com/@apb-e2e");
+        const social = footer(page).getByRole("list", { name: "Follow us" }).getByRole("link");
+        expect(await social.evaluateAll((links) => links.map((l) => l.getAttribute("aria-label")))).toEqual([
+          "Aux petits bonheurs on Instagram",
+          "Aux petits bonheurs on Facebook",
+          "Aux petits bonheurs on TikTok",
+        ]);
+        for (const link of [instagram, facebook, tiktok]) {
           await expect(link).toHaveAttribute("target", "_blank");
           await expect(link).toHaveAttribute("rel", "noopener noreferrer");
           await expect(link).toHaveAccessibleDescription("(opens in a new tab)");
         }
-        await facebook.focus();
-        await expect(facebook).toHaveCSS("outline-style", "solid");
+        await tiktok.focus();
+        await expect(tiktok).toHaveCSS("outline-style", "solid");
         for (const width of [320, 375, 1280]) {
           await page.setViewportSize({ width, height: 800 });
           await footer(page).scrollIntoViewIfNeeded();
-          for (const link of [instagram, facebook]) {
+          for (const link of [instagram, facebook, tiktok]) {
             const box = await link.boundingBox();
             expect(box?.width).toBeGreaterThanOrEqual(44);
             expect(box?.height).toBeGreaterThanOrEqual(44);
@@ -86,11 +95,12 @@ test.describe("footer from Settings (S-061)", () => {
         await open(page, "/fr");
         await expect(footer(page).getByRole("link", { name: "Aux petits bonheurs sur Instagram" })).toBeVisible();
         await expect(footer(page).getByRole("link", { name: "Aux petits bonheurs sur Facebook" })).toBeVisible();
+        await expect(footer(page).getByRole("link", { name: "Aux petits bonheurs sur TikTok" })).toBeVisible();
       } finally {
-        await setSocial("", "");
+        await setSocial("", "", "");
       }
       await open(page, "/");
-      await expect(footer(page).getByRole("link", { name: /Instagram|Facebook/ })).toHaveCount(0);
+      await expect(footer(page).getByRole("link", { name: /Instagram|Facebook|TikTok/ })).toHaveCount(0);
       await expect(footer(page).getByRole("list", { name: "Follow us" })).toHaveCount(0);
       await expect(footer(page).locator('a[href=""]')).toHaveCount(0);
     });

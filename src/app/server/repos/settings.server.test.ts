@@ -23,6 +23,7 @@ describe("getFooterContacts (S-007, S-061 footer from Settings)", () => {
       pickupAddress: "Beau Bassin",
       instagramUrl: null,
       facebookUrl: null,
+      tiktokUrl: null,
       mapUrl: null,
     });
   });
@@ -39,6 +40,7 @@ describe("getFooterContacts (S-007, S-061 footer from Settings)", () => {
       pickupAddress: "Beau Bassin",
       instagramUrl: null,
       facebookUrl: null,
+      tiktokUrl: null,
       mapUrl: null,
     });
   });
@@ -49,6 +51,14 @@ describe("getFooterContacts (S-007, S-061 footer from Settings)", () => {
 
     await database.client.query(`update settings set facebook_url = 'https://evil.example/apb'`);
     expect(await getFooterContacts(database.db)).toMatchObject({ facebookUrl: null });
+  });
+
+  test("S-319 AC3: the TikTok account only when it is an https tiktok.com address", async () => {
+    await database.client.query(`update settings set tiktok_url = 'https://www.tiktok.com/@apb'`);
+    expect(await getFooterContacts(database.db)).toMatchObject({ tiktokUrl: "https://www.tiktok.com/@apb" });
+
+    await database.client.query(`update settings set tiktok_url = 'https://evil.example/@apb'`);
+    expect(await getFooterContacts(database.db)).toMatchObject({ tiktokUrl: null });
   });
 
   test("S-061 AC1, AC6: Instagram and map links only when http or https", async () => {

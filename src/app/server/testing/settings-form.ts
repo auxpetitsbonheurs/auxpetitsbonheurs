@@ -22,6 +22,7 @@ export async function loadedSettingsForm(database: TestDatabase, overrides: Reco
     paymentWhatsapp: text(s.paymentWhatsapp),
     instagramUrl: text(s.instagramUrl),
     facebookUrl: text(s.facebookUrl),
+    tiktokUrl: text(s.tiktokUrl),
     quoteValidityDays: String(s.quoteValidityDays),
     cakeMessageMax: String(s.cakeMessageMax),
     eveningReminderAt: s.eveningReminderAt,

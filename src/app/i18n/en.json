@@ -18,6 +18,7 @@
       "instagram": "Instagram",
       "instagramLink": "Aux petits bonheurs on Instagram",
       "facebookLink": "Aux petits bonheurs on Facebook",
+      "tiktokLink": "Aux petits bonheurs on TikTok",
       "social": "Follow us",
       "pickupHeading": "Pickup",
       "map": "See it on the map",
@@ -1389,6 +1390,8 @@
       "instagram": "Instagram link",
       "facebook": "Facebook page",
       "facebookHint": "Your page's full address, starting with https:// (facebook.com or fb.com)",
+      "tiktok": "TikTok link",
+      "tiktokHint": "Your account's full address, starting with https:// (tiktok.com)",
       "paymentTitle": "Payment",
       "juice": "Juice number",
       "juiceHint": "The mobile number your Juice account uses, for example 5xxx xxxx.",
@@ -1493,6 +1496,9 @@
         },
         "facebookUrl": {
           "invalid": "Enter the Facebook page as a full address starting with https://, on facebook.com"
+        },
+        "tiktokUrl": {
+          "invalid": "Enter the TikTok account as a full address starting with https://, on tiktok.com"
         },
         "quoteValidityDays": {
           "invalid": "Enter the quote validity as a whole number of days from 1 to 60."

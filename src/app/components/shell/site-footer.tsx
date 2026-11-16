@@ -19,6 +19,8 @@ export interface FooterContacts {
   instagramUrl: string | null;
   /** https on facebook.com or fb.com only (settings repo, S-283); null hides the icon. */
   facebookUrl: string | null;
+  /** https on tiktok.com or www.tiktok.com only (settings repo, S-319); null hides the icon. */
+  tiktokUrl: string | null;
   /** The pickup address's map link, http(s) only. */
   mapUrl: string | null;
 }
@@ -59,7 +61,7 @@ function ContactLink({ href, icon, label, value, keepTogether = false, external 
 
 const iconProps = { "aria-hidden": true, className: "size-5 shrink-0", strokeWidth: 1.75 } as const;
 
-// The two marks below use Instagram's and Facebook's own colours (the Owner's choice, S-283):
+// The marks below use Instagram's, Facebook's and TikTok's own colours (the Owner's choice, S-283, S-319):
 // third-party brand colours, so they are not design tokens.
 
 /** Id of the hidden "opens in a new tab" text the social icons point to (aria-describedby). */
@@ -111,6 +113,27 @@ function FacebookMark() {
   );
 }
 
+/** TikTok's note glyph (its official mark, 24-unit box), drawn three times for the cyan/red offset look. */
+const TIKTOK_NOTE =
+  "M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z";
+
+/**
+ * TikTok mark (S-319): a black circle with the white note and its cyan (up-left) and red
+ * (down-right) shadows, as TikTok draws it. Inline SVG like the others, so the CSP stays strict.
+ */
+function TiktokMark() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 36 36" className="size-9">
+      <circle cx="18" cy="18" r="18" fill="#000" />
+      <g transform="translate(10 9.4) scale(0.72)">
+        <path d={TIKTOK_NOTE} fill="#25f4ee" transform="translate(-1 -1)" />
+        <path d={TIKTOK_NOTE} fill="#fe2c55" transform="translate(1 1)" />
+        <path d={TIKTOK_NOTE} fill="#fff" />
+      </g>
+    </svg>
+  );
+}
+
 interface SocialLinkProps {
   href: string;
   label: string;
@@ -135,15 +158,16 @@ function SocialLink({ href, label, mark }: SocialLinkProps) {
   );
 }
 
-/** Instagram and Facebook icons under the logo (S-283), each only when its link is set; nothing at all with neither. */
-function FooterSocial({ instagramUrl, facebookUrl }: Pick<FooterContacts, "instagramUrl" | "facebookUrl">) {
+/** Instagram, Facebook and TikTok icons under the logo (S-283, S-319), each only when its link is set; nothing at all with none. */
+function FooterSocial({ instagramUrl, facebookUrl, tiktokUrl }: Pick<FooterContacts, "instagramUrl" | "facebookUrl" | "tiktokUrl">) {
   const { t } = useI18n();
-  if (!instagramUrl && !facebookUrl) return null;
+  if (!instagramUrl && !facebookUrl && !tiktokUrl) return null;
   return (
     <>
       <ul id="footer-social" aria-label={t("shell.footer.social")} className="mt-3 flex items-center gap-2">
         {instagramUrl && <SocialLink href={instagramUrl} label={t("shell.footer.instagramLink")} mark={<InstagramMark />} />}
         {facebookUrl && <SocialLink href={facebookUrl} label={t("shell.footer.facebookLink")} mark={<FacebookMark />} />}
+        {tiktokUrl && <SocialLink href={tiktokUrl} label={t("shell.footer.tiktokLink")} mark={<TiktokMark />} />}
       </ul>
       <span id={NEW_TAB_ID} hidden>
         {t("sitePage.newTab")}
@@ -242,7 +266,7 @@ export function SiteFooter({ contacts, year, showReviews = false }: { contacts: 
           {/* The Owner's cream badge on the burgundy band (the burgundy one would melt into it). Its alt names the link. */}
           <img {...footerBadge} sizes="(min-width: 768px) 112px, 96px" alt={t("shell.footer.home")} width={112} height={112} loading="lazy" decoding="async" className="size-24 md:size-28" />
         </Link>
-        <FooterSocial instagramUrl={contacts.instagramUrl} facebookUrl={contacts.facebookUrl} />
+        <FooterSocial instagramUrl={contacts.instagramUrl} facebookUrl={contacts.facebookUrl} tiktokUrl={contacts.tiktokUrl} />
         <div className="mt-6 grid w-full grid-cols-1 gap-8 md:grid-cols-3 md:gap-10">
           <FooterContactList contacts={contacts} />
           {contacts.pickupAddress && <FooterPickup address={contacts.pickupAddress} mapUrl={contacts.mapUrl} />}

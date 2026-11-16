@@ -47,6 +47,7 @@ import {
   TIME_PATTERN,
   URL_MAX,
   facebookPageUrl,
+  tiktokAccountUrl,
 } from "~/domain/settings";
 import { Email, Uuid, Version } from "./shared";
 
@@ -93,6 +94,8 @@ export interface SettingsInput {
   instagramUrl: string | null;
   /** S-283: https on facebook.com or fb.com (domain/settings facebookPageUrl). */
   facebookUrl: string | null;
+  /** S-319: https on tiktok.com or www.tiktok.com (domain/settings tiktokAccountUrl). */
+  tiktokUrl: string | null;
   quoteValidityDays: number;
   cakeMessageMax: number;
   eveningReminderAt: string;
@@ -185,6 +188,7 @@ function businessFields(form: FormData, problems: Problems) {
     paymentWhatsapp: optionalChecked(form, "paymentWhatsapp", problems, (v) => v.length <= 20 && normalizePhone(v) !== null),
     instagramUrl: optionalChecked(form, "instagramUrl", problems, webUrl),
     facebookUrl: optionalChecked(form, "facebookUrl", problems, (v) => facebookPageUrl(v) !== null),
+    tiktokUrl: optionalChecked(form, "tiktokUrl", problems, (v) => tiktokAccountUrl(v) !== null),
     quoteValidityDays: requiredNumber(form, "quoteValidityDays", QUOTE_VALIDITY_MIN, QUOTE_VALIDITY_MAX, problems),
     cakeMessageMax: requiredNumber(form, "cakeMessageMax", CAKE_MESSAGE_MIN, CAKE_MESSAGE_MAX, problems),
     eveningReminderAt: requiredPattern(form, "eveningReminderAt", TIME_PATTERN, problems),
