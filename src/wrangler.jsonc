@@ -42,7 +42,7 @@
 				"APP_TIME_ZONE": "Indian/Mauritius",
 				// Not secrets: kept here because `wrangler deploy` replaces dashboard text variables.
 				// RESEND_API_KEY stays a dashboard Secret (deploy-keys.md section 3b).
-				"EMAIL_FROM": "Aux petits bonheurs <orders@auxpetitsbonheursmu.com>",
+				"EMAIL_FROM": "Aux petits bonheurs <sales@auxpetitsbonheursmu.com>",
 				"SITE_URL": "https://auxpetitsbonheurs-staging.kshana-auxpetitsbonheurs.workers.dev"
 			},
 			// One hourly trigger per environment (free plan allows few cron triggers per account).

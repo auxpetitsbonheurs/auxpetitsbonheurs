@@ -35,7 +35,7 @@ describe("wrangler.jsonc environments (S-002 AC1)", () => {
   });
 
   test("staging sends email from the bakery domain and links to its own address", () => {
-    expect(staging.vars?.EMAIL_FROM).toBe("Aux petits bonheurs <orders@auxpetitsbonheursmu.com>");
+    expect(staging.vars?.EMAIL_FROM).toBe("Aux petits bonheurs <sales@auxpetitsbonheursmu.com>");
     expect(staging.vars?.SITE_URL).toBe("https://auxpetitsbonheurs-staging.kshana-auxpetitsbonheurs.workers.dev");
   });
 
