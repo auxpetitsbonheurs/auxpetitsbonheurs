@@ -21,6 +21,7 @@ describe("invoiceTotals (S-127 AC totals)", () => {
     expect(invoiceTotals({ lines: [line(5200), line(150, null)], discountRs: 0, totalRs: 5350, paid: false })).toEqual({
       subtotalRs: 5350,
       discountRs: 0,
+      orderDiscountRs: 0,
       adjustmentRs: 0,
       totalRs: 5350,
       paidRs: 0,

@@ -44,6 +44,8 @@ export interface SalesGroup {
   costRs: number;
   /** Orders in the group with no cost entered (S-318). */
   missingCost: number;
+  /** Order discounts given in the group (S-320); `revenueRs` is already after them. */
+  discountsRs?: number;
 }
 
 export interface SalesSummary {
@@ -56,13 +58,17 @@ export interface SalesSummary {
   pickupRevenueRs: number;
   /** All three sources, 0 when none (contracts.md `admin/sales`). */
   bySource: Record<OrderSource, number>;
+  /** "Discounts given" (S-320): order discounts of the counted orders; revenue is already after them. */
+  discountsRs: number;
 }
 
 export function summarise(groups: readonly Omit<SalesGroup, "costRs" | "missingCost">[]): SalesSummary {
   const bySource: Record<OrderSource, number> = { website: 0, custom_request: 0, manual: 0, workshop: 0 };
   const count = { delivery: 0, pickup: 0 };
   const revenue = { delivery: 0, pickup: 0 };
+  let discountsRs = 0;
   for (const group of groups) {
+    discountsRs += group.discountsRs ?? 0;
     bySource[group.source] += group.revenueRs;
     count[group.fulfilment] += group.orderCount;
     revenue[group.fulfilment] += group.revenueRs;
@@ -78,6 +84,7 @@ export function summarise(groups: readonly Omit<SalesGroup, "costRs" | "missingC
     deliveryRevenueRs: revenue.delivery,
     pickupRevenueRs: revenue.pickup,
     bySource,
+    discountsRs,
   };
 }
 

@@ -70,16 +70,16 @@ describe("the file (S-178 AC1..AC4, AC8; S-179 AC1..AC3)", () => {
     const page = (await pageLoader(routeArgs(database, { path: "/admin/sales", auth: session.auth, cookie: session.cookie, now: NOW }) as never)) as unknown as { report: Record<string, number> };
     const csv = sections(await (await download("range=month")).text());
     expect(csv.Summary).toEqual([
-      "revenue,orders,average,delivery_count,delivery_revenue,pickup_count,pickup_revenue,earned,orders_cost,workshops_cost,spent,profit,orders_missing_cost,workshops_missing_cost",
-      [page.report.revenueRs, page.report.orderCount, page.report.averageRs, page.report.delivery, page.report.deliveryRevenueRs, page.report.pickup, page.report.pickupRevenueRs, 2883, 0, 0, 0, 2883, 3, 0].join(","),
+      "revenue,orders,average,delivery_count,delivery_revenue,pickup_count,pickup_revenue,earned,orders_cost,workshops_cost,spent,profit,orders_missing_cost,workshops_missing_cost,discounts",
+      [page.report.revenueRs, page.report.orderCount, page.report.averageRs, page.report.delivery, page.report.deliveryRevenueRs, page.report.pickup, page.report.pickupRevenueRs, 2883, 0, 0, 0, 2883, 3, 0, 0].join(","),
     ]);
-    expect(csv.Summary![1]).toBe("2883,3,961,1,1650,2,1233,2883,0,0,0,2883,3,0");
+    expect(csv.Summary![1]).toBe("2883,3,961,1,1650,2,1233,2883,0,0,0,2883,3,0,0");
     expect(csv["Top products"]).toEqual(["rank,product,units,revenue", "1,Chocolate cake,2,1500"]);
     expect(csv["By source"]).toEqual(["source,revenue", "website,1650", "custom_request,333", "manual,900", "workshop,0"]);
     const orders = csv.Orders!;
-    expect(orders[0]).toBe("number,date,source,fulfilment,items_rs,delivery_fee_rs,total_rs,paid,cost_rs,profit_rs");
+    expect(orders[0]).toBe("number,date,source,fulfilment,items_rs,delivery_fee_rs,total_rs,paid,cost_rs,profit_rs,discount_rs");
     expect(orders).toHaveLength(1 + 3);
-    expect(orders[1]).toBe("APB-0001,2026-11-12,website,delivery,1500,150,1650,yes,,");
+    expect(orders[1]).toBe("APB-0001,2026-11-12,website,delivery,1500,150,1650,yes,,,");
     expect(orders.slice(1).reduce((sum, row) => sum + Number(row.split(",")[6]), 0)).toBe(2883);
   });
 
@@ -99,11 +99,11 @@ describe("the file (S-178 AC1..AC4, AC8; S-179 AC1..AC3)", () => {
 
   test("an empty range is a valid file with headers and zero totals", async () => {
     const csv = sections(await (await download("range=custom&from=2027-03-01&to=2027-03-31")).text());
-    expect(csv.Summary![1]).toBe("0,0,0,0,0,0,0,0,0,0,0,0,0,0");
+    expect(csv.Summary![1]).toBe("0,0,0,0,0,0,0,0,0,0,0,0,0,0,0");
     expect(csv["Top products"]).toEqual(["rank,product,units,revenue"]);
     expect(csv["By source"]).toEqual(["source,revenue", "website,0", "custom_request,0", "manual,0", "workshop,0"]);
     expect(csv.Unpaid).toEqual(["number,customer,status,date,total", "total,,,,0"]);
-    expect(csv.Orders).toEqual(["number,date,source,fulfilment,items_rs,delivery_fee_rs,total_rs,paid,cost_rs,profit_rs"]);
+    expect(csv.Orders).toEqual(["number,date,source,fulfilment,items_rs,delivery_fee_rs,total_rs,paid,cost_rs,profit_rs,discount_rs"]);
     expect(csv.Workshops).toEqual(["date,title,status,cost_rs"]);
   });
 
@@ -115,9 +115,9 @@ describe("the file (S-178 AC1..AC4, AC8; S-179 AC1..AC3)", () => {
     const session = await signedInAdmin(database, { role: "admin" });
     const page = (await pageLoader(routeArgs(database, { path: "/admin/sales", auth: session.auth, cookie: session.cookie, now: NOW }) as never)) as unknown as { report: { profit: Record<string, number> } };
     const csv = sections(await (await download("range=month", "admin")).text());
-    expect(csv.Summary![1]).toBe("3000,2,1500,0,0,2,3000,3000,1200,2500,3700,-700,1,1");
+    expect(csv.Summary![1]).toBe("3000,2,1500,0,0,2,3000,3000,1200,2500,3700,-700,1,1,0");
     expect(page.report.profit).toMatchObject({ earnedRs: 3000, spentRs: 3700, profitRs: -700, ordersMissingCost: 1, workshopsMissingCost: 1 });
-    expect(csv.Orders!.slice(1)).toEqual(["APB-0001,2026-11-12,website,pickup,2000,0,2000,yes,1200,800", "APB-0002,2026-11-12,website,pickup,1000,0,1000,yes,,"]);
+    expect(csv.Orders!.slice(1)).toEqual(["APB-0001,2026-11-12,website,pickup,2000,0,2000,yes,1200,800,", "APB-0002,2026-11-12,website,pickup,1000,0,1000,yes,,,"]);
     expect(csv.Workshops).toEqual(["date,title,status,cost_rs", '2026-11-21,"Bake, together",completed,2500', "2026-11-28,Cupcakes,published,"]);
   });
 

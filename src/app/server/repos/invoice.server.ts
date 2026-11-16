@@ -71,6 +71,9 @@ export interface InvoiceOrder {
   fulfilOn: string;
   deliveryFeeRs: number;
   totalRs: number;
+  /** S-320: the order discount (null = none) and its reason; `totalRs` is after it. */
+  discountRs: number | null;
+  discountReason: string | null;
   paid: boolean;
   lines: InvoiceOrderLine[];
   request: { occasion: string | null; theme: string | null; servings: number | null } | null;
@@ -85,6 +88,7 @@ export async function readInvoiceOrder(db: Executor, orderId: string): Promise<I
   const { rows } = (await db.execute(sql`
     select o.id, o.source, o.locale, o.contact_name as "contactName", o.fulfilment, o.address,
       to_char(o.fulfil_on, 'YYYY-MM-DD') as "fulfilOn", o.delivery_fee_rs as "deliveryFeeRs", o.total_rs as "totalRs", o.paid,
+      o.discount_rs as "discountRs", o.discount_reason as "discountReason",
       coalesce((
         select json_agg(json_build_object('nameEn', i.name_en, 'nameFr', i.name_fr, 'quantity', i.quantity,
           'originalBasePriceRs', i.original_base_price_rs, 'unitBasePriceRs', i.unit_base_price_rs, 'lineTotalRs', i.line_total_rs,
@@ -96,7 +100,7 @@ export async function readInvoiceOrder(db: Executor, orderId: string): Promise<I
   `)) as unknown as { rows: OrderRow[] };
   const row = rows[0];
   if (!row) return null;
-  return { ...row, deliveryFeeRs: Number(row.deliveryFeeRs), totalRs: Number(row.totalRs), lines: parsed(row.lines), request: row.request === null ? null : parsed(row.request) };
+  return { ...row, deliveryFeeRs: Number(row.deliveryFeeRs), totalRs: Number(row.totalRs), discountRs: row.discountRs === null ? null : Number(row.discountRs), lines: parsed(row.lines), request: row.request === null ? null : parsed(row.request) };
 }
 
 export interface InvoiceSettings {

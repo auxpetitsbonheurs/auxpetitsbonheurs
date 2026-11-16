@@ -66,7 +66,9 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
   if (moveTo) throw redirect(moveTo);
   const locale = localeFromPathname(url.pathname);
   // One query: the order, its items and the Settings it is shown with (ADR-0003 amendment 3).
-  const { id: _id, locale: _orderLocale, number, orderNumberPrefix, payment: settings, createdAt, refundDueRs, refundedAt, contactWhatsapp, source, ...shown } = order;
+  const { id: _id, locale: _orderLocale, number, orderNumberPrefix, payment: settings, createdAt, refundDueRs, refundedAt, contactWhatsapp, source, discountRs, discountReason, ...shown } = order;
+  // S-320: the full price, the discount and its reason; `totalRs` is what is left to pay.
+  const discount = discountRs ? { discountRs, reason: discountReason, subtotalRs: order.totalRs + discountRs } : null;
   const reference = formatOrderNumber(orderNumberPrefix, number);
   const isRequest = source === "custom_request";
   // A workshop registration (E-15): the event's title and address instead of a pickup. Never the
@@ -82,9 +84,9 @@ export async function loader({ request, url, params, context }: Route.LoaderArgs
     quote: isRequest ? await quoteView(db, order.id, order.status, todayMU(now), locale) : null,
     justAccepted: url.searchParams.get("accepted") === "1" && order.status !== "quote_sent",
     title: translate("order.tracking.metaTitle", locale),
-    order: { ...shown, number: reference, dateLabel: formatDayLabel(order.fulfilOn, locale) },
+    order: { ...shown, number: reference, dateLabel: formatDayLabel(order.fulfilOn, locale), discount },
     // The Juice instructions only while the order waits for its payment (S-278 AC5).
-    payment: order.status === "awaiting_payment" ? paymentView({ totalRs: order.totalRs, reference, createdAt, settings, locale }) : null,
+    payment: order.status === "awaiting_payment" ? paymentView({ totalRs: order.totalRs, reference, createdAt, settings, locale, discount }) : null,
     // A refused paid order (S-281 AC4): the refund still to come, or the day it was sent.
     refund: refundDueRs === null ? null : { amountRs: refundDueRs, refundedOn: refundedAt ? formatDayLabel(todayMU(refundedAt), locale) : null },
     progress: customerProgress(order.status, order.fulfilment, source),
@@ -232,6 +234,39 @@ function ItemsAndTotal({ order, workshop }: { order: TrackedView; workshop: Trac
       ) : workshop ? null : (
         <p>{t("checkout.pickupFree")}</p>
       )}
+      {order.discount && <DiscountRows discount={order.discount} />}
+      <p className={`${row} border-t border-input pt-2 text-lg font-semibold`}>
+        <span>{t("checkout.total")}</span>
+        {money(order.totalRs)}
+      </p>
+    </div>
+  );
+}
+
+/** S-320: "Subtotal" then "Discount (reason) −Rs X", before the total. */
+function DiscountRows({ discount }: { discount: NonNullable<TrackedView["discount"]> }) {
+  const { t } = useI18n();
+  return (
+    <>
+      <p className={`${row} border-t border-input pt-2`}>
+        <span>{t("order.discount.subtotal")}</span>
+        {money(discount.subtotalRs)}
+      </p>
+      <p className={row} data-testid="tracking-discount">
+        <span className="min-w-0 wrap-anywhere">{discount.reason ? t("order.discount.lineWith", { reason: discount.reason }) : t("order.discount.line")}</span>
+        <span className="whitespace-nowrap tabular-nums">−{formatRupees(discount.discountRs)}</span>
+      </p>
+    </>
+  );
+}
+
+/** A custom request has no items: with a discount, its full price, the discount and the total under the quote. */
+function RequestDiscount({ order }: { order: TrackedView }) {
+  const { t } = useI18n();
+  if (!order.discount) return null;
+  return (
+    <div className="mt-6 grid gap-2 rounded-lg bg-muted p-5">
+      <DiscountRows discount={order.discount} />
       <p className={`${row} border-t border-input pt-2 text-lg font-semibold`}>
         <span>{t("checkout.total")}</span>
         {money(order.totalRs)}
@@ -395,7 +430,7 @@ export default function Tracking({ loaderData, actionData }: Route.ComponentProp
         </h2>
         <OrderFacts order={order} workshop={loaderData.workshop} />
         {/* A custom request has no items: its price is the quote above (E-08). */}
-        {!loaderData.isRequest && <ItemsAndTotal order={order} workshop={loaderData.workshop} />}
+        {loaderData.isRequest ? <RequestDiscount order={order} /> : <ItemsAndTotal order={order} workshop={loaderData.workshop} />}
       </section>
       <ChangeSection data={loaderData} refusal={refusal} />
     </>

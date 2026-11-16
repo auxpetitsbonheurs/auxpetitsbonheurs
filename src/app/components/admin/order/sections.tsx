@@ -127,6 +127,18 @@ export function ItemsSection({ data: { order } }: { data: OrderLoaderData }) {
         ) : (
           <p>{t("checkout.pickupFree")}</p>
         )}
+        {order.discount && (
+          <>
+            <p className={`${row} border-t border-input pt-2`}>
+              <span>{t("admin.discount.subtotal")}</span>
+              {money(order.discount.subtotalRs)}
+            </p>
+            <p className={row}>
+              <span className="min-w-0 wrap-anywhere">{order.discount.reason ? t("admin.discount.lineWith", { detail: order.discount.reason }) : t("admin.discount.line")}</span>
+              <span className="shrink-0 tabular-nums">−{formatRupees(order.discount.discountRs)}</span>
+            </p>
+          </>
+        )}
         <p className={`${row} border-t border-input pt-2 text-lg font-semibold`}>
           <span>{t("checkout.total")}</span>
           {money(order.totalRs)}

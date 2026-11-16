@@ -17,6 +17,19 @@ export interface PaymentInstructionsView {
   deadlineLabel: string;
   details: { juiceName: string; juiceNumber: string } | null;
   proofUrl: string | null;
+  /** S-320: the order's discount; the amount to pay already includes it. */
+  discount?: { subtotalRs: number; discountRs: number; reason: string | null } | null;
+}
+
+/** "Includes a discount of Rs 200 (Loyal customer). Full price Rs 1,200." (S-320). */
+function DiscountNote({ discount }: { discount: NonNullable<PaymentInstructionsView["discount"]> }) {
+  const { t } = useI18n();
+  const vars = { amount: formatRupees(discount.discountRs), full: formatRupees(discount.subtotalRs), reason: discount.reason ?? "" };
+  return (
+    <p className="mt-1 text-sm wrap-anywhere" data-testid="payment-discount">
+      {discount.reason ? t("order.discount.includedWith", vars) : t("order.discount.included", vars)}
+    </p>
+  );
 }
 
 interface CopyRowProps {
@@ -60,6 +73,11 @@ function PaymentCard({ view, details }: { view: PaymentInstructionsView; details
       <p className="mt-2 max-w-measure text-lg">{t("order.payment.lead", vars)}</p>
       <ul className="mt-3">
         <CopyRow term={t("order.payment.amount")} value={amount} copyText={String(view.totalRs)} copyLabel={t("order.payment.copyAmount")} copiedText={t("order.payment.copiedAmount")} copy={onCopy} status={status} />
+        {view.discount && (
+          <li className="-mt-2 border-b border-input pb-3">
+            <DiscountNote discount={view.discount} />
+          </li>
+        )}
         <CopyRow term={t("order.payment.juiceNumber")} value={details.juiceNumber} copyText={digits(details.juiceNumber)} copyLabel={t("order.payment.copyNumber")} copiedText={t("order.payment.copiedNumber")} copy={onCopy} status={status} />
         <li className="border-b border-input py-3">
           <span className="block text-sm">{t("order.payment.name")}</span>
@@ -94,6 +112,7 @@ export function PaymentInstructions({ view }: { view: PaymentInstructionsView })
     return (
       <Alert tone="info" title={t("order.payment.fallbackTitle")} className="mt-6" data-testid="payment-fallback">
         <p>{t("order.payment.fallbackBody", { amount: formatRupees(view.totalRs), reference: view.reference })}</p>
+        {view.discount && <DiscountNote discount={view.discount} />}
         <p className="mt-1">{t("order.payment.deadline", { time: view.deadlineLabel })}</p>
       </Alert>
     );

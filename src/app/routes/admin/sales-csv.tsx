@@ -44,7 +44,7 @@ function profitCells({ profit }: SalesReport): number[] {
 function headSections(report: SalesReport): string {
   return [
     csvRow(["Summary"]),
-    csvRow(["revenue", "orders", "average", "delivery_count", "delivery_revenue", "pickup_count", "pickup_revenue", "earned", "orders_cost", "workshops_cost", "spent", "profit", "orders_missing_cost", "workshops_missing_cost"]),
+    csvRow(["revenue", "orders", "average", "delivery_count", "delivery_revenue", "pickup_count", "pickup_revenue", "earned", "orders_cost", "workshops_cost", "spent", "profit", "orders_missing_cost", "workshops_missing_cost", "discounts"]),
     csvRow([
       report.revenueRs,
       report.orderCount,
@@ -54,6 +54,7 @@ function headSections(report: SalesReport): string {
       report.pickup,
       report.pickupRevenueRs,
       ...profitCells(report),
+      report.discountsRs,
     ]),
     "\r\n",
     csvRow(["Top products"]),
@@ -86,7 +87,7 @@ async function* csvChunks(db: Executor, range: DateRange, report: SalesReport, l
     yield rows.map((row) => csvRow([row.number, row.contactName, row.status, row.fulfilOn, row.totalRs])).join("");
   }
   yield csvRow(["total", null, null, null, report.unpaidTotalRs]) + "\r\n" + csvRow(["Orders"]);
-  yield csvRow(["number", "date", "source", "fulfilment", "items_rs", "delivery_fee_rs", "total_rs", "paid", "cost_rs", "profit_rs"]);
+  yield csvRow(["number", "date", "source", "fulfilment", "items_rs", "delivery_fee_rs", "total_rs", "paid", "cost_rs", "profit_rs", "discount_rs"]);
   for await (const rows of pages((after) => completedOrdersPage(db, range, after, PAGE), (row) => row.number)) {
     yield rows
       .map((row) =>
@@ -101,6 +102,7 @@ async function* csvChunks(db: Executor, range: DateRange, report: SalesReport, l
           row.paid,
           row.costRs,
           row.costRs === null ? null : row.totalRs - row.costRs,
+          row.discountRs,
         ]),
       )
       .join("");

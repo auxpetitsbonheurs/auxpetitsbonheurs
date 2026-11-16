@@ -193,6 +193,7 @@ function totalsRows(doc: InvoiceDocument): { label: string; value: string; bold?
   return [
     { label: labels.subtotal, value: formatRupees(totals.subtotalRs) },
     ...(totals.discountRs > 0 ? [{ label: (doc.discountLabel ?? "").toUpperCase(), value: `– ${formatRupees(totals.discountRs)}` }] : []),
+    ...(totals.orderDiscountRs > 0 ? [{ label: (doc.orderDiscountLabel ?? "").toUpperCase(), value: `– ${formatRupees(totals.orderDiscountRs)}` }] : []),
     ...(totals.adjustmentRs !== 0 ? [{ label: labels.adjustment, value: `${totals.adjustmentRs < 0 ? "– " : ""}${formatRupees(Math.abs(totals.adjustmentRs))}` }] : []),
     { label: labels.downpayment, value: totals.paidRs > 0 ? `${labels.paid} ${formatRupees(totals.paidRs)}` : "" },
     { label: labels.totalDue, value: formatRupees(totals.dueRs), bold: true },

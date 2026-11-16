@@ -177,6 +177,8 @@ function Tiles({ report }: { report: Report }) {
         {tile(t("admin.sales.revenue"), formatRupees(report.revenueRs), true)}
         {tile(t("admin.sales.orders"), String(report.orderCount))}
         {tile(t("admin.sales.average"), formatRupees(report.averageRs))}
+        {/* S-320: order discounts of the counted orders; the revenue above is already after them. */}
+        {tile(t("admin.sales.discounts"), formatRupees(report.discountsRs), true)}
       </dl>
       <p className="mt-2 text-sm text-muted-foreground">{t("admin.sales.footnote")}</p>
       {report.orderCount === 0 && <p className="mt-3 text-lg">{t("admin.sales.empty")}</p>}

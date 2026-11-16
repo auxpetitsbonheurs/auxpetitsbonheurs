@@ -96,7 +96,7 @@ export function CostField({ id, label, hint, costRs, extra }: CostFieldProps) {
             className="block min-h-12 w-full min-w-0 rounded-r-md border-2 border-input bg-card px-3 py-2 text-base tabular-nums text-foreground aria-invalid:border-destructive"
           />
         </div>
-        <Button type="submit" variant="outline" className="min-h-12">
+        <Button type="submit" variant="outline" className="h-auto min-h-12 max-w-full whitespace-normal max-[22rem]:px-3">
           {t("admin.cost.save")}
         </Button>
       </div>

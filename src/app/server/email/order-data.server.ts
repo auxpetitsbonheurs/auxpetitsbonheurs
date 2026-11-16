@@ -37,6 +37,8 @@ export async function loadOrderEmailData(db: Executor, orderIds: readonly string
         window: order.timeWindow,
         deliveryFeeRs: order.deliveryFeeRs,
         totalRs: order.totalRs,
+        discountRs: order.discountRs,
+        discountReason: order.discountReason,
         paid: order.paid,
         refundDueRs: order.refundDueRs,
         declineReason: order.declineReason,

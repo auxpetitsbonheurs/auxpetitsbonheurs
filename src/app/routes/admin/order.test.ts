@@ -84,6 +84,7 @@ describe("order detail (S-017 AC2)", () => {
       edit: true,
       setPaid: true,
       saveNote: true,
+      discount: true,
     });
     expect(page.whatsappUrl).toBe(`https://wa.me/23057123456?text=${encodeURIComponent("Hello Aisha, about your order APB-0001 at Aux petits bonheurs.")}`);
   });

@@ -2,6 +2,7 @@
 import { PDFDocument, PDFName, PDFRawStream } from "pdf-lib";
 import { describe, expect, test } from "vitest";
 import { INVOICE_BADGE_PATH } from "./brand";
+import { formatRupees } from "~/lib/locale";
 import { buildInvoicePdf } from "./invoice-pdf";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -42,6 +43,14 @@ describe("buildInvoicePdf (S-127)", () => {
     );
 
     expect(strings).toEqual(expect.arrayContaining(["PROMOTION: SPRING SALE", "– Rs 350", "ADJUSTMENT", "– Rs 100", "Rs 4,900"]));
+  });
+
+  test("S-320: an order discount gets its own line with the reason, and the total due is after it", async () => {
+    const doc = sampleInvoice();
+    const totals = { ...doc.totals, orderDiscountRs: 500, totalRs: doc.totals.totalRs - 500, dueRs: doc.totals.dueRs - 500 };
+    const { strings } = await pdfText(await buildInvoicePdf({ ...doc, orderDiscountLabel: "Discount: Loyal customer", totals }));
+
+    expect(strings).toEqual(expect.arrayContaining(["DISCOUNT: LOYAL CUSTOMER", "– Rs 500", formatRupees(totals.dueRs)]));
   });
 
   test("characters the PDF fonts cannot print never break the file", async () => {

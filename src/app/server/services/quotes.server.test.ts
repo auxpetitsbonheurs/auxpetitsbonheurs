@@ -224,3 +224,22 @@ describe("decline a quote (S-159)", () => {
     expect(await declineQuote(db, answer(sent.trackingToken, sent.version, "2026-11-17"))).toMatchObject({ ok: true });
   });
 });
+
+describe("a re-quote keeps the order discount (S-320 AC8)", () => {
+  const money = (orderId: string) => query<Record<string, unknown>>("select total_rs, discount_rs, discount_percent from orders where id = $1", [orderId]).then((r) => r[0]);
+
+  test("a percentage follows the new amount; the quote keeps the full amount", async () => {
+    const sent = await quoted(4000);
+    await database.client.query("update orders set discount_rs = 400, discount_percent = 10, total_rs = 3600 where id = $1", [sent.orderId]);
+    expect(await sendQuote(db, { orderId: sent.orderId, version: sent.version, adminId, amountRs: 5000, note: null, expiresOn: "2026-11-15", now: NOW })).toMatchObject({ ok: true });
+    expect(await money(sent.orderId)).toEqual({ total_rs: 4500, discount_rs: 500, discount_percent: 10 });
+    expect(await query("select quote_amount_rs from custom_request where order_id = $1", [sent.orderId])).toEqual([{ quote_amount_rs: 5000 }]);
+  });
+
+  test("a fixed amount is capped at the new amount", async () => {
+    const sent = await quoted(4000);
+    await database.client.query("update orders set discount_rs = 1000, total_rs = 3000 where id = $1", [sent.orderId]);
+    await sendQuote(db, { orderId: sent.orderId, version: sent.version, adminId, amountRs: 800, note: null, expiresOn: "2026-11-15", now: NOW });
+    expect(await money(sent.orderId)).toEqual({ total_rs: 0, discount_rs: 800, discount_percent: null });
+  });
+});

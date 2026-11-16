@@ -407,6 +407,13 @@
       "fallbackBody": "Votre commande est enregistrée. Nous vous écrirons bientôt pour vous dire comment payer {{amount}} par Juice, référence {{reference}}.",
       "paidTitle": "Paiement reçu, merci",
       "paidBody": "Votre commande est confirmée. Suivez-la ici."
+    },
+    "discount": {
+      "subtotal": "Sous-total",
+      "line": "Remise",
+      "lineWith": "Remise ({{reason}})",
+      "included": "Remise de {{amount}} incluse (prix normal {{full}}).",
+      "includedWith": "Remise de {{amount}} incluse : {{reason}} (prix normal {{full}})."
     }
   },
   "admin": {
@@ -697,7 +704,10 @@
         "email_failed": "Un e-mail au client n'a pas pu être remis, {{time}}",
         "pending_alert_sent": "Rappel envoyé à l'équipe, {{time}}",
         "workshop_changed": "Date, horaire ou lieu de l'atelier modifié par {{actor}}, {{time}}",
-        "cost_changed": "Coût de fabrication modifié par {{actor}}, {{time}}"
+        "cost_changed": "Coût de fabrication modifié par {{actor}}, {{time}}",
+        "discount_added": "Remise ajoutée par {{actor}}, {{time}}",
+        "discount_changed": "Remise modifiée par {{actor}}, {{time}}",
+        "discount_removed": "Remise retirée par {{actor}}, {{time}}"
       },
       "reason": "Motif : {{reason}}",
       "paidRefund": "La commande était payée : remboursement hors site.",
@@ -709,7 +719,9 @@
         "recipientCap": "Non envoyé : cette adresse a déjà reçu {{max}} e-mails de commande ou de demande en 24 heures (limite anti-spam)."
       },
       "emailFailedHint": "Envoyez plutôt le lien de suivi par WhatsApp.",
-      "cost": "Coût : {{from}} → {{to}}"
+      "cost": "Coût : {{from}} → {{to}}",
+      "discount": "Remise : {{amount}}",
+      "discountTotal": "Total à payer : {{total}}"
     },
     "nav": {
       "today": "Aujourd'hui",
@@ -825,7 +837,7 @@
       "revenue": "Chiffre d’affaires",
       "orders": "Commandes",
       "average": "Panier moyen",
-      "footnote": "Le chiffre d’affaires compte les commandes Terminées, par date de commande.",
+      "footnote": "Le chiffre d’affaires compte les commandes Terminées, par date de commande, après remise éventuelle.",
       "empty": "Aucune commande terminée sur cette période.",
       "fulfilmentTitle": "Livraison et retrait",
       "delivery": "Livraison",
@@ -878,7 +890,8 @@
         "workshopsTitle": "Ateliers de la période",
         "noCost": "Pas encore de coût",
         "allSet": "Chaque commande et chaque atelier de la période a un coût."
-      }
+      },
+      "discounts": "Remises accordées"
     },
     "states": {
       "ownerOnlyTitle": "Réservé aux propriétaires",
@@ -2373,7 +2386,9 @@
       "customCake": "Gâteau sur mesure",
       "order": "Commande",
       "servings_one": "{{count}} part",
-      "servings_other": "{{count}} parts"
+      "servings_other": "{{count}} parts",
+      "orderDiscount": "Remise",
+      "orderDiscountWith": "Remise : {{reason}}"
     },
     "invoice": {
       "download": "Télécharger la facture",
@@ -2538,6 +2553,52 @@
       "none": "aucun",
       "orderProfit": "Bénéfice sur cette commande : {{amount}}",
       "notSet": "Pas encore de coût"
+    },
+    "discount": {
+      "add": "Ajouter une remise",
+      "change": "Modifier la remise",
+      "remove": "Retirer la remise",
+      "removing": "Retrait…",
+      "addTitle": "Ajouter une remise",
+      "changeTitle": "Modifier la remise",
+      "intro": "Elle s’applique aux articles ({{goods}}). Les frais de livraison ne sont jamais remisés.",
+      "kind": "Remise en",
+      "kinds": {
+        "amount": "Montant (Rs)",
+        "percent": "Pourcentage (%)"
+      },
+      "amountLabel": "Montant",
+      "amountHint": "En roupies entières, jusqu’à {{max}}.",
+      "percentLabel": "Pourcentage",
+      "percentHint": "De 1 à 100, arrondi à la roupie.",
+      "preview": "Remise {{discount}} · nouveau total {{total}}",
+      "reasonLabel": "Motif",
+      "optional": "(facultatif)",
+      "reasonHint": "Visible par le client et sur la facture, par exemple « Client fidèle ». {{max}} caractères au plus.",
+      "customerToldAwaiting": "Le client reçoit tout de suite un e-mail avec le nouveau montant à payer.",
+      "keep": "Ne rien changer",
+      "save": "Enregistrer la remise",
+      "saving": "Enregistrement…",
+      "saved": "Remise enregistrée",
+      "removed": "Remise retirée",
+      "subtotal": "Sous-total",
+      "line": "Remise",
+      "lineWith": "Remise ({{detail}})",
+      "totalToPay": "Total à payer",
+      "totalPaid": "Total payé",
+      "lockedPaid": "La commande est payée : sa remise est verrouillée. Annulez « Paiement reçu » pour la modifier.",
+      "locked": "Une remise ne peut changer qu’avant le paiement.",
+      "editNoteAmount": "Cette commande a une remise de {{amount}}. Elle reste après vos changements (jamais plus que les articles).",
+      "editNotePercent": "Cette commande a une remise de {{percent}} %. Elle est recalculée sur les nouveaux articles.",
+      "whatsappTotal": "{{total}} (après une remise de {{discount}})",
+      "errors": {
+        "value": "Saisissez un nombre entier, par exemple 200.",
+        "amount": "Saisissez un montant de Rs 1 à {{max}}.",
+        "percent": "Saisissez un pourcentage de 1 à 100 qui fasse au moins Rs 1.",
+        "nothing": "Il n’y a encore rien à remiser sur cette commande.",
+        "reason": "Le motif doit faire {{max}} caractères au plus."
+      },
+      "title": "Remise"
     }
   },
   "email": {
@@ -2610,7 +2671,11 @@
       "reason": "Motif",
       "map": "Voir sur la carte",
       "qty": "{{quantity}} × {{name}}",
-      "message": "Message sur le gâteau : {{text}}"
+      "message": "Message sur le gâteau : {{text}}",
+      "subtotal": "Sous-total",
+      "discount": "Remise",
+      "discountWith": "Remise ({{reason}})",
+      "toPay": "À payer"
     },
     "orderReceived": {
       "subject": "Nous avons reçu votre commande {{number}}",
@@ -2827,7 +2892,8 @@
     "paymentInstructions": {
       "subject": "Commande {{number}} validée : comment payer",
       "heading": "Votre commande est validée, voici comment payer",
-      "intro": "Bonne nouvelle : nous avons validé votre commande {{number}}. Payez {{amount}} par MCB Juice sous 24 heures pour la confirmer."
+      "intro": "Bonne nouvelle : nous avons validé votre commande {{number}}. Payez {{amount}} par MCB Juice sous 24 heures pour la confirmer.",
+      "amountChanged": "Le montant à payer pour la commande {{number}} a changé : {{amount}}. Voici comment le régler."
     }
   },
   "nav": {

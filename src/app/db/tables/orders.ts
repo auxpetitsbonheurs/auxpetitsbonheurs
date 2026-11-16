@@ -100,6 +100,15 @@ export const orders = pgTable(
      * flow). Null = not entered yet (Sales counts it as missing, never as Rs 0 silently).
      */
     costRs: integer("cost_rs"),
+    /**
+     * Order discount (S-320, migration 0030): whole rupees taken off the goods (never the delivery
+     * fee); null = none. `totalRs` is the amount to pay AFTER it, so the subtotal (full price) is
+     * `totalRs + (discountRs ?? 0)`. `discountPercent` is the percentage typed, null for a fixed
+     * amount; `discountReason` is the optional short reason the customer and the invoice show.
+     */
+    discountRs: integer("discount_rs"),
+    discountPercent: smallint("discount_percent"),
+    discountReason: text("discount_reason"),
     version: integer("version").notNull().default(1),
     createdAt: timestamp("created_at", tz).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", tz).notNull().defaultNow(),
@@ -122,6 +131,10 @@ export const orders = pgTable(
     check("orders_paid_ck", sql`${t.paid} or (${t.paidAt} is null and ${t.paidBy} is null)`),
     check("orders_version_ck", sql`${t.version} >= 1`),
     check("orders_cost_ck", sql`${t.costRs} is null or ${t.costRs} between 0 and 1000000`),
+    check(
+      "orders_discount_ck",
+      sql`(${t.discountRs} is null or ${t.discountRs} > 0) and (${t.discountPercent} is null or ${t.discountPercent} between 1 and 100) and (${t.discountReason} is null or char_length(${t.discountReason}) <= 80) and (${t.discountRs} is not null or (${t.discountPercent} is null and ${t.discountReason} is null))`,
+    ),
     check("orders_refund_ck", sql`(${t.refundDueRs} is null or ${t.refundDueRs} >= 0) and (${t.refundedAt} is null or ${t.refundDueRs} is not null)`),
   ],
 ).enableRLS();

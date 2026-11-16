@@ -45,6 +45,7 @@ async function salesGroups(db: Executor, range: DateRange): Promise<SalesGroup[]
       revenueRs: sum(orders.totalRs),
       costRs: sum(orders.costRs),
       missingCost: sql<number>`count(*) filter (where ${orders.costRs} is null)`,
+      discountsRs: sum(orders.discountRs),
     })
     .from(orders)
     .where(inRevenue(range))
@@ -55,6 +56,7 @@ async function salesGroups(db: Executor, range: DateRange): Promise<SalesGroup[]
     revenueRs: Number(row.revenueRs ?? 0),
     costRs: Number(row.costRs ?? 0),
     missingCost: Number(row.missingCost),
+    discountsRs: Number(row.discountsRs ?? 0),
   }));
 }
 
@@ -65,7 +67,9 @@ async function productSales(db: Executor, range: DateRange, locale: Locale): Pro
       nameEn: product.nameEn,
       nameFr: product.nameFr,
       quantity: sum(orderItem.quantity),
-      revenueRs: sum(orderItem.lineTotalRs),
+      // S-320: each line less its share of the order's discount (in proportion to its line total,
+      // half up per line), so a product's revenue is what was actually charged for it.
+      revenueRs: sum(sql<number>`${orderItem.lineTotalRs} - coalesce(floor(${orders.discountRs}::numeric * ${orderItem.lineTotalRs} / nullif(${orders.itemsTotalRs}, 0) + 0.5), 0)`),
     })
     .from(orderItem)
     .innerJoin(orders, eq(orders.id, orderItem.orderId))
@@ -215,6 +219,8 @@ export interface CompletedOrderRow {
   totalRs: number;
   paid: boolean;
   costRs: number | null;
+  /** S-320: the order discount (null = none); `totalRs` is after it. */
+  discountRs: number | null;
 }
 
 /** One page of the CSV Orders section: completed orders in range by number, after `after` (exclusive). */
@@ -231,6 +237,7 @@ export function completedOrdersPage(db: Executor, range: DateRange, after: numbe
       totalRs: orders.totalRs,
       paid: orders.paid,
       costRs: orders.costRs,
+      discountRs: orders.discountRs,
     })
     .from(orders)
     .where(after === null ? inRevenue(range) : and(inRevenue(range), gt(orders.number, after)))

@@ -17,6 +17,14 @@ export interface PaymentView {
   details: { juiceName: string; juiceNumber: string } | null;
   /** "Send proof on WhatsApp"; null without the account details or a usable WhatsApp. */
   proofUrl: string | null;
+  /** S-320: the order's discount, so the guide says the amount already includes it; null = none. */
+  discount: PaymentDiscount | null;
+}
+
+export interface PaymentDiscount {
+  subtotalRs: number;
+  discountRs: number;
+  reason: string | null;
 }
 
 /** "Sat 14 Nov, 08:00" (Mauritius time) for a pay-by instant: the token pages, emails and WhatsApp share it. */
@@ -28,7 +36,7 @@ export function deadlineLabel(deadline: Date, locale: Locale): string {
  * `createdAt` is when the payment clock started: the approval (`awaiting_payment_since`), or the
  * placement for an order that waited for payment from the start (before 2026-11-14).
  */
-export function paymentView(input: { totalRs: number; reference: string; createdAt: Date; settings: PaymentSettings; locale: Locale }): PaymentView {
+export function paymentView(input: { totalRs: number; reference: string; createdAt: Date; settings: PaymentSettings; locale: Locale; discount?: PaymentDiscount | null }): PaymentView {
   const { totalRs, reference, createdAt, settings, locale } = input;
   const deadline = paymentDeadline(createdAt);
   const details = paymentDetails(settings);
@@ -40,5 +48,6 @@ export function paymentView(input: { totalRs: number; reference: string; created
     deadlineLabel: deadlineLabel(deadline, locale),
     details,
     proofUrl: details ? proofHref(settings.paymentWhatsapp, proofText) : null,
+    discount: input.discount ?? null,
   };
 }

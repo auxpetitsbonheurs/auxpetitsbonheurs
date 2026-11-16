@@ -47,7 +47,8 @@ export type Block =
   | { kind: "link"; label: string; href: string; /** Visible URL for copy-paste in HTML only; the text version already has it. */ htmlOnly?: boolean }
   /** Label above value, one per row: stacks at any width, nothing to scroll. */
   | { kind: "facts"; rows: { label: string; value: string }[] }
-  | { kind: "items"; items: Item[]; totalLabel: string; total: string }
+  /** `adjustments`: "Subtotal", "Discount (reason)" rows between the items and the total (S-320). */
+  | { kind: "items"; items: Item[]; totalLabel: string; total: string; adjustments?: { label: string; value: string }[] }
   /** The shaded call-out: one important sentence. */
   | { kind: "note"; text: string }
   /** Pre-rendered, already escaped (the payment steps). */
@@ -108,7 +109,8 @@ function blockHtml(block: Block): string {
           return `<li style="margin:0 0 10px;padding:0 0 10px;border-bottom:1px solid ${EMAIL_COLORS.band};font-size:16px;line-height:1.5">${escapeHtml(item.title)}${details}<br><strong>${escapeHtml(item.price)}</strong></li>`;
         })
         .join("");
-      return `<ul style="margin:0 0 12px;padding:0;list-style:none">${rows}</ul>\n<p style="${P};font-size:18px"><strong>${escapeHtml(block.totalLabel)}: ${escapeHtml(block.total)}</strong></p>`;
+      const adjustments = (block.adjustments ?? []).map((row) => `<p style="${P};margin-bottom:4px">${escapeHtml(row.label)}: ${escapeHtml(row.value)}</p>`).join("\n");
+      return `<ul style="margin:0 0 12px;padding:0;list-style:none">${rows}</ul>\n${adjustments ? `${adjustments}\n` : ""}<p style="${P};font-size:18px"><strong>${escapeHtml(block.totalLabel)}: ${escapeHtml(block.total)}</strong></p>`;
     }
     case "note":
       return `<p style="${P};padding:12px 14px;background:${EMAIL_COLORS.band};border-radius:8px">${escapeHtml(block.text)}</p>`;
@@ -133,6 +135,7 @@ function blockText(block: Block): string {
     case "items":
       return [
         ...block.items.map((item) => [`- ${item.title}`, ...item.details.map((line) => `  ${line}`), `  ${item.price}`].join("\n")),
+        ...(block.adjustments ?? []).map((row) => `${row.label}: ${row.value}`),
         `${block.totalLabel}: ${block.total}`,
       ].join("\n");
     case "raw":

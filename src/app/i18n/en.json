@@ -407,6 +407,13 @@
       "fallbackBody": "Your order is saved. We'll message you shortly with how to pay {{amount}} by Juice, reference {{reference}}.",
       "paidTitle": "Payment received, thank you",
       "paidBody": "Your order is confirmed. We'll keep you posted here."
+    },
+    "discount": {
+      "subtotal": "Subtotal",
+      "line": "Discount",
+      "lineWith": "Discount ({{reason}})",
+      "included": "Includes a discount of {{amount}} (full price {{full}}).",
+      "includedWith": "Includes a discount of {{amount}}: {{reason}} (full price {{full}})."
     }
   },
   "admin": {
@@ -697,7 +704,10 @@
         "email_failed": "An email to the customer could not be delivered, {{time}}",
         "pending_alert_sent": "Reminder sent to the team, {{time}}",
         "workshop_changed": "Workshop date, time or place changed by {{actor}}, {{time}}",
-        "cost_changed": "Cost to make changed by {{actor}}, {{time}}"
+        "cost_changed": "Cost to make changed by {{actor}}, {{time}}",
+        "discount_added": "Discount added by {{actor}}, {{time}}",
+        "discount_changed": "Discount changed by {{actor}}, {{time}}",
+        "discount_removed": "Discount removed by {{actor}}, {{time}}"
       },
       "reason": "Reason: {{reason}}",
       "paidRefund": "The order was paid: refund outside the site.",
@@ -709,7 +719,9 @@
         "recipientCap": "Not sent: this address already got {{max}} order or request emails in 24 hours (anti-spam limit)."
       },
       "emailFailedHint": "Send the tracking link by WhatsApp instead.",
-      "cost": "Cost: {{from}} → {{to}}"
+      "cost": "Cost: {{from}} → {{to}}",
+      "discount": "Discount: {{amount}}",
+      "discountTotal": "Total to pay: {{total}}"
     },
     "nav": {
       "today": "Today",
@@ -825,7 +837,7 @@
       "revenue": "Revenue",
       "orders": "Orders",
       "average": "Average order",
-      "footnote": "Revenue counts Completed orders by order date.",
+      "footnote": "Revenue counts Completed orders by order date, after any order discount.",
       "empty": "No completed orders in this period.",
       "fulfilmentTitle": "Delivery and pickup",
       "delivery": "Delivery",
@@ -878,7 +890,8 @@
         "workshopsTitle": "Workshops in this period",
         "noCost": "No cost yet",
         "allSet": "Every order and workshop in this period has a cost."
-      }
+      },
+      "discounts": "Discounts given"
     },
     "states": {
       "ownerOnlyTitle": "Owner only",
@@ -2373,7 +2386,9 @@
       "customCake": "Custom cake",
       "order": "Order",
       "servings_one": "{{count}} serving",
-      "servings_other": "{{count}} servings"
+      "servings_other": "{{count}} servings",
+      "orderDiscount": "Discount",
+      "orderDiscountWith": "Discount: {{reason}}"
     },
     "invoice": {
       "download": "Download invoice",
@@ -2538,6 +2553,52 @@
       "none": "none",
       "orderProfit": "Profit on this order: {{amount}}",
       "notSet": "No cost yet"
+    },
+    "discount": {
+      "add": "Add a discount",
+      "change": "Change discount",
+      "remove": "Remove discount",
+      "removing": "Removing…",
+      "addTitle": "Add a discount",
+      "changeTitle": "Change the discount",
+      "intro": "It comes off the items ({{goods}}). A delivery fee is never discounted.",
+      "kind": "Discount as",
+      "kinds": {
+        "amount": "Amount (Rs)",
+        "percent": "Percentage (%)"
+      },
+      "amountLabel": "Amount",
+      "amountHint": "Whole rupees, up to {{max}}.",
+      "percentLabel": "Percentage",
+      "percentHint": "From 1 to 100, rounded to whole rupees.",
+      "preview": "Discount {{discount}} · new total {{total}}",
+      "reasonLabel": "Reason",
+      "optional": "(optional)",
+      "reasonHint": "Shown to the customer and on the invoice, for example “Loyal customer”. Up to {{max}} characters.",
+      "customerToldAwaiting": "The customer is emailed the new amount to pay straight away.",
+      "keep": "Keep as it is",
+      "save": "Save discount",
+      "saving": "Saving…",
+      "saved": "Discount saved",
+      "removed": "Discount removed",
+      "subtotal": "Subtotal",
+      "line": "Discount",
+      "lineWith": "Discount ({{detail}})",
+      "totalToPay": "Total to pay",
+      "totalPaid": "Total paid",
+      "lockedPaid": "The order is paid, so its discount is locked. Undo Payment received to change it.",
+      "locked": "A discount can only change before the order is paid.",
+      "editNoteAmount": "This order has a discount of {{amount}}. It stays after your changes (never more than the items).",
+      "editNotePercent": "This order has a {{percent}}% discount. It is worked out again on the new items.",
+      "whatsappTotal": "{{total}} (after a {{discount}} discount)",
+      "errors": {
+        "value": "Type a whole number, for example 200.",
+        "amount": "Type an amount from Rs 1 to {{max}}.",
+        "percent": "Type a percentage from 1 to 100 that comes to at least Rs 1.",
+        "nothing": "There is nothing to discount on this order yet.",
+        "reason": "Keep the reason to {{max}} characters."
+      },
+      "title": "Discount"
     }
   },
   "email": {
@@ -2610,7 +2671,11 @@
       "reason": "Reason",
       "map": "See it on the map",
       "qty": "{{quantity}} × {{name}}",
-      "message": "Message on the cake: {{text}}"
+      "message": "Message on the cake: {{text}}",
+      "subtotal": "Subtotal",
+      "discount": "Discount",
+      "discountWith": "Discount ({{reason}})",
+      "toPay": "To pay"
     },
     "orderReceived": {
       "subject": "We received your order {{number}}",
@@ -2827,7 +2892,8 @@
     "paymentInstructions": {
       "subject": "Order {{number}} approved: how to pay",
       "heading": "Your order is approved, here is how to pay",
-      "intro": "Good news: we approved your order {{number}}. Pay {{amount}} by MCB Juice within 24 hours to confirm it."
+      "intro": "Good news: we approved your order {{number}}. Pay {{amount}} by MCB Juice within 24 hours to confirm it.",
+      "amountChanged": "The amount to pay for order {{number}} was updated: {{amount}}. Here is how to pay it."
     }
   },
   "nav": {

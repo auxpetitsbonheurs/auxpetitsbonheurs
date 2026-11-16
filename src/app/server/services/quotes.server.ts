@@ -90,12 +90,23 @@ export async function sendQuote(db: Database, input: SendQuoteInput): Promise<Ad
     with prev as (
       select o.id, o.status, cr.quote_amount_rs, cr.quote_note, to_char(cr.quote_expires_on, 'YYYY-MM-DD') as quote_expires_on
       from orders o join custom_request cr on cr.order_id = o.id where o.id = ${input.orderId}::uuid
+    ), d as (
+      -- S-320: an order discount follows the new amount (a percentage of the goods recomputed, a
+      -- fixed amount capped at them, Rs 0 removes it); total_rs is the amount to pay after it.
+      select o.id, nullif(case when o.discount_rs is null then null
+          when o.discount_percent is not null then floor(greatest(${input.amountRs}::integer - o.delivery_fee_rs, 0) * o.discount_percent / 100.0 + 0.5)::integer
+          else least(o.discount_rs, greatest(${input.amountRs}::integer - o.delivery_fee_rs, 0)) end, 0) as new_rs
+      from orders o where o.id = ${input.orderId}::uuid
     ), changed as (
-      update orders set status = 'quote_sent', total_rs = ${input.amountRs}::integer, total_overridden = false,
+      update orders set status = 'quote_sent', total_rs = ${input.amountRs}::integer - coalesce(d.new_rs, 0), total_overridden = false,
+        discount_rs = d.new_rs,
+        discount_percent = case when d.new_rs is null then null else orders.discount_percent end,
+        discount_reason = case when d.new_rs is null then null else orders.discount_reason end,
         version = ${input.version + 1}::integer, updated_at = ${at}::timestamptz
-      where id = ${input.orderId}::uuid and version = ${input.version}::integer and source = 'custom_request'
-        and status in ('quote_needed', 'quote_sent')
-      returning id, status, version, contact_email, locale
+      from d
+      where orders.id = d.id and orders.version = ${input.version}::integer and orders.source = 'custom_request'
+        and orders.status in ('quote_needed', 'quote_sent')
+      returning orders.id, orders.status, orders.version, orders.contact_email, orders.locale
     ), quoted as (
       update custom_request set quote_amount_rs = ${input.amountRs}::integer, quote_note = ${input.note}, quote_expires_on = ${input.expiresOn}::date,
         quote_sent_at = ${at}::timestamptz, quote_sent_by = ${input.adminId}::uuid

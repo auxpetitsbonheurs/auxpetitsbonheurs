@@ -19,6 +19,7 @@ import {
 import { type OptionGroupInput, type OptionProblem, checkOptionGroups } from "~/domain/options";
 import { DECLINE_REASON_MAX } from "~/domain/payment";
 import { parseCostRs } from "~/domain/cost";
+import { DISCOUNT_KINDS, DISCOUNT_REASON_MAX } from "~/domain/order-discount";
 import { type SeasonProblem, type SeasonWindow, checkSeason } from "~/domain/season";
 import { ADMIN_ROLES, PASSWORD_MAX, PASSWORD_MIN, PROFILE_NAME_MAX } from "~/domain/admin-account";
 import { Email, MuDate, Uuid, Version } from "./shared";
@@ -155,6 +156,23 @@ export const CostRs = z.string().max(40).transform((text, ctx) => {
   return parsed.costRs;
 });
 
+/** S-320: a whole number as typed ("1,200", "10"); Rs or percent, the range is the service's. */
+const DiscountValue = z
+  .string()
+  .trim()
+  .max(12)
+  .transform((text) => text.replace(/[\s,]/g, ""))
+  .pipe(z.string().regex(/^\d{1,7}$/))
+  .transform(Number);
+
+/** S-320: optional, trimmed, blank = none, ≤ 80 characters (shown to the customer and on the invoice). */
+const DiscountReason = z
+  .string()
+  .trim()
+  .max(DISCOUNT_REASON_MAX)
+  .optional()
+  .transform((value) => (value ? value : null));
+
 /**
  * `admin/order` actions (contracts.md v0.40 + v0.42): approve (approval path), the Juice payment
  * intents markPaid, undoPaid, decline and markRefunded (juice-payment spec), and E-06's advance,
@@ -175,6 +193,10 @@ export const OrderActionInput = z.discriminatedUnion("intent", [
   z.object({ intent: z.literal("saveNote"), adminNote: z.string().max(ADMIN_NOTE_MAX) }),
   // S-318: no version (last write wins, like the note), any status.
   z.object({ intent: z.literal("saveCost"), costRs: CostRs }),
+  // S-320 (contracts.md "Order discounts"): versioned like every order change; the range against
+  // the goods is checked by the service (domain/order-discount), which knows them.
+  z.object({ intent: z.literal("setDiscount"), version: Version, kind: z.enum(DISCOUNT_KINDS), value: DiscountValue, reason: DiscountReason }),
+  z.object({ intent: z.literal("removeDiscount"), version: Version }),
 ]);
 
 export type OrderAction = z.infer<typeof OrderActionInput>;

@@ -174,6 +174,10 @@ export interface AdminOrder extends AdminOrderRow {
   adminNote: string | null;
   /** "Cost to make" (S-318); null = not entered. */
   costRs: number | null;
+  /** S-320 order discount: Rs off the goods (null = none), the percent typed, the reason. `totalRs` is after it. */
+  discountRs: number | null;
+  discountPercent: number | null;
+  discountReason: string | null;
   /** The request fields of a custom request (S-113 AC8), else null. */
   customRequest: AdminCustomRequest | null;
 }
@@ -230,6 +234,9 @@ export async function findAdminOrder(db: Executor, id: string): Promise<AdminOrd
       totalOverridden: orders.totalOverridden,
       adminNote: orders.adminNote,
       costRs: orders.costRs,
+      discountRs: orders.discountRs,
+      discountPercent: orders.discountPercent,
+      discountReason: orders.discountReason,
       items: itemsJson,
       customRequest: requestJson,
     })

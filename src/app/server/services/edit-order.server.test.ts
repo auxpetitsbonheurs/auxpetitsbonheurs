@@ -161,3 +161,24 @@ describe("warnings and the updated email (S-123)", () => {
     expect(await query("select id from order_event where order_id = $1 and type = 'edited'")).toEqual([]);
   });
 });
+
+describe("an order discount survives an edit (S-320 AC8)", () => {
+  const discount = async () =>
+    (await query("select total_rs, discount_rs, discount_percent, discount_reason from orders where id = $1"))[0];
+
+  test("a percentage is recomputed on the new goods; the delivery fee is never discounted", async () => {
+    // Rs 850 cake + Rs 200 fee; 10% of the goods = Rs 85 → pay Rs 965.
+    await database.client.query("update orders set discount_rs = 85, discount_percent = 10, discount_reason = 'Loyal', total_rs = 965 where id = $1", [orderId]);
+    expect(await edit({ lines: [{ itemId, quantity: 2 }] })).toMatchObject({ ok: true });
+    expect(await discount()).toEqual({ total_rs: 1730, discount_rs: 170, discount_percent: 10, discount_reason: "Loyal" });
+    const [event] = await query("select details from order_event where order_id = $1 and type = 'edited'");
+    expect(event?.details).toMatchObject({ oldTotalRs: 965, newTotalRs: 1730, discountRs: 170 });
+  });
+
+  test("a fixed amount is capped at the new goods, and a total set by hand is the price before it", async () => {
+    await database.client.query("update orders set discount_rs = 300, total_rs = 750 where id = $1", [orderId]);
+    await edit({ overrideTotalRs: 400 });
+    // Override Rs 400 includes the Rs 200 fee: goods Rs 200, so the discount is capped at Rs 200.
+    expect(await discount()).toEqual({ total_rs: 200, discount_rs: 200, discount_percent: null, discount_reason: null });
+  });
+});

@@ -67,6 +67,8 @@ export interface InvoiceTotals {
   subtotalRs: number;
   /** Promotion savings, shown as a minus line; 0 = none. */
   discountRs: number;
+  /** The order's own discount (S-320), shown as a minus line with its reason; 0 = none. */
+  orderDiscountRs: number;
   /** A total set by hand (S-122 override) differs from the rows: the difference, signed; 0 = none. */
   adjustmentRs: number;
   totalRs: number;
@@ -76,12 +78,16 @@ export interface InvoiceTotals {
   dueRs: number;
 }
 
-/** Totals that always add up: subtotal − discount + adjustment = total; total − paid = due. */
-export function invoiceTotals(input: { lines: readonly InvoiceLine[]; discountRs: number; totalRs: number; paid: boolean }): InvoiceTotals {
+/**
+ * Totals that always add up: subtotal − promotion − order discount + adjustment = total;
+ * total − paid = due. `totalRs` is the order's amount to pay (after its discount, S-320).
+ */
+export function invoiceTotals(input: { lines: readonly InvoiceLine[]; discountRs: number; orderDiscountRs?: number; totalRs: number; paid: boolean }): InvoiceTotals {
   const subtotalRs = input.lines.reduce((sum, line) => sum + line.totalRs, 0);
-  const adjustmentRs = input.totalRs - (subtotalRs - input.discountRs);
+  const orderDiscountRs = input.orderDiscountRs ?? 0;
+  const adjustmentRs = input.totalRs - (subtotalRs - input.discountRs - orderDiscountRs);
   const paidRs = input.paid ? input.totalRs : 0;
-  return { subtotalRs, discountRs: input.discountRs, adjustmentRs, totalRs: input.totalRs, paidRs, dueRs: input.totalRs - paidRs };
+  return { subtotalRs, discountRs: input.discountRs, orderDiscountRs, adjustmentRs, totalRs: input.totalRs, paidRs, dueRs: input.totalRs - paidRs };
 }
 
 /** A stored order line as the invoice reads it (FR-012 snapshot: prices never recomputed). */
@@ -152,6 +158,8 @@ export interface InvoiceDocument {
   lines: InvoiceLine[];
   /** "Promotion: Mother's Day" when there are savings, else null. */
   discountLabel: string | null;
+  /** "Discount: Loyal customer" / "Discount" when the order has its own discount (S-320), else null. */
+  orderDiscountLabel: string | null;
   totals: InvoiceTotals;
   payment: { bankName: string | null; accountName: string | null; accountNumber: string | null; juiceNumber: string | null };
   terms: string[];

@@ -12,7 +12,8 @@ import { formatOrderNumber } from "~/domain/order-number";
 import { t as translate } from "~/i18n/catalog.server";
 import { localized } from "~/i18n/localized";
 import { useI18n } from "~/i18n/react";
-import type { Locale } from "~/lib/locale";
+import { type Locale, formatRupees } from "~/lib/locale";
+import { storedDiscount, subtotalOf } from "~/domain/order-discount";
 import { actionError } from "~/server/action-result.server";
 import { requireAdmin } from "~/server/auth.server";
 import { clockContext } from "~/server/clock.server";
@@ -67,8 +68,10 @@ export async function loader(args: Route.LoaderArgs) {
     lines,
     fulfilment: { fulfilment: order.fulfilment, date: order.fulfilOn, windowId: order.timeWindow.id, address: order.address ?? "", landmark: order.landmark ?? "", deliveryFeeRs: order.deliveryFeeRs || settings.checkout.deliveryFeeRs },
     contact: { name: order.contactName, phone: order.contactPhone, email: order.contactEmail ?? "", note: order.customerNote ?? "" },
-    overrideTotalRs: order.totalOverridden ? order.totalRs : null,
+    // S-320: the override is the full price (before the order's discount).
+    overrideTotalRs: order.totalOverridden ? subtotalOf(order) : null,
   };
+  const discount = storedDiscount(order);
   return {
     title: translate("admin.orderEdit.metaTitle", me.locale, { number }),
     id: order.id,
@@ -76,6 +79,7 @@ export async function loader(args: Route.LoaderArgs) {
     version: order.version,
     editable: !NOT_EDITABLE.has(order.status),
     state,
+    discount,
     menu: menu.data,
     windows: settings.checkout.windows,
     nowMs: clock.now().getTime(),
@@ -145,6 +149,15 @@ function EditForm({ data: loaded }: { data: Route.ComponentProps["loaderData"] }
           <a href={`/admin/orders/${loaded.id}/edit`} className={orderLinkClass}>
             {t("admin.order.reload")}
           </a>
+        </Alert>
+      )}
+      {loaded.discount && (
+        <Alert tone="info" className="mt-6">
+          <p>
+            {loaded.discount.percent === null
+              ? t("admin.discount.editNoteAmount", { amount: formatRupees(loaded.discount.discountRs) })
+              : t("admin.discount.editNotePercent", { percent: loaded.discount.percent })}
+          </p>
         </Alert>
       )}
       <OrderForm

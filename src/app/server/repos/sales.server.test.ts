@@ -132,7 +132,7 @@ describe("completed orders for the CSV (S-178 AC3)", () => {
     await order({ status: "approved" });
     const first = await completedOrdersPage(database.db, NOV, null, 3);
     expect(first.map((row) => row.number)).toEqual([1, 2, 3]);
-    expect(first[0]).toEqual({ number: 1, numberPrefix: "APB-", fulfilOn: "2026-11-12", source: "website", fulfilment: "pickup", itemsTotalRs: 100, deliveryFeeRs: 0, totalRs: 100, paid: true, costRs: null });
+    expect(first[0]).toEqual({ number: 1, numberPrefix: "APB-", fulfilOn: "2026-11-12", source: "website", fulfilment: "pickup", itemsTotalRs: 100, deliveryFeeRs: 0, totalRs: 100, paid: true, costRs: null, discountRs: null });
     const second = await completedOrdersPage(database.db, NOV, 3, 3);
     expect(second.map((row) => row.number)).toEqual([4, 5]);
   });
@@ -183,5 +183,31 @@ describe("amount earned, spent and profit (S-318)", () => {
     await order({ totalRs: 1000, costRs: 250 });
     await order({ totalRs: 1000 });
     expect((await completedOrdersPage(database.db, NOV, null, 10)).map((row) => row.costRs)).toEqual([250, null]);
+  });
+});
+
+describe("order discounts in Sales (S-320 AC10)", () => {
+  test("revenue, average and earned use the discounted total; Discounts given adds them up", async () => {
+    await order({ totalRs: 1000, discountRs: 200 });
+    await order({ totalRs: 1500 });
+    await order({ status: "cancelled", totalRs: 400, discountRs: 100 });
+    const report = await salesReport(database.db, NOV, "en");
+    expect(report).toMatchObject({ revenueRs: 2500, orderCount: 2, averageRs: 1250, discountsRs: 200 });
+    expect(report.profit.earnedRs).toBe(2500);
+  });
+
+  test("top products share each order's discount across its lines in proportion to their totals", async () => {
+    const cake = await insertProduct(database.db, { slug: "cake-d" });
+    const tart = await insertProduct(database.db, { slug: "tart-d" });
+    // Lines Rs 800 + Rs 400 = Rs 1,200; Rs 300 off → cake Rs 600, tart Rs 300.
+    await order({ totalRs: 900, discountRs: 300, items: [{ productId: cake, quantity: 2, lineTotalRs: 800 }, { productId: tart, quantity: 1, lineTotalRs: 400 }] });
+    const report = await salesReport(database.db, NOV, "en");
+    expect(report.top5.map((row) => row.revenueRs)).toEqual([600, 300]);
+  });
+
+  test("the CSV Orders page carries the discount", async () => {
+    await order({ totalRs: 1000, discountRs: 200 });
+    const [row] = await completedOrdersPage(database.db, NOV, null, 10);
+    expect(row).toMatchObject({ totalRs: 1000, discountRs: 200 });
   });
 });

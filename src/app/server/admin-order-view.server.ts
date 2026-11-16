@@ -34,6 +34,10 @@ const KNOWN_EVENTS = new Set([
   "refunded",
   // S-318: the "Cost to make" was entered, changed or cleared.
   "cost_changed",
+  // S-320: an order discount was added, changed or removed.
+  "discount_added",
+  "discount_changed",
+  "discount_removed",
 ]);
 
 export interface EventLine {
@@ -66,10 +70,26 @@ function costNote(details: Record<string, unknown>, locale: Locale): string {
   return translate("admin.log.cost", locale, { from: shown(details.fromRs), to: shown(details.toRs) });
 }
 
+/** "Discount: Rs 200 (10%), Loyal customer" then "Total: Rs 1,800" (S-320); a removal shows the total only. */
+function discountNotes(details: Record<string, unknown>, locale: Locale): string[] {
+  const notes: string[] = [];
+  const amount = rupees(details.toRs);
+  if (amount !== null) {
+    const percent = rupees(details.percent);
+    const reason = text(details.reason);
+    const parts = [formatRupees(amount), percent === null ? null : `(${percent}%)`].filter(Boolean).join(" ");
+    notes.push(translate("admin.log.discount", locale, { amount: reason ? `${parts}, ${reason}` : parts }));
+  }
+  const total = rupees(details.totalRs);
+  if (total !== null) notes.push(translate("admin.log.discountTotal", locale, { total: formatRupees(total) }));
+  return notes;
+}
+
 function eventNotes(event: OrderEventView, locale: Locale): string[] {
   const details = event.details ?? {};
   if (event.type === "email_failed") return emailFailedNotes(details, locale);
   if (event.type === "cost_changed") return [costNote(details, locale)];
+  if (event.type.startsWith("discount_")) return discountNotes(details, locale);
   const notes: string[] = [];
   const reason = text(details.reason);
   if (reason) notes.push(translate("admin.log.reason", locale, { reason }));

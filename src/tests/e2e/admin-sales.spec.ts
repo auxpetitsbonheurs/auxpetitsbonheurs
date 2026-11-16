@@ -60,7 +60,7 @@ test.describe("S-171..S-173 figures", () => {
     await expect(tiles.nth(0)).toHaveText("Rs 3,500");
     await expect(tiles.nth(1)).toHaveText("2");
     await expect(tiles.nth(2)).toHaveText("Rs 1,750");
-    await expect(page.getByText("Revenue counts Completed orders by order date.")).toBeVisible();
+    await expect(page.getByText("Revenue counts Completed orders by order date, after any order discount.")).toBeVisible();
     await expect(page.getByRole("list").filter({ hasText: "Delivery" })).toContainText("1 order · Rs 2,500");
     await expect(page.getByText("Unpaid total:")).toBeVisible();
     if (isPhone375()) await page.screenshot({ path: `${SHOTS}/sales-summary.png`, fullPage: true });

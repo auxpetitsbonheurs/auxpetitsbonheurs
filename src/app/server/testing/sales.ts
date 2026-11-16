@@ -56,6 +56,8 @@ export interface TestSaleOrder {
   /** "Cost to make" (S-318); null/absent = not entered. */
   costRs?: number | null;
   refundDueRs?: number | null;
+  /** S-320 order discount; `totalRs` is the amount paid after it. */
+  discountRs?: number | null;
 }
 
 const WINDOW = { id: "morning", start: "09:00", end: "12:00", label: { en: "Morning", fr: "Matin" } };
@@ -81,7 +83,7 @@ export async function insertTestOrder(db: Db, values: TestSaleOrder): Promise<{ 
       address: fulfilment === "delivery" ? "12 Royal Road, Rose Hill" : null,
       fulfilOn: values.fulfilOn ?? "2026-11-12",
       timeWindow: WINDOW,
-      itemsTotalRs: totalRs - deliveryFeeRs,
+      itemsTotalRs: totalRs + (values.discountRs ?? 0) - deliveryFeeRs,
       deliveryFeeRs,
       totalRs,
       paid: values.paid ?? false,
@@ -89,6 +91,7 @@ export async function insertTestOrder(db: Db, values: TestSaleOrder): Promise<{ 
       locale: "en",
       trackingToken: randomUUID(),
       costRs: values.costRs ?? null,
+      discountRs: values.discountRs ?? null,
       refundDueRs: values.refundDueRs ?? null,
       ...(values.createdAt ? { createdAt: values.createdAt } : {}),
     })

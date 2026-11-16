@@ -24,7 +24,8 @@ function orderLines(order: InvoiceOrder, locale: Locale): { rows: InvoiceLine[];
   if (order.lines.length === 0) {
     const r = order.request;
     const details = r ? [r.occasion, r.theme, r.servings ? translate("admin.invoiceDoc.servings", locale, { count: r.servings }) : null].filter((d): d is string => Boolean(d)) : [];
-    const totalRs = Math.max(0, order.totalRs - order.deliveryFeeRs);
+    // The full price (before the order's discount, S-320), without the delivery row.
+    const totalRs = Math.max(0, order.totalRs + (order.discountRs ?? 0) - order.deliveryFeeRs);
     const name = translate(order.source === "custom_request" ? "admin.invoiceDoc.customCake" : "admin.invoiceDoc.order", locale);
     return { rows: [{ quantity: 1, description: name, details, unitRs: totalRs, totalRs }], discountRs: 0, promotion: null };
   }
@@ -48,6 +49,11 @@ function orderLines(order: InvoiceOrder, locale: Locale): { rows: InvoiceLine[];
 function deliveryRow(order: InvoiceOrder, locale: Locale): InvoiceLine[] {
   if (order.deliveryFeeRs <= 0) return [];
   return [{ quantity: null, description: translate("admin.invoiceDoc.delivery", locale), details: [], unitRs: order.deliveryFeeRs, totalRs: order.deliveryFeeRs }];
+}
+
+/** "Discount: Loyal customer", or "Discount" without a reason (S-320). */
+function orderDiscountLabel(reason: string | null, locale: Locale): string {
+  return reason ? translate("admin.invoiceDoc.orderDiscountWith", locale, { reason }) : translate("admin.invoiceDoc.orderDiscount", locale);
 }
 
 const blankToNull = (value: string | null) => (value && value.trim() !== "" ? value.trim() : null);
@@ -82,7 +88,8 @@ export async function invoiceDocument(db: Executor, orderId: string, now: Date):
     instructions: order.fulfilment === "delivery" ? [fulfilment, ...textLines(order.address)] : [fulfilment],
     lines,
     discountLabel: discountRs > 0 ? translate("admin.invoiceDoc.discount", locale, { title: promotion ?? "" }).replace(/[:\s]+$/, "") : null,
-    totals: invoiceTotals({ lines, discountRs, totalRs: order.totalRs, paid: order.paid }),
+    orderDiscountLabel: order.discountRs ? orderDiscountLabel(order.discountReason, locale) : null,
+    totals: invoiceTotals({ lines, discountRs, orderDiscountRs: order.discountRs ?? 0, totalRs: order.totalRs, paid: order.paid }),
     ...businessOf(settings, locale),
   };
 }

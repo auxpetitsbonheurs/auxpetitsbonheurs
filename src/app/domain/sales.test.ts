@@ -54,6 +54,7 @@ describe("summarise (S-171 AC1, S-172 AC1, AC4)", () => {
       deliveryRevenueRs: 7000,
       pickupRevenueRs: 5000,
       bySource: { website: 8000, custom_request: 2000, manual: 2000, workshop: 0 },
+      discountsRs: 0,
     });
   });
 
@@ -67,6 +68,7 @@ describe("summarise (S-171 AC1, S-172 AC1, AC4)", () => {
       deliveryRevenueRs: 0,
       pickupRevenueRs: 0,
       bySource: { website: 0, custom_request: 0, manual: 0, workshop: 0 },
+      discountsRs: 0,
     });
   });
 });

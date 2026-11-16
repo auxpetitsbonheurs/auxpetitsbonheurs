@@ -86,6 +86,9 @@ export interface TrackedOrder {
   itemsTotalRs: number;
   deliveryFeeRs: number;
   totalRs: number;
+  /** S-320: Rs taken off the goods (null = none) and its reason; `totalRs` is after it. */
+  discountRs: number | null;
+  discountReason: string | null;
   paid: boolean;
   version: number;
   createdAt: Date;
@@ -139,6 +142,7 @@ export async function findTrackedOrder(db: Executor, token: string, bucket: Coun
     ), found as (
       select o.id, o.number, o.locale, o.source, o.status, o.fulfilment, to_char(o.fulfil_on, 'YYYY-MM-DD') as "fulfilOn", o.time_window as "window",
         o.address, o.landmark, o.items_total_rs as "itemsTotalRs", o.delivery_fee_rs as "deliveryFeeRs", o.total_rs as "totalRs",
+        o.discount_rs as "discountRs", o.discount_reason as "discountReason",
         o.paid, o.version, coalesce(o.awaiting_payment_since, o.created_at) as "createdAt", o.cancel_reason as "cancelReason", o.decline_reason as "declineReason",
         o.refund_due_rs as "refundDueRs", o.refunded_at as "refundedAt", coalesce(o.number_prefix, s.order_number_prefix) as "orderNumberPrefix",
         s.juice_name as "juiceName", s.juice_number as "juiceNumber", s.payment_whatsapp as "paymentWhatsapp", s.contact_whatsapp as "contactWhatsapp",

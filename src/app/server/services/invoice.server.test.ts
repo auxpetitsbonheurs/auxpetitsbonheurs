@@ -156,3 +156,26 @@ describe("invoiceDocument (S-127)", () => {
     expect(await invoiceDocument(db(), "7d1f0c9e-1111-4222-8333-944455566677", NOW)).toBeNull();
   });
 });
+
+describe("an order discount on the invoice (S-320 AC9)", () => {
+  test("full-price rows, the Subtotal, a Discount line with the reason, then the total due after it; it adds up", async () => {
+    const id = await newOrder({ ...DELIVERY_ORDER, displayedTotalRs: "1050" });
+    await database.client.query("update orders set discount_rs = 150, discount_reason = 'Loyal customer', total_rs = 900 where id = $1", [id]);
+
+    const doc = await invoiceDocument(db(), id, NOW);
+
+    expect(doc!.orderDiscountLabel).toBe("Discount: Loyal customer");
+    expect(doc!.totals).toMatchObject({ subtotalRs: 1050, discountRs: 0, orderDiscountRs: 150, adjustmentRs: 0, totalRs: 900, dueRs: 900 });
+  });
+
+  test("paid in French: Remise, and the amount paid is the discounted total", async () => {
+    const id = await newOrder();
+    await database.client.query("update orders set locale = 'fr', paid = true, discount_rs = 100, total_rs = total_rs - 100 where id = $1", [id]);
+
+    const doc = await invoiceDocument(db(), id, NOW);
+
+    expect(doc!.orderDiscountLabel).toBe("Remise");
+    expect(doc!.totals.paidRs).toBe(doc!.totals.subtotalRs - 100);
+    expect(doc!.totals).toMatchObject({ orderDiscountRs: 100, adjustmentRs: 0, dueRs: 0 });
+  });
+});

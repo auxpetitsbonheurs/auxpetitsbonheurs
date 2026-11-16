@@ -34,6 +34,7 @@ export function sampleInvoice(overrides: Partial<InvoiceDocument> & { paid?: boo
     instructions: [locale === "fr" ? "Livraison" : "Delivery", "2 Example Road, Example Town"],
     lines,
     discountLabel: null,
+    orderDiscountLabel: null,
     totals: invoiceTotals({ lines, discountRs: 0, totalRs, paid }),
     payment: { bankName: PLACEHOLDER_BUSINESS.bankName, accountName: PLACEHOLDER_BUSINESS.accountName, accountNumber: PLACEHOLDER_BUSINESS.accountNumber, juiceNumber: PLACEHOLDER_BUSINESS.juiceNumber },
     terms: locale === "fr" ? ["Paiement intégral par Juice avant la livraison/le retrait"] : ["Full payment by Juice before delivery/pickup"],

@@ -238,6 +238,7 @@ describe("approve, then pay (Owner decision 2026-11-14; S-278 AC2-AC4)", () => {
       deadlineLabel: "Wed 11 Nov, 13:30",
       details: { juiceName: "A. Baker", juiceNumber: "5000 0001" },
       proofUrl: `https://wa.me/23050000002?text=${encodeURIComponent("Hello, here is my Juice payment proof for order APB-0001 (Rs 850).")}`,
+      discount: null,
     });
   });
 

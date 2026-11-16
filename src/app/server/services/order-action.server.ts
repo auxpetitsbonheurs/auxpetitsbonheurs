@@ -6,6 +6,7 @@ import type { OrderAction } from "~/server/contracts/admin";
 import type { Database } from "~/server/db.server";
 import { declineOrder, markPaid, markRefunded, undoPaid } from "./order-payment.server";
 import { saveAdminNote, saveOrderCost, setPaid } from "./order-flags.server";
+import { type DiscountActionResult, removeOrderDiscount, setOrderDiscount } from "./order-discount.server";
 import { transitionOrder } from "./transition-order.server";
 
 export interface OrderActionContext {
@@ -20,7 +21,8 @@ export type OrderActionResult =
   | { ok: true; order: { status: string; version: number; paid?: boolean } }
   | { ok: true; note: true }
   | { ok: true; costRs: number | null }
-  | { ok: false; code: Refusal };
+  | { ok: false; code: Refusal }
+  | Extract<DiscountActionResult, { code: "VALIDATION_FAILED" }>;
 
 export interface OrderLogLine {
   level: "info" | "warn";
@@ -59,6 +61,10 @@ async function dispatch(db: Database, input: OrderAction, context: OrderActionCo
       return undoPaid(db, base);
     case "markRefunded":
       return markRefunded(db, base);
+    case "setDiscount":
+      return setOrderDiscount(db, { ...base, kind: input.kind, value: input.value, reason: input.reason });
+    case "removeDiscount":
+      return removeOrderDiscount(db, base);
     case "decline":
       return declineOrder(db, { ...base, reason: input.reason });
     case "cancel":

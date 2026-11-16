@@ -6,6 +6,7 @@ import { EDIT_WARNINGS, type EditWarning, EditedNotice } from "~/components/admi
 import { TrackingLink } from "~/components/admin/order/tracking-link";
 import { OrderHeader } from "~/components/admin/order/header";
 import { PaymentSection } from "~/components/admin/order/payment-section";
+import { OrderDiscount } from "~/components/admin/order/discount";
 import { PrivateNote } from "~/components/admin/order/private-note";
 import { OrderCost } from "~/components/admin/order/order-cost";
 import { CustomerSection, FulfilmentSection, ItemsSection, ReasonSection, RequestSection } from "~/components/admin/order/sections";
@@ -33,7 +34,8 @@ import { publicConfigContext } from "~/server/public-config.server";
 import { adminRequestView } from "~/server/services/admin-request.server";
 import { sendQuote } from "~/server/services/quotes.server";
 import { requestPhotosContext } from "~/server/storage.server";
-import type { Locale } from "~/lib/locale";
+import { type Locale, formatRupees } from "~/lib/locale";
+import { DISCOUNT_REASON_MAX, canEditDiscount, goodsOf, storedDiscount, subtotalOf } from "~/domain/order-discount";
 import { readWhatsappSettings, whatsappMenu, whatsappMessage } from "~/server/whatsapp.server";
 import { whatsappLinkFor } from "~/domain/whatsapp";
 import { runOrderAction } from "~/server/services/order-action.server";
@@ -66,6 +68,9 @@ export async function loader(args: Route.LoaderArgs) {
     : null;
   const registration = workshops.get(order.id);
   const allowed = adminAllowed(order.status, order.fulfilment, { refundPending: order.refundDueRs !== null && refundedAt === null });
+  // S-320: the discount, the subtotal (full price) it comes off and the goods a new one applies to.
+  const discount = storedDiscount(order);
+  const subtotalRs = subtotalOf(order);
   return {
     request,
     // E-15 S-305: the event, people's names and allergies of a workshop registration.
@@ -88,6 +93,8 @@ export async function loader(args: Route.LoaderArgs) {
       placedAt: formatLogTime(createdAt, me.locale),
       quoteExpiresLabel: quoteExpiresOn ? formatDayLabel(quoteExpiresOn, me.locale) : null,
       reason: cancelReason(order.status, events),
+      discount: discount ? { ...discount, subtotalRs } : null,
+      goodsRs: goodsOf(subtotalRs, order.deliveryFeeRs),
     },
     customer: { name: contactName, phone: contactPhone, email: contactEmail },
     ...contactLinks({ ...order, number }),
@@ -96,17 +103,26 @@ export async function loader(args: Route.LoaderArgs) {
     payment: paymentFacts(order, now, me.locale),
     adminNote: adminNote ?? "",
     // A registration follows its event (S-306): no preparation steps and no line edits.
-    allowed: registration ? { ...allowed, advance: null, revert: null, edit: false } : allowed,
+    allowed: { ...(registration ? { ...allowed, advance: null, revert: null, edit: false } : allowed), discount: canEditDiscount(order) },
     events: events.map((event) => eventLine(event, me.locale)),
   };
 }
 
 /** VALIDATION_FAILED `fields` for the two free-text inputs, so the dialog or note shows the reason. */
-function fieldMessage(field: unknown, locale: "en" | "fr"): Record<string, string> | undefined {
+function fieldMessage(field: unknown, locale: "en" | "fr", intent: string | null): Record<string, string> | undefined {
+  if (intent === "setDiscount") return discountFields(field === "reason" ? "reason" : "value", locale, null);
   if (field === "reason") return { reason: translate("admin.order.reasonTooLong", locale) };
   if (field === "adminNote") return { adminNote: translate("admin.order.noteTooLong", locale, { max: 2000 }) };
   if (field === "costRs") return { costRs: translate("admin.cost.invalid", locale) };
   return undefined;
+}
+
+/** S-320: the discount form's field message: the amount's range ("At most Rs 1,200", "1 to 100%") or the reason's length. */
+function discountFields(field: "value" | "reason", locale: Locale, range: { kind: "amount" | "percent"; maxRs: number } | null): Record<string, string> {
+  if (field === "reason") return { reason: translate("admin.discount.errors.reason", locale, { max: DISCOUNT_REASON_MAX }) };
+  if (!range) return { value: translate("admin.discount.errors.value", locale) };
+  if (range.maxRs < 1) return { value: translate("admin.discount.errors.nothing", locale) };
+  return { value: range.kind === "percent" ? translate("admin.discount.errors.percent", locale) : translate("admin.discount.errors.amount", locale, { max: formatRupees(range.maxRs) }) };
 }
 
 /**
@@ -145,11 +161,18 @@ export async function action(args: Route.ActionArgs) {
   if (intent === "whatsappLink") return whatsappLink(args, me.locale, id.data, form.template);
   const input = OrderActionInput.safeParse(form);
   if (!input.success) {
-    return actionError("VALIDATION_FAILED", me.locale, { fields: fieldMessage(input.error.issues[0]?.path[0], me.locale), extra: { intent } });
+    return actionError("VALIDATION_FAILED", me.locale, { fields: fieldMessage(input.error.issues[0]?.path[0], me.locale, intent), extra: { intent } });
   }
   const db = args.context.get(requestDbContext).db;
   const result = await runOrderAction(db, input.data, { orderId: id.data, adminId: me.id, now: args.context.get(clockContext).now() });
+  if (!result.ok && result.code === "VALIDATION_FAILED") {
+    return actionError("VALIDATION_FAILED", me.locale, { fields: discountFields(result.field, me.locale, result), extra: { intent } });
+  }
   if (!result.ok) return actionError(result.code, me.locale, { extra: { intent } });
+  if (input.data.intent === "setDiscount" || input.data.intent === "removeDiscount") {
+    const kind = input.data.intent === "setDiscount" ? input.data.kind : null;
+    console.log(JSON.stringify({ level: "info", event: "order_discount_saved", orderId: id.data, actorRole: me.role, kind, removed: kind === null }));
+  }
   if ("costRs" in result) {
     console.log(JSON.stringify({ level: "info", event: "order_cost_saved", orderId: id.data, actorRole: me.role, cleared: result.costRs === null }));
     return { ok: true as const, intent: "saveCost" as const, costRs: result.costRs };
@@ -197,6 +220,8 @@ export default function AdminOrder({ loaderData, actionData }: Route.ComponentPr
         {/* A custom request has no items: its price is the quote in the request section (E-08). */}
         {!loaderData.request && <ItemsSection data={loaderData} />}
         <RequestSection data={loaderData} />
+        {/* S-320: the discount sits by the total (under the items, or the quote of a custom request). */}
+        <OrderDiscount data={loaderData} showLines={loaderData.request !== null} />
         {loaderData.request && <RequestPhotos photos={loaderData.request.photos} />}
         {loaderData.request && loaderData.allowed.sendQuote && (
           <QuoteSheet request={loaderData.request} version={loaderData.order.version} fulfilOn={loaderData.order.fulfilOn} today={loaderData.today} result={actionData as QuoteResult | undefined} pending={false} />

@@ -136,7 +136,7 @@ describe("the page (S-171 AC4, AC9, AC11, AC12; S-172 AC5, AC7; S-173 AC6)", () 
   test("zero orders: Rs 0 / 0 / Rs 0, the empty texts, nothing unpaid, and the footnote", async () => {
     const html = await renderPage("/admin/sales");
     expect(html).toContain("No completed orders in this period.");
-    expect(html).toContain("Revenue counts Completed orders by order date.");
+    expect(html).toContain("Revenue counts Completed orders by order date, after any order discount.");
     expect(html).toContain("Nothing unpaid in this period.");
     expect(html.match(/Rs 0/g)!.length).toBeGreaterThanOrEqual(3);
     expect(html).toContain('role="tablist"');

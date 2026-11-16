@@ -11,7 +11,7 @@ The Owner and admins see who orders and how the bakery is doing.
 Sales totals match the underlying orders for every range; each customer's total spent equals their Completed orders.
 
 ## Scope
-- In: Sales summary (FR-068, Must) with costs and profit (S-318); Customers list, notes, totals (FR-065, Should); CSV export matching the screen (FR-069, Should). A11y acceptance criteria on tables.
+- In: Sales summary (FR-068, Must) with costs and profit (S-318) and order discounts ("Discounts given", revenue after discounts: E-06 S-320); Customers list, notes, totals (FR-065, Should); CSV export matching the screen (FR-069, Should). A11y acceptance criteria on tables.
 - Out: customer account features (E-11).
 
 ## Stories

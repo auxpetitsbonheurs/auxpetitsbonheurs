@@ -11,6 +11,7 @@ import { livePromo } from "~/domain/live-promo";
 import type { Menu } from "~/domain/menu";
 import { priceBasketFromMenu } from "~/domain/menu-pricing";
 import { type EditSnapshot, editChange, editTotals, needsUpdatedEmail, storedOption } from "~/domain/order-edit";
+import { type StoredDiscount, goodsOf, rebaseDiscount, storedDiscount } from "~/domain/order-discount";
 import { normalizePhone } from "~/domain/phone";
 import type { OrderStatus } from "~/domain/status";
 import { todayMU } from "~/domain/time";
@@ -164,7 +165,11 @@ async function run(db: Database, edit: EditOrderInput): Promise<EditOrderResult>
   const phone = normalizePhone(input.contact.phone);
   if (!phone) throw invalid("contact.phone");
   const priced = priceLines(input.lines, new Map(before.map((row) => [row.id, row])), edit.menu, now);
-  const totals = editTotals(priced.items.map((item) => item.lineTotalRs), input.fulfilment, input.deliveryFeeRs, input.overrideTotalRs);
+  const subtotals = editTotals(priced.items.map((item) => item.lineTotalRs), input.fulfilment, input.deliveryFeeRs, input.overrideTotalRs);
+  // S-320: the order's discount follows the new price (a percentage recomputed, an amount capped
+  // at the goods, Rs 0 removes it); `total_rs` stays the amount to pay after it.
+  const discount = rebaseDiscount(storedDiscount(order), goodsOf(subtotals.totalRs, subtotals.deliveryFeeRs));
+  const totals = { ...subtotals, totalRs: subtotals.totalRs - (discount?.discountRs ?? 0), discount };
   const window = windowFor(order, input, edit.windows);
   const address = input.fulfilment === "delivery" ? (input.address ?? null) : null;
   const after: EditSnapshot = {
@@ -195,7 +200,7 @@ interface WritePlan {
   order: OrderRow;
   after: EditSnapshot;
   window: TimeWindow;
-  totals: ReturnType<typeof editTotals>;
+  totals: ReturnType<typeof editTotals> & { discount: StoredDiscount | null };
   items: NewItem[];
   change: ReturnType<typeof editChange>;
   emailed: boolean;
@@ -217,6 +222,9 @@ async function write(db: Database, plan: WritePlan): Promise<number> {
         itemsTotalRs: totals.itemsTotalRs,
         totalRs: totals.totalRs,
         totalOverridden: totals.totalOverridden,
+        discountRs: totals.discount?.discountRs ?? null,
+        discountPercent: totals.discount?.percent ?? null,
+        discountReason: totals.discount?.reason ?? null,
         contactName: after.contactName,
         contactPhone: after.contactPhone,
         contactEmail: after.contactEmail,
@@ -234,7 +242,13 @@ async function write(db: Database, plan: WritePlan): Promise<number> {
       actorType: "admin",
       actorAdminId: edit.adminId,
       type: "edited",
-      details: { diff: plan.change.diff, oldTotalRs: plan.change.oldTotalRs, newTotalRs: plan.change.newTotalRs, overridden: totals.totalOverridden },
+      details: {
+        diff: plan.change.diff,
+        oldTotalRs: plan.change.oldTotalRs,
+        newTotalRs: plan.change.newTotalRs,
+        overridden: totals.totalOverridden,
+        ...((totals.discount?.discountRs ?? null) === order.discountRs ? {} : { discountRs: totals.discount?.discountRs ?? null }),
+      },
       createdAt: edit.now,
     });
     if (plan.emailed) {

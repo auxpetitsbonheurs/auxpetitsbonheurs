@@ -40,6 +40,8 @@ export interface WhatsappOrder {
   fulfilOn: string;
   window: TimeWindow;
   totalRs: number;
+  /** S-320: the order discount (absent or null = none); `totalRs` is already after it. */
+  discountRs?: number | null;
   trackingToken: string;
   /** Only an order awaiting payment has a pay-by time (`deadline`); null or absent otherwise. */
   status?: string;
@@ -63,7 +65,10 @@ export function whatsappValues(order: WhatsappOrder, shop: WhatsappSettings, ori
     order_number: order.number,
     date: formatLongDate(order.fulfilOn, locale),
     window: t("checkout.windowLabel", locale, { label: localized(order.window.label, locale), start: order.window.start, end: order.window.end }),
-    total: formatRupees(order.totalRs, locale),
+    // S-320: "Rs 1,000 (after a Rs 200 discount)", so every template, also an edited one, says so.
+    total: order.discountRs
+      ? t("admin.discount.whatsappTotal", locale, { total: formatRupees(order.totalRs, locale), discount: formatRupees(order.discountRs, locale) })
+      : formatRupees(order.totalRs, locale),
     juice_number: shop.juiceNumber,
     pickup_address: order.fulfilment === "pickup" ? shop.pickupAddress : null,
     tracking_link: `${origin}${localePath(locale, `/t/${order.trackingToken}`)}`,

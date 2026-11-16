@@ -76,6 +76,9 @@ export interface OrderEmailData {
     window: TimeWindow;
     deliveryFeeRs: number;
     totalRs: number;
+    /** S-320: Rs off the goods (absent or null = none) and its reason; `totalRs` is after it. */
+    discountRs?: number | null;
+    discountReason?: string | null;
     paid: boolean;
     refundDueRs: number | null;
     declineReason: string | null;
@@ -107,7 +110,7 @@ export interface OrderEmailData {
    */
   workshop?: { title: string; address: string; mapUrl: string | null; cakes: number; peopleNames: string | null; allergies: string | null } | null;
   /** What the queueing statement stored next to the order id (workshop_changed: the previous values of what changed). */
-  payload: { reason?: string; why?: string; previousDate?: string; previousTotalRs?: number; previousStart?: string; previousEnd?: string; previousAddress?: string };
+  payload: { amountChanged?: boolean; reason?: string; why?: string; previousDate?: string; previousTotalRs?: number; previousStart?: string; previousEnd?: string; previousAddress?: string };
 }
 
 const origin = (siteUrl: string) => new URL(siteUrl).origin;
@@ -135,12 +138,25 @@ function itemBlocks(data: OrderEmailData): Block[] {
   }));
   const blocks: Block[] = [
     { kind: "h2", text: t("email.common.itemsHeading", locale) },
-    { kind: "items", items, totalLabel: t("email.common.total", locale), total: formatRupees(data.order.totalRs) },
+    { kind: "items", items, totalLabel: t("email.common.total", locale), total: formatRupees(data.order.totalRs), adjustments: discountRows(data) },
   ];
   if (data.order.fulfilment === "delivery" && data.order.deliveryFeeRs > 0) {
     blocks.push({ kind: "p", text: t("email.common.deliveryFee", locale, { amount: formatRupees(data.order.deliveryFeeRs) }) });
   }
   return blocks;
+}
+
+/** "Subtotal: Rs 1,200" and "Discount (Loyal customer): −Rs 200" when the order has a discount (S-320). */
+function discountRows(data: OrderEmailData): { label: string; value: string }[] {
+  const { locale, order } = data;
+  if (!order.discountRs) return [];
+  return [
+    { label: t("email.common.subtotal", locale), value: formatRupees(order.totalRs + order.discountRs) },
+    {
+      label: order.discountReason ? t("email.common.discountWith", locale, { reason: order.discountReason }) : t("email.common.discount", locale),
+      value: `−${formatRupees(order.discountRs)}`,
+    },
+  ];
 }
 
 /** Number, date, time, pickup or delivery place: the facts every order email repeats. */
@@ -249,7 +265,10 @@ const BUILDERS: Record<OrderEmailKey, Builder> = {
       heading: t(wk(data, "accepted", "heading") ?? "email.paymentInstructions.heading", locale),
       blocks: [
         hello(data),
-        { kind: "note", text: t(wk(data, "accepted", "intro") ?? "email.paymentInstructions.intro", locale, { ...vars(data), amount: formatRupees(data.order.totalRs) }) },
+        // S-320: re-sent when a discount changed while the payment is awaited.
+        data.payload.amountChanged
+          ? { kind: "note", text: t("email.paymentInstructions.amountChanged", locale, { ...vars(data), amount: formatRupees(data.order.totalRs) }) }
+          : { kind: "note", text: t(wk(data, "accepted", "intro") ?? "email.paymentInstructions.intro", locale, { ...vars(data), amount: formatRupees(data.order.totalRs) }) },
         ...paymentBlocks(data),
         ...workshopBlocks(data),
         ...itemBlocks(data),
@@ -295,6 +314,8 @@ const BUILDERS: Record<OrderEmailKey, Builder> = {
     const amount = formatRupees(request?.quoteAmountRs ?? data.order.totalRs);
     const rows = [
       { label: t("email.quote.amount", locale), value: amount },
+      ...discountRows(data).slice(1),
+      ...(data.order.discountRs ? [{ label: t("email.common.toPay", locale), value: formatRupees(data.order.totalRs) }] : []),
       ...(request?.quoteExpiresOn ? [{ label: t("email.quote.valid", locale), value: formatLongDate(request.quoteExpiresOn, locale) }] : []),
     ];
     return {

@@ -20,6 +20,7 @@ function totalsRows(doc: InvoiceDocument, totals: InvoiceTotals) {
   return [
     { label: labels.subtotal, value: formatRupees(totals.subtotalRs) },
     ...(totals.discountRs > 0 ? [{ label: doc.discountLabel ?? "", value: `– ${formatRupees(totals.discountRs)}` }] : []),
+    ...(totals.orderDiscountRs > 0 ? [{ label: doc.orderDiscountLabel ?? "", value: `– ${formatRupees(totals.orderDiscountRs)}` }] : []),
     ...(totals.adjustmentRs !== 0 ? [{ label: labels.adjustment, value: `${totals.adjustmentRs < 0 ? "– " : ""}${formatRupees(Math.abs(totals.adjustmentRs))}` }] : []),
     { label: labels.downpayment, value: totals.paidRs > 0 ? `${labels.paid} ${formatRupees(totals.paidRs)}` : "" },
   ];
