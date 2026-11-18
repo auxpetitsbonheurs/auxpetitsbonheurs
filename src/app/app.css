@@ -204,6 +204,348 @@
     transform: translate(0, -90px) scale(1);
   }
 }
+/*
+ * Page loader scenes (S-321, components/shell/loader-scenes.tsx): one gold line-art scene per
+ * destination page, picked by the root's `data-scene` (lib/loader-scenes.ts). Only that scene is
+ * displayed, so only it is drawn and animated. Every loop lasts 1.6 s like the whisk's heart, with
+ * the telling moment in its first half second. `data-part` marks the moving parts; each one's
+ * base style is the scene's still frame, which is what reduced motion shows (the rule at the end
+ * of this file stops every animation).
+ */
+[data-loader-scene] {
+  display: none;
+}
+[data-scene="whisk"] [data-loader-scene="whisk"],
+[data-scene="egg"] [data-loader-scene="egg"],
+[data-scene="sugar"] [data-loader-scene="sugar"],
+[data-scene="flour"] [data-loader-scene="flour"],
+[data-scene="hearts"] [data-loader-scene="hearts"],
+[data-scene="oven"] [data-loader-scene="oven"],
+[data-scene="cake"] [data-loader-scene="cake"] {
+  display: inline;
+}
+/* Frozen while the veil is hidden and while it fades out (no work in the background, no jump). */
+.page-loader-veil:not([data-show]) * {
+  animation-play-state: paused;
+}
+[data-part] {
+  transform-box: fill-box;
+  transform-origin: center;
+  /* Longhands: the CSS minifier turns a shorthand without a name into `animation: none`. */
+  animation-duration: 1.6s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+/* Egg: the whole egg cracks, the halves open, the yolk drops into the bowl. Still: open, yolk falling. */
+[data-part="egg-whole"] {
+  opacity: 0;
+  animation-name: egg-whole;
+}
+[data-part="egg-l"] {
+  transform: translate(-34px, -8px) rotate(70deg);
+  animation-name: egg-half;
+}
+[data-part="egg-r"] {
+  transform: translate(34px, -8px) rotate(-70deg);
+  animation-name: egg-half-r;
+}
+[data-part="egg-yolk"] {
+  transform: translateY(44px);
+  animation-name: egg-yolk;
+}
+[data-part="egg-ripple"] {
+  opacity: 0;
+  animation-name: egg-ripple;
+}
+@keyframes egg-whole {
+  0%, 16% {
+    opacity: 1;
+    transform: rotate(0);
+  }
+  8% {
+    transform: rotate(-6deg);
+  }
+  18%, 92% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes egg-half {
+  0%, 16% {
+    opacity: 0;
+    transform: none;
+  }
+  18%, 26% {
+    opacity: 1;
+    transform: none;
+  }
+  46%, 88% {
+    opacity: 1;
+    transform: translate(-34px, -8px) rotate(70deg);
+  }
+  94%, 100% {
+    opacity: 0;
+    transform: translate(-34px, -8px) rotate(70deg);
+  }
+}
+@keyframes egg-half-r {
+  0%, 16% {
+    opacity: 0;
+    transform: none;
+  }
+  18%, 26% {
+    opacity: 1;
+    transform: none;
+  }
+  46%, 88% {
+    opacity: 1;
+    transform: translate(34px, -8px) rotate(-70deg);
+  }
+  94%, 100% {
+    opacity: 0;
+    transform: translate(34px, -8px) rotate(-70deg);
+  }
+}
+@keyframes egg-yolk {
+  0%, 34% {
+    opacity: 0;
+    transform: none;
+  }
+  40% {
+    opacity: 1;
+    transform: none;
+    animation-timing-function: ease-in;
+  }
+  66% {
+    opacity: 1;
+    transform: translateY(90px);
+  }
+  74%, 100% {
+    opacity: 0;
+    transform: translateY(94px) scale(1.5, 0.4);
+  }
+}
+@keyframes egg-ripple {
+  0%, 64% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  72% {
+    opacity: 1;
+  }
+  92%, 100% {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+}
+
+/* Sugar: cubes tumble into the bowl, sparkles twinkle. Still: three cubes on their way. */
+[data-part^="cube"] {
+  animation-name: sugar-fall;
+  animation-timing-function: ease-in;
+}
+[data-part="cube1"] {
+  transform: translateY(10px);
+}
+[data-part="cube2"] {
+  transform: translateY(60px) rotate(25deg);
+  animation-delay: -0.53s;
+}
+[data-part="cube3"] {
+  transform: translateY(110px) rotate(50deg);
+  animation-delay: -1.07s;
+}
+@keyframes sugar-fall {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) rotate(-30deg);
+  }
+  15%, 70% {
+    opacity: 1;
+  }
+  85%, 100% {
+    opacity: 0;
+    transform: translateY(150px) rotate(60deg);
+  }
+}
+[data-part^="spark"] {
+  animation-name: twinkle;
+}
+[data-part="spark2"] {
+  animation-delay: -0.8s;
+}
+@keyframes twinkle {
+  0%, 100% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Flour: the sack tips, a stream of flour pours, a soft puff rises from the bowl. */
+[data-part="flour-sack"] {
+  animation-name: flour-tip;
+}
+@keyframes flour-tip {
+  0%, 100% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+[data-part="flour-stream"] {
+  animation: flour-pour 0.4s linear infinite;
+}
+@keyframes flour-pour {
+  to {
+    stroke-dashoffset: -30;
+  }
+}
+[data-part="flour-puff"] {
+  transform: translateY(-6px);
+  animation-name: flour-puff;
+  animation-timing-function: ease-out;
+}
+@keyframes flour-puff {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.5);
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-26px) scale(1.15);
+  }
+}
+
+/* Hearts: tiny hearts pour into the bowl. */
+[data-part^="drop"] {
+  animation-name: heart-drop;
+  animation-timing-function: ease-in;
+}
+[data-part="drop1"] {
+  transform: translateY(10px);
+}
+[data-part="drop2"] {
+  transform: translateY(50px) rotate(12deg);
+  animation-delay: -0.4s;
+}
+[data-part="drop3"] {
+  transform: translateY(95px) rotate(-10deg);
+  animation-delay: -0.8s;
+}
+[data-part="drop4"] {
+  transform: translateY(135px) rotate(8deg);
+  animation-delay: -1.2s;
+}
+@keyframes heart-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) rotate(-15deg);
+  }
+  15%, 75% {
+    opacity: 1;
+  }
+  45% {
+    transform: translate(6px, 70px) rotate(10deg);
+  }
+  90%, 100% {
+    opacity: 0;
+    transform: translateY(160px) rotate(-8deg);
+  }
+}
+
+/* Oven: the bowl goes in, the door closes, the window glows warm. Still: door shut, glowing. */
+[data-part="oven-bowl"] {
+  animation-name: oven-bowl;
+}
+[data-part="oven-door"] {
+  transform-origin: 50% 100%;
+  animation-name: oven-door;
+}
+[data-part="oven-glow"] {
+  opacity: 0.45;
+  animation-name: oven-glow;
+}
+@keyframes oven-bowl {
+  0% {
+    opacity: 0;
+    transform: translateY(36px) scale(1.5);
+  }
+  6% {
+    opacity: 1;
+    transform: translateY(36px) scale(1.5);
+  }
+  30%, 100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes oven-door {
+  0%, 30% {
+    transform: scaleY(-0.15);
+  }
+  46%, 94% {
+    transform: none;
+  }
+  100% {
+    transform: scaleY(-0.15);
+  }
+}
+@keyframes oven-glow {
+  0%, 46% {
+    opacity: 0;
+  }
+  70% {
+    opacity: 0.6;
+  }
+  86% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Cake: the candle flickers and a little heart rises from it. */
+[data-part="cake-flame"] {
+  transform-origin: 50% 100%;
+  animation: cake-flicker 0.4s ease-in-out infinite alternate;
+}
+@keyframes cake-flicker {
+  from {
+    transform: scale(0.9, 1.05) skewX(-4deg);
+  }
+  to {
+    transform: scale(1.05, 0.92) skewX(4deg);
+  }
+}
+[data-part="cake-heart"] {
+  opacity: 0;
+  animation-name: loader-heart-up;
+  animation-timing-function: ease-out;
+}
+@keyframes loader-heart-up {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.6);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-36px) scale(1.1);
+  }
+}
 
 :root {
   color-scheme: light;

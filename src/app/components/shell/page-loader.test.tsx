@@ -2,6 +2,7 @@
 // role or text, and the badge has no src or srcset, so it requests nothing during the first paint.
 import { describe, expect, test } from "vitest";
 import { renderInSite } from "~/server/testing/render-in-site";
+import { LOADER_SCENES } from "~/lib/loader-scenes";
 import { PageLoader } from "./page-loader";
 
 describe("PageLoader", () => {
@@ -21,5 +22,26 @@ describe("PageLoader", () => {
     expect(image).toContain('data-srcset="/brand/badge-cream-plain-200.webp 200w, /brand/badge-cream-plain-400.webp 400w"');
     expect(image).not.toMatch(/\ssrc(set)?=/);
     expect(image).toContain('alt=""');
+  });
+});
+
+// S-321: every scene is in the markup once (the full-page-load script picks one before React
+// starts), the whisk by default; CSS draws only the root's data-scene.
+describe("PageLoader scenes (S-321)", () => {
+  const html = renderInSite(<PageLoader />, "/");
+
+  test("starts on the whisk and carries one group per scene", () => {
+    expect(html).toContain('data-scene="whisk"');
+    for (const scene of LOADER_SCENES) expect(html).toContain(`data-loader-scene="${scene}"`);
+    expect(html.match(/data-loader-scene=/g)).toHaveLength(LOADER_SCENES.length);
+  });
+
+  test("the bowl is one shared shape", () => {
+    expect(html.match(/id="apb-loader-bowl"/g)).toHaveLength(1);
+    expect(html.match(/href="#apb-loader-bowl"/g)?.length).toBeGreaterThanOrEqual(4);
+  });
+
+  test("stays small: the whole overlay under 9 kB of HTML", () => {
+    expect(html.length).toBeLessThan(9_000);
   });
 });

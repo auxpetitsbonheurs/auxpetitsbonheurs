@@ -2,6 +2,7 @@
 // carries the CSP nonce, survives a </body> cut across chunks, and stays small.
 import { gzipSync } from "node:zlib";
 import { describe, expect, test } from "vitest";
+import { SCENE_FOR_SCRIPT } from "./loader-scenes";
 import { PAGE_LOADER_SCRIPT, createPageLoaderScriptTransform, isCustomerPage } from "./page-loader-script";
 
 async function run(chunks: string[], nonce?: string): Promise<string> {
@@ -43,6 +44,11 @@ describe("createPageLoaderScriptTransform", () => {
 describe("PAGE_LOADER_SCRIPT", () => {
   test("is tiny: under 1 kB gzipped", () => {
     expect(gzipSync(PAGE_LOADER_SCRIPT).byteLength).toBeLessThan(1024);
+  });
+
+  test("S-321: picks the destination's scene with the shared map before showing", () => {
+    expect(PAGE_LOADER_SCRIPT).toContain(SCENE_FOR_SCRIPT);
+    expect(PAGE_LOADER_SCRIPT).toContain('r.setAttribute("data-scene",f(u.pathname))');
   });
 
   test("is valid script and does nothing on a page without the overlay", () => {

@@ -6,8 +6,13 @@
 // page from its back/forward cache. Once React handles a link (it calls preventDefault) the
 // script stays out of the way: React shows the overlay itself.
 //
+// S-321: the overlay draws the scene of the page being opened (lib/loader-scenes.ts), so the
+// script carries the same destination → scene map and sets `data-scene` before showing.
+//
 // It also gives the overlay's badge its srcset after load and an idle moment, so the badge
 // never shares bandwidth with the page's LCP image and is ready by the first page change.
+
+import { SCENE_FOR_SCRIPT } from "./loader-scenes";
 
 /** id of the overlay root; `data-*` hooks shared by the script, React and the CSS. */
 export const PAGE_LOADER_ID = "apb-page-loader";
@@ -18,16 +23,16 @@ export const FULL_LOAD_SAFETY_MS = 10_000;
 /** Same DOM steps as lib/page-loader-dom.ts, written as plain browser script (no build step). */
 export const PAGE_LOADER_SCRIPT =
   `(function(){var d=document,r=d.getElementById("${PAGE_LOADER_ID}");if(!r)return;` +
-  `var v=r.querySelector("[data-page-loader-veil]"),t=r.querySelector("[data-page-loader-text]"),k;` +
+  `var v=r.querySelector("[data-page-loader-veil]"),t=r.querySelector("[data-page-loader-text]"),k,f=${SCENE_FOR_SCRIPT};` +
   `function img(){var i=r.querySelector("img[data-srcset]");if(i&&!i.srcset){i.sizes=i.getAttribute("data-sizes");i.srcset=i.getAttribute("data-srcset")}}` +
-  `function show(){img();r.setAttribute("role","status");v.setAttribute("data-show","");t.textContent=r.getAttribute("data-label");clearTimeout(k);k=setTimeout(hide,${FULL_LOAD_SAFETY_MS})}` +
+  `function show(u){r.setAttribute("data-scene",f(u.pathname));img();r.setAttribute("role","status");v.setAttribute("data-show","");t.textContent=r.getAttribute("data-label");clearTimeout(k);k=setTimeout(hide,${FULL_LOAD_SAFETY_MS})}` +
   `function hide(){clearTimeout(k);v.removeAttribute("data-show");t.textContent="";r.removeAttribute("role")}` +
-  `function leaves(h){var u;try{u=new URL(h,location.href)}catch(e){return false}` +
-  `return u.origin===location.origin&&!(u.pathname===location.pathname&&u.search===location.search&&u.hash)}` +
-  `function later(e){setTimeout(function(){if(!e.defaultPrevented)show()},0)}` +
+  `function leaves(h){var u;try{u=new URL(h,location.href)}catch(e){return}` +
+  `if(u.origin===location.origin&&!(u.pathname===location.pathname&&u.search===location.search&&u.hash))return u}` +
+  `function later(e,u){setTimeout(function(){if(!e.defaultPrevented)show(u)},0)}` +
   `d.addEventListener("click",function(e){var a=e.target.closest&&e.target.closest("a[href]");` +
-  `if(!a||e.button||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey||(a.target&&a.target!=="_self")||a.hasAttribute("download")||!leaves(a.href))return;later(e)});` +
-  `d.addEventListener("submit",function(e){var f=e.target;if((f.target&&f.target!=="_self")||!leaves(f.action))return;later(e)});` +
+  `var u=a&&leaves(a.href);if(!u||e.button||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey||(a.target&&a.target!=="_self")||a.hasAttribute("download"))return;later(e,u)});` +
+  `d.addEventListener("submit",function(e){var o=e.target,u=leaves(o.action);if(!u||(o.target&&o.target!=="_self"))return;later(e,u)});` +
   `addEventListener("pageshow",function(e){if(e.persisted)hide()});` +
   `function idle(){if(window.requestIdleCallback)requestIdleCallback(img,{timeout:2000});else setTimeout(img,200)}` +
   `if(d.readyState==="complete")idle();else addEventListener("load",idle,{once:true})})()`;

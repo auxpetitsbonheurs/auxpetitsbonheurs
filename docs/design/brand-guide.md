@@ -205,7 +205,8 @@ Text needs 4.5:1, large text and UI parts (outlines, focus ring) 3:1. Every pair
 - **Durations:** micro (press, toggle, chip select) 100–150 ms; component (sheet, accordion, basket drawer) 200–280 ms; page/hero fade 250–350 ms. Nothing over 400 ms.
 - **Easing:** `cubic-bezier(0.2, 0.8, 0.2, 1)` for entering, `ease-in` 150 ms for leaving.
 - **Signature moment:** "added to basket": the basket badge does one soft scale bump (1 → 1.15 → 1, 200 ms). Order confirmed: a single gentle fade-up of the thank-you card. No confetti.
-- **Avoid:** parallax, autoplaying carousels, looping animation.
+- **Avoid:** parallax, autoplaying carousels, looping animation (the page loader below is the one exception: it only loops while a page loads).
+- **Page loader scenes (S-317, S-321):** while a page loads, the cream badge shows a small gold line-art scene for the page being opened, in its whisk's place: Home and every other page the whisk stirring with a heart floating up; Our story an egg cracking into a bowl; Our collection and cake pages sugar cubes tumbling into a bowl; Custom order a flour sack pouring (wheat ear, soft puff); Workshops tiny hearts pouring into a bowl; Gallery the bowl going into the oven, door closing, window glowing; Contact a layered cake with a flickering candle and a rising heart. One shared bowl shape, one gold gradient (#BA8430 → #E2B65A), lines ~1.5 px at 176 px, loops of 1.6 s with the telling moment in the first half second, calm ease-in-out. CSS only; reduced motion shows each scene's still frame.
 - **Reduced motion:** with `prefers-reduced-motion: reduce`, replace movement with opacity changes ≤ 150 ms or none; no scale bumps; carousels never auto-advance in any mode.
 
 ## Accessibility commitments

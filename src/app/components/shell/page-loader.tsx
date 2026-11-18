@@ -2,7 +2,9 @@ import { memo, useEffect, useRef, useState } from "react";
 import { useNavigation } from "react-router";
 import { useI18n } from "~/i18n/react";
 import { PAGE_CHANGE_MIN_VISIBLE_MS, SUBMISSION_DELAY_MS, createDelayedFlag, isPageChange } from "~/lib/delayed-flag";
+import { sceneFor } from "~/lib/loader-scenes";
 import { PAGE_LOADER_ID } from "~/lib/page-loader-script";
+import { LoaderScenes } from "./loader-scenes";
 
 /** The cream badge with its gold whisk and heart painted out (docs/design/brand/plain_badge.py). */
 const BADGE_SRCSET = "/brand/badge-cream-plain-200.webp 200w, /brand/badge-cream-plain-400.webp 400w";
@@ -48,52 +50,18 @@ function setShown(root: HTMLElement, shown: boolean) {
 }
 
 /**
- * A gold balloon whisk in the badge's style (gradient #BA8430 to #E2B65A), drawn upright about
- * its collar (0 0): handle below, wires above. Placed where the badge's own whisk was.
- */
-function Whisk() {
-  return (
-    <g transform="translate(585 295) rotate(52)">
-      <path d="M-7 8 -11 106a11 11 0 0 0 22 0L7 8Z" fill="url(#apb-loader-gold)" />
-      <rect x="-12" y="-9" width="24" height="15" rx="5" fill="url(#apb-loader-gold)" />
-      <g fill="none" stroke="url(#apb-loader-gold)" strokeWidth="6" strokeLinecap="round">
-        {[66, 44, 20].map((k) => (
-          <path key={k} d={`M-5 -8C${-k} -60 ${-k} -235 0 -235C${k} -235 ${k} -60 5 -8`} />
-        ))}
-        <path d="M0 -8V-235" />
-      </g>
-    </g>
-  );
-}
-
-/**
  * The overlay's markup, rendered once and never again (the effect and the full-page-load script
- * only toggle attributes): a full-screen cream veil with the plain cream badge, the whisk
- * stirring in circles over it and the heart floating up (app.css "S-317"). The veil is
- * decorative (`aria-hidden`); the status text sits beside it.
+ * only toggle attributes): a full-screen cream veil with the plain cream badge and, over it, the
+ * scene of the page being opened (`data-scene`, S-321; the whisk by default; app.css "S-317",
+ * "S-321"). The veil is decorative (`aria-hidden`); the status text sits beside it.
  */
 const LoaderMarkup = memo(function LoaderMarkup({ label }: { label: string }) {
   return (
-    <div id={PAGE_LOADER_ID} data-label={label} data-page-loader>
+    <div id={PAGE_LOADER_ID} data-label={label} data-scene="whisk" data-page-loader>
       <div aria-hidden="true" className="page-loader-veil" data-page-loader-veil>
         <div className="relative size-44 md:size-50" data-page-loader-badge>
           <img data-srcset={BADGE_SRCSET} data-sizes={BADGE_SIZES} alt="" width={200} height={200} decoding="async" className="size-full" />
-          <svg viewBox="0 0 1024 1024" className="absolute inset-0 size-full overflow-visible">
-            <defs>
-              <linearGradient id="apb-loader-gold" gradientUnits="userSpaceOnUse" x1="0" y1="118" x2="0" y2="-235">
-                <stop offset="0" stopColor="#BA8430" />
-                <stop offset="1" stopColor="#E2B65A" />
-              </linearGradient>
-            </defs>
-            <g data-loader-heart>
-              <path transform="translate(505 240) scale(.9)" fill="none" stroke="url(#apb-loader-gold)" strokeWidth="9" strokeLinejoin="round" d="M0 30C-40 0-55-25-35-42-20-55-3-45 0-30 3-45 20-55 35-42 55-25 40 0 0 30Z" />
-            </g>
-            <g data-loader-stir>
-              <g data-loader-tilt>
-                <Whisk />
-              </g>
-            </g>
-          </svg>
+          <LoaderScenes />
         </div>
       </div>
       <span className="sr-only" data-page-loader-text />
@@ -118,6 +86,14 @@ export function PageLoader() {
   const forSubmission = useDelayedFlag(submitting, SUBMISSION_DELAY_MS, PAGE_CHANGE_MIN_VISIBLE_MS);
   const visible = forPage || forSubmission;
   const mounted = useRef(false);
+  const destination = navigation.location?.pathname;
+
+  // S-321: the scene follows the page being opened. Only while navigating: at hydration (idle) it
+  // keeps the scene an early tap's full page load set, and after a navigation it keeps the last
+  // one while the overlay fades out.
+  useEffect(() => {
+    if (destination) document.getElementById(PAGE_LOADER_ID)?.setAttribute("data-scene", sceneFor(destination));
+  }, [destination]);
 
   useEffect(() => {
     const root = document.getElementById(PAGE_LOADER_ID);
