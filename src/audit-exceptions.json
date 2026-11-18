@@ -1,0 +1,7 @@
+[
+  {
+    "advisory": "GHSA-fc5q-39xc-vjpf",
+    "reason": "picomatch ReDoS: no patched release (<=4.0.7, all versions); used only by vite/vitest/react-router dev build tooling on patterns we write, never in the Worker",
+    "expires": "2026-12-18"
+  }
+]

@@ -16,6 +16,7 @@
     "deploy:staging": "CLOUDFLARE_ENV=staging npm run build && node scripts/check-deploy.ts staging && node scripts/inject-hyperdrive.ts staging && wrangler deploy --env staging",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "check:audit": "node scripts/check-audit.ts",
     "check:js-budget": "node scripts/check-js-budget.ts",
     "check:client-secrets": "node scripts/check-client-secrets.ts",
     "seed:owner": "tsx scripts/seed-owner.ts",
