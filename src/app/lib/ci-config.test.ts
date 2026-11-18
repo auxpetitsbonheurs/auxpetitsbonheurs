@@ -32,8 +32,11 @@ describe("CI workflow (.github/workflows/ci.yml)", () => {
 
   test("G-18 (SEC-12): the app job fails on a high or critical npm advisory, right after the install", () => {
     const app = ci.slice(ci.indexOf("\n  app:"), ci.indexOf("\n  secret-scan:"));
-    expect(app.indexOf("run: npm audit --audit-level=high")).toBeGreaterThan(app.indexOf("run: npm ci"));
-    expect(app.indexOf("run: npm audit --audit-level=high")).toBeLessThan(app.indexOf("run: npm run lint"));
+    // check:audit runs npm audit and fails on high/critical (audit-gate.test.ts): only a dev-tool
+    // advisory with no fix, listed with an expiry in audit-exceptions.json, is let through.
+    expect(app.indexOf("run: npm run check:audit")).toBeGreaterThan(app.indexOf("run: npm ci"));
+    expect(app.indexOf("run: npm run check:audit")).toBeLessThan(app.indexOf("run: npm run lint"));
+    expect(JSON.parse(readFileSync(fileURLToPath(new URL("../../package.json", import.meta.url)), "utf8")).scripts["check:audit"]).toBe("node scripts/check-audit.ts");
   });
 
   test("SEC-12: the shadcn CLI is a dev tool, not a runtime dependency", () => {
