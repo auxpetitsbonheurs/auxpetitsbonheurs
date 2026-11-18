@@ -28,6 +28,37 @@ async function holdPageData(page: Page) {
   return release;
 }
 
+/** A re-armable hold on page-data requests: `close()` before a tap, `open()` to let it finish. */
+async function pageDataGate(page: Page) {
+  let open = () => {};
+  let wait = Promise.resolve();
+  await page.route(/\.data(\?|$)/, async (route: Route) => {
+    await wait;
+    await route.continue();
+  });
+  return {
+    close: () => (wait = new Promise<void>((resolve) => (open = resolve))),
+    open: () => open(),
+  };
+}
+
+const loaderRoot = (page: Page) => page.locator("#apb-page-loader");
+const scene = (page: Page, name: string) => page.locator(`[data-loader-scene="${name}"]`);
+const SCENES = ["whisk", "egg", "sugar", "flour", "hearts", "oven", "cake"];
+
+/** A footer nav link; Home is not in the footer, so it is the header's logo. */
+const navLink = (page: Page, name: string) =>
+  name === "Home" || name === "Accueil"
+    ? page.getByRole("banner").getByRole("link", { name: "Aux petits bonheurs" })
+    : footer(page).getByRole("link", { name, exact: true });
+
+/** The destination's scene is the one drawn, and the only one. */
+async function expectScene(page: Page, name: string) {
+  await expect(loaderRoot(page)).toHaveAttribute("data-scene", name);
+  await expect(scene(page, name)).toBeVisible();
+  for (const other of SCENES.filter((s) => s !== name)) await expect(scene(page, other)).toBeHidden();
+}
+
 /** Records, from the first paint on, each time the veil is shown or hidden (ms since navigation start). */
 async function recordVeil(page: Page) {
   await page.addInitScript(() => {
@@ -178,5 +209,126 @@ test.describe("page loader (S-317)", () => {
     expect(shownAfter).toBe(false);
     await (await popup).close();
     await expect(veil(page)).toBeHidden();
+  });
+});
+
+// S-321: one scene per destination page, chosen by the page being opened, in the same gold line
+// art inside the badge; the same map before React starts (inline script) and after.
+test.describe("page loader scenes (S-321)", () => {
+  /** Freezes the scene at `ms` into its loop and saves the badge (375 px runs only). */
+  /** A telling moment of each loop, for the screenshots (ms into the 1.6 s loop). */
+  const MOMENT: Record<string, number> = { egg: 850, oven: 1100, hearts: 600 };
+  async function shoot(page: Page, name: string, ms = MOMENT[name] ?? 450) {
+    if (test.info().project.name !== "phone-375") return;
+    await page.evaluate((t) => document.getAnimations().forEach((a) => ((a.currentTime = t), a.pause())), ms);
+    await page.locator("[data-page-loader-badge]").screenshot({ path: `test-results/s321-scene-${name}-375.png` });
+    await page.evaluate(() => document.getAnimations().forEach((a) => a.play()));
+  }
+
+  const EN: [string, string][] = [
+    ["Our story", "egg"],
+    ["Our collection", "sugar"],
+    ["Custom order", "flour"],
+    ["Workshops", "hearts"],
+    ["Gallery", "oven"],
+    ["Contact us", "cake"],
+    ["Home", "whisk"],
+  ];
+
+  test("each destination shows its own scene while it loads; only that one is drawn; axe clean", async ({ page }) => {
+    await open(page, "/privacy");
+    const gate = await pageDataGate(page);
+    for (const [link, name] of EN) {
+      gate.close();
+      await navLink(page, link).click();
+      await expect(veil(page)).toBeVisible();
+      await expectScene(page, name);
+      await expect(loading(page)).toBeAttached();
+      // It moves: every part of the scene runs its loop (none is left at the still frame).
+      const still = await scene(page, name).evaluate((group) =>
+        [...group.querySelectorAll("[data-part]")].filter((part) => !part.getAnimations().some((a) => a.playState === "running")).length,
+      );
+      expect(still).toBe(0);
+      if (name === "egg") await expectNoA11yViolations(page);
+      await shoot(page, name);
+      gate.open();
+      await expect(veil(page)).toBeHidden();
+    }
+  });
+
+  test("French pages map the same way", async ({ page }) => {
+    await open(page, "/fr/privacy");
+    const gate = await pageDataGate(page);
+    for (const [link, name] of [
+      ["Notre histoire", "egg"],
+      ["Gâteau sur mesure", "flour"],
+      ["Galerie", "oven"],
+      ["Accueil", "whisk"],
+    ]) {
+      gate.close();
+      await navLink(page, link).click();
+      await expectScene(page, name);
+      await expect(loading(page, "Chargement…")).toBeAttached();
+      gate.open();
+      await expect(veil(page)).toBeHidden();
+    }
+  });
+
+  test("before React starts, the inline script draws the destination's scene too (EN, FR, detail pages, the rest)", async ({ page }) => {
+    await page.route(/\/assets\/.*\.js$/, (route) => route.abort());
+    // Every page we tap answers 204: the browser stays here, so the overlay can be read.
+    await page.route(
+      (url) => url.pathname !== "/" && !url.pathname.startsWith("/assets/") && !url.pathname.startsWith("/brand/"),
+      (route) => (route.request().isNavigationRequest() ? route.fulfill({ status: 204 }) : route.continue()),
+    );
+    await page.goto("/");
+    for (const [path, name] of [
+      ["/our-story", "egg"],
+      ["/fr/menu", "sugar"],
+      ["/menu/chocolate-cake", "sugar"],
+      ["/fr/custom-cake", "flour"],
+      ["/workshops/macarons", "hearts"],
+      ["/gallery", "oven"],
+      ["/fr/contact", "cake"],
+      ["/basket", "whisk"],
+      ["/fr/t/abc", "whisk"],
+    ]) {
+      await page.evaluate((href) => {
+        const a = Object.assign(document.createElement("a"), { href, textContent: href });
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }, path);
+      await expect(veil(page)).toBeVisible();
+      await expectScene(page, name);
+      await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true })));
+      await expect(veil(page)).toBeHidden();
+    }
+  });
+
+  test("reduced motion: each scene is a still, recognisable frame (egg open, oven shut and glowing)", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await open(page, "/privacy");
+    const gate = await pageDataGate(page);
+    for (const [link, name] of EN) {
+      gate.close();
+      await navLink(page, link).click();
+      await expectScene(page, name);
+      const moving = await scene(page, name).evaluate((group) =>
+        [...group.querySelectorAll("*")].filter((part) => getComputedStyle(part).animationName !== "none").length,
+      );
+      expect(moving).toBe(0);
+      if (name === "egg") {
+        await expect(page.locator('[data-part="egg-whole"]')).toHaveCSS("opacity", "0");
+        await expect(page.locator('[data-part="egg-l"]')).not.toHaveCSS("transform", "none");
+        await expect(page.locator('[data-part="egg-yolk"]')).toHaveCSS("opacity", "1");
+      }
+      if (name === "oven") {
+        await expect(page.locator('[data-part="oven-door"]')).toHaveCSS("transform", "none");
+        await expect(page.locator('[data-part="oven-glow"]')).toHaveCSS("opacity", "0.45");
+      }
+      gate.open();
+      await expect(veil(page)).toBeHidden();
+    }
   });
 });
